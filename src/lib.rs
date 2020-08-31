@@ -67,6 +67,18 @@ fn pick_highlighting(
         &Handle<Mesh>,
     )>,
 ) {
+    if let Some(_) = pick_state.hovered_previous {
+        println!(
+            "Hover state change from {:?} to {:?}",
+            pick_state.hovered_previous, pick_state.hovered
+        );
+    }
+    if let Some(_) = pick_state.selected_previous {
+        println!(
+            "Selection state change from {:?} to {:?}",
+            pick_state.selected_previous, pick_state.selected
+        );
+    }
     for (mut selectable, mut matl_handle, mesh_handle) in &mut query.iter() {
         if let None = selectable.material_default {
             selectable.material_default = Some(*matl_handle);
@@ -130,7 +142,6 @@ fn pick_selection(
             if *mesh_handle == hovered && mouse_button_inputs.pressed(MouseButton::Left) {
                 // If there is a previously selected mesh, we need to clear it.
                 if Some(*mesh_handle) != pick_state.selected {
-                    println!("Selecting mesh {:?}", *mesh_handle);
                     pick_state.selected_previous = pick_state.selected;
                     // Set the current mesh as the selected mesh.
                     pick_state.selected = Some(*mesh_handle)
@@ -143,7 +154,6 @@ fn pick_selection(
         && mouse_button_inputs.pressed(MouseButton::Left)
         && pick_state.selected != None
     {
-        println!("Cleared selected state");
         pick_state.selected_previous = pick_state.selected;
         pick_state.selected = None;
     }
@@ -250,7 +260,6 @@ fn cursor_pick(
                                 // if the hovered mesh has changed, update the pick state
                                 let current_hovered_mesh = Some(*mesh_handle);
                                 if pick_state.hovered != current_hovered_mesh {
-                                    println!("{:?} to {:?}", pick_state.hovered, current_hovered_mesh);
                                     pick_state.hovered_previous = pick_state.hovered;
                                     pick_state.hovered = current_hovered_mesh;
                                 } else {
@@ -273,7 +282,6 @@ fn cursor_pick(
     if !hit_found && pick_state.hovered != None {
         pick_state.hovered_previous = pick_state.hovered;
         pick_state.hovered = None;
-        println!("{:?} to {:?}", pick_state.hovered_previous, pick_state.hovered);
     }
 }
 
