@@ -61,7 +61,11 @@ fn pick_highlighting(
     // Resources
     mut pick_state: ResMut<MousePicking>,
     // Queries
-    mut query: Query<(&mut Selectable, &mut Handle<StandardMaterial>, &Handle<Mesh>)>,
+    mut query: Query<(
+        &mut Selectable,
+        &mut Handle<StandardMaterial>,
+        &Handle<Mesh>,
+    )>,
 ) {
     for (mut selectable, mut matl_handle, mesh_handle) in &mut query.iter() {
         if let None = selectable.material_default {
@@ -143,7 +147,10 @@ fn pick_selection(
         }
     }
     // If nothing is being hovered and the user clicks, deselect the current mesh.
-    if pick_state.hovered == None && mouse_button_inputs.pressed(MouseButton::Left) {
+    if pick_state.hovered == None
+        && mouse_button_inputs.pressed(MouseButton::Left)
+        && pick_state.selected != None
+    {
         println!("Cleared selected state");
         pick_state.selected_previous = pick_state.selected;
         pick_state.selected = None;
@@ -157,10 +164,7 @@ fn cursor_pick(
     meshes: Res<Assets<Mesh>>,
     windows: Res<Windows>,
     // Queries
-    mut mesh_query: Query<(
-        &Handle<Mesh>,
-        &Transform,
-    )>,
+    mut mesh_query: Query<(&Handle<Mesh>, &Transform)>,
     mut camera_query: Query<(&Transform, &Camera)>,
 ) {
     // To start, assume noting is being hovered.
@@ -188,8 +192,7 @@ fn cursor_pick(
     }
 
     // Iterate through each selectable mesh in the scene
-    'mesh_loop: for (mesh_handle, transform) in &mut mesh_query.iter()
-    {
+    'mesh_loop: for (mesh_handle, transform) in &mut mesh_query.iter() {
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
             if mesh.primitive_topology != PrimitiveTopology::TriangleList {
