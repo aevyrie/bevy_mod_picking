@@ -87,13 +87,13 @@ fn pick_highlighting(
                     *matl_handle = pick_state.selected_material;
                 }
             }
-        } else {
-            if let Some(selected) = pick_state.selected {
-                if *mesh_handle == selected {
-                    *matl_handle = pick_state.selected_material;
-                }
+        }
+        if let Some(selected) = pick_state.selected {
+            if *mesh_handle == selected {
+                *matl_handle = pick_state.selected_material;
             }
         }
+
         // MousePicking hovered_previous is only filled if the hovered item has changed. If so, the
         // hovered_previous material needs to be reset to its default material.
         if let Some(previous) = pick_state.hovered_previous {
@@ -109,11 +109,10 @@ fn pick_highlighting(
                     *matl_handle = pick_state.hovered_material;
                 }
             }
-        } else {
-            if let Some(hovered) = pick_state.hovered {
-                if *mesh_handle == hovered {
-                    *matl_handle = pick_state.hovered_material;
-                }
+        }
+        if let Some(hovered) = pick_state.hovered {
+            if *mesh_handle == hovered {
+                *matl_handle = pick_state.hovered_material;
             }
         }
     }
