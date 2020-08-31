@@ -139,6 +139,7 @@ fn pick_selection(
             if *mesh_handle == hovered && mouse_button_inputs.pressed(MouseButton::Left) {
                 // If there is a previously selected mesh, we need to clear it.
                 if Some(*mesh_handle) != pick_state.selected {
+                    println!("Selecting mesh {:?}", *mesh_handle);
                     pick_state.selected_previous = pick_state.selected;
                     // Set the current mesh as the selected mesh.
                     pick_state.selected = Some(*mesh_handle)
@@ -250,7 +251,7 @@ fn cursor_pick(
                             &Vec2::new(triangle[1].x(), triangle[1].y()),
                             &Vec2::new(triangle[2].x(), triangle[2].y()),
                         ) {
-                            println!("HIT! {}", mesh_handle.id.0);
+                            //println!("HIT! {}", mesh_handle.id.0);
                             hit_found = true;
                             // if the hovered mesh has changed, update the pick state
                             let current_hovered_mesh = Some(*mesh_handle);
@@ -277,6 +278,7 @@ fn cursor_pick(
     if !hit_found {
         pick_state.hovered_previous = pick_state.hovered;
         pick_state.hovered = None;
+        println!("{:?} to {:?}", pick_state.hovered_previous, pick_state.hovered);
     }
 }
 
