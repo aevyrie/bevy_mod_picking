@@ -161,7 +161,7 @@ fn cursor_pick(
     mut camera_query: Query<(&Transform, &Camera)>,
 ) {
     // To start, assume noting is being hovered.
-    pick_state.hovered = None;
+    let hit_found = false;
 
     // Get the cursor position
     let cursor_pos_screen: Vec2 = match pick_state.cursor_event_reader.latest(&cursor) {
@@ -248,7 +248,7 @@ fn cursor_pick(
                             // if the hovered mesh has changed, update the pick state
                             let current_hovered_mesh = Some(*mesh_handle);
                             if pick_state.hovered != current_hovered_mesh {
-                                println!("Updating pick_state hovered mesh");
+                                println!("{:?} to {:?}", pick_state.hovered, current_hovered_mesh);
                                 pick_state.hovered_previous = pick_state.hovered;
                                 pick_state.hovered = current_hovered_mesh;
                             } else {
@@ -266,6 +266,10 @@ fn cursor_pick(
             }
             //println!("No collision in {}", mesh_handle.id.0);
         }
+    }
+    if !hit_found {
+        pick_state.hovered_previous = pick_state.hovered;
+        pick_state.hovered = None;
     }
 }
 
