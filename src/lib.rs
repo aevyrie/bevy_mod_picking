@@ -64,14 +64,8 @@ fn pick_highlighting(
     mut query: Query<(&mut Selectable, &mut Handle<StandardMaterial>, &Handle<Mesh>)>,
 ) {
     for (mut selectable, mut matl_handle, mesh_handle) in &mut query.iter() {
-        if let Some(hovered) = pick_state.hovered {
-            if *mesh_handle == hovered {
-                // If the current mesh hasn't stored it's default material, we need to
-                // do that now so it can be reset once it is no longer being hovered.
-                if let None = selectable.material_default {
-                    selectable.material_default = Some(*matl_handle);
-                }
-            }
+        if let None = selectable.material_default {
+            selectable.material_default = Some(*matl_handle);
         }
 
         // MousePicking selected_previous is only filled if the selected item changed. If so, the
