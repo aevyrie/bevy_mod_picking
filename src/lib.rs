@@ -14,6 +14,15 @@ mod tests {
     }
 }
 
+pub struct ModPicking;
+impl Plugin for ModPicking {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_system(cursor_pick.system())
+            .add_system(pick_selection.system())
+            .add_system(pick_highlighting.system());
+    }
+}
+
 pub struct MousePicking {
     // Collects cursor position on screen in x/y
     cursor_event_reader: EventReader<CursorMoved>,
@@ -36,14 +45,6 @@ impl Default for Selectable {
         Selectable {
             material_default: None,
         }
-    }
-}
-
-impl Plugin for MousePicking {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_system(cursor_pick.system())
-            .add_system(pick_selection.system())
-            .add_system(pick_highlighting.system());
     }
 }
 
