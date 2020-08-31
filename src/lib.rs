@@ -155,9 +155,7 @@ fn cursor_pick(
     windows: Res<Windows>,
     // Queries
     mut mesh_query: Query<(
-        &mut Selectable,
         &Handle<Mesh>,
-        &mut Handle<StandardMaterial>,
         &Transform,
     )>,
     mut camera_query: Query<(&Transform, &Camera)>,
@@ -187,7 +185,7 @@ fn cursor_pick(
     }
 
     // Iterate through each selectable mesh in the scene
-    'mesh_loop: for (mut selectable, mesh_handle, matl_handle, transform) in &mut mesh_query.iter()
+    'mesh_loop: for (mesh_handle, transform) in &mut mesh_query.iter()
     {
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
@@ -246,15 +244,16 @@ fn cursor_pick(
                             &Vec2::new(triangle[1].x(), triangle[1].y()),
                             &Vec2::new(triangle[2].x(), triangle[2].y()),
                         ) {
+                            println!("HIT! {}", mesh_handle.id.0);
                             // if the hovered mesh has changed, update the pick state
                             let current_hovered_mesh = Some(*mesh_handle);
                             if pick_state.hovered != current_hovered_mesh {
+                                println!("Updating pick_state hovered mesh");
                                 pick_state.hovered_previous = pick_state.hovered;
-                                pick_state.hovered = current_hovered_mesh
+                                pick_state.hovered = current_hovered_mesh;
                             } else {
                                 pick_state.hovered_previous = None;
                             }
-                            println!("HIT! {}", mesh_handle.id.0);
                             continue 'mesh_loop;
                         }
                     }
@@ -265,7 +264,7 @@ fn cursor_pick(
                     mesh_handle, mesh
                 );
             }
-            println!("No collision in {}", mesh_handle.id.0);
+            //println!("No collision in {}", mesh_handle.id.0);
         }
     }
 }
