@@ -60,6 +60,7 @@ impl Default for Selectable {
 fn pick_highlighting(
     // Resources
     pick_state: ResMut<MousePicking>,
+    materials: Res<Assets<StandardMaterial>>,
     // Queries
     mut query: Query<(
         &mut Selectable,
@@ -92,7 +93,6 @@ fn pick_highlighting(
                     match selectable.material_default {
                         Some(default_matl) => {
                             *matl_handle = default_matl;
-                            println!("Select material: {:?}", selectable.material_default);
                         }
                         None => panic!("Default material not set for previously selected mesh"),
                     }
@@ -101,7 +101,6 @@ fn pick_highlighting(
             if let Some(selected) = pick_state.selected {
                 if *mesh_handle == selected {
                     *matl_handle = pick_state.selected_material;
-                    println!("Select material: {:?}", pick_state.selected_material);
                 }
             }
         }
@@ -113,7 +112,7 @@ fn pick_highlighting(
                 if *mesh_handle == previous {
                     match selectable.material_default {
                         Some(default_matl) => {
-                            println!("Hover material: {:?}", selectable.material_default);
+                            //println!("Hover material: {:?}", selectable.material_default);
                             *matl_handle = default_matl;
                         }
                         None => panic!("Default material not set for previously hovered mesh"),
@@ -127,6 +126,7 @@ fn pick_highlighting(
                 }
             }
         }
+        println!("Material: {:?}", materials.get(&*matl_handle).unwrap().albedo);
     }
 }
 
