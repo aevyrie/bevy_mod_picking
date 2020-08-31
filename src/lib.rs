@@ -61,9 +61,19 @@ fn pick_highlighting(
     // Resources
     mut pick_state: ResMut<MousePicking>,
     // Queries
-    mut query: Query<(&Selectable, &mut Handle<StandardMaterial>, &Handle<Mesh>)>,
+    mut query: Query<(&mut Selectable, &mut Handle<StandardMaterial>, &Handle<Mesh>)>,
 ) {
-    for (selectable, mut matl_handle, mesh_handle) in &mut query.iter() {
+    for (mut selectable, mut matl_handle, mesh_handle) in &mut query.iter() {
+        if let Some(hovered) = pick_state.hovered {
+            if *mesh_handle == hovered {
+                // If the current mesh hasn't stored it's default material, we need to
+                // do that now so it can be reset once it is no longer being hovered.
+                if let None = selectable.material_default {
+                    selectable.material_default = Some(*matl_handle);
+                }
+            }
+        }
+
         // MousePicking selected_previous is only filled if the selected item changed. If so, the
         // selected_previous material needs to be reset to its default material.
         if let Some(previous) = pick_state.selected_previous {
@@ -75,6 +85,12 @@ fn pick_highlighting(
                     None => panic!("Default material not set for previously selected mesh"),
                 }
             } else if let Some(selected) = pick_state.selected {
+                if *mesh_handle == selected {
+                    *matl_handle = pick_state.selected_material;
+                }
+            }
+        } else {
+            if let Some(selected) = pick_state.selected {
                 if *mesh_handle == selected {
                     *matl_handle = pick_state.selected_material;
                 }
@@ -91,6 +107,12 @@ fn pick_highlighting(
                     None => panic!("Default material not set for previously selected mesh"),
                 }
             } else if let Some(hovered) = pick_state.hovered {
+                if *mesh_handle == hovered {
+                    *matl_handle = pick_state.hovered_material;
+                }
+            }
+        } else {
+            if let Some(hovered) = pick_state.hovered {
                 if *mesh_handle == hovered {
                     *matl_handle = pick_state.hovered_material;
                 }
@@ -230,12 +252,6 @@ fn cursor_pick(
                             &Vec2::new(triangle[1].x(), triangle[1].y()),
                             &Vec2::new(triangle[2].x(), triangle[2].y()),
                         ) {
-                            // If the current mesh hasn't stored it's default material, we need to
-                            // do that now so it can be reset once it is no longer being hovered.
-                            match selectable.material_default {
-                                None => selectable.material_default = Some(*matl_handle),
-                                Some(_) => {}
-                            }
                             // if the hovered mesh has changed, update the pick state
                             let current_hovered_mesh = Some(*mesh_handle);
                             if pick_state.hovered != current_hovered_mesh {
