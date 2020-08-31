@@ -126,7 +126,11 @@ fn pick_highlighting(
                 }
             }
         }
-        println!("Material: {:?}", materials.get(&*matl_handle).unwrap().albedo);
+        if pick_state.hovered != pick_state.hovered_previous ||
+            pick_state.selected != pick_state.selected_previous
+        {
+            println!("Material: {:?}", materials.get(&*matl_handle).unwrap().albedo);
+        }
     }
 }
 
