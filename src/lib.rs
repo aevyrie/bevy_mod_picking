@@ -19,8 +19,8 @@ impl Plugin for ModPicking {
 pub struct MousePicking {
     // Collects cursor position on screen in x/y
     cursor_event_reader: EventReader<CursorMoved>,
-    hovered_material: Handle<StandardMaterial>,
-    selected_material: Handle<StandardMaterial>,
+    pub hovered_material: Handle<StandardMaterial>,
+    pub selected_material: Handle<StandardMaterial>,
     hovered: Option<Handle<Mesh>>,
     hovered_previous: Option<Handle<Mesh>>,
     selected: Option<Handle<Mesh>>,
