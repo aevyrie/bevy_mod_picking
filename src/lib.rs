@@ -274,7 +274,7 @@ fn cursor_pick(
             //println!("No collision in {}", mesh_handle.id.0);
         }
     }
-    if !hit_found {
+    if !hit_found && pick_state.hovered != None {
         pick_state.hovered_previous = pick_state.hovered;
         pick_state.hovered = None;
         println!("{:?} to {:?}", pick_state.hovered_previous, pick_state.hovered);
