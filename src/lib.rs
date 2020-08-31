@@ -92,6 +92,7 @@ fn pick_highlighting(
                     match selectable.material_default {
                         Some(default_matl) => {
                             *matl_handle = default_matl;
+                            println!("Select material: {:?}", selectable.material_default);
                         }
                         None => panic!("Default material not set for previously selected mesh"),
                     }
@@ -112,6 +113,7 @@ fn pick_highlighting(
                 if *mesh_handle == previous {
                     match selectable.material_default {
                         Some(default_matl) => {
+                            println!("Hover material: {:?}", selectable.material_default);
                             *matl_handle = default_matl;
                         }
                         None => panic!("Default material not set for previously hovered mesh"),
@@ -137,6 +139,7 @@ fn pick_selection(
     // Queries
     mut query: Query<(&Handle<Mesh>, &Selectable)>,
 ) {
+    let mut selection_made = false;
     for (mesh_handle, _selectable) in &mut query.iter() {
         if let Some(hovered) = pick_state.hovered {
             // If the current mesh is the one being hovered over, and the left mouse button is
@@ -144,7 +147,8 @@ fn pick_selection(
             if *mesh_handle == hovered && mouse_button_inputs.pressed(MouseButton::Left) {
                 pick_state.selected_previous = pick_state.selected;
                 // Set the current mesh as the selected mesh.
-                pick_state.selected = Some(*mesh_handle)
+                pick_state.selected = Some(*mesh_handle);
+                selection_made = true;
             }
         }
     }
@@ -155,6 +159,10 @@ fn pick_selection(
     {
         pick_state.selected_previous = pick_state.selected;
         pick_state.selected = None;
+        selection_made = true;
+    }
+    if !selection_made {
+        pick_state.selected_previous = pick_state.selected;
     }
 }
 
