@@ -135,9 +135,9 @@ fn pick_selection(
     mut pick_state: ResMut<MousePicking>,
     mouse_button_inputs: Res<Input<MouseButton>>,
     // Queries
-    mut query: Query<&Handle<Mesh>>,
+    mut query: Query<(&Handle<Mesh>, &Selectable)>,
 ) {
-    for mesh_handle in &mut query.iter() {
+    for (mesh_handle, _selectable) in &mut query.iter() {
         if let Some(hovered) = pick_state.hovered {
             // If the current mesh is the one being hovered over, and the left mouse button is
             // down, set the current mesh to selected.
@@ -168,7 +168,7 @@ fn cursor_pick(
     meshes: Res<Assets<Mesh>>,
     windows: Res<Windows>,
     // Queries
-    mut mesh_query: Query<(&Handle<Mesh>, &Transform)>,
+    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &Selectable)>,
     mut camera_query: Query<(&Transform, &Camera)>,
 ) {
     // To start, assume noting is being hovered.
@@ -197,7 +197,7 @@ fn cursor_pick(
     }
 
     // Iterate through each selectable mesh in the scene
-    'mesh_loop: for (mesh_handle, transform) in &mut mesh_query.iter() {
+    'mesh_loop: for (mesh_handle, transform, _selectable) in &mut mesh_query.iter() {
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
             if mesh.primitive_topology != PrimitiveTopology::TriangleList {
