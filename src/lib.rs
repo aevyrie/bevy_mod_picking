@@ -109,7 +109,7 @@ fn pick_highlighting(
         // hovered_previous material needs to be reset to its default material.
         if pick_state.hovered != pick_state.hovered_previous {
             if let Some(previous) = pick_state.hovered_previous {
-                if *mesh_handle == previous {
+                if *mesh_handle == previous && pick_state.selected != Some(*mesh_handle){
                     match selectable.material_default {
                         Some(default_matl) => {
                             //println!("Hover material: {:?}", selectable.material_default);
