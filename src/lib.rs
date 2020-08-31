@@ -6,18 +6,11 @@ use bevy::{
     window::CursorMoved,
 };
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
-
 pub struct ModPicking;
 impl Plugin for ModPicking {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(cursor_pick.system())
+        app.init_resource::<MousePicking>()
+            .add_system(cursor_pick.system())
             .add_system(pick_selection.system())
             .add_system(pick_highlighting.system());
     }
@@ -32,6 +25,20 @@ pub struct MousePicking {
     hovered_previous: Option<Handle<Mesh>>,
     selected: Option<Handle<Mesh>>,
     selected_previous: Option<Handle<Mesh>>,
+}
+
+impl Default for MousePicking {
+    fn default() -> Self {
+        MousePicking {
+            cursor_event_reader: EventReader::default(),
+            hovered_material: Handle::default(),
+            selected_material: Handle::default(),
+            hovered: None,
+            hovered_previous: None,
+            selected: None,
+            selected_previous: None,
+        }
+    }
 }
 
 /// Marks an entity as selectable for picking
@@ -164,8 +171,7 @@ fn cursor_pick(
     }
 
     // Iterate through each selectable mesh in the scene
-    'mesh_loop: for (mut selectable, mesh_handle, matl_handle, transform) in
-        &mut mesh_query.iter()
+    'mesh_loop: for (mut selectable, mesh_handle, matl_handle, transform) in &mut mesh_query.iter()
     {
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
