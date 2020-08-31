@@ -125,7 +125,6 @@ fn pick_highlighting(
             if let Some(hovered) = pick_state.hovered {
                 if *mesh_handle == hovered {
                     *matl_handle = pick_state.hovered_material;
-                    println!("Hover material: {:?}", pick_state.hovered_material);
                 }
             }
         }
@@ -272,7 +271,7 @@ fn cursor_pick(
                                 hit_depth = triangle[0].z();
                                 //println!("HIT! {}", mesh_handle.id.0);
                                 hit_found = true;
-                                println!("hit depth: {}", hit_depth);
+                                //println!("hit depth: {}", hit_depth);
                                 // if the hovered mesh has changed, update the pick state
                                 current_hovered_mesh = Some(*mesh_handle);
                                 continue 'mesh_loop;
