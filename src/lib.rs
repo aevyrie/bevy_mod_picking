@@ -92,7 +92,7 @@ fn pick_highlighting(
                 if *mesh_handle == previous {
                     match selectable.material_default {
                         Some(default_matl) => {
-                            *matl_handle = default_matl;
+                            *matl_handle = default_matl.clone();
                         }
                         None => panic!("Default material not set for previously selected mesh"),
                     }
@@ -100,7 +100,7 @@ fn pick_highlighting(
             }
             if let Some(selected) = pick_state.selected {
                 if *mesh_handle == selected {
-                    *matl_handle = pick_state.selected_material;
+                    *matl_handle = pick_state.selected_material.clone();
                 }
             }
         }
@@ -113,18 +113,18 @@ fn pick_highlighting(
                     match selectable.material_default {
                         Some(default_matl) => {
                             //println!("Hover material: {:?}", selectable.material_default);
-                            *matl_handle = default_matl;
+                            *matl_handle = default_matl.clone();
                         }
                         None => panic!("Default material not set for previously hovered mesh"),
                     }
                 }
             }
             if pick_state.selected == Some(*mesh_handle) {
-                *matl_handle = pick_state.selected_material;
+                *matl_handle = pick_state.selected_material.clone();
             }
             if let Some(hovered) = pick_state.hovered {
                 if *mesh_handle == hovered {
-                    *matl_handle = pick_state.hovered_material;
+                    *matl_handle = pick_state.hovered_material.clone();
                 }
             }
         }
