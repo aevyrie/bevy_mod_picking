@@ -59,7 +59,7 @@ impl Default for Selectable {
 /// appropriate materials.
 fn pick_highlighting(
     // Resources
-    mut pick_state: ResMut<MousePicking>,
+    pick_state: ResMut<MousePicking>,
     // Queries
     mut query: Query<(
         &mut Selectable,
@@ -126,10 +126,6 @@ fn pick_highlighting(
             }
         }
     }
-    // The picking highlighting process is complete, the `_previous` variables can now be reset, as
-    // they are only used to inform the system that their materials need to be set to default.
-    pick_state.hovered_previous = None;
-    pick_state.selected_previous = None;
 }
 
 /// Given the currently hovered mesh, checks for a user click and if detected, sets the selected
