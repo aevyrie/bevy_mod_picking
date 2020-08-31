@@ -161,7 +161,7 @@ fn cursor_pick(
     mut camera_query: Query<(&Transform, &Camera)>,
 ) {
     // To start, assume noting is being hovered.
-    let hit_found = false;
+    let mut hit_found = false;
 
     // Get the cursor position
     let cursor_pos_screen: Vec2 = match pick_state.cursor_event_reader.latest(&cursor) {
@@ -245,6 +245,7 @@ fn cursor_pick(
                             &Vec2::new(triangle[2].x(), triangle[2].y()),
                         ) {
                             println!("HIT! {}", mesh_handle.id.0);
+                            hit_found = true;
                             // if the hovered mesh has changed, update the pick state
                             let current_hovered_mesh = Some(*mesh_handle);
                             if pick_state.hovered != current_hovered_mesh {
