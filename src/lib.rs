@@ -264,8 +264,6 @@ fn cursor_pick(
                                 if pick_state.hovered != current_hovered_mesh {
                                     pick_state.hovered_previous = pick_state.hovered;
                                     pick_state.hovered = current_hovered_mesh;
-                                } else {
-                                    pick_state.hovered_previous = None;
                                 }
                                 continue 'mesh_loop;
                             }
