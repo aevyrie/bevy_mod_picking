@@ -104,7 +104,7 @@ fn pick_highlighting(
                     Some(default_matl) => {
                         *matl_handle = default_matl;
                     }
-                    None => panic!("Default material not set for previously selected mesh"),
+                    None => panic!("Default material not set for previously hovered mesh"),
                 }
             } else if let Some(hovered) = pick_state.hovered {
                 if *mesh_handle == hovered {
