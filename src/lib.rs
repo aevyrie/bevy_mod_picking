@@ -134,14 +134,17 @@ fn pick_selection(
             // down, set the current mesh to selected.
             if *mesh_handle == hovered && mouse_button_inputs.pressed(MouseButton::Left) {
                 // If there is a previously selected mesh, we need to clear it.
-                pick_state.selected_previous = pick_state.selected;
-                // Set the current mesh as the selected mesh.
-                pick_state.selected = Some(*mesh_handle)
+                if Some(*mesh_handle) != pick_state.selected {
+                    pick_state.selected_previous = pick_state.selected;
+                    // Set the current mesh as the selected mesh.
+                    pick_state.selected = Some(*mesh_handle)
+                }
             }
         }
     }
     // If nothing is being hovered and the user clicks, deselect the current mesh.
     if pick_state.hovered == None && mouse_button_inputs.pressed(MouseButton::Left) {
+        println!("Cleared selected state");
         pick_state.selected_previous = pick_state.selected;
         pick_state.selected = None;
     }
