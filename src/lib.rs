@@ -82,12 +82,11 @@ fn pick_highlighting(
                     }
                     None => panic!("Default material not set for previously selected mesh"),
                 }
-            }
-        }
-        if let Some(selected) = pick_state.selected {
-            if *mesh_handle == selected {
-                *matl_handle = pick_state.selected_material;
-                println!("Select material: {:?}", pick_state.selected_material);
+            } else if let Some(selected) = pick_state.selected {
+                if *mesh_handle == selected {
+                    *matl_handle = pick_state.selected_material;
+                    println!("Select material: {:?}", pick_state.selected_material);
+                }
             }
         }
 
@@ -101,12 +100,11 @@ fn pick_highlighting(
                     }
                     None => panic!("Default material not set for previously hovered mesh"),
                 }
-            }
-        }
-        if let Some(hovered) = pick_state.hovered {
-            if *mesh_handle == hovered {
-                *matl_handle = pick_state.hovered_material;
-                println!("Hover material: {:?}", pick_state.hovered_material);
+            } else if let Some(hovered) = pick_state.hovered {
+                if *mesh_handle == hovered {
+                    *matl_handle = pick_state.hovered_material;
+                    println!("Hover material: {:?}", pick_state.hovered_material);
+                }
             }
         }
     }
