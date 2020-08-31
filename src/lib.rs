@@ -258,10 +258,8 @@ fn cursor_pick(
                                 hit_found = true;
                                 // if the hovered mesh has changed, update the pick state
                                 let current_hovered_mesh = Some(*mesh_handle);
-                                if pick_state.hovered != current_hovered_mesh {
-                                    pick_state.hovered_previous = pick_state.hovered;
-                                    pick_state.hovered = current_hovered_mesh;
-                                }
+                                pick_state.hovered_previous = pick_state.hovered;
+                                pick_state.hovered = current_hovered_mesh;
                                 continue 'mesh_loop;
                             }
                         }
