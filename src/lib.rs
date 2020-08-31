@@ -161,6 +161,7 @@ fn cursor_pick(
 ) {
     // To start, assume noting is being hovered.
     let mut hit_found = false;
+    let mut hit_depth = 0f32;
 
     // Get the cursor position
     let cursor_pos_screen: Vec2 = match pick_state.cursor_event_reader.latest(&cursor) {
@@ -242,18 +243,21 @@ fn cursor_pick(
                             &Vec2::new(triangle[1].x(), triangle[1].y()),
                             &Vec2::new(triangle[2].x(), triangle[2].y()),
                         ) {
-                            //println!("HIT! {}", mesh_handle.id.0);
-                            hit_found = true;
-                            // if the hovered mesh has changed, update the pick state
-                            let current_hovered_mesh = Some(*mesh_handle);
-                            if pick_state.hovered != current_hovered_mesh {
-                                println!("{:?} to {:?}", pick_state.hovered, current_hovered_mesh);
-                                pick_state.hovered_previous = pick_state.hovered;
-                                pick_state.hovered = current_hovered_mesh;
-                            } else {
-                                pick_state.hovered_previous = None;
+                            if !hit_found || triangle[0].z() > hit_depth {
+                                hit_depth = triangle[0].z();
+                                //println!("HIT! {}", mesh_handle.id.0);
+                                hit_found = true;
+                                // if the hovered mesh has changed, update the pick state
+                                let current_hovered_mesh = Some(*mesh_handle);
+                                if pick_state.hovered != current_hovered_mesh {
+                                    println!("{:?} to {:?}", pick_state.hovered, current_hovered_mesh);
+                                    pick_state.hovered_previous = pick_state.hovered;
+                                    pick_state.hovered = current_hovered_mesh;
+                                } else {
+                                    pick_state.hovered_previous = None;
+                                }
+                                continue 'mesh_loop;
                             }
-                            continue 'mesh_loop;
                         }
                     }
                 }
