@@ -186,6 +186,7 @@ fn cursor_pick(
     // To start, assume noting is being hovered.
     let mut hit_found = false;
     let mut hit_depth = 0f32;
+    let mut current_hovered_mesh: Option<Handle<Mesh>> = None;
 
     // Get the cursor position
     let cursor_pos_screen: Vec2 = match pick_state.cursor_event_reader.latest(&cursor) {
@@ -267,14 +268,13 @@ fn cursor_pick(
                             &Vec2::new(triangle[1].x(), triangle[1].y()),
                             &Vec2::new(triangle[2].x(), triangle[2].y()),
                         ) {
-                            if !hit_found || triangle[0].z() > hit_depth {
+                            if !hit_found || triangle[0].z() < hit_depth {
                                 hit_depth = triangle[0].z();
                                 //println!("HIT! {}", mesh_handle.id.0);
                                 hit_found = true;
+                                println!("hit depth: {}", hit_depth);
                                 // if the hovered mesh has changed, update the pick state
-                                let current_hovered_mesh = Some(*mesh_handle);
-                                pick_state.hovered_previous = pick_state.hovered;
-                                pick_state.hovered = current_hovered_mesh;
+                                current_hovered_mesh = Some(*mesh_handle);
                                 continue 'mesh_loop;
                             }
                         }
@@ -289,9 +289,12 @@ fn cursor_pick(
             //println!("No collision in {}", mesh_handle.id.0);
         }
     }
+
+    pick_state.hovered_previous = pick_state.hovered;
     if !hit_found {
-        pick_state.hovered_previous = pick_state.hovered;
         pick_state.hovered = None;
+    } else  {
+        pick_state.hovered = current_hovered_mesh;
     }
 }
 
