@@ -3,6 +3,7 @@ use bevy::{
     render::camera::Camera,
     render::mesh::{VertexAttribute, VertexAttributeValues},
     render::pipeline::PrimitiveTopology,
+    render::color::Color,
     window::CursorMoved,
 };
 
@@ -19,38 +20,49 @@ impl Plugin for ModPicking {
 pub struct MousePicking {
     // Collects cursor position on screen in x/y
     cursor_event_reader: EventReader<CursorMoved>,
-    pub hovered_material: Handle<StandardMaterial>,
-    pub selected_material: Handle<StandardMaterial>,
-    hovered: Option<Handle<Mesh>>,
+    // MousePicking appearance Settings
+    pub hover_color: Color,
+    pub selected_color: Color,
+    // List of items from current ray cast
+    pick_list: Vec<Handle<Mesh>>,
+    // Internal state
+    hovered_next: Option<Handle<Mesh>>,
     hovered_previous: Option<Handle<Mesh>>,
-    selected: Option<Handle<Mesh>>,
-    selected_previous: Option<Handle<Mesh>>,
+    selected_next: Vec<Handle<Mesh>>,
+    selected_previous: Vec<Handle<Mesh>>,
+}
+impl MousePicking {
+    pub fn list(&self) -> Vec<Handle<Mesh>> {
+        self.pick_list.clone()
+    }
 }
 
 impl Default for MousePicking {
     fn default() -> Self {
         MousePicking {
             cursor_event_reader: EventReader::default(),
-            hovered_material: Handle::default(),
-            selected_material: Handle::default(),
-            hovered: None,
+            hover_color: Color::rgb(0.3, 0.5, 0.8),
+            selected_color: Color::rgb(0.3, 0.8, 0.5),
+            pick_list: Vec::new(),
+            hovered_next: None,
             hovered_previous: None,
-            selected: None,
-            selected_previous: None,
+            selected_next: Vec::new(),
+            selected_previous: Vec::new(),
         }
     }
 }
 
 /// Marks an entity as selectable for picking
 pub struct Selectable {
-    // Stores the base material of a previously selected/hovered mesh
-    material_default: Option<Handle<StandardMaterial>>,
+    // Stores the initial color of the material prior to selecting/hovering
+    initial_color: Color,
+    bounding_sphere: 
 }
 
-impl Default for Selectable {
-    fn default() -> Self {
+impl Selectable {
+    fn new(parent_material: &StandardMaterial) -> Self {
         Selectable {
-            material_default: None,
+            initial_color: parent_material.albedo,
         }
     }
 }
@@ -85,8 +97,6 @@ fn pick_highlighting(
             selectable.material_default = Some(*matl_handle);
         }
 
-        // MousePicking selected_previous is only filled if the selected item changed. If so, the
-        // selected_previous material needs to be reset to its default material.
         if pick_state.selected != pick_state.selected_previous {
             if let Some(previous) = pick_state.selected_previous {
                 if *mesh_handle == previous {
@@ -105,8 +115,6 @@ fn pick_highlighting(
             }
         }
 
-        // MousePicking hovered_previous is only filled if the hovered item has changed. If so, the
-        // hovered_previous material needs to be reset to its default material.
         if pick_state.hovered != pick_state.hovered_previous {
             if let Some(previous) = pick_state.hovered_previous {
                 if *mesh_handle == previous {
