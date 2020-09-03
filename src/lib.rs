@@ -7,75 +7,193 @@ use bevy::{
     window::CursorMoved,
 };
 
-pub struct ModPicking;
-impl Plugin for ModPicking {
+pub struct PickingPlugin;
+impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<MousePicking>()
-            .add_system(cursor_pick.system())
-            .add_system(pick_selection.system())
-            .add_system(pick_highlighting.system());
+        app.init_resource::<PickState>()
+            .add_system(pick_mesh.system())
+            //.add_system(select_mesh.system())
+            //.add_system(pick_highlighting.system())
+            ;
     }
 }
 
-pub struct MousePicking {
-    // Collects cursor position on screen in x/y
+pub struct PickState {
     cursor_event_reader: EventReader<CursorMoved>,
-    // MousePicking appearance Settings
-    pub hover_color: Color,
-    pub selected_color: Color,
-    // List of items from current ray cast
-    pick_list: Vec<Handle<Mesh>>,
-    // Internal state
-    hovered_next: Option<Handle<Mesh>>,
-    hovered_previous: Option<Handle<Mesh>>,
+    ordered_pick_list: Vec<PickDepth>,
+}
+
+impl PickState {
+    pub fn list(&self) -> &Vec<PickDepth> {
+        &self.ordered_pick_list
+    }
+}
+
+impl Default for PickState {
+    fn default() -> Self {
+        PickState {
+            cursor_event_reader: EventReader::default(),
+            ordered_pick_list: Vec::new(),
+        }
+    }
+}
+
+/// Holds the handle to a mesh as well as it's computed depth from a pick ray cast
+pub struct PickDepth {
+    mesh: Handle<Mesh>,
+    ndc_depth: f32,
+}
+impl PickDepth {
+    fn new(mesh: Handle<Mesh>, ndc_depth: f32) -> Self {
+        PickDepth{
+            mesh,
+            ndc_depth,
+        }
+    }
+}
+
+/// Holds a list of selected meshes by handle
+pub struct PickSelectionState {
     selected_next: Vec<Handle<Mesh>>,
     selected_previous: Vec<Handle<Mesh>>,
 }
-impl MousePicking {
-    pub fn list(&self) -> Vec<Handle<Mesh>> {
-        self.pick_list.clone()
+
+
+pub struct PickHighlightState {
+    hover_color: Color,
+    selection_color: Color,
+    // Used to track items highlighted in the last frame. This is compared against the
+    // current pick list to see which items need to have their highligh effect removed.
+    // TODO: use a Vec to *pop* items off when comparing, to reduce list size as items are
+    // matched? Instead of iterating over two vecs which remain the same size.
+    hovered_previous: Option<Handle<Mesh>>,
+}
+
+impl PickHighlightState {
+    fn set_hover_color(&mut self, color: Color) {
+        self.hover_color = color;
+    }
+    fn set_selection_color(&mut self, color: Color) {
+        self.selection_color = color;
     }
 }
 
-impl Default for MousePicking {
+impl Default for PickHighlightState {
     fn default() -> Self {
-        MousePicking {
-            cursor_event_reader: EventReader::default(),
+        PickHighlightState {
             hover_color: Color::rgb(0.3, 0.5, 0.8),
-            selected_color: Color::rgb(0.3, 0.8, 0.5),
-            pick_list: Vec::new(),
-            hovered_next: None,
+            selection_color: Color::rgb(0.3, 0.8, 0.5),
             hovered_previous: None,
-            selected_next: Vec::new(),
-            selected_previous: Vec::new(),
         }
     }
 }
 
-/// Marks an entity as selectable for picking
-pub struct Selectable {
-    // Stores the initial color of the material prior to selecting/hovering
+/// Marks an entity as pickable
+pub struct PickableMesh {
+    bounding_sphere: BoundSphere,
+}
+
+impl PickableMesh {
+    fn new(parent_mesh: &Mesh) -> Self {
+        PickableMesh {
+            bounding_sphere: BoundSphere::from(parent_mesh),
+        }
+    }
+    fn update_ndc_bounding_circle() {
+
+    }
+}
+
+/// Meshes with `SelectableMesh` will have selection state managed
+pub struct SelectablePickMesh;
+
+/// Meshes with `HighlightablePickMesh` will be highlighted when hovered over. If the mesh also has
+/// the `SelectablePickMesh` component, it will highlight when selected.
+pub struct HighlightablePickMesh {
+    // Stores the initial color of the mesh material prior to selecting/hovering
     initial_color: Color,
-    bounding_sphere: 
 }
 
-impl Selectable {
-    fn new(parent_material: &StandardMaterial) -> Self {
-        Selectable {
-            initial_color: parent_material.albedo,
+impl HighlightablePickMesh {
+    fn new(mesh_material: &StandardMaterial) -> Self {
+        HighlightablePickMesh {
+            initial_color: mesh_material.albedo,
         }
     }
 }
 
+// How to handle bounding spheres?
+// Need to update any time the mesh or its transform changes. Initial query of points remains valid
+// as long as the mesh and scale does not change. Ensure the sphere is centered on the mesh center,
+// so that changes to rotation do not affect the bounding sphere definition, and scale only affects
+// the radius. The mesh query should compute the distance of each point from the origin, and store
+// the maximum value as the radius.
+// In summary:
+// 1. query mesh to determine radius via max
+// 2. on setup, determine the NDC coordinates of the sphere using the entity's mesh translation,
+//    scale(radius), make sure to use the NDC z-coord to divide by w on the radius for perspective
+//    WARNING!!!!: rectilinear perpective warp means bounding sphere will be elliptical(?) need to add
+//    some buffer to ndc radius to account for this as a function of FOV and distance from the ndc 
+//    origin. This is a conic section. http://shaunlebron.github.io/visualizing-projections/
+//    perspective_scaling = sec(arctan(x*tan(b/2))) where b = fov in radians
+//    or sqrt(c*x^2+1) where c has some nonlinear relationship to fov. c = tan(b/2) is close but not
+//    identical: https://www.desmos.com/calculator/v0sf4wota5
+// 3. If the mesh changes, recompute the mesh_radius and ndc_def
+// 4. If the camera or mesh transforms change, update the ndc_def
+
+/// Defines a bounding sphere with a center point coordinate and a radius, used for picking
+struct BoundSphere {
+    mesh_radius: f32,
+    ndc_def: Option<NdcBoundingCircle>,
+}
+
+impl From<&Mesh> for BoundSphere {
+    fn from(mesh: &Mesh) -> Self {
+        let mut mesh_radius = 0f32;
+        if mesh.primitive_topology != PrimitiveTopology::TriangleList {
+            panic!("Non-TriangleList mesh supplied for bounding sphere generation")
+        }
+        let mut vertex_positions = Vec::new();
+        for attribute in mesh.attributes.iter() {
+            if attribute.name == VertexAttribute::POSITION {
+                vertex_positions = match &attribute.values {
+                    VertexAttributeValues::Float3(positions) => positions.clone(),
+                    _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
+                };
+            }
+        }
+        if let Some(indices) = &mesh.indices {
+            for index in indices.iter() {
+                mesh_radius = mesh_radius.max(Vec3::from(vertex_positions[*index as usize]).length());
+            }
+        }
+        BoundSphere {
+            mesh_radius,
+            ndc_def: None,
+        }
+    }
+}
+
+/// Created from a BoundSphere, this represents a circle that bounds the entity's mesh when the
+/// bounding sphere is projected onto the screen. Note this is not as simple as transforming the
+/// sphere's origin into ndc and copying the radius. Due to rectillinear projection, the sphere
+/// will be projected onto the screen as an ellipse if it is not perfectly centered at 0,0 in ndc.
+struct NdcBoundingCircle {
+    center: Vec2,
+    radius: f32,
+}
+
+
+/*
 /// Given the current selected and hovered meshes and provided materials, update the meshes with the
 /// appropriate materials.
 fn pick_highlighting(
     // Resources
-    pick_state: ResMut<MousePicking>,
+    pick_state: ResMut<PickingState>,
     materials: Res<Assets<StandardMaterial>>,
     // Queries
     mut query: Query<(
-        &mut Selectable,
+        &mut SelectableMesh,
         &mut Handle<StandardMaterial>,
         &Handle<Mesh>,
     )>,
@@ -146,9 +264,9 @@ fn pick_highlighting(
 
 /// Given the currently hovered mesh, checks for a user click and if detected, sets the selected
 /// mesh in the MousePicking state resource.
-fn pick_selection(
+fn select_mesh(
     // Resources
-    mut pick_state: ResMut<MousePicking>,
+    mut pick_state: ResMut<PickingState>,
     mouse_button_inputs: Res<Input<MouseButton>>,
     // Queries
     mut query: Query<(&Handle<Mesh>, &Selectable)>,
@@ -179,22 +297,20 @@ fn pick_selection(
         pick_state.selected_previous = pick_state.selected;
     }
 }
+*/
 
-fn cursor_pick(
+fn pick_mesh(
     // Resources
-    mut pick_state: ResMut<MousePicking>,
+    mut pick_state: ResMut<PickState>,
     cursor: Res<Events<CursorMoved>>,
     meshes: Res<Assets<Mesh>>,
     windows: Res<Windows>,
     // Queries
-    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &Selectable)>,
+    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh)>,
     mut camera_query: Query<(&Transform, &Camera)>,
 ) {
-    // To start, assume noting is being hovered.
-    let mut hit_found = false;
-    let mut hit_depth = 0f32;
-    let mut current_hovered_mesh: Option<Handle<Mesh>> = None;
-
+    pick_state.ordered_pick_list.clear();
+    
     // Get the cursor position
     let cursor_pos_screen: Vec2 = match pick_state.cursor_event_reader.latest(&cursor) {
         Some(cursor_moved) => cursor_moved.position,
@@ -217,12 +333,17 @@ fn cursor_pick(
     }
 
     // Iterate through each selectable mesh in the scene
-    'mesh_loop: for (mesh_handle, transform, _selectable) in &mut mesh_query.iter() {
+    for (mesh_handle, transform, _selectable) in &mut mesh_query.iter() {
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
             if mesh.primitive_topology != PrimitiveTopology::TriangleList {
                 continue;
             }
+
+            // The ray cast can hit the same mesh many times, so we need to track which hit is
+            // closest to the camera, and record that.
+            let mut hit_depth = f32::MAX;
+
             // We need to transform the mesh vertices' positions from the mesh space to the world
             // space using the mesh's transform, move it to the camera's space using the view
             // matrix (camera.inverse), and finally, apply the projection matrix. Because column
@@ -243,6 +364,7 @@ fn cursor_pick(
             // We have everything set up, now we can jump into the mesh's list of indices and
             // check triangles for cursor intersection.
             if let Some(indices) = &mesh.indices {
+                let mut hit_found = false;
                 // Now that we're in the vector of vertex indices, we want to look at the vertex
                 // positions for each triangle, so we'll take indices in chunks of three, where each
                 // chunk of three indices are references to the three vertices of a triangle.
@@ -275,33 +397,30 @@ fn cursor_pick(
                             &Vec2::new(triangle[1].x(), triangle[1].y()),
                             &Vec2::new(triangle[2].x(), triangle[2].y()),
                         ) {
-                            if !hit_found || triangle[0].z() < hit_depth {
+                            hit_found = true;
+                            if  triangle[0].z() < hit_depth {
                                 hit_depth = triangle[0].z();
-                                //println!("HIT! {}", mesh_handle.id.0);
-                                hit_found = true;
+                                println!("HIT! {}", mesh_handle.id.0);
                                 //println!("hit depth: {}", hit_depth);
                                 // if the hovered mesh has changed, update the pick state
-                                current_hovered_mesh = Some(*mesh_handle);
-                                continue 'mesh_loop;
                             }
                         }
                     }
                 }
+
+                if hit_found {
+                    pick_state.ordered_pick_list.push(
+                        PickDepth::new(*mesh_handle, hit_depth)
+                    );
+                }
+
             } else {
                 panic!(
                     "No index matrix found in mesh {:?}\n{:?}",
                     mesh_handle, mesh
                 );
             }
-            //println!("No collision in {}", mesh_handle.id.0);
         }
-    }
-
-    pick_state.hovered_previous = pick_state.hovered;
-    if !hit_found {
-        pick_state.hovered = None;
-    } else  {
-        pick_state.hovered = current_hovered_mesh;
     }
 }
 
