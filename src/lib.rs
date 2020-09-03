@@ -39,6 +39,7 @@ impl Default for PickState {
 }
 
 /// Holds the handle to a mesh as well as it's computed depth from a pick ray cast
+#[derive(Debug)]
 pub struct PickDepth {
     mesh: Handle<Mesh>,
     ndc_depth: f32,
@@ -53,11 +54,13 @@ impl PickDepth {
 }
 
 /// Holds a list of selected meshes by handle
+#[derive(Debug)]
 pub struct PickSelectionState {
     selected_next: Vec<Handle<Mesh>>,
     selected_previous: Vec<Handle<Mesh>>,
 }
 
+#[derive(Debug)]
 
 pub struct PickHighlightState {
     hover_color: Color,
@@ -89,6 +92,7 @@ impl Default for PickHighlightState {
 }
 
 /// Marks an entity as pickable
+#[derive(Debug)]
 pub struct PickableMesh {
     bounding_sphere: BoundSphere,
 }
@@ -105,10 +109,12 @@ impl PickableMesh {
 }
 
 /// Meshes with `SelectableMesh` will have selection state managed
+#[derive(Debug)]
 pub struct SelectablePickMesh;
 
 /// Meshes with `HighlightablePickMesh` will be highlighted when hovered over. If the mesh also has
 /// the `SelectablePickMesh` component, it will highlight when selected.
+#[derive(Debug)]
 pub struct HighlightablePickMesh {
     // Stores the initial color of the mesh material prior to selecting/hovering
     initial_color: Color,
@@ -142,6 +148,7 @@ impl HighlightablePickMesh {
 // 4. If the camera or mesh transforms change, update the ndc_def
 
 /// Defines a bounding sphere with a center point coordinate and a radius, used for picking
+#[derive(Debug)]
 struct BoundSphere {
     mesh_radius: f32,
     ndc_def: Option<NdcBoundingCircle>,
@@ -178,6 +185,7 @@ impl From<&Mesh> for BoundSphere {
 /// bounding sphere is projected onto the screen. Note this is not as simple as transforming the
 /// sphere's origin into ndc and copying the radius. Due to rectillinear projection, the sphere
 /// will be projected onto the screen as an ellipse if it is not perfectly centered at 0,0 in ndc.
+#[derive(Debug)]
 struct NdcBoundingCircle {
     center: Vec2,
     radius: f32,
@@ -400,7 +408,6 @@ fn pick_mesh(
                             hit_found = true;
                             if  triangle[0].z() < hit_depth {
                                 hit_depth = triangle[0].z();
-                                println!("HIT! {}", mesh_handle.id.0);
                                 //println!("hit depth: {}", hit_depth);
                                 // if the hovered mesh has changed, update the pick state
                             }
@@ -412,6 +419,7 @@ fn pick_mesh(
                     pick_state.ordered_pick_list.push(
                         PickDepth::new(*mesh_handle, hit_depth)
                     );
+                    println!("Mesh Pick: {:?}", pick_state.ordered_pick_list.last());
                 }
 
             } else {
