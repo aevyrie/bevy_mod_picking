@@ -322,6 +322,7 @@ fn pick_mesh(
     mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, &Entity)>,
     mut camera_query: Query<(&Transform, &Camera)>,
 ) {
+    println!("test");
     pick_state.ordered_pick_list.clear();
     
     // Get the cursor position
