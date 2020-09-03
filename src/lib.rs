@@ -94,7 +94,7 @@ pub struct PickableMesh {
 }
 
 impl PickableMesh {
-    fn new(parent_mesh: &Mesh) -> Self {
+    pub fn new(parent_mesh: &Mesh) -> Self {
         PickableMesh {
             bounding_sphere: BoundSphere::from(parent_mesh),
         }
@@ -115,7 +115,7 @@ pub struct HighlightablePickMesh {
 }
 
 impl HighlightablePickMesh {
-    fn new(mesh_material: &StandardMaterial) -> Self {
+    pub fn new(mesh_material: &StandardMaterial) -> Self {
         HighlightablePickMesh {
             initial_color: mesh_material.albedo,
         }
