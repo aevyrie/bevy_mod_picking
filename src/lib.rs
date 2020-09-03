@@ -361,17 +361,19 @@ fn pick_mesh(
             // space using the mesh's transform, move it to the camera's space using the view
             // matrix (camera.inverse), and finally, apply the projection matrix. Because column
             // matrices are evaluated right to left, we have to order it correctly:
-            let combined_transform = view_matrix * transform.value;
+            let mesh_to_cam_transform = view_matrix * transform.value;
 
             // Get the vertex positions from the mesh reference resolved from the mesh handle
+            /*
             let vertex_positions: Vec<[f32; 3]> = mesh.attributes.iter()
                 .filter(|attribute| attribute.name == VertexAttribute::POSITION)
                 .filter_map(|attribute| match &attribute.values {
                     VertexAttributeValues::Float3(positions) => Some(positions.clone()),
                     _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
                 }).last().unwrap();
+                */
 
-            /*
+            
             let mut vertex_positions = Vec::new();
             for attribute in mesh.attributes.iter() {
                 if attribute.name == VertexAttribute::POSITION {
@@ -380,7 +382,7 @@ fn pick_mesh(
                         _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
                     };
                 }
-            }*/
+            }
 
             // We have everything set up, now we can jump into the mesh's list of indices and
             // check triangles for cursor intersection.
@@ -404,7 +406,7 @@ fn pick_mesh(
                             let mut vertex_pos = Vec3::from(vertex_positions[index[i] as usize]);
                             // Transform the vertex to world space with the mesh transform, then
                             // into camera space with the view transform.
-                            vertex_pos = combined_transform.transform_point3(vertex_pos);
+                            vertex_pos = mesh_to_cam_transform.transform_point3(vertex_pos);
                             // This next part seems to be a bug with glam - it should do the divide
                             // by w perspective math for us, instead we have to do it manually.
                             // `glam` PR https://github.com/bitshifter/glam-rs/pull/75/files
