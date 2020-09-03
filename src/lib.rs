@@ -38,16 +38,16 @@ impl Default for PickState {
     }
 }
 
-/// Holds the handle to a mesh as well as it's computed depth from a pick ray cast
-#[derive(Debug)]
+/// Holds the entity associated with a mesh as well as it's computed depth from a pick ray cast
+#[derive(Debug, PartialOrd, PartialEq)]
 pub struct PickDepth {
-    mesh: Handle<Mesh>,
+    entity: Entity,
     ndc_depth: f32,
 }
 impl PickDepth {
-    fn new(mesh: Handle<Mesh>, ndc_depth: f32) -> Self {
+    fn new(entity: Entity, ndc_depth: f32) -> Self {
         PickDepth{
-            mesh,
+            entity,
             ndc_depth,
         }
     }
@@ -269,18 +269,23 @@ fn pick_highlighting(
         }
     }
 }
+*/
 
+/*
 /// Given the currently hovered mesh, checks for a user click and if detected, sets the selected
 /// mesh in the MousePicking state resource.
 fn select_mesh(
     // Resources
-    mut pick_state: ResMut<PickingState>,
+    mut pick_state: ResMut<PickState>,
     mouse_button_inputs: Res<Input<MouseButton>>,
     // Queries
-    mut query: Query<(&Handle<Mesh>, &Selectable)>,
+    mut query: Query<(&Handle<Mesh>, &PickableMesh)>,
 ) {
     let mut selection_made = false;
+    let mut pick_stack = pick_state.ordered_pick_list;
+    query.get(entity)
     for (mesh_handle, _selectable) in &mut query.iter() {
+
         if let Some(hovered) = pick_state.hovered {
             // If the current mesh is the one being hovered over, and the left mouse button is
             // down, set the current mesh to selected.
@@ -314,7 +319,7 @@ fn pick_mesh(
     meshes: Res<Assets<Mesh>>,
     windows: Res<Windows>,
     // Queries
-    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh)>,
+    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, &Entity)>,
     mut camera_query: Query<(&Transform, &Camera)>,
 ) {
     pick_state.ordered_pick_list.clear();
@@ -341,7 +346,7 @@ fn pick_mesh(
     }
 
     // Iterate through each selectable mesh in the scene
-    for (mesh_handle, transform, _selectable) in &mut mesh_query.iter() {
+    for (mesh_handle, transform, _selectable, entity) in &mut mesh_query.iter() {
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
             if mesh.primitive_topology != PrimitiveTopology::TriangleList {
@@ -359,6 +364,14 @@ fn pick_mesh(
             let combined_transform = view_matrix * transform.value;
 
             // Get the vertex positions from the mesh reference resolved from the mesh handle
+            let vertex_positions: Vec<[f32; 3]> = mesh.attributes.iter()
+                .filter(|attribute| attribute.name == VertexAttribute::POSITION)
+                .filter_map(|attribute| match &attribute.values {
+                    VertexAttributeValues::Float3(positions) => Some(positions.clone()),
+                    _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
+                }).last().unwrap();
+
+            /*
             let mut vertex_positions = Vec::new();
             for attribute in mesh.attributes.iter() {
                 if attribute.name == VertexAttribute::POSITION {
@@ -367,7 +380,7 @@ fn pick_mesh(
                         _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
                     };
                 }
-            }
+            }*/
 
             // We have everything set up, now we can jump into the mesh's list of indices and
             // check triangles for cursor intersection.
@@ -417,7 +430,7 @@ fn pick_mesh(
 
                 if hit_found {
                     pick_state.ordered_pick_list.push(
-                        PickDepth::new(*mesh_handle, hit_depth)
+                        PickDepth::new(*entity, hit_depth)
                     );
                     println!("Mesh Pick: {:?}", pick_state.ordered_pick_list.last());
                 }
@@ -430,6 +443,12 @@ fn pick_mesh(
             }
         }
     }
+
+    // Sort the pick list
+    pick_state
+        .ordered_pick_list
+        .sort_by(|a, b| a.partial_cmp(b)
+        .unwrap_or(std::cmp::Ordering::Equal));
 }
 
 /// Compute the area of a triangle given 2D vertex coordinates, "/2" removed to save an operation
