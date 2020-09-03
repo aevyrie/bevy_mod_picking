@@ -1,6 +1,7 @@
 # bevy_mod_picking
 
-3D mouse picking prototype for Bevy. Currently broken while I rework the API.
+3D mouse picking prototype for Bevy. 
+**Currently broken while I rework the API.**
 
 ## Notes
 
