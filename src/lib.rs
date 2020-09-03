@@ -364,16 +364,14 @@ fn pick_mesh(
             let mesh_to_cam_transform = view_matrix * transform.value;
 
             // Get the vertex positions from the mesh reference resolved from the mesh handle
-            /*
             let vertex_positions: Vec<[f32; 3]> = mesh.attributes.iter()
                 .filter(|attribute| attribute.name == VertexAttribute::POSITION)
                 .filter_map(|attribute| match &attribute.values {
                     VertexAttributeValues::Float3(positions) => Some(positions.clone()),
                     _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
                 }).last().unwrap();
-                */
 
-            
+            /*
             let mut vertex_positions = Vec::new();
             for attribute in mesh.attributes.iter() {
                 if attribute.name == VertexAttribute::POSITION {
@@ -382,7 +380,7 @@ fn pick_mesh(
                         _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
                     };
                 }
-            }
+            }*/
 
             // We have everything set up, now we can jump into the mesh's list of indices and
             // check triangles for cursor intersection.
