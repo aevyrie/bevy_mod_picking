@@ -47,11 +47,11 @@ impl Default for PickState {
 #[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
 pub struct PickDepth {
     entity: Entity,
-    ndc_depth: f32,
+    pick_coord_ndc: Vec3,
 }
 impl PickDepth {
-    fn new(entity: Entity, ndc_depth: f32) -> Self {
-        PickDepth { entity, ndc_depth }
+    fn new(entity: Entity, pick_coord_ndc: Vec3) -> Self {
+        PickDepth { entity, pick_coord_ndc }
     }
 }
 
@@ -84,7 +84,7 @@ impl Default for PickHighlightParams {
 pub struct PickableMesh {
     camera_entity: Entity,
     bounding_sphere: Option<BoundSphere>,
-    picked: bool,
+    pick_coord_ndc: Option<Vec3>,
 }
 
 impl PickableMesh {
@@ -92,8 +92,12 @@ impl PickableMesh {
         PickableMesh {
             camera_entity,
             bounding_sphere: None,
-            picked: false,
+            pick_coord_ndc: None,
         }
+    }
+
+    pub fn get_pick_coord_ndc(&self) -> Option<Vec3> {
+        self.pick_coord_ndc
     }
 }
 
@@ -125,24 +129,8 @@ impl HighlightablePickMesh {
     }
 }
 
-// How to handle bounding spheres?
-// Need to update any time the mesh or its transform changes. Initial query of points remains valid
-// as long as the mesh and scale does not change. Ensure the sphere is centered on the mesh center,
-// so that changes to rotation do not affect the bounding sphere definition, and scale only affects
-// the radius. The mesh query should compute the distance of each point from the origin, and store
-// the maximum value as the radius.
-// In summary:
-// 1. query mesh to determine radius via max
-// 2. on setup, determine the NDC coordinates of the sphere using the entity's mesh translation,
-//    scale(radius), make sure to use the NDC z-coord to divide by w on the radius for perspective
-//    WARNING!!!!: rectilinear perpective warp means bounding sphere will be elliptical(?) need to add
-//    some buffer to ndc radius to account for this as a function of FOV and distance from the ndc
-//    origin. This is a conic section. http://shaunlebron.github.io/visualizing-projections/
-//    perspective_scaling = sec(arctan(x*tan(b/2))) where b = fov in radians
-//    or sqrt(c*x^2+1) where c has some nonlinear relationship to fov. c = tan(b/2) is close but not
-//    identical: https://www.desmos.com/calculator/v0sf4wota5
-// 3. If the mesh changes, recompute the mesh_radius and ndc_def
-// 4. If the camera or mesh transforms change, update the ndc_def
+// Scale ndc circle based on linear function "abs(x(sec(arctan(tan(b/2)))-1)) + 1" where b = FOV
+// All the trig can be simplified to a coeff "c" abs(x*c+1)
 
 /// Defines a bounding sphere with a center point coordinate and a radius, used for picking
 #[derive(Debug)]
@@ -391,11 +379,12 @@ fn pick_mesh(
                         }
                     }
                 }
-                pickable.picked = hit_found;
+                let pick_coord_ndc = cursor_pos_ndc.extend(hit_depth);
+                pickable.pick_coord_ndc = Some(pick_coord_ndc);
                 if hit_found {
                     pick_state
                         .ordered_pick_list
-                        .push(PickDepth::new(entity, hit_depth));
+                        .push(PickDepth::new(entity, pick_coord_ndc));
                 }
             } else {
                 panic!(
@@ -412,15 +401,16 @@ fn pick_mesh(
     // The pick_state resource we have access to is not sorted, so we need to manually grab the
     // lowest value;
     if !pick_state.ordered_pick_list.is_empty() {
-        let mut top_index = 0usize;
-        let mut depth_test = f32::MAX;
+        let mut nearest_index = 0usize;
+        let mut nearest_depth = f32::MAX;
         for (index, pick) in pick_state.ordered_pick_list.iter().enumerate() {
-            if pick.ndc_depth < depth_test {
-                depth_test = pick.ndc_depth;
-                top_index = index;
+            let current_depth = pick.pick_coord_ndc.z();
+            if current_depth < nearest_depth {
+                nearest_depth = current_depth;
+                nearest_index = index;
             }
         }
-        pick_state.topmost_pick = Some(pick_state.ordered_pick_list[top_index]);
+        pick_state.topmost_pick = Some(pick_state.ordered_pick_list[nearest_index]);
     }
 }
 
