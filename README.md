@@ -8,7 +8,7 @@ This is a 3D mouse picking plugin for Bevy. The plugin will cast a ray into the 
 
 ## Getting Started
 
-To run the 3d_scene example, a modified version of the `bevy` example of the same name, clone this repository and run:
+To run the 3d_scene example - a modified version of the `bevy` example of the same name - clone this repository and run:
 ```console
 cargo run --example 3d_scene
 ```
