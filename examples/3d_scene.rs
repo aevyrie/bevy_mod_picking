@@ -7,6 +7,7 @@ fn main() {
         .add_default_plugins()
         .add_plugin(PickingPlugin)
         .add_startup_system(setup.system())
+        .add_startup_system(set_highlight_params.system())
         .add_system(get_picks.system())
         .run();
 }
@@ -74,4 +75,11 @@ fn setup(
 fn get_picks(pick_state: ResMut<PickState>) {
     println!("All entities:\n{:?}", pick_state.list());
     println!("Top entity:\n{:?}", pick_state.top());
+}
+
+fn set_highlight_params(
+    mut highlight_params: ResMut<PickHighlightParams>,
+) {
+    highlight_params.set_hover_color(Color::rgb(1.0, 0.0, 0.0));
+    highlight_params.set_selection_color(Color::rgb(1.0, 0.0, 1.0));
 }
