@@ -70,12 +70,12 @@ fn get_picks(
 
 Current limitations I'd like to fix:
 
-* Fixed ~~Highlighting coupled with ray casting system~~
+* Single camera and window: eventually I'd like to support picking for an arbitrary number of cameras and windows. The camera entity currently passed into new `PickableMesh` instances does not yet do anything.
 
 * No orthographic camera support: this hasn't been tested yet, but is an explicit goal of this plugin.
 
 * Optimizations: the current ray casting implementation is naive, and queries all meshes in the scene. The first optimization I'd like to apply is checking against bounding spheres before checking each triangle in a mesh. This should greatly improve performance in cases where the cursor is hovering over an area with very few objects.
 
-* Single camera and window: eventually I'd like to support picking for an arbitrary number of cameras and windows.
-
 * No "color-picking" implementation: for performance, I'd like to render the scene to an off-screen buffer that renders each pixel as a mesh ID encoded into RGBA. Picking is then as simple as querying this buffer and doing a lookup to return a mesh handle.
+
+* Fixed ~~Highlighting coupled with ray casting system~~
