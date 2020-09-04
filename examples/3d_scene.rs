@@ -23,7 +23,7 @@ fn setup(
         // plane
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 10.0 })),
-            material: materials.add(Color::rgb(0.1, 0.2, 0.1).into()),
+            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
         .with(PickableMesh::new(camera_entity))
@@ -32,7 +32,7 @@ fn setup(
         // cube
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.5, 0.4, 0.3).into()),
+            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             translation: Translation::new(0.0, 1.0, 0.0),
             ..Default::default()
         })
@@ -45,7 +45,7 @@ fn setup(
                 subdivisions: 4,
                 radius: 0.5,
             })),
-            material: materials.add(Color::rgb(0.1, 0.4, 0.8).into()),
+            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             translation: Translation::new(1.5, 1.5, 1.5),
             ..Default::default()
         })
