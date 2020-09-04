@@ -11,7 +11,7 @@ Casts a ray into the scene and checks for intersection for all meshes tagged wit
 
 Current limitations I'd like to fix:
 
-* Highlighting coupled with ray casting system: highlighting and selection state logic is bundled in the ray casting logic and API. I want to decouple this and make highlighting/selection an opt-in feature. Current plan is to run picking on meshes with the `PickableMesh` component, highlight meshes with the `HighlightableMesh` component, and manage selection state for meshes with the `SelectableMesh` component. Meshes with both `HighlightableMesh` and `SelectableMesh` will highlight when selected.
+* Fixed ~~Highlighting coupled with ray casting system~~
 
 * No orthographic camera support: this hasn't been tested yet, but is an explicit goal of this plugin.
 
