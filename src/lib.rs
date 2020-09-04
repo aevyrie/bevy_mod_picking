@@ -111,6 +111,9 @@ impl SelectablePickMesh {
     pub fn new() -> Self {
         SelectablePickMesh { selected: false }
     }
+    pub fn selected(&self) -> bool {
+        self.selected
+    }
 }
 
 /// Meshes with `HighlightablePickMesh` will be highlighted when hovered over. If the mesh also has
