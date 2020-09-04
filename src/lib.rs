@@ -86,19 +86,18 @@ impl Default for PickHighlightParams {
 /// Marks an entity as pickable
 #[derive(Debug)]
 pub struct PickableMesh {
-    bounding_sphere: BoundSphere,
+    camera_entity: Entity,
+    bounding_sphere: Option<BoundSphere>,
     picked: bool,
 }
 
 impl PickableMesh {
-    pub fn new(parent_mesh: &Mesh) -> Self {
+    pub fn new(camera_entity: Entity) -> Self {
         PickableMesh {
-            bounding_sphere: BoundSphere::from(parent_mesh),
+            camera_entity,
+            bounding_sphere: None,
             picked: false,
         }
-    }
-    fn update_ndc_bounding_circle() {
-
     }
 }
 
@@ -295,6 +294,7 @@ fn select_mesh(
     }
 }
 
+/// Casts a ray into the scene from the cursor position, marking pickable meshes that are hit.
 fn pick_mesh(
     // Resources
     mut pick_state: ResMut<PickState>,
