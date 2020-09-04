@@ -20,15 +20,15 @@ impl Plugin for PickingPlugin {
 
 pub struct PickState {
     cursor_event_reader: EventReader<CursorMoved>,
-    ordered_pick_list: Vec<PickDepth>,
-    topmost_pick: Option<PickDepth>,
+    ordered_pick_list: Vec<PickIntersection>,
+    topmost_pick: Option<PickIntersection>,
 }
 
 impl PickState {
-    pub fn list(&self) -> &Vec<PickDepth> {
+    pub fn list(&self) -> &Vec<PickIntersection> {
         &self.ordered_pick_list
     }
-    pub fn top(&self) -> &Option<PickDepth> {
+    pub fn top(&self) -> &Option<PickIntersection> {
         &self.topmost_pick
     }
 }
@@ -45,13 +45,13 @@ impl Default for PickState {
 
 /// Holds the entity associated with a mesh as well as it's computed depth from a pick ray cast
 #[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
-pub struct PickDepth {
+pub struct PickIntersection {
     entity: Entity,
     pick_coord_ndc: Vec3,
 }
-impl PickDepth {
+impl PickIntersection {
     fn new(entity: Entity, pick_coord_ndc: Vec3) -> Self {
-        PickDepth { entity, pick_coord_ndc }
+        PickIntersection { entity, pick_coord_ndc }
     }
 }
 
@@ -384,7 +384,7 @@ fn pick_mesh(
                 if hit_found {
                     pick_state
                         .ordered_pick_list
-                        .push(PickDepth::new(entity, pick_coord_ndc));
+                        .push(PickIntersection::new(entity, pick_coord_ndc));
                 }
             } else {
                 panic!(
