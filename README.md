@@ -81,3 +81,16 @@ fn get_picks(
 ```
 
 Alternatively, you can create a query to iterate over all `PickableMesh`s and get the entity's pick coordinates with `get_pick_coord_ndc()`.
+
+### Plugin Parameters
+
+If you're using the built in `HighlightablePickMash` component for highlighting, you can change the colors by accessing the `PickHighlightParams` and setting the colors:
+
+```rust
+fn set_highlight_params(
+    mut highlight_params: ResMut<PickHighlightParams>,
+) {
+    highlight_params.set_hover_color(Color::rgb(1.0, 0.0, 0.0));
+    highlight_params.set_selection_color(Color::rgb(1.0, 0.0, 1.0));
+}
+```
