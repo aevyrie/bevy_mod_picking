@@ -86,6 +86,6 @@ Current limitations I'd like to fix:
 
 * Optimizations: the current ray casting implementation is naive, and queries all meshes in the scene. The first optimization I'd like to apply is checking against bounding spheres before checking each triangle in a mesh. This should greatly improve performance in cases where the cursor is hovering over an area with very few objects.
 
-* No "color-picking" implementation: for performance, I'd like to render the scene to an off-screen buffer that renders each pixel as a mesh ID encoded into RGBA. Picking is then as simple as querying this buffer and doing a lookup to return a mesh handle.
+* No "color-picking" implementation: for performance, I'd like to render the scene to an off-screen buffer that renders each pixel as an entity encoded into RGBA. Picking is then as simple as querying this buffer and doing a lookup to return the entity. This would only allow picking for the topmost item (no pick list), and would have limitations with transparency. A hybrid mode that uses both might be a good solution.
 
 * Fixed ~~Highlighting coupled with ray casting system~~
