@@ -418,8 +418,18 @@ fn pick_mesh(
         .ordered_pick_list
         .sort_by(|a, b| a.partial_cmp(b)
         .unwrap_or(std::cmp::Ordering::Equal));
+    // The pick_state resource we have access to is not sorted, so we need to manually grab the
+    // lowest value;
     if !pick_state.ordered_pick_list.is_empty() {
-        pick_state.topmost_pick = Some(*(pick_state.ordered_pick_list.first().unwrap()));
+        let mut top_index = 0usize;
+        let mut depth_test = f32::MAX;
+        for (index, pick) in pick_state.ordered_pick_list.iter().enumerate() {
+            if pick.ndc_depth < depth_test {
+                depth_test = pick.ndc_depth;
+                top_index = index;
+            }
+        }
+        pick_state.topmost_pick = Some(pick_state.ordered_pick_list[top_index]);
     }
 
     
