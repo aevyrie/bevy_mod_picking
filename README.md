@@ -1,6 +1,6 @@
 # bevy_mod_picking
 
-3D mouse picking prototype for Bevy. Casts a ray into the scene and checks for intersection for all meshes tagged with the `PickableMesh` component.
+3D mouse picking plugin prototype for Bevy. Casts a ray into the scene and checks for intersection against all meshes tagged with the `PickableMesh` component. Included highlighting and selection state management features are opt-in.
 
 **Super duper WIP - Issues Welcome**
 
@@ -8,7 +8,7 @@
 
 ## Getting Started
 
-Run the 3d_scene example, a modified version of the `bevy` example of the same name, with:
+To run the 3d_scene example, a modified version of the `bevy` example of the same name, clone this repository and run:
 ```console
 cargo run --example 3d_scene
 ```
@@ -75,17 +75,3 @@ fn get_picks(
 ```
 
 You can also iterate over all `PickableMesh`s, and read the `picked` feild. (This isn't yet publically exposed, and will probably change to a DepthPick struct).
-
-### Limitations
-
-Current limitations I'd like to fix:
-
-* Single camera and window: eventually I'd like to support picking for an arbitrary number of cameras and windows. The camera entity currently passed into new `PickableMesh` instances does not yet do anything.
-
-* No orthographic camera support: this hasn't been tested yet, but is an explicit goal of this plugin.
-
-* Optimizations: the current ray casting implementation is naive, and queries all meshes in the scene. The first optimization I'd like to apply is checking against bounding spheres before checking each triangle in a mesh. This should greatly improve performance in cases where the cursor is hovering over an area with very few objects.
-
-* No "color-picking" implementation: for performance, I'd like to render the scene to an off-screen buffer that renders each pixel as a mesh ID encoded into RGBA. Picking is then as simple as querying this buffer and doing a lookup to return a mesh handle.
-
-* Fixed ~~Highlighting coupled with ray casting system~~
