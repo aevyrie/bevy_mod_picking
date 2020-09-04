@@ -69,6 +69,8 @@ If you also want to select meshes and keep them highlighted with the left mouse 
 
 ### Getting Pick Data
 
+#### Pick Intersections Under the Cursor
+
 Mesh picking intersection is reported in NDC. You can use the `PickState` resource to either get the topmost entity, or a list of all entities sorted by distance (near -> far) under the cursor:
 
 ```rust
@@ -81,6 +83,10 @@ fn get_picks(
 ```
 
 Alternatively, you can create a query to iterate over all `PickableMesh`s and get the entity's pick coordinates with `get_pick_coord_ndc()`.
+
+#### Selection State
+
+If you're using the `SelectablePickMesh` component for selection, you can access the selection state by querying all selectable entities and accessing the `.selected()` function.
 
 ### Plugin Parameters
 
