@@ -11,9 +11,10 @@ pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<PickState>()
+            .init_resource::<PickHighlightParams>()
             .add_system(pick_mesh.system())
-            //.add_system(select_mesh.system())
-            //.add_system(pick_highlighting.system())
+            .add_system(select_mesh.system())
+            .add_system(pick_highlighting.system())
             ;
     }
 }
@@ -21,11 +22,15 @@ impl Plugin for PickingPlugin {
 pub struct PickState {
     cursor_event_reader: EventReader<CursorMoved>,
     ordered_pick_list: Vec<PickDepth>,
+    topmost_pick: Option<PickDepth>,
 }
 
 impl PickState {
     pub fn list(&self) -> &Vec<PickDepth> {
         &self.ordered_pick_list
+    }
+    pub fn top(&self) -> &Option<PickDepth> {
+        &self.topmost_pick
     }
 }
 
@@ -34,12 +39,13 @@ impl Default for PickState {
         PickState {
             cursor_event_reader: EventReader::default(),
             ordered_pick_list: Vec::new(),
+            topmost_pick: None,
         }
     }
 }
 
 /// Holds the entity associated with a mesh as well as it's computed depth from a pick ray cast
-#[derive(Debug, PartialOrd, PartialEq)]
+#[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
 pub struct PickDepth {
     entity: Entity,
     ndc_depth: f32,
@@ -53,40 +59,26 @@ impl PickDepth {
     }
 }
 
-/// Holds a list of selected meshes by handle
 #[derive(Debug)]
-pub struct PickSelectionState {
-    selected_next: Vec<Handle<Mesh>>,
-    selected_previous: Vec<Handle<Mesh>>,
-}
-
-#[derive(Debug)]
-
-pub struct PickHighlightState {
+pub struct PickHighlightParams {
     hover_color: Color,
     selection_color: Color,
-    // Used to track items highlighted in the last frame. This is compared against the
-    // current pick list to see which items need to have their highligh effect removed.
-    // TODO: use a Vec to *pop* items off when comparing, to reduce list size as items are
-    // matched? Instead of iterating over two vecs which remain the same size.
-    hovered_previous: Option<Handle<Mesh>>,
 }
 
-impl PickHighlightState {
-    fn set_hover_color(&mut self, color: Color) {
+impl PickHighlightParams {
+    pub fn set_hover_color(&mut self, color: Color) {
         self.hover_color = color;
     }
-    fn set_selection_color(&mut self, color: Color) {
+    pub fn set_selection_color(&mut self, color: Color) {
         self.selection_color = color;
     }
 }
 
-impl Default for PickHighlightState {
+impl Default for PickHighlightParams {
     fn default() -> Self {
-        PickHighlightState {
+        PickHighlightParams {
             hover_color: Color::rgb(0.3, 0.5, 0.8),
             selection_color: Color::rgb(0.3, 0.8, 0.5),
-            hovered_previous: None,
         }
     }
 }
@@ -95,12 +87,14 @@ impl Default for PickHighlightState {
 #[derive(Debug)]
 pub struct PickableMesh {
     bounding_sphere: BoundSphere,
+    picked: bool,
 }
 
 impl PickableMesh {
     pub fn new(parent_mesh: &Mesh) -> Self {
         PickableMesh {
             bounding_sphere: BoundSphere::from(parent_mesh),
+            picked: false,
         }
     }
     fn update_ndc_bounding_circle() {
@@ -110,20 +104,30 @@ impl PickableMesh {
 
 /// Meshes with `SelectableMesh` will have selection state managed
 #[derive(Debug)]
-pub struct SelectablePickMesh;
+pub struct SelectablePickMesh {
+    selected: bool
+}
+
+impl SelectablePickMesh {
+    pub fn new() -> Self {
+        SelectablePickMesh{
+            selected: false,
+        }
+    }
+}
 
 /// Meshes with `HighlightablePickMesh` will be highlighted when hovered over. If the mesh also has
 /// the `SelectablePickMesh` component, it will highlight when selected.
 #[derive(Debug)]
 pub struct HighlightablePickMesh {
     // Stores the initial color of the mesh material prior to selecting/hovering
-    initial_color: Color,
+    initial_color: Option<Color>,
 }
 
 impl HighlightablePickMesh {
-    pub fn new(mesh_material: &StandardMaterial) -> Self {
+    pub fn new() -> Self {
         HighlightablePickMesh {
-            initial_color: mesh_material.albedo,
+            initial_color: None,
         }
     }
 }
@@ -192,125 +196,104 @@ struct NdcBoundingCircle {
 }
 
 
-/*
 /// Given the current selected and hovered meshes and provided materials, update the meshes with the
 /// appropriate materials.
 fn pick_highlighting(
     // Resources
-    pick_state: ResMut<PickingState>,
-    materials: Res<Assets<StandardMaterial>>,
+    pick_state: Res<PickState>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    highlight_params: Res<PickHighlightParams>,
     // Queries
-    mut query: Query<(
-        &mut SelectableMesh,
-        &mut Handle<StandardMaterial>,
-        &Handle<Mesh>,
+    mut query_picked: Query<(
+        &mut HighlightablePickMesh,
+        Changed<PickableMesh>,
+        &Handle<StandardMaterial>,
+        Entity,
     )>,
+    mut query_selected: Query<(
+        &mut HighlightablePickMesh,
+        Changed<SelectablePickMesh>,
+        &Handle<StandardMaterial>,
+    )>,
+    query_selectables: Query<&SelectablePickMesh>,    
 ) {
-    if pick_state.hovered != pick_state.hovered_previous {
-        println!(
-            "Hover state change from {:?} to {:?}",
-            pick_state.hovered_previous, pick_state.hovered
-        );
-    }
-    if pick_state.selected != pick_state.selected_previous {
-        println!(
-            "Selection state change from {:?} to {:?}",
-            pick_state.selected_previous, pick_state.selected
-        );
-    }
-    for (mut selectable, mut matl_handle, mesh_handle) in &mut query.iter() {
-        if let None = selectable.material_default {
-            selectable.material_default = Some(*matl_handle);
+    // Query Selectable entities that have changed
+    for (mut highlightable, selectable, material_handle) in &mut query_selected.iter() {
+        let current_color = &mut materials
+            .get_mut(material_handle)
+            .unwrap()
+            .albedo;
+        let initial_color = match highlightable.initial_color {
+            None => {
+                highlightable.initial_color = Some(*current_color);
+                *current_color
+            }
+            Some(color) => color
+        };
+        if selectable.selected {
+            *current_color = highlight_params.selection_color;
+        } else {
+            *current_color = initial_color;
         }
+    }
 
-        if pick_state.selected != pick_state.selected_previous {
-            if let Some(previous) = pick_state.selected_previous {
-                if *mesh_handle == previous {
-                    match selectable.material_default {
-                        Some(default_matl) => {
-                            *matl_handle = default_matl.clone();
-                        }
-                        None => panic!("Default material not set for previously selected mesh"),
+    // Query Highlightable entities that have changed
+    for (mut highlightable, _pickable, material_handle, entity) in &mut query_picked.iter() {
+        let current_color = &mut materials
+            .get_mut(material_handle)
+            .unwrap()
+            .albedo;
+        let initial_color = match highlightable.initial_color {
+            None => {
+                highlightable.initial_color = Some(*current_color);
+                *current_color
+            }
+            Some(color) => color
+        };
+        let mut topmost = false;
+        if let Some(pick_depth) = pick_state.topmost_pick {
+            topmost = pick_depth.entity == entity;
+        }
+        if topmost {
+            *current_color = highlight_params.hover_color;
+        } else {
+            if let Ok(mut query) = query_selectables.entity(entity) {
+                if let Some(selectable) = query.get() {
+                    if selectable.selected {
+                        *current_color = highlight_params.selection_color;
+                    } else {
+                        *current_color = initial_color;
                     }
                 }
+            } else {
+                *current_color = initial_color;
             }
-            if let Some(selected) = pick_state.selected {
-                if *mesh_handle == selected {
-                    *matl_handle = pick_state.selected_material.clone();
-                }
-            }
-        }
-
-        if pick_state.hovered != pick_state.hovered_previous {
-            if let Some(previous) = pick_state.hovered_previous {
-                if *mesh_handle == previous {
-                    match selectable.material_default {
-                        Some(default_matl) => {
-                            //println!("Hover material: {:?}", selectable.material_default);
-                            *matl_handle = default_matl.clone();
-                        }
-                        None => panic!("Default material not set for previously hovered mesh"),
-                    }
-                }
-            }
-            if pick_state.selected == Some(*mesh_handle) {
-                *matl_handle = pick_state.selected_material.clone();
-            }
-            if let Some(hovered) = pick_state.hovered {
-                if *mesh_handle == hovered {
-                    *matl_handle = pick_state.hovered_material.clone();
-                }
-            }
-        }
-        if pick_state.hovered != pick_state.hovered_previous ||
-            pick_state.selected != pick_state.selected_previous
-        {
-            println!("Material: {:?}", materials.get(&*matl_handle).unwrap().albedo);
         }
     }
 }
-*/
 
-/*
 /// Given the currently hovered mesh, checks for a user click and if detected, sets the selected
 /// mesh in the MousePicking state resource.
 fn select_mesh(
     // Resources
-    mut pick_state: ResMut<PickState>,
+    pick_state: Res<PickState>,
     mouse_button_inputs: Res<Input<MouseButton>>,
     // Queries
-    mut query: Query<(&Handle<Mesh>, &PickableMesh)>,
+    mut query: Query<&mut SelectablePickMesh>,
 ) {
-    let mut selection_made = false;
-    let mut pick_stack = pick_state.ordered_pick_list;
-    query.get(entity)
-    for (mesh_handle, _selectable) in &mut query.iter() {
+    if mouse_button_inputs.just_pressed(MouseButton::Left) {
+        // Deselect everything
+        for mut selectable in &mut query.iter() {
+            selectable.selected = false;
+        }
 
-        if let Some(hovered) = pick_state.hovered {
-            // If the current mesh is the one being hovered over, and the left mouse button is
-            // down, set the current mesh to selected.
-            if *mesh_handle == hovered && mouse_button_inputs.pressed(MouseButton::Left) {
-                pick_state.selected_previous = pick_state.selected;
-                // Set the current mesh as the selected mesh.
-                pick_state.selected = Some(*mesh_handle);
-                selection_made = true;
+        if let Some(pick_depth) = pick_state.topmost_pick {
+            if let Ok(mut top_mesh) = query.get_mut::<SelectablePickMesh>(pick_depth.entity) {
+                top_mesh.selected = true;
             }
         }
     }
-    // If nothing is being hovered and the user clicks, deselect the current mesh.
-    if pick_state.hovered == None
-        && mouse_button_inputs.pressed(MouseButton::Left)
-        && pick_state.selected != None
-    {
-        pick_state.selected_previous = pick_state.selected;
-        pick_state.selected = None;
-        selection_made = true;
-    }
-    if !selection_made {
-        pick_state.selected_previous = pick_state.selected;
-    }
 }
-*/
 
 fn pick_mesh(
     // Resources
@@ -319,12 +302,9 @@ fn pick_mesh(
     meshes: Res<Assets<Mesh>>,
     windows: Res<Windows>,
     // Queries
-    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, &Entity)>,
+    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &mut PickableMesh, Entity)>,
     mut camera_query: Query<(&Transform, &Camera)>,
 ) {
-    println!("test");
-    pick_state.ordered_pick_list.clear();
-    
     // Get the cursor position
     let cursor_pos_screen: Vec2 = match pick_state.cursor_event_reader.latest(&cursor) {
         Some(cursor_moved) => cursor_moved.position,
@@ -346,8 +326,12 @@ fn pick_mesh(
         projection_matrix = camera.projection_matrix;
     }
 
+    // After initial checks completed, clear the pick list
+    pick_state.ordered_pick_list.clear();
+    pick_state.topmost_pick = None;
+
     // Iterate through each selectable mesh in the scene
-    for (mesh_handle, transform, _selectable, entity) in &mut mesh_query.iter() {
+    for (mesh_handle, transform, mut pickable, entity) in &mut mesh_query.iter() {
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
             if mesh.primitive_topology != PrimitiveTopology::TriangleList {
@@ -371,17 +355,6 @@ fn pick_mesh(
                     VertexAttributeValues::Float3(positions) => Some(positions.clone()),
                     _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
                 }).last().unwrap();
-
-            /*
-            let mut vertex_positions = Vec::new();
-            for attribute in mesh.attributes.iter() {
-                if attribute.name == VertexAttribute::POSITION {
-                    vertex_positions = match &attribute.values {
-                        VertexAttributeValues::Float3(positions) => positions.clone(),
-                        _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
-                    };
-                }
-            }*/
 
             // We have everything set up, now we can jump into the mesh's list of indices and
             // check triangles for cursor intersection.
@@ -422,20 +395,16 @@ fn pick_mesh(
                             hit_found = true;
                             if  triangle[0].z() < hit_depth {
                                 hit_depth = triangle[0].z();
-                                //println!("hit depth: {}", hit_depth);
-                                // if the hovered mesh has changed, update the pick state
                             }
                         }
                     }
                 }
-
+                pickable.picked = hit_found;
                 if hit_found {
                     pick_state.ordered_pick_list.push(
-                        PickDepth::new(*entity, hit_depth)
+                        PickDepth::new(entity, hit_depth)
                     );
-                    println!("Mesh Pick: {:?}", pick_state.ordered_pick_list.last());
                 }
-
             } else {
                 panic!(
                     "No index matrix found in mesh {:?}\n{:?}",
@@ -444,12 +413,16 @@ fn pick_mesh(
             }
         }
     }
-
     // Sort the pick list
     pick_state
         .ordered_pick_list
         .sort_by(|a, b| a.partial_cmp(b)
         .unwrap_or(std::cmp::Ordering::Equal));
+    if !pick_state.ordered_pick_list.is_empty() {
+        pick_state.topmost_pick = Some(pick_state.ordered_pick_list[0]);
+    }
+
+    
 }
 
 /// Compute the area of a triangle given 2D vertex coordinates, "/2" removed to save an operation
