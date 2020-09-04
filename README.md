@@ -15,7 +15,14 @@ cargo run --example 3d_scene
 
 ## Usage
 
+Add the repo to your dependencies in Cargo.toml
+
+```toml
+bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking", branch = "master" }
+```
+
 Import the plugin:
+
 ```rust
 use bevy_mod_picking::*;
 ```
