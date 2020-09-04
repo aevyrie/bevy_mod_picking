@@ -67,6 +67,7 @@ fn get_picks(
 }
 ```
 
+You can also iterate over all `PickableMesh`s, and read the `picked` feild. (This isn't yet publically exposed, and will probably change to a DepthPick struct).
 
 ### Limitations
 
