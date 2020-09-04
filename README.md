@@ -29,7 +29,7 @@ Import the plugin:
 use bevy_mod_picking::*;
 ```
 
-Add it to your App::build() in the plugins section:
+Add it to your App::build() in the plugins section of your Bevy app:
 
 ```rust
 .add_plugin(PickingPlugin)
