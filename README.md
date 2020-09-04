@@ -15,6 +15,8 @@ cargo run --example 3d_scene
 
 ## Usage
 
+### Setup
+
 Add the repo to your dependencies in Cargo.toml
 
 ```toml
@@ -32,6 +34,8 @@ Add it to your App::build() in the plugins section:
 ```rust
 .add_plugin(PickingPlugin)
 ```
+
+### Marking Entities for Picking
 
 Make sure you have your camera's entity on hand, you could do the following in your setup system:
 
@@ -63,7 +67,9 @@ If you also want to select meshes and keep them highlighted with the left mouse 
 .with(SelectablePickMesh::new())
 ```
 
-If you want to get the entities that are being hovered over, you can use the `PickState` resource to either get the topmost entity, or a sorted list of all entities under the cursor:
+### Getting Pick Data
+
+Mesh picking intersection is reported in NDC. You can use the `PickState` resource to either get the topmost entity, or a list of all entities sorted by distance (near -> far) under the cursor:
 
 ```rust
 fn get_picks(
@@ -74,4 +80,4 @@ fn get_picks(
 }
 ```
 
-You can also iterate over all `PickableMesh`s, and read the `picked` feild. (This isn't yet publically exposed, and will probably change to a DepthPick struct).
+Alternatively, you can create a query to iterate over all `PickableMesh`s and get the entity's pick coordinates with `get_pick_coord_ndc()`.
