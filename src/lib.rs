@@ -1,9 +1,9 @@
 use bevy::{
     prelude::*,
     render::camera::Camera,
+    render::color::Color,
     render::mesh::{VertexAttribute, VertexAttributeValues},
     render::pipeline::PrimitiveTopology,
-    render::color::Color,
     window::CursorMoved,
 };
 
@@ -14,8 +14,7 @@ impl Plugin for PickingPlugin {
             .init_resource::<PickHighlightParams>()
             .add_system(pick_mesh.system())
             .add_system(select_mesh.system())
-            .add_system(pick_highlighting.system())
-            ;
+            .add_system(pick_highlighting.system());
     }
 }
 
@@ -52,10 +51,7 @@ pub struct PickDepth {
 }
 impl PickDepth {
     fn new(entity: Entity, ndc_depth: f32) -> Self {
-        PickDepth{
-            entity,
-            ndc_depth,
-        }
+        PickDepth { entity, ndc_depth }
     }
 }
 
@@ -104,14 +100,12 @@ impl PickableMesh {
 /// Meshes with `SelectableMesh` will have selection state managed
 #[derive(Debug)]
 pub struct SelectablePickMesh {
-    selected: bool
+    selected: bool,
 }
 
 impl SelectablePickMesh {
     pub fn new() -> Self {
-        SelectablePickMesh{
-            selected: false,
-        }
+        SelectablePickMesh { selected: false }
     }
 }
 
@@ -142,7 +136,7 @@ impl HighlightablePickMesh {
 // 2. on setup, determine the NDC coordinates of the sphere using the entity's mesh translation,
 //    scale(radius), make sure to use the NDC z-coord to divide by w on the radius for perspective
 //    WARNING!!!!: rectilinear perpective warp means bounding sphere will be elliptical(?) need to add
-//    some buffer to ndc radius to account for this as a function of FOV and distance from the ndc 
+//    some buffer to ndc radius to account for this as a function of FOV and distance from the ndc
 //    origin. This is a conic section. http://shaunlebron.github.io/visualizing-projections/
 //    perspective_scaling = sec(arctan(x*tan(b/2))) where b = fov in radians
 //    or sqrt(c*x^2+1) where c has some nonlinear relationship to fov. c = tan(b/2) is close but not
@@ -174,7 +168,8 @@ impl From<&Mesh> for BoundSphere {
         }
         if let Some(indices) = &mesh.indices {
             for index in indices.iter() {
-                mesh_radius = mesh_radius.max(Vec3::from(vertex_positions[*index as usize]).length());
+                mesh_radius =
+                    mesh_radius.max(Vec3::from(vertex_positions[*index as usize]).length());
             }
         }
         BoundSphere {
@@ -193,7 +188,6 @@ struct NdcBoundingCircle {
     center: Vec2,
     radius: f32,
 }
-
 
 /// Given the current selected and hovered meshes and provided materials, update the meshes with the
 /// appropriate materials.
@@ -214,20 +208,17 @@ fn pick_highlighting(
         Changed<SelectablePickMesh>,
         &Handle<StandardMaterial>,
     )>,
-    query_selectables: Query<&SelectablePickMesh>,    
+    query_selectables: Query<&SelectablePickMesh>,
 ) {
     // Query Selectable entities that have changed
     for (mut highlightable, selectable, material_handle) in &mut query_selected.iter() {
-        let current_color = &mut materials
-            .get_mut(material_handle)
-            .unwrap()
-            .albedo;
+        let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
         let initial_color = match highlightable.initial_color {
             None => {
                 highlightable.initial_color = Some(*current_color);
                 *current_color
             }
-            Some(color) => color
+            Some(color) => color,
         };
         if selectable.selected {
             *current_color = highlight_params.selection_color;
@@ -238,16 +229,13 @@ fn pick_highlighting(
 
     // Query Highlightable entities that have changed
     for (mut highlightable, _pickable, material_handle, entity) in &mut query_picked.iter() {
-        let current_color = &mut materials
-            .get_mut(material_handle)
-            .unwrap()
-            .albedo;
+        let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
         let initial_color = match highlightable.initial_color {
             None => {
                 highlightable.initial_color = Some(*current_color);
                 *current_color
             }
-            Some(color) => color
+            Some(color) => color,
         };
         let mut topmost = false;
         if let Some(pick_depth) = pick_state.topmost_pick {
@@ -349,12 +337,16 @@ fn pick_mesh(
             let mesh_to_cam_transform = view_matrix * transform.value;
 
             // Get the vertex positions from the mesh reference resolved from the mesh handle
-            let vertex_positions: Vec<[f32; 3]> = mesh.attributes.iter()
+            let vertex_positions: Vec<[f32; 3]> = mesh
+                .attributes
+                .iter()
                 .filter(|attribute| attribute.name == VertexAttribute::POSITION)
                 .filter_map(|attribute| match &attribute.values {
                     VertexAttributeValues::Float3(positions) => Some(positions.clone()),
                     _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
-                }).last().unwrap();
+                })
+                .last()
+                .unwrap();
 
             // We have everything set up, now we can jump into the mesh's list of indices and
             // check triangles for cursor intersection.
@@ -393,7 +385,7 @@ fn pick_mesh(
                             &Vec2::new(triangle[2].x(), triangle[2].y()),
                         ) {
                             hit_found = true;
-                            if  triangle[0].z() < hit_depth {
+                            if triangle[0].z() < hit_depth {
                                 hit_depth = triangle[0].z();
                             }
                         }
@@ -401,9 +393,9 @@ fn pick_mesh(
                 }
                 pickable.picked = hit_found;
                 if hit_found {
-                    pick_state.ordered_pick_list.push(
-                        PickDepth::new(entity, hit_depth)
-                    );
+                    pick_state
+                        .ordered_pick_list
+                        .push(PickDepth::new(entity, hit_depth));
                 }
             } else {
                 panic!(
@@ -416,8 +408,7 @@ fn pick_mesh(
     // Sort the pick list
     pick_state
         .ordered_pick_list
-        .sort_by(|a, b| a.partial_cmp(b)
-        .unwrap_or(std::cmp::Ordering::Equal));
+        .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     // The pick_state resource we have access to is not sorted, so we need to manually grab the
     // lowest value;
     if !pick_state.ordered_pick_list.is_empty() {
@@ -431,8 +422,6 @@ fn pick_mesh(
         }
         pick_state.topmost_pick = Some(pick_state.ordered_pick_list[top_index]);
     }
-
-    
 }
 
 /// Compute the area of a triangle given 2D vertex coordinates, "/2" removed to save an operation

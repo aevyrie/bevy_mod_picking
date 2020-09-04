@@ -58,19 +58,20 @@ fn setup(
             ..Default::default()
         })
         // camera
-        .spawn_as_entity(camera_entity, Camera3dComponents {
-            transform: Transform::new_sync_disabled(Mat4::face_toward(
-                Vec3::new(-3.0, 5.0, 8.0),
-                Vec3::new(0.0, 0.0, 0.0),
-                Vec3::new(0.0, 1.0, 0.0),
-            )),
-            ..Default::default()
-        });
+        .spawn_as_entity(
+            camera_entity,
+            Camera3dComponents {
+                transform: Transform::new_sync_disabled(Mat4::face_toward(
+                    Vec3::new(-3.0, 5.0, 8.0),
+                    Vec3::new(0.0, 0.0, 0.0),
+                    Vec3::new(0.0, 1.0, 0.0),
+                )),
+                ..Default::default()
+            },
+        );
 }
 
-fn get_picks(
-    pick_state: ResMut<PickState>,
-) {
+fn get_picks(pick_state: ResMut<PickState>) {
     println!("All entities:\n{:?}", pick_state.list());
     println!("Top entity:\n{:?}", pick_state.top());
 }
