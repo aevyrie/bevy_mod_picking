@@ -60,7 +60,7 @@ If you want to get the entities that are being hovered over, you can use the `Pi
 
 ```rust
 fn get_picks(
-    pick_state: ResMut<PickState>,
+    pick_state: Res<PickState>,
 ) {
     println!("All entities:\n{:?}", pick_state.list());
     println!("Top entity:\n{:?}", pick_state.top());
