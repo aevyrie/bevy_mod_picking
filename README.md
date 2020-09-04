@@ -4,7 +4,7 @@ This is a 3D mouse picking plugin for [Bevy](https://github.com/bevyengine/bevy)
 
 **Super duper WIP - Issues Welcome**
 
-![Picking demo](docs/demo.gif)
+![Picking demo](docs/demo.webp)
 
 ## Getting Started
 
