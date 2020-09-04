@@ -4,6 +4,8 @@
 
 **Super duper WIP - Issues Welcome**
 
+![Picking demo](docs/demo.gif)
+
 ## Getting Started
 
 Run the 3d_scene example, a modified version of the `bevy` example of the same name, with:
