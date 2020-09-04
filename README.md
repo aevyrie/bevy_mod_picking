@@ -71,7 +71,7 @@ If you also want to select meshes and keep them highlighted with the left mouse 
 
 #### Pick Intersections Under the Cursor
 
-Mesh picking intersection are reported in NDC. You can use the `PickState` resource to either get the topmost entity, or a list of all entities sorted by distance (near -> far) under the cursor:
+Mesh picking intersection are reported in [NDC](http://www.songho.ca/opengl/gl_projectionmatrix.html). You can use the `PickState` resource to either get the topmost entity, or a list of all entities sorted by distance (near -> far) under the cursor:
 
 ```rust
 fn get_picks(
