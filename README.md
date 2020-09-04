@@ -50,7 +50,7 @@ If you want it to highlight when you hover, add the `HighlightablePickMesh` comp
 .with(HighlightablePickMesh::new())
 ```
 
-If you also want to select meshes and keep them highlighted with the left mouse button, add hte `SelectablePickMesh` component:
+If you also want to select meshes and keep them highlighted with the left mouse button, add the `SelectablePickMesh` component:
 
 ```rust
 .with(SelectablePickMesh::new())
