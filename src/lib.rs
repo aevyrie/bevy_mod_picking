@@ -43,7 +43,7 @@ impl Default for PickState {
     }
 }
 
-/// Holds the entity associated with a mesh as well as it's computed depth from a pick ray cast
+/// Holds the entity associated with a mesh as well as it's computed intersection from a pick ray cast
 #[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
 pub struct PickIntersection {
     entity: Entity,
@@ -132,9 +132,6 @@ impl HighlightablePickMesh {
     }
 }
 
-// Scale ndc circle based on linear function "abs(x(sec(arctan(tan(b/2)))-1)) + 1" where b = FOV
-// All the trig can be simplified to a coeff "c" abs(x*c+1)
-
 /// Defines a bounding sphere with a center point coordinate and a radius, used for picking
 #[derive(Debug)]
 struct BoundSphere {
@@ -174,6 +171,8 @@ impl From<&Mesh> for BoundSphere {
 /// bounding sphere is projected onto the screen. Note this is not as simple as transforming the
 /// sphere's origin into ndc and copying the radius. Due to rectillinear projection, the sphere
 /// will be projected onto the screen as an ellipse if it is not perfectly centered at 0,0 in ndc.
+/// Scale ndc circle based on linear function "abs(x(sec(arctan(tan(b/2)))-1)) + 1" where b = FOV
+/// All the trig can be simplified to a coeff "c" abs(x*c+1)
 #[derive(Debug)]
 struct NdcBoundingCircle {
     center: Vec2,
@@ -201,7 +200,7 @@ fn pick_highlighting(
     )>,
     query_selectables: Query<&SelectablePickMesh>,
 ) {
-    // Query Selectable entities that have changed
+    // Query selectable entities that have changed
     for (mut highlightable, selectable, material_handle) in &mut query_selected.iter() {
         let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
         let initial_color = match highlightable.initial_color {
@@ -218,7 +217,7 @@ fn pick_highlighting(
         }
     }
 
-    // Query Highlightable entities that have changed
+    // Query highlightable entities that have changed
     for (mut highlightable, _pickable, material_handle, entity) in &mut query_picked.iter() {
         let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
         let initial_color = match highlightable.initial_color {
@@ -251,7 +250,7 @@ fn pick_highlighting(
 }
 
 /// Given the currently hovered mesh, checks for a user click and if detected, sets the selected
-/// mesh in the MousePicking state resource.
+/// field in the entity's component to true.
 fn select_mesh(
     // Resources
     pick_state: Res<PickState>,
@@ -273,7 +272,7 @@ fn select_mesh(
     }
 }
 
-/// Casts a ray into the scene from the cursor position, marking pickable meshes that are hit.
+/// Casts a ray into the scene from the cursor position, tracking pickable meshes that are hit.
 fn pick_mesh(
     // Resources
     mut pick_state: ResMut<PickState>,
@@ -309,7 +308,7 @@ fn pick_mesh(
     pick_state.ordered_pick_list.clear();
     pick_state.topmost_pick = None;
 
-    // Iterate through each selectable mesh in the scene
+    // Iterate through each pickable mesh in the scene
     for (mesh_handle, transform, mut pickable, entity) in &mut mesh_query.iter() {
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
@@ -382,6 +381,7 @@ fn pick_mesh(
                         }
                     }
                 }
+                // Finished going through the current mesh, update pick states
                 let pick_coord_ndc = cursor_pos_ndc.extend(hit_depth);
                 pickable.pick_coord_ndc = Some(pick_coord_ndc);
                 if hit_found {
@@ -390,6 +390,7 @@ fn pick_mesh(
                         .push(PickIntersection::new(entity, pick_coord_ndc));
                 }
             } else {
+                // If we get here the mesh doesn't have an index list!
                 panic!(
                     "No index matrix found in mesh {:?}\n{:?}",
                     mesh_handle, mesh
@@ -397,6 +398,7 @@ fn pick_mesh(
             }
         }
     }
+    
     // Sort the pick list
     pick_state
         .ordered_pick_list
