@@ -1,6 +1,6 @@
 # bevy_mod_picking
 
-3D mouse picking prototype for Bevy. Casts a ray into the scene and checks for intersection for all meshes tagged with the `PickableMesh` component.
+3D mouse picking plugin prototype for Bevy. Casts a ray into the scene and checks for intersection for all meshes tagged with the `PickableMesh` component.
 
 **Super duper WIP - Issues Welcome**
 
