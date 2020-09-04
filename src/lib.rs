@@ -416,10 +416,10 @@ fn pick_mesh(
     // Sort the pick list
     pick_state
         .ordered_pick_list
-        .sort_by(|a, b| b.partial_cmp(a)
+        .sort_by(|a, b| a.partial_cmp(b)
         .unwrap_or(std::cmp::Ordering::Equal));
     if !pick_state.ordered_pick_list.is_empty() {
-        pick_state.topmost_pick = Some(pick_state.ordered_pick_list[0]);
+        pick_state.topmost_pick = Some(*(pick_state.ordered_pick_list.first().unwrap()));
     }
 
     
