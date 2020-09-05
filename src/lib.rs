@@ -48,10 +48,23 @@ impl Default for PickState {
 pub struct PickIntersection {
     entity: Entity,
     pick_coord_ndc: Vec3,
+    pick_world_pos: Vec3,
 }
 impl PickIntersection {
-    fn new(entity: Entity, pick_coord_ndc: Vec3) -> Self {
-        PickIntersection { entity, pick_coord_ndc }
+    fn new(entity: Entity, pick_coord_ndc: Vec3, pick_world_pos: Vec3) -> Self {
+        PickIntersection {
+            entity,
+            pick_coord_ndc,
+            pick_world_pos,
+        }
+    }
+
+    pub fn get_pick_world_pos(&self) -> Vec3 {
+        self.pick_world_pos
+    }
+
+    pub fn get_pick_coord_ndc(&self) -> Vec3 {
+        self.pick_coord_ndc
     }
 }
 
@@ -384,10 +397,18 @@ fn pick_mesh(
                 // Finished going through the current mesh, update pick states
                 let pick_coord_ndc = cursor_pos_ndc.extend(hit_depth);
                 pickable.pick_coord_ndc = Some(pick_coord_ndc);
+
+                let world_pos: Vec4 = (projection_matrix * view_matrix)
+                    .inverse()
+                    .mul_vec4(pick_coord_ndc.extend(1.0));
+                let world_pos: Vec3 = (world_pos / world_pos.w()).truncate().into();
+
                 if hit_found {
-                    pick_state
-                        .ordered_pick_list
-                        .push(PickIntersection::new(entity, pick_coord_ndc));
+                    pick_state.ordered_pick_list.push(PickIntersection::new(
+                        entity,
+                        pick_coord_ndc,
+                        world_pos,
+                    ));
                 }
             } else {
                 // If we get here the mesh doesn't have an index list!
