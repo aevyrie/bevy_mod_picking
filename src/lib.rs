@@ -419,21 +419,21 @@ fn pick_mesh(
     }
 }
 
-/// Compute the area of a triangle given 2D vertex coordinates, "/2" removed to save an operation
-fn double_tri_area(a: &Vec2, b: &Vec2, c: &Vec2) -> f32 {
-    f32::abs(a.x() * (b.y() - c.y()) + b.x() * (c.y() - a.y()) + c.x() * (a.y() - b.y()))
-}
-
-/// Checks if a point is inside a triangle by comparing the summed areas of the triangles, the point
-/// is inside the triangle if the areas are equal. An epsilon is used due to floating point error.
-/// Todo: barycentric method
+/// Checks if a point is inside a triangle, using barycentric coordinates
 fn point_in_tri(p: &Vec2, a: &Vec2, b: &Vec2, c: &Vec2) -> bool {
-    let area = double_tri_area(a, b, c);
-    let pab = double_tri_area(p, a, b);
-    let pac = double_tri_area(p, a, c);
-    let pbc = double_tri_area(p, b, c);
-    let area_tris = pab + pac + pbc;
-    let epsilon = 0.000001;
-    //println!("{:.3}  {:.3}", area, area_tris);
-    f32::abs(area - area_tris) < epsilon
+    // https://stackoverflow.com/questions/2049582/how-to-determine-if-a-point-is-in-a-2d-triangle
+    let s = a.y() * c.x() - a.x() * c.y() + (c.y() - a.y()) * p.x() + (a.x() - c.x()) * p.y();
+    let t = a.x() * b.y() - a.y() * b.x() + (a.y() - b.y()) * p.x() + (b.x() - a.x()) * p.y();
+
+    if (s < 0.0) != (t < 0.0) {
+        return false;
+    }
+
+    let area = -b.y() * c.x() + a.y() * (c.x() - b.x()) + a.x() * (b.y() - c.y()) + b.x() * c.y();
+
+    return if area < 0.0 {
+        s <= 0.0 && s + t >= area
+    } else {
+        s >= 0.0 && s + t <= area
+    };
 }
