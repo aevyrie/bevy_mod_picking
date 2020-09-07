@@ -136,6 +136,7 @@ impl HighlightablePickMesh {
 #[derive(Debug)]
 struct BoundSphere {
     mesh_radius: f32,
+    transformed_radius: Option<f32>,
     ndc_def: Option<NdcBoundingCircle>,
 }
 
@@ -162,6 +163,7 @@ impl From<&Mesh> for BoundSphere {
         }
         BoundSphere {
             mesh_radius,
+            transformed_radius: None,
             ndc_def: None,
         }
     }
@@ -433,7 +435,14 @@ fn point_in_tri(p: &Vec2, a: &Vec2, b: &Vec2, c: &Vec2) -> bool {
     let pac = double_tri_area(p, a, c);
     let pbc = double_tri_area(p, b, c);
     let area_tris = pab + pac + pbc;
-    let epsilon = 0.000001;
-    //println!("{:.3}  {:.3}", area, area_tris);
-    f32::abs(area - area_tris) < epsilon
+    let epsilon = 0.00001;
+    let result:bool = f32::abs(area - area_tris) < epsilon;
+    /*
+    if result {
+        println!("Hit: {:.3}  {:.3}  {:.3},{:.3}  {:.3},{:.3}  {:.3},{:.3} ", area, area_tris, a.x(), a.y(), b.x(), b.y(), c.x(), c.y());
+    } else {
+        println!("No Hit: {:.3}  {:.3}  {:.3},{:.3}  {:.3},{:.3}  {:.3},{:.3} ", area, area_tris, a.x(), a.y(), b.x(), b.y(), c.x(), c.y());
+    }
+    */
+    result
 }
