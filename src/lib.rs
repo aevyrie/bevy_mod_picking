@@ -453,7 +453,7 @@ fn point_in_tri(p: &Vec2, a: &Vec2, b: &Vec2, c: &Vec2) -> bool {
     let pbc = double_tri_area(p, b, c);
     let area_tris = pab + pac + pbc;
     let epsilon = 0.00001;
-    let result:bool = f32::abs(area - area_tris) < epsilon;
+    let result: bool = f32::abs(area - area_tris) < epsilon;
     /*
     if result {
         println!("Hit: {:.3}  {:.3}  {:.3},{:.3}  {:.3},{:.3}  {:.3},{:.3} ", area, area_tris, a.x(), a.y(), b.x(), b.y(), c.x(), c.y());
@@ -473,5 +473,5 @@ fn triangle_behind_cam(triangle: [Vec3; 3]) -> bool {
             behind_cam = false
         }
     }
-    return behind_cam
+    return behind_cam;
 }

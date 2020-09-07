@@ -77,9 +77,7 @@ fn get_picks(pick_state: ResMut<PickState>) {
     println!("Top entity:\n{:?}", pick_state.top());
 }
 
-fn set_highlight_params(
-    mut highlight_params: ResMut<PickHighlightParams>,
-) {
+fn set_highlight_params(mut highlight_params: ResMut<PickHighlightParams>) {
     highlight_params.set_hover_color(Color::rgb(1.0, 0.0, 0.0));
     highlight_params.set_selection_color(Color::rgb(1.0, 0.0, 1.0));
 }
