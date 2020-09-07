@@ -51,7 +51,21 @@ pub struct PickIntersection {
 }
 impl PickIntersection {
     fn new(entity: Entity, pick_coord_ndc: Vec3) -> Self {
-        PickIntersection { entity, pick_coord_ndc }
+        PickIntersection {
+            entity,
+            pick_coord_ndc,
+        }
+    }
+
+    pub fn get_pick_coord_ndc(&self) -> Vec3 {
+        self.pick_coord_ndc
+    }
+
+    pub fn get_pick_coord_world(&self, projection_matrix: Mat4, view_matrix: Mat4) -> Vec3 {
+        let world_pos: Vec4 = (projection_matrix * view_matrix)
+            .inverse()
+            .mul_vec4(self.pick_coord_ndc.extend(1.0));
+        (world_pos / world_pos.w()).truncate().into()
     }
 }
 
@@ -386,6 +400,7 @@ fn pick_mesh(
                 // Finished going through the current mesh, update pick states
                 let pick_coord_ndc = cursor_pos_ndc.extend(hit_depth);
                 pickable.pick_coord_ndc = Some(pick_coord_ndc);
+
                 if hit_found {
                     pick_state
                         .ordered_pick_list
@@ -400,7 +415,7 @@ fn pick_mesh(
             }
         }
     }
-    
+
     // Sort the pick list
     pick_state
         .ordered_pick_list
