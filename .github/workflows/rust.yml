@@ -38,7 +38,11 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-
+      
+      - name: Install alsa
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
+        if: ${{ runner.os == 'Linux' }}
+        
       - name: Run cargo build
         uses: actions-rs/cargo@v1
         with:
