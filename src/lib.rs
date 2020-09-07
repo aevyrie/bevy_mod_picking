@@ -57,15 +57,15 @@ impl PickIntersection {
         }
     }
 
-    pub fn get_pick_world_pos(&self, projection_matrix: Mat4, view_matrix: Mat4) -> Vec3 {
+    pub fn get_pick_coord_ndc(&self) -> Vec3 {
+        self.pick_coord_ndc
+    }
+
+    pub fn get_pick_coord_world(&self, projection_matrix: Mat4, view_matrix: Mat4) -> Vec3 {
         let world_pos: Vec4 = (projection_matrix * view_matrix)
             .inverse()
             .mul_vec4(self.pick_coord_ndc.extend(1.0));
         (world_pos / world_pos.w()).truncate().into()
-    }
-
-    pub fn get_pick_coord_ndc(&self) -> Vec3 {
-        self.pick_coord_ndc
     }
 }
 
