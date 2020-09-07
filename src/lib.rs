@@ -367,8 +367,8 @@ fn pick_mesh(
                             // by w perspective math for us, instead we have to do it manually.
                             // `glam` PR https://github.com/bitshifter/glam-rs/pull/75/files
                             let transformed = projection_matrix.mul_vec4(vertex_pos.extend(1.0));
-                            let w = transformed.w();
-                            triangle[i] = Vec3::from(transformed.truncate() / w);
+                            let w_recip = transformed.w().abs().recip();
+                            triangle[i] = Vec3::from(transformed.truncate() * w_recip);
                         }
                         if point_in_tri(
                             &cursor_pos_ndc,
