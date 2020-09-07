@@ -45,8 +45,8 @@ jobs:
           command: fmt
           args: --all -- --check
 
-  combo:
-    name: Clippy + rustfmt
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -58,16 +58,8 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-          components: rustfmt, clippy
 
-      - name: Run cargo fmt
+      - name: Run cargo build
         uses: actions-rs/cargo@v1
         with:
-          command: fmt
-          args: --all -- --check
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+          command: build
