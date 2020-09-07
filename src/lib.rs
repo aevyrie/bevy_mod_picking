@@ -384,15 +384,17 @@ fn pick_mesh(
                             let w_recip = transformed.w().abs().recip();
                             triangle[i] = Vec3::from(transformed.truncate() * w_recip);
                         }
-                        if point_in_tri(
-                            &cursor_pos_ndc,
-                            &Vec2::new(triangle[0].x(), triangle[0].y()),
-                            &Vec2::new(triangle[1].x(), triangle[1].y()),
-                            &Vec2::new(triangle[2].x(), triangle[2].y()),
-                        ) {
-                            hit_found = true;
-                            if triangle[0].z() < hit_depth {
-                                hit_depth = triangle[0].z();
+                        if !triangle_behind_cam(triangle) {
+                            if point_in_tri(
+                                &cursor_pos_ndc,
+                                &Vec2::new(triangle[0].x(), triangle[0].y()),
+                                &Vec2::new(triangle[1].x(), triangle[1].y()),
+                                &Vec2::new(triangle[2].x(), triangle[2].y()),
+                            ) {
+                                hit_found = true;
+                                if triangle[0].z() < hit_depth {
+                                    hit_depth = triangle[0].z();
+                                }
                             }
                         }
                     }
@@ -460,4 +462,14 @@ fn point_in_tri(p: &Vec2, a: &Vec2, b: &Vec2, c: &Vec2) -> bool {
     }
     */
     result
+}
+
+/// Checkes if a triangle is visibly pickable in the camera frustum.
+fn triangle_behind_cam(triangle: [Vec3; 3]) -> bool {
+    // Find the maximum signed z value
+    let max_z = triangle
+        .iter()
+        .fold(-1.0, |max, x| if x.z() > max { x.z() } else { max });
+    // If the maximum z value is less than zero, all vertices are behind the camera
+    max_z < 0.0
 }
