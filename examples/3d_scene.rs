@@ -6,6 +6,7 @@ fn main() {
         .add_resource(Msaa { samples: 4 })
         .add_default_plugins()
         .add_plugin(PickingPlugin)
+        .add_plugin(DebugPickingPlugin)
         .add_startup_system(setup.system())
         .add_startup_system(set_highlight_params.system())
         .add_system(get_picks.system())
