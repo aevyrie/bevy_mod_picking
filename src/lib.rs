@@ -392,8 +392,12 @@ fn pick_mesh(
                                 &Vec2::new(triangle[2].x(), triangle[2].y()),
                             ) {
                                 hit_found = true;
-                                if triangle[0].z() < hit_depth {
-                                    hit_depth = triangle[0].z();
+
+                                // Calculate the actual intersection depth
+                                let depth = triangle_depth(cursor_pos_ndc, triangle);
+                                // Keep the closest depth
+                                if depth < hit_depth {
+                                    hit_depth = depth;
                                 }
                             }
                         }
@@ -472,4 +476,17 @@ fn triangle_behind_cam(triangle: [Vec3; 3]) -> bool {
         .fold(-1.0, |max, x| if x.z() > max { x.z() } else { max });
     // If the maximum z value is less than zero, all vertices are behind the camera
     max_z < 0.0
+}
+
+/// Calculate the intersection depth in the triangle. Assumes that the cursor is inside the triangle
+fn triangle_depth(cursor_ndc: Vec2, triangle: [Vec3; 3]) -> f32 {
+    // From option 2 in https://stackoverflow.com/a/42752998
+
+    let a_to_b = triangle[1] - triangle[0];
+    let a_to_c = triangle[2] - triangle[0];
+    let normal = a_to_b.cross(a_to_c);
+
+    let direction = Vec3::new(0.0, 0.0, -1.0);
+
+    return -(triangle[0] - cursor_ndc.extend(0.0)).dot(normal) / direction.dot(normal);
 }
