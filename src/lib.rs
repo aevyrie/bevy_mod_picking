@@ -51,7 +51,21 @@ pub struct PickIntersection {
 }
 impl PickIntersection {
     fn new(entity: Entity, pick_coord_ndc: Vec3) -> Self {
-        PickIntersection { entity, pick_coord_ndc }
+        PickIntersection {
+            entity,
+            pick_coord_ndc,
+        }
+    }
+
+    pub fn get_pick_coord_ndc(&self) -> Vec3 {
+        self.pick_coord_ndc
+    }
+
+    pub fn get_pick_coord_world(&self, projection_matrix: Mat4, view_matrix: Mat4) -> Vec3 {
+        let world_pos: Vec4 = (projection_matrix * view_matrix)
+            .inverse()
+            .mul_vec4(self.pick_coord_ndc.extend(1.0));
+        (world_pos / world_pos.w()).truncate().into()
     }
 }
 
@@ -136,6 +150,7 @@ impl HighlightablePickMesh {
 #[derive(Debug)]
 struct BoundSphere {
     mesh_radius: f32,
+    transformed_radius: Option<f32>,
     ndc_def: Option<NdcBoundingCircle>,
 }
 
@@ -162,6 +177,7 @@ impl From<&Mesh> for BoundSphere {
         }
         BoundSphere {
             mesh_radius,
+            transformed_radius: None,
             ndc_def: None,
         }
     }
@@ -365,18 +381,20 @@ fn pick_mesh(
                             // by w perspective math for us, instead we have to do it manually.
                             // `glam` PR https://github.com/bitshifter/glam-rs/pull/75/files
                             let transformed = projection_matrix.mul_vec4(vertex_pos.extend(1.0));
-                            let w = transformed.w();
-                            triangle[i] = Vec3::from(transformed.truncate() / w);
+                            let w_recip = transformed.w().abs().recip();
+                            triangle[i] = Vec3::from(transformed.truncate() * w_recip);
                         }
-                        if point_in_tri(
-                            &cursor_pos_ndc,
-                            &Vec2::new(triangle[0].x(), triangle[0].y()),
-                            &Vec2::new(triangle[1].x(), triangle[1].y()),
-                            &Vec2::new(triangle[2].x(), triangle[2].y()),
-                        ) {
-                            hit_found = true;
-                            if triangle[0].z() < hit_depth {
-                                hit_depth = triangle[0].z();
+                        if !triangle_behind_cam(triangle) {
+                            if point_in_tri(
+                                &cursor_pos_ndc,
+                                &Vec2::new(triangle[0].x(), triangle[0].y()),
+                                &Vec2::new(triangle[1].x(), triangle[1].y()),
+                                &Vec2::new(triangle[2].x(), triangle[2].y()),
+                            ) {
+                                hit_found = true;
+                                if triangle[0].z() < hit_depth {
+                                    hit_depth = triangle[0].z();
+                                }
                             }
                         }
                     }
@@ -384,6 +402,7 @@ fn pick_mesh(
                 // Finished going through the current mesh, update pick states
                 let pick_coord_ndc = cursor_pos_ndc.extend(hit_depth);
                 pickable.pick_coord_ndc = Some(pick_coord_ndc);
+
                 if hit_found {
                     pick_state
                         .ordered_pick_list
@@ -398,7 +417,7 @@ fn pick_mesh(
             }
         }
     }
-    
+
     // Sort the pick list
     pick_state
         .ordered_pick_list
@@ -436,4 +455,14 @@ fn point_in_tri(p: &Vec2, a: &Vec2, b: &Vec2, c: &Vec2) -> bool {
     } else {
         s >= 0.0 && s + t <= area
     };
+}
+
+/// Checkes if a triangle is visibly pickable in the camera frustum.
+fn triangle_behind_cam(triangle: [Vec3; 3]) -> bool {
+    // Find the maximum signed z value
+    let max_z = triangle
+        .iter()
+        .fold(-1.0, |max, x| if x.z() > max { x.z() } else { max });
+    // If the maximum z value is less than zero, all vertices are behind the camera
+    max_z < 0.0
 }
