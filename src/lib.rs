@@ -224,9 +224,7 @@ fn update_debug_cursor_position(
         let pos = top_pick.get_pick_coord_world(projection_matrix, view_matrix);
 
         for (_, mut translation) in &mut query.iter() {
-            translation.0.set_x(pos.x());
-            translation.0.set_y(pos.y());
-            translation.0.set_z(pos.z());
+            translation.0 = pos;
         }
     }
 }
