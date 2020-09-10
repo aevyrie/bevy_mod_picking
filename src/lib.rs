@@ -113,7 +113,6 @@ impl Default for PickHighlightParams {
 pub struct PickableMesh {
     camera_entity: Entity,
     bounding_sphere: Option<BoundingSphere>,
-    pick_coord_ndc: Option<Vec3>,
 }
 
 impl PickableMesh {
@@ -121,12 +120,7 @@ impl PickableMesh {
         PickableMesh {
             camera_entity,
             bounding_sphere: None,
-            pick_coord_ndc: None,
         }
-    }
-
-    pub fn get_pick_coord_ndc(&self) -> Option<Vec3> {
-        self.pick_coord_ndc
     }
 }
 
@@ -297,7 +291,7 @@ fn pick_mesh(
     meshes: Res<Assets<Mesh>>,
     windows: Res<Windows>,
     // Queries
-    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &mut PickableMesh, Entity)>,
+    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, Entity)>,
     mut camera_query: Query<(&Transform, &Camera)>,
 ) {
     // Get the cursor position
@@ -321,7 +315,6 @@ fn pick_mesh(
         camera_matrix = transform.value;
         projection_matrix = camera.projection_matrix;
     }
-    let view_matrix = camera_matrix.inverse();
     let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
 
     let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
@@ -331,8 +324,11 @@ fn pick_mesh(
 
     let pick_ray = Ray3D::new(camera_position, ray_direction);
 
+    // After initial checks completed, clear the pick list
+    pick_state.ordered_pick_list.clear();
+
     // Iterate through each pickable mesh in the scene
-    for (mesh_handle, transform, mut pickable, entity) in &mut mesh_query.iter() {
+    for (mesh_handle, transform, pickable, entity) in &mut mesh_query.iter() {
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
             if mesh.primitive_topology != PrimitiveTopology::TriangleList {
@@ -341,7 +337,7 @@ fn pick_mesh(
 
             // The ray cast can hit the same mesh many times, so we need to track which hit is
             // closest to the camera, and record that.
-            let mut hit_depth = f32::MAX;
+            let mut min_pick_distance = f32::MAX;
 
             // Get the vertex positions from the mesh reference resolved from the mesh handle
             let vertex_positions: Vec<[f32; 3]> = mesh
@@ -376,8 +372,8 @@ fn pick_mesh(
                     // Run the raycast on the ray and triangle
                     if let Some(intersection) = ray_triangle_intersection(pick_ray, triangle) {
                         let distance: f32 = (intersection.position() - camera_position).length();
-                        if distance < hit_depth {
-                            hit_depth = distance;
+                        if distance < min_pick_distance {
+                            min_pick_distance = distance;
                             pick_intersection =
                                 Some(PickIntersection::new(entity, intersection, distance));
                         }
