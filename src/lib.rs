@@ -342,6 +342,30 @@ fn select_mesh(
     }
 }
 
+fn pick_mesh_raycast(
+     // Resources
+     mut pick_state: ResMut<PickState>,
+     cursor: Res<Events<CursorMoved>>,
+     meshes: Res<Assets<Mesh>>,
+     windows: Res<Windows>,
+     // Queries
+     mut mesh_query: Query<(&Handle<Mesh>, &Transform, &mut PickableMesh, Entity)>,
+     mut camera_query: Query<(&Transform, &Camera)>,
+) {
+    // Get the cursor position
+    let cursor_pos_screen: Vec2 = match pick_state.cursor_event_reader.latest(&cursor) {
+        Some(cursor_moved) => cursor_moved.position,
+        None => return,
+    };
+
+    // Get current screen size
+    let window = windows.get_primary().unwrap();
+    let screen_size = Vec2::from([window.width as f32, window.height as f32]);
+
+    // Normalized device coordinates (NDC) describes cursor position from (-1, -1) to (1, 1)
+    let cursor_pos_ndc: Vec2 = (cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0]);
+}
+
 /// Casts a ray into the scene from the cursor position, tracking pickable meshes that are hit.
 fn pick_mesh(
     // Resources
