@@ -2,7 +2,7 @@
 
 This is a 3D mouse picking plugin for [Bevy](https://github.com/bevyengine/bevy). The plugin will cast a ray into the scene and check for intersection against all meshes tagged with the `PickableMesh` component. The built-in highlighting and selection state management features are opt-in.
 
-**Super duper WIP - Issues Welcome**
+**Expect Breaking Changes - Issues/PRs Welcome**
 
 ![Picking demo](docs/demo.webp)
 
