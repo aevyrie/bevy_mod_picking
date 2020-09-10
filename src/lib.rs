@@ -394,7 +394,7 @@ fn pick_mesh(
                                 hit_found = true;
 
                                 // Calculate the actual intersection depth
-                                let depth = triangle_depth(cursor_pos_ndc, triangle);
+                                let depth = triangle_depth_ndc(cursor_pos_ndc, triangle);
                                 // Keep the closest depth
                                 if depth < hit_depth {
                                     hit_depth = depth;
@@ -479,7 +479,7 @@ fn triangle_behind_cam(triangle: [Vec3; 3]) -> bool {
 }
 
 /// Calculate the intersection depth in the triangle. Assumes that the cursor is inside the triangle
-fn triangle_depth(cursor_ndc: Vec2, triangle: [Vec3; 3]) -> f32 {
+fn triangle_depth_ndc(cursor_ndc: Vec2, triangle: [Vec3; 3]) -> f32 {
     // From option 2 in https://stackoverflow.com/a/42752998
 
     let a_to_b = triangle[1] - triangle[0];
