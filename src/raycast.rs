@@ -1,26 +1,111 @@
-struct Ray3D {
+use bevy::{
+    prelude::*,
+    render::mesh::{VertexAttribute, VertexAttributeValues},
+    render::pipeline::PrimitiveTopology,
+};
+
+#[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
+pub struct Ray3D {
     position: Vec3,
     direction: Vec3,
 }
 
-struct Triangle([Vec3; 3]);
-
-impl Triangle {
-    /// Returns a tuple of vertices, useful for variable assignment
-    fn vertices(&self) -> (Vec3, Vec3, Vec3) {
-        (self[0], self[1], self[2])
+impl Ray3D {
+    pub fn new(position: Vec3, direction: Vec3) -> Self {
+        Ray3D {
+            position,
+            direction,
+        }
+    }
+    pub fn position(&self) -> Vec3 {
+        self.position
+    }
+    pub fn direction(&self) -> Vec3 {
+        self.direction
     }
 }
 
-impl core::ops::Deref for Triangle {
-    type Target = [Vec3; 3];
-    fn deref(self: &'_ Self) -> &'_ Self::Target {
-        &self.0
+#[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
+pub struct Triangle {
+    v0: Vec3,
+    v1: Vec3,
+    v2: Vec3,
+}
+
+impl Triangle {
+    /// Returns a tuple of vertices, useful for variable assignment
+    pub fn vertices(&self) -> (Vec3, Vec3, Vec3) {
+        (self.v0, self.v1, self.v2)
+    }
+}
+
+impl From<(Vec3, Vec3, Vec3)> for Triangle {
+    fn from(vertices: (Vec3, Vec3, Vec3)) -> Self {
+        Triangle {
+            v0: vertices.0,
+            v1: vertices.1,
+            v2: vertices.2,
+        }
+    }
+}
+
+impl From<Vec<Vec3>> for Triangle {
+    fn from(vertices: Vec<Vec3>) -> Self {
+        Triangle {
+            v0: *vertices.get(0).unwrap(),
+            v1: *vertices.get(1).unwrap(),
+            v2: *vertices.get(2).unwrap(),
+        }
+    }
+}
+
+impl From<[Vec3; 3]> for Triangle {
+    fn from(vertices: [Vec3; 3]) -> Self {
+        Triangle {
+            v0: vertices[0],
+            v1: vertices[1],
+            v2: vertices[2],
+        }
+    }
+}
+
+/// Defines a bounding sphere with a center point coordinate and a radius
+#[derive(Debug)]
+pub struct BoundingSphere {
+    mesh_radius: f32,
+    transformed_radius: Option<f32>,
+}
+
+impl From<&Mesh> for BoundingSphere {
+    fn from(mesh: &Mesh) -> Self {
+        let mut mesh_radius = 0f32;
+        if mesh.primitive_topology != PrimitiveTopology::TriangleList {
+            panic!("Non-TriangleList mesh supplied for bounding sphere generation")
+        }
+        let mut vertex_positions = Vec::new();
+        for attribute in mesh.attributes.iter() {
+            if attribute.name == VertexAttribute::POSITION {
+                vertex_positions = match &attribute.values {
+                    VertexAttributeValues::Float3(positions) => positions.clone(),
+                    _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
+                };
+            }
+        }
+        if let Some(indices) = &mesh.indices {
+            for index in indices.iter() {
+                mesh_radius =
+                    mesh_radius.max(Vec3::from(vertex_positions[*index as usize]).length());
+            }
+        }
+        BoundingSphere {
+            mesh_radius,
+            transformed_radius: None,
+        }
     }
 }
 
 /// Takes a ray and triangle and computes the intersection and normal
-fn ray_triangle_intersection(ray: Ray3D, triangle: Triangle) -> Option<Ray3D> {
+pub fn ray_triangle_intersection(ray: Ray3D, triangle: Triangle) -> Option<Ray3D> {
     // Source: https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution
     let dir = ray.direction;
     let pos = ray.position;
