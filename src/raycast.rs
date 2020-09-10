@@ -144,24 +144,24 @@ pub fn ray_triangle_intersection(ray: Ray3D, triangle: Triangle) -> Option<Ray3D
     // edge 0
     let edge0 = v1 - v0;
     let vp0 = point_intersection - v0;
-    let C = edge0.cross(vp0);
-    if triangle_normal.dot(C) < 0.0 {
+    let cross = edge0.cross(vp0);
+    if triangle_normal.dot(cross) < 0.0 {
         return None;
     } // P is on the right side
 
     // edge 1
     let edge1 = v2 - v1;
     let vp1 = point_intersection - v1;
-    let C = edge1.cross(vp1);
-    if triangle_normal.dot(C) < 0.0 {
+    let cross = edge1.cross(vp1);
+    if triangle_normal.dot(cross) < 0.0 {
         return None;
     } // P is on the right side
 
     // edge 2
     let edge2 = v0 - v2;
     let vp2 = point_intersection - v2;
-    let C = edge2.cross(vp2);
-    if triangle_normal.dot(C) < 0.0 {
+    let cross = edge2.cross(vp2);
+    if triangle_normal.dot(cross) < 0.0 {
         return None;
     } // P is on the right side;
 
