@@ -446,16 +446,3 @@ fn pick_mesh(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 }
-
-/// Calculate the intersection depth in the triangle. Assumes that the cursor is inside the triangle
-fn triangle_depth_ndc(cursor_ndc: Vec2, triangle: [Vec3; 3]) -> f32 {
-    // From option 2 in https://stackoverflow.com/a/42752998
-
-    let a_to_b = triangle[1] - triangle[0];
-    let a_to_c = triangle[2] - triangle[0];
-    let normal = a_to_b.cross(a_to_c);
-
-    let direction = Vec3::new(0.0, 0.0, -1.0);
-
-    return -(triangle[0] - cursor_ndc.extend(0.0)).dot(normal) / direction.dot(normal);
-}
