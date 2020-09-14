@@ -170,9 +170,14 @@ fn update_debug_cursor_position(
         let position = top_pick.position();
         let normal = top_pick.normal();
         let up = Vec3::from([0.0, 1.0, 0.0]);
-        let axis = normal.cross(up);
-        let angle = normal.dot(up);
-        let new_rotation = Quat::from_axis_angle(axis, angle);
+        let axis = up.cross(*normal).normalize();
+        let angle = up.dot(*normal).acos();
+        let epsilon = 0.0001;
+        let new_rotation = if angle.abs() > epsilon {
+            Quat::from_axis_angle(axis, angle)
+        } else {
+            Quat::default()
+        };
         for (mut translation, mut rotation) in &mut query.iter() {
             translation.0 = *position;
             rotation.0 = new_rotation;
