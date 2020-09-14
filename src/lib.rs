@@ -320,7 +320,7 @@ fn pick_mesh(
     let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
     let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
 
-    let ray_direction = (cursor_position - camera_position).normalize();
+    let ray_direction = cursor_position - camera_position;
 
     let pick_ray = Ray3D::new(camera_position, ray_direction);
 
@@ -374,7 +374,7 @@ fn pick_mesh(
                         ray_triangle_intersection(&pick_ray, &triangle, RaycastAlgorithm::default())
                     {
                         let distance: f32 =
-                            (intersection.position() - camera_position).length().abs();
+                            (*intersection.origin() - camera_position).length().abs();
                         if distance < min_pick_distance {
                             min_pick_distance = distance;
                             pick_intersection =

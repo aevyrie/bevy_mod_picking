@@ -4,24 +4,33 @@ use bevy::{
     render::pipeline::PrimitiveTopology,
 };
 
-#[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
-pub struct Ray3D {
-    origin: Vec3,
-    direction: Vec3,
-}
+pub use rays::*;
 
-impl Ray3D {
-    pub fn new(position: Vec3, direction: Vec3) -> Self {
-        Ray3D {
-            origin: position,
-            direction,
+pub mod rays {
+
+    use bevy::prelude::*;
+
+    #[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
+    pub struct Ray3D {
+        origin: Vec3,
+        direction: Vec3,
+    }
+
+    impl Ray3D {
+        pub fn new(origin: Vec3, direction: Vec3) -> Self {
+            Ray3D {
+                origin,
+                direction: direction.normalize(),
+            }
         }
-    }
-    pub fn position(&self) -> Vec3 {
-        self.origin
-    }
-    pub fn direction(&self) -> Vec3 {
-        self.direction
+        /// Position vector describing the ray origin
+        pub fn origin(&self) -> &Vec3 {
+            &self.origin
+        }
+        /// Unit vector describing the ray direction
+        pub fn direction(&self) -> &Vec3 {
+            &self.direction
+        }
     }
 }
 
@@ -144,7 +153,7 @@ pub fn raycast_moller_trumbore(
     let epsilon: f32 = 0.000001;
     let vector_v0_to_v1: Vec3 = triangle.v1 - triangle.v0;
     let vector_v0_to_v2: Vec3 = triangle.v2 - triangle.v0;
-    let p_vec: Vec3 = ray.direction.cross(vector_v0_to_v2);
+    let p_vec: Vec3 = ray.direction().cross(vector_v0_to_v2);
     let determinant: f32 = vector_v0_to_v1.dot(p_vec);
 
     match backface_culling {
@@ -166,14 +175,14 @@ pub fn raycast_moller_trumbore(
 
     let determinant_inverse = 1.0 / determinant;
 
-    let t_vec: Vec3 = ray.origin - triangle.v0;
+    let t_vec: Vec3 = *ray.origin() - triangle.v0;
     let u = t_vec.dot(p_vec) * determinant_inverse;
     if u < 0.0 || u > 1.0 {
         return None;
     }
 
     let q_vec = t_vec.cross(vector_v0_to_v1);
-    let v = ray.direction.dot(q_vec) * determinant_inverse;
+    let v = ray.direction().dot(q_vec) * determinant_inverse;
     if v < 0.0 || u + v > 1.0 {
         return None;
     }
@@ -182,13 +191,10 @@ pub fn raycast_moller_trumbore(
     let t: f32 = vector_v0_to_v2.dot(q_vec) * determinant_inverse;
 
     // Move along the ray direction from the origin, to find the intersection
-    let point_intersection = ray.origin + ray.direction * t;
+    let point_intersection = *ray.origin() + *ray.direction() * t;
     let triangle_normal = vector_v0_to_v1.cross(vector_v0_to_v2);
 
-    return Some(Ray3D {
-        origin: point_intersection,
-        direction: triangle_normal.normalize(),
-    });
+    return Some(Ray3D::new(point_intersection, triangle_normal));
 }
 
 /// Geometric method of computing a ray-triangle intersection
@@ -205,7 +211,7 @@ pub fn raycast_geometric(ray: &Ray3D, triangle: &Triangle) -> Option<Ray3D> {
     // Step 1: finding P
 
     // check if ray and plane are parallel ?
-    let n_dot_ray_direction = triangle_normal.dot(ray.direction);
+    let n_dot_ray_direction = triangle_normal.dot(*ray.direction());
     if n_dot_ray_direction.abs() < epsilon {
         return None;
     }
@@ -214,14 +220,14 @@ pub fn raycast_geometric(ray: &Ray3D, triangle: &Triangle) -> Option<Ray3D> {
     let d = triangle_normal.dot(triangle.v0);
 
     // compute t (equation 3)
-    let t = (triangle_normal.dot(ray.origin) + d) / n_dot_ray_direction;
+    let t = (triangle_normal.dot(*ray.origin()) + d) / n_dot_ray_direction;
     // check if the triangle is in behind the ray
     if t < 0.0 {
         return None;
     } // the triangle is behind
 
     // compute the intersection point using equation 1
-    let point_intersection = ray.origin + t * ray.direction;
+    let point_intersection = *ray.origin() + t * *ray.direction();
 
     // Step 2: inside-outside test
 
@@ -249,8 +255,5 @@ pub fn raycast_geometric(ray: &Ray3D, triangle: &Triangle) -> Option<Ray3D> {
         return None;
     } // P is on the right side;
 
-    return Some(Ray3D {
-        origin: point_intersection,
-        direction: triangle_normal.normalize(),
-    });
+    return Some(Ray3D::new(point_intersection, triangle_normal));
 }
