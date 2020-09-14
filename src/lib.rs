@@ -201,13 +201,13 @@ fn pick_highlighting(
     // Queries
     mut query_picked: Query<(
         &mut HighlightablePickMesh,
-        Changed<PickableMesh>,
+        &PickableMesh,
         &Handle<StandardMaterial>,
         Entity,
     )>,
     mut query_selected: Query<(
         &mut HighlightablePickMesh,
-        Changed<SelectablePickMesh>,
+        &SelectablePickMesh,
         &Handle<StandardMaterial>,
     )>,
     query_selectables: Query<&SelectablePickMesh>,
