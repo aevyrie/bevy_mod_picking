@@ -335,7 +335,7 @@ fn pick_mesh(
     meshes: Res<Assets<Mesh>>,
     windows: Res<Windows>,
     // Queries
-    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, Entity)>,
+    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, Entity, &Draw)>,
     mut camera_query: Query<(&Transform, &Camera)>,
 ) {
     // Get the cursor position
@@ -372,7 +372,11 @@ fn pick_mesh(
     pick_state.ordered_pick_list.clear();
 
     // Iterate through each pickable mesh in the scene
-    for (mesh_handle, transform, _pickable, entity) in &mut mesh_query.iter() {
+    for (mesh_handle, transform, _pickable, entity, draw) in &mut mesh_query.iter() {
+        if !draw.is_visible {
+            continue;
+        }
+
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
             if mesh.primitive_topology != PrimitiveTopology::TriangleList {
