@@ -396,7 +396,9 @@ fn pick_mesh(
         }
     }
     // Sort the pick list
-    pick_state
-        .ordered_pick_list
-        .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    pick_state.ordered_pick_list.sort_by(|a, b| {
+        a.distance
+            .partial_cmp(&b.distance)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 }
