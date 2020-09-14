@@ -67,12 +67,15 @@ impl PickIntersection {
             distance,
         }
     }
-    pub fn position(&self) -> Vec3 {
-        self.intersection.position()
+    /// Position vector describing the intersection position.
+    pub fn position(&self) -> &Vec3 {
+        self.intersection.origin()
     }
-    pub fn normal(&self) -> Vec3 {
+    /// Unit vector describing the normal of the intersected triangle.
+    pub fn normal(&self) -> &Vec3 {
         self.intersection.direction()
     }
+    /// Depth, distance from camera to intersection.
     pub fn distance(&self) -> f32 {
         self.distance
     }
@@ -139,8 +142,8 @@ impl SelectablePickMesh {
     }
 }
 
-/// Meshes with `HighlightablePickMesh` will be highlighted when hovered over. If the mesh also has
-/// the `SelectablePickMesh` component, it will highlight when selected.
+/// Meshes with `HighlightablePickMesh` will be highlighted when hovered over.
+/// If the mesh also has the `SelectablePickMesh` component, it will highlight when selected.
 #[derive(Debug)]
 pub struct HighlightablePickMesh {
     // Stores the initial color of the mesh material prior to selecting/hovering
