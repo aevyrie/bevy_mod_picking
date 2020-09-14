@@ -163,13 +163,19 @@ struct DebugCursor;
 /// Updates the 3d cursor to be in the pointed world coordinates
 fn update_debug_cursor_position(
     pick_state: Res<PickState>,
-    mut query: Query<(&DebugCursor, &mut Translation)>,
+    mut query: Query<With<DebugCursor, (&mut Translation, &mut Rotation)>>,
 ) {
     // Set the cursor translation to the top pick's world coordinates
     if let Some(top_pick) = pick_state.top() {
-        let pos = top_pick.position();
-        for (_, mut translation) in &mut query.iter() {
-            translation.0 = pos;
+        let position = top_pick.position();
+        let normal = top_pick.normal();
+        let up = Vec3::from([0.0, 1.0, 0.0]);
+        let axis = normal.cross(up);
+        let angle = normal.dot(up);
+        let new_rotation = Quat::from_axis_angle(axis, angle);
+        for (mut translation, mut rotation) in &mut query.iter() {
+            translation.0 = *position;
+            rotation.0 = new_rotation;
         }
     }
 }
@@ -180,16 +186,46 @@ fn setup_debug_cursor(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    let debug_matl_head = materials.add(Color::rgb(0.0, 1.0, 0.0).into());
+    let debug_matl_tail = materials.add(Color::rgb(1.0, 1.0, 0.0).into());
+    let cube_size = 0.05;
+    let ball_size = 0.1;
     commands
         // cursor
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Icosphere {
                 subdivisions: 4,
-                radius: 0.1,
+                radius: ball_size,
             })),
-            material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
-            translation: Translation::new(1.5, 1.5, 1.5),
+            material: debug_matl_head,
             ..Default::default()
+        })
+        .with_children(|parent| {
+            // child cube
+            parent.spawn(PbrComponents {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
+                material: debug_matl_tail,
+                translation: Translation::new(0.0, cube_size + ball_size, 0.0),
+                ..Default::default()
+            });
+        })
+        .with_children(|parent| {
+            // child cube
+            parent.spawn(PbrComponents {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
+                material: debug_matl_tail,
+                translation: Translation::new(0.0, cube_size * 3.0 + ball_size, 0.0),
+                ..Default::default()
+            });
+        })
+        .with_children(|parent| {
+            // child cube
+            parent.spawn(PbrComponents {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
+                material: debug_matl_tail,
+                translation: Translation::new(0.0, cube_size * 5.0 + ball_size, 0.0),
+                ..Default::default()
+            });
         })
         .with(DebugCursor);
 }
