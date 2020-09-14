@@ -71,7 +71,7 @@ If you also want to select meshes and keep them highlighted with the left mouse 
 
 #### Pick Intersections Under the Cursor
 
-Mesh picking intersection are reported in [NDC](http://www.songho.ca/opengl/gl_projectionmatrix.html) and World Coordinates. You can use the `PickState` resource to either get the topmost entity, or a list of all entities sorted by distance (near -> far) under the cursor:
+Mesh picking intersection are reported in world coordinates. You can use the `PickState` resource to either get the topmost entity, or a list of all entities sorted by distance (near -> far) under the cursor:
 
 ```rust
 fn get_picks(
@@ -79,35 +79,6 @@ fn get_picks(
 ) {
     println!("All entities:\n{:?}", pick_state.list());
     println!("Top entity:\n{:?}", pick_state.top());
-}
-```
-
-Alternatively, you can create a query to iterate over all `PickableMesh`s and get the entity's pick coordinates with `get_pick_coord_ndc()`.
-
-#### World coordinates
-
-You can get the pick world coordinates with the `get_pick_coord_world()` function in the `PickIntersection` returned from `pick_state.top()`. You will have to pass in your camera's `projection_matrix` and `view_matrix`:
-
-```rust
-fn get_world_coords(
-    pick_state: ResMut<PickState>,
-    mut query: Query<(&DebugCursor, &mut Translation)>,
-    mut camera_query: Query<(&Transform, &Camera)>,
-) {
-    // Get the camera
-    let mut view_matrix = Mat4::zero();
-    let mut projection_matrix = Mat4::zero();
-    for (transform, camera) in &mut camera_query.iter() {
-        view_matrix = transform.value.inverse();
-        projection_matrix = camera.projection_matrix;
-    }
-
-    // Get the top pick's world position
-    if let Some(top_pick) = pick_state.top() {
-        let world_position: Vec3 = top_pick.get_pick_coord_world(projection_matrix, view_matrix);
-
-        // Do something with world_pos...
-    }
 }
 ```
 
@@ -126,4 +97,16 @@ fn set_highlight_params(
     highlight_params.set_hover_color(Color::rgb(1.0, 0.0, 0.0));
     highlight_params.set_selection_color(Color::rgb(1.0, 0.0, 1.0));
 }
+```
+
+### Debug
+
+You can also enable a debug cursor that will place a sphere at the intersection, with a tail pointing normal to the surface.
+
+<img src="https://user-images.githubusercontent.com/2632925/93063292-e3417a80-f62a-11ea-8702-215fc7c74bc8.png" alt="ezgif-2-c2c155425683"/>
+
+Just add the `DebugPickingPlugin` to the `App::build()` in your Bevy program:
+
+```rust
+.add_plugin(DebugPickingPlugin)
 ```
