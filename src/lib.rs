@@ -67,6 +67,10 @@ impl PickIntersection {
             distance,
         }
     }
+    /// Entity intersected with
+    pub fn entity(&self) -> Entity {
+        self.entity
+    }
     /// Position vector describing the intersection position.
     pub fn position(&self) -> &Vec3 {
         self.intersection.origin()
