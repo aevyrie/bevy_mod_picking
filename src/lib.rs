@@ -159,7 +159,7 @@ struct DebugCursor;
 
 /// Updates the 3d cursor to be in the pointed world coordinates
 fn update_debug_cursor_position(
-    pick_state: ResMut<PickState>,
+    pick_state: Res<PickState>,
     mut query: Query<(&DebugCursor, &mut Translation)>,
 ) {
     // Set the cursor translation to the top pick's world coordinates
@@ -328,7 +328,7 @@ fn pick_mesh(
     pick_state.ordered_pick_list.clear();
 
     // Iterate through each pickable mesh in the scene
-    for (mesh_handle, transform, pickable, entity) in &mut mesh_query.iter() {
+    for (mesh_handle, transform, _pickable, entity) in &mut mesh_query.iter() {
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
             if mesh.primitive_topology != PrimitiveTopology::TriangleList {
@@ -362,7 +362,7 @@ fn pick_mesh(
                     if index.len() != 3 {
                         break;
                     }
-                    // Construct a triangle in corld space using the mesh data
+                    // Construct a triangle in world space using the mesh data
                     let mut vertices: [Vec3; 3] = [Vec3::zero(), Vec3::zero(), Vec3::zero()];
                     for i in 0..3 {
                         let vertex_pos_local = Vec3::from(vertex_positions[index[i] as usize]);
@@ -370,8 +370,11 @@ fn pick_mesh(
                     }
                     let triangle = Triangle::from(vertices);
                     // Run the raycast on the ray and triangle
-                    if let Some(intersection) = ray_triangle_intersection(pick_ray, triangle) {
-                        let distance: f32 = (intersection.position() - camera_position).length();
+                    if let Some(intersection) =
+                        ray_triangle_intersection(&pick_ray, &triangle, RaycastAlgorithm::default())
+                    {
+                        let distance: f32 =
+                            (intersection.position() - camera_position).length().abs();
                         if distance < min_pick_distance {
                             min_pick_distance = distance;
                             pick_intersection =
