@@ -167,7 +167,7 @@ struct DebugCursor;
 /// Updates the 3d cursor to be in the pointed world coordinates
 fn update_debug_cursor_position(
     pick_state: Res<PickState>,
-    mut query: Query<With<DebugCursor, (&mut Translation, &mut Rotation)>>,
+    mut query: Query<With<DebugCursor, &mut Transform>>,
 ) {
     // Set the cursor translation to the top pick's world coordinates
     if let Some(top_pick) = pick_state.top() {
@@ -182,9 +182,9 @@ fn update_debug_cursor_position(
         } else {
             Quat::default()
         };
-        for (mut translation, mut rotation) in &mut query.iter() {
-            translation.0 = *position;
-            rotation.0 = new_rotation;
+        for mut transform in &mut query.iter() {
+            transform.set_translation(*position);
+            transform.set_rotation(new_rotation);
         }
     }
 }
@@ -214,7 +214,7 @@ fn setup_debug_cursor(
             parent.spawn(PbrComponents {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
                 material: debug_matl_tail,
-                translation: Translation::new(0.0, cube_size + ball_size, 0.0),
+                transform: Transform::from_translation(Vec3::new(0.0, cube_size + ball_size, 0.0)),
                 ..Default::default()
             });
         })
@@ -223,7 +223,11 @@ fn setup_debug_cursor(
             parent.spawn(PbrComponents {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
                 material: debug_matl_tail,
-                translation: Translation::new(0.0, cube_size * 3.0 + ball_size, 0.0),
+                transform: Transform::from_translation(Vec3::new(
+                    0.0,
+                    cube_size * 3.0 + ball_size,
+                    0.0,
+                )),
                 ..Default::default()
             });
         })
@@ -232,7 +236,11 @@ fn setup_debug_cursor(
             parent.spawn(PbrComponents {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
                 material: debug_matl_tail,
-                translation: Translation::new(0.0, cube_size * 5.0 + ball_size, 0.0),
+                transform: Transform::from_translation(Vec3::new(
+                    0.0,
+                    cube_size * 5.0 + ball_size,
+                    0.0,
+                )),
                 ..Default::default()
             });
         })
@@ -360,7 +368,7 @@ fn pick_mesh(
     let mut camera_matrix = Mat4::zero();
     let mut projection_matrix = Mat4::zero();
     for (transform, camera) in &mut camera_query.iter() {
-        camera_matrix = transform.value;
+        camera_matrix = *transform.value();
         projection_matrix = camera.projection_matrix;
     }
     let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
@@ -404,7 +412,7 @@ fn pick_mesh(
                 .unwrap();
 
             if let Some(indices) = &mesh.indices {
-                let mesh_to_world = transform.value;
+                let mesh_to_world = transform.value();
                 let mut pick_intersection: Option<PickIntersection> = None;
                 // Now that we're in the vector of vertex indices, we want to look at the vertex
                 // positions for each triangle, so we'll take indices in chunks of three, where each
