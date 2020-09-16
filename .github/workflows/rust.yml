@@ -26,7 +26,7 @@ jobs:
           args: --all -- --check
 
   build:
-    name: Build
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -43,7 +43,7 @@ jobs:
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
         if: ${{ runner.os == 'Linux' }}
         
-      - name: Run cargo build
+      - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: test
