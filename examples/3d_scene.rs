@@ -4,6 +4,7 @@ use bevy_mod_picking::*;
 fn main() {
     App::build()
         .add_resource(Msaa { samples: 4 })
+        .init_resource::<CursorEvents>()
         .add_default_plugins()
         .add_plugin(PickingPlugin)
         .add_plugin(DebugPickingPlugin)
@@ -73,9 +74,27 @@ fn setup(
         );
 }
 
-fn get_picks(pick_state: ResMut<PickState>) {
-    println!("All entities:\n{:?}", pick_state.list());
-    println!("Top entity:\n{:?}", pick_state.top());
+pub struct CursorEvents {
+    cursor_event_reader: EventReader<CursorMoved>,
+}
+
+impl Default for CursorEvents {
+    fn default() -> Self {
+        CursorEvents {
+            cursor_event_reader: EventReader::default(),
+        }
+    }
+}
+
+fn get_picks(
+    pick_state: Res<PickState>,
+    mut cursor_events: ResMut<CursorEvents>,
+    cursor: Res<Events<CursorMoved>>,
+) {
+    match cursor_events.cursor_event_reader.latest(&cursor) {
+        Some(_) => println!("Top entity:\n{:#?}", pick_state.top()),
+        None => return,
+    };
 }
 
 fn set_highlight_params(mut highlight_params: ResMut<PickHighlightParams>) {
