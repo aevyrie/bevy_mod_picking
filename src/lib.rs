@@ -139,10 +139,16 @@ pub struct SelectablePickMesh {
 
 impl SelectablePickMesh {
     pub fn new() -> Self {
-        SelectablePickMesh { selected: false }
+        SelectablePickMesh::default()
     }
     pub fn selected(&self) -> bool {
         self.selected
+    }
+}
+
+impl Default for SelectablePickMesh {
+    fn default() -> Self {
+        SelectablePickMesh { selected: false }
     }
 }
 
@@ -156,6 +162,12 @@ pub struct HighlightablePickMesh {
 
 impl HighlightablePickMesh {
     pub fn new() -> Self {
+        HighlightablePickMesh::default()
+    }
+}
+
+impl Default for HighlightablePickMesh {
+    fn default() -> Self {
         HighlightablePickMesh {
             initial_color: None,
         }
@@ -301,18 +313,16 @@ fn pick_highlighting(
         }
         if topmost {
             *current_color = highlight_params.hover_color;
-        } else {
-            if let Ok(mut query) = query_selectables.entity(entity) {
-                if let Some(selectable) = query.get() {
-                    if selectable.selected {
-                        *current_color = highlight_params.selection_color;
-                    } else {
-                        *current_color = initial_color;
-                    }
+        } else if let Ok(mut query) = query_selectables.entity(entity) {
+            if let Some(selectable) = query.get() {
+                if selectable.selected {
+                    *current_color = highlight_params.selection_color;
+                } else {
+                    *current_color = initial_color;
                 }
-            } else {
-                *current_color = initial_color;
             }
+        } else {
+            *current_color = initial_color;
         }
     }
 }

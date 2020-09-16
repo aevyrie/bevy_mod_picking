@@ -192,7 +192,7 @@ pub fn raycast_moller_trumbore(
     let point_intersection = *ray.origin() + *ray.direction() * t;
     let triangle_normal = vector_v0_to_v1.cross(vector_v0_to_v2);
 
-    return Some(Ray3D::new(point_intersection, triangle_normal));
+    Some(Ray3D::new(point_intersection, triangle_normal))
 }
 
 /// Geometric method of computing a ray-triangle intersection
@@ -253,7 +253,7 @@ pub fn raycast_geometric(ray: &Ray3D, triangle: &Triangle) -> Option<Ray3D> {
         return None;
     } // P is on the right side;
 
-    return Some(Ray3D::new(point_intersection, triangle_normal));
+    Some(Ray3D::new(point_intersection, triangle_normal))
 }
 
 #[cfg(test)]
