@@ -6,10 +6,12 @@ use bevy::{
 
 pub use rays::*;
 
+/// Encapsulates Ray3D, preventing use of struct literal syntax. This allows us to guarantee that
+/// the `Ray3d` direction is normalized, because it can only be instantiated with the constuctor.
 pub mod rays {
-
     use bevy::prelude::*;
 
+    /// A 3D ray, with an origin and direction. The direction is guaranteed to be normalized.
     #[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
     pub struct Ray3D {
         origin: Vec3,
@@ -17,6 +19,7 @@ pub mod rays {
     }
 
     impl Ray3D {
+        /// Constructs a `Ray3d`, normalizing the direction vector.
         pub fn new(origin: Vec3, direction: Vec3) -> Self {
             Ray3D {
                 origin,
@@ -39,13 +42,6 @@ pub struct Triangle {
     pub v0: Vec3,
     pub v1: Vec3,
     pub v2: Vec3,
-}
-
-impl Triangle {
-    /// Returns a tuple of vertices, useful for variable assignment
-    pub fn vertices(&self) -> (Vec3, Vec3, Vec3) {
-        (self.v0, self.v1, self.v2)
-    }
 }
 
 impl From<(Vec3, Vec3, Vec3)> for Triangle {
@@ -113,6 +109,7 @@ impl From<&Mesh> for BoundingSphere {
     }
 }
 
+#[allow(dead_code)]
 pub enum RaycastAlgorithm {
     Geometric,
     MollerTrumbore(Backfaces),
@@ -124,6 +121,7 @@ impl Default for RaycastAlgorithm {
     }
 }
 
+#[allow(dead_code)]
 pub enum Backfaces {
     Cull,
     Include,
@@ -256,4 +254,41 @@ pub fn raycast_geometric(ray: &Ray3D, triangle: &Triangle) -> Option<Ray3D> {
     } // P is on the right side;
 
     return Some(Ray3D::new(point_intersection, triangle_normal));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Triangle vertices to be used in a left-hand coordinate system
+    const V0: [f32; 3] = [1.0,-1.0,2.0];
+    const V1: [f32; 3] = [1.0,2.0,-1.0];
+    const V2: [f32; 3] = [1.0,-1.0,-1.0];
+
+    #[test]
+    fn raycast_triangle_mt() {
+        let triangle = Triangle::from([V0.into(),V1.into(),V2.into()]);
+        let ray = Ray3D::new(Vec3::zero(), Vec3::unit_x());
+        let algorithm = RaycastAlgorithm::MollerTrumbore(Backfaces::Include);
+        let result = ray_triangle_intersection(&ray, &triangle, algorithm);
+        assert_eq!(result, Some(Ray3D::new([1.0,0.0,0.0].into(), [-1.0,0.0,0.0].into())));
+    }
+
+    #[test]
+    fn raycast_triangle_mt_culling() {
+        let triangle = Triangle::from([V2.into(),V1.into(),V0.into()]);
+        let ray = Ray3D::new(Vec3::zero(), Vec3::unit_x());
+        let algorithm = RaycastAlgorithm::MollerTrumbore(Backfaces::Cull);
+        let result = ray_triangle_intersection(&ray, &triangle, algorithm);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn raycast_triangle_geometric() {
+        let triangle = Triangle::from([V0.into(),V1.into(),V2.into()]);
+        let ray = Ray3D::new(Vec3::zero(), Vec3::unit_x());
+        let algorithm = RaycastAlgorithm::Geometric;
+        let result = ray_triangle_intersection(&ray, &triangle, algorithm);
+        assert_eq!(result, Some(Ray3D::new([1.0,0.0,0.0].into(), [-1.0,0.0,0.0].into())));
+    }
 }
