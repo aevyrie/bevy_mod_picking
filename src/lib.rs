@@ -182,9 +182,9 @@ fn update_debug_cursor_position(
         } else {
             Quat::default()
         };
+        let transform_new = Mat4::from_rotation_translation(new_rotation, *position);
         for mut transform in &mut query.iter() {
-            transform.set_translation(*position);
-            transform.set_rotation(new_rotation);
+            *transform.value_mut() = transform_new;
         }
     }
 }
