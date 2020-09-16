@@ -35,7 +35,7 @@ fn setup(
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
-            translation: Translation::new(0.0, 1.0, 0.0),
+            transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
             ..Default::default()
         })
         .with(PickableMesh::new(camera_entity))
@@ -48,7 +48,7 @@ fn setup(
                 radius: 0.5,
             })),
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
-            translation: Translation::new(1.5, 1.5, 1.5),
+            transform: Transform::from_translation(Vec3::new(1.5, 1.5, 1.5)),
             ..Default::default()
         })
         .with(PickableMesh::new(camera_entity))
@@ -56,14 +56,14 @@ fn setup(
         .with(SelectablePickMesh::new())
         // light
         .spawn(LightComponents {
-            translation: Translation::new(4.0, 8.0, 4.0),
+            transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
             ..Default::default()
         })
         // camera
         .spawn_as_entity(
             camera_entity,
             Camera3dComponents {
-                transform: Transform::new_sync_disabled(Mat4::face_toward(
+                transform: Transform::new(Mat4::face_toward(
                     Vec3::new(-3.0, 5.0, 8.0),
                     Vec3::new(0.0, 0.0, 0.0),
                     Vec3::new(0.0, 1.0, 0.0),
