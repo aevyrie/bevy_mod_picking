@@ -164,10 +164,13 @@ impl HighlightablePickMesh {
 
 struct DebugCursor;
 
+struct DebugCursorMesh;
+
 /// Updates the 3d cursor to be in the pointed world coordinates
 fn update_debug_cursor_position(
     pick_state: Res<PickState>,
     mut query: Query<With<DebugCursor, &mut Transform>>,
+    mut visibility_query: Query<With<DebugCursorMesh, &mut Draw>>,
 ) {
     // Set the cursor translation to the top pick's world coordinates
     if let Some(top_pick) = pick_state.top() {
@@ -186,6 +189,13 @@ fn update_debug_cursor_position(
         for mut transform in &mut query.iter() {
             *transform.value_mut() = transform_new;
         }
+        for mut draw in &mut visibility_query.iter() {
+            draw.is_visible = true;
+        }
+    } else {
+        for mut draw in &mut visibility_query.iter() {
+            draw.is_visible = false;
+        }
     }
 }
 
@@ -195,10 +205,14 @@ fn setup_debug_cursor(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let debug_matl_head = materials.add(Color::rgb(0.0, 1.0, 0.0).into());
-    let debug_matl_tail = materials.add(Color::rgb(1.0, 1.0, 0.0).into());
-    let cube_size = 0.05;
-    let ball_size = 0.1;
+    let debug_matl = materials.add(StandardMaterial {
+        albedo: Color::rgb(0.0, 1.0, 0.0),
+        shaded: false,
+        ..Default::default()
+    });
+    let cube_size = 0.02;
+    let cube_tail_scale = 20.0;
+    let ball_size = 0.08;
     commands
         // cursor
         .spawn(PbrComponents {
@@ -206,45 +220,31 @@ fn setup_debug_cursor(
                 subdivisions: 4,
                 radius: ball_size,
             })),
-            material: debug_matl_head,
+            material: debug_matl,
             ..Default::default()
         })
         .with_children(|parent| {
             // child cube
-            parent.spawn(PbrComponents {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
-                material: debug_matl_tail,
-                transform: Transform::from_translation(Vec3::new(0.0, cube_size + ball_size, 0.0)),
-                ..Default::default()
-            });
+            parent
+                .spawn(PbrComponents {
+                    mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
+                    material: debug_matl,
+                    transform: Transform::from_non_uniform_scale(Vec3::from([
+                        1.0,
+                        cube_tail_scale,
+                        1.0,
+                    ]))
+                    .with_translation(Vec3::new(
+                        0.0,
+                        cube_size * cube_tail_scale,
+                        0.0,
+                    )),
+                    ..Default::default()
+                })
+                .with(DebugCursorMesh);
         })
-        .with_children(|parent| {
-            // child cube
-            parent.spawn(PbrComponents {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
-                material: debug_matl_tail,
-                transform: Transform::from_translation(Vec3::new(
-                    0.0,
-                    cube_size * 3.0 + ball_size,
-                    0.0,
-                )),
-                ..Default::default()
-            });
-        })
-        .with_children(|parent| {
-            // child cube
-            parent.spawn(PbrComponents {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
-                material: debug_matl_tail,
-                transform: Transform::from_translation(Vec3::new(
-                    0.0,
-                    cube_size * 5.0 + ball_size,
-                    0.0,
-                )),
-                ..Default::default()
-            });
-        })
-        .with(DebugCursor);
+        .with(DebugCursor)
+        .with(DebugCursorMesh);
 }
 
 /// Given the current selected and hovered meshes and provided materials, update the meshes with the
