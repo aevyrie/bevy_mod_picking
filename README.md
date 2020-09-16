@@ -103,11 +103,7 @@ fn set_highlight_params(
 
 ### Debug
 
-You can also enable a debug cursor that will place a sphere at the intersection, with a tail pointing normal to the surface.
-
-<img src="https://user-images.githubusercontent.com/2632925/93063292-e3417a80-f62a-11ea-8702-215fc7c74bc8.png" alt="ezgif-2-c2c155425683"/>
-
-Just add the `DebugPickingPlugin` to the `App::build()` in your Bevy program:
+You can also enable a debug cursor that will place a sphere at the intersection, with a tail pointing normal to the surface. Just add the `DebugPickingPlugin` to the `App::build()` in your Bevy program:
 
 ```rust
 .add_plugin(DebugPickingPlugin)
