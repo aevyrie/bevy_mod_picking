@@ -261,22 +261,25 @@ mod tests {
     use super::*;
 
     // Triangle vertices to be used in a left-hand coordinate system
-    const V0: [f32; 3] = [1.0,-1.0,2.0];
-    const V1: [f32; 3] = [1.0,2.0,-1.0];
-    const V2: [f32; 3] = [1.0,-1.0,-1.0];
+    const V0: [f32; 3] = [1.0, -1.0, 2.0];
+    const V1: [f32; 3] = [1.0, 2.0, -1.0];
+    const V2: [f32; 3] = [1.0, -1.0, -1.0];
 
     #[test]
     fn raycast_triangle_mt() {
-        let triangle = Triangle::from([V0.into(),V1.into(),V2.into()]);
+        let triangle = Triangle::from([V0.into(), V1.into(), V2.into()]);
         let ray = Ray3D::new(Vec3::zero(), Vec3::unit_x());
         let algorithm = RaycastAlgorithm::MollerTrumbore(Backfaces::Include);
         let result = ray_triangle_intersection(&ray, &triangle, algorithm);
-        assert_eq!(result, Some(Ray3D::new([1.0,0.0,0.0].into(), [-1.0,0.0,0.0].into())));
+        assert_eq!(
+            result,
+            Some(Ray3D::new([1.0, 0.0, 0.0].into(), [-1.0, 0.0, 0.0].into()))
+        );
     }
 
     #[test]
     fn raycast_triangle_mt_culling() {
-        let triangle = Triangle::from([V2.into(),V1.into(),V0.into()]);
+        let triangle = Triangle::from([V2.into(), V1.into(), V0.into()]);
         let ray = Ray3D::new(Vec3::zero(), Vec3::unit_x());
         let algorithm = RaycastAlgorithm::MollerTrumbore(Backfaces::Cull);
         let result = ray_triangle_intersection(&ray, &triangle, algorithm);
@@ -285,10 +288,13 @@ mod tests {
 
     #[test]
     fn raycast_triangle_geometric() {
-        let triangle = Triangle::from([V0.into(),V1.into(),V2.into()]);
+        let triangle = Triangle::from([V0.into(), V1.into(), V2.into()]);
         let ray = Ray3D::new(Vec3::zero(), Vec3::unit_x());
         let algorithm = RaycastAlgorithm::Geometric;
         let result = ray_triangle_intersection(&ray, &triangle, algorithm);
-        assert_eq!(result, Some(Ray3D::new([1.0,0.0,0.0].into(), [-1.0,0.0,0.0].into())));
+        assert_eq!(
+            result,
+            Some(Ray3D::new([1.0, 0.0, 0.0].into(), [-1.0, 0.0, 0.0].into()))
+        );
     }
 }
