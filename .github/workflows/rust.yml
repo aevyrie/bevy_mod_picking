@@ -10,6 +10,11 @@ jobs:
       - name: Install alsa
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
         if: ${{ runner.os == 'Linux' }}
+        
+      - name: Install udev
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
+        if: ${{ runner.os == 'Linux' }}
+
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -27,6 +32,11 @@ jobs:
       - name: Install alsa
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
         if: ${{ runner.os == 'Linux' }}
+        
+      - name: Install udev
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
+        if: ${{ runner.os == 'Linux' }}
+
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -44,6 +54,11 @@ jobs:
       - name: Install alsa
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
         if: ${{ runner.os == 'Linux' }}
+      
+      - name: Install udev
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
+        if: ${{ runner.os == 'Linux' }}
+
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -63,6 +78,11 @@ jobs:
       - name: Install alsa
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
         if: ${{ runner.os == 'Linux' }}
+      
+      - name: Install udev
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
+        if: ${{ runner.os == 'Linux' }}
+
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
