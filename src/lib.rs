@@ -260,7 +260,7 @@ fn setup_debug_cursor(
 }
 
 /// Given the current selected and hovered meshes and provided materials, update the meshes with the
-/// appropriate materials.
+/// appropriate materials...
 fn pick_highlighting(
     // Resources
     pick_state: Res<PickState>,

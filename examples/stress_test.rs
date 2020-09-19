@@ -1,6 +1,6 @@
 use bevy::{
-    prelude::*,
     diagnostic::{FrameTimeDiagnosticsPlugin, PrintDiagnosticsPlugin},
+    prelude::*,
 };
 use bevy_mod_picking::*;
 
@@ -22,26 +22,27 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-
-
-
     let edge_length: usize = 10;
     let subdivision: usize = 40;
-    println!("Tris per mesh: {}",(subdivision+1).pow(2)*20);
-    println!("Total tris: {}",(subdivision+1).pow(2)*20*edge_length.pow(3));
+    println!("Tris per mesh: {}", (subdivision + 1).pow(2) * 20);
+    println!(
+        "Total tris: {}",
+        (subdivision + 1).pow(2) * 20 * edge_length.pow(3)
+    );
 
     // camera
-    commands
-        .spawn(
-        Camera3dComponents {
-            transform: Transform::new(Mat4::face_toward(
-                Vec3::new(edge_length as f32*1.2, edge_length as f32*0.8, edge_length as f32*1.2),
-                Vec3::new(0.0, -(edge_length as f32)*0.1, 0.0),
-                Vec3::new(0.0, 1.0, 0.0),
-            )),
-            ..Default::default()
-        },
-    );
+    commands.spawn(Camera3dComponents {
+        transform: Transform::new(Mat4::face_toward(
+            Vec3::new(
+                edge_length as f32 * 1.2,
+                edge_length as f32 * 0.8,
+                edge_length as f32 * 1.2,
+            ),
+            Vec3::new(0.0, -(edge_length as f32) * 0.1, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        )),
+        ..Default::default()
+    });
 
     let camera_entity = commands.current_entity().unwrap();
 
@@ -54,7 +55,12 @@ fn setup(
                     subdivisions: subdivision,
                 })),
                 material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
-                transform: Transform::from_translation(Vec3::new(i as f32 % f_edge_length - f_edge_length/2.0, (i as f32/f_edge_length).round()%f_edge_length - f_edge_length/2.0, (i as f32/(f_edge_length*f_edge_length)).round()%f_edge_length - f_edge_length/2.0)),
+                transform: Transform::from_translation(Vec3::new(
+                    i as f32 % f_edge_length - f_edge_length / 2.0,
+                    (i as f32 / f_edge_length).round() % f_edge_length - f_edge_length / 2.0,
+                    (i as f32 / (f_edge_length * f_edge_length)).round() % f_edge_length
+                        - f_edge_length / 2.0,
+                )),
                 ..Default::default()
             })
             .with(PickableMesh::new(camera_entity))
@@ -62,9 +68,8 @@ fn setup(
             .with(SelectablePickMesh::new());
     }
 
-    commands
-        .spawn(LightComponents {
-            transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
-            ..Default::default()
-        });
+    commands.spawn(LightComponents {
+        transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
+        ..Default::default()
+    });
 }
