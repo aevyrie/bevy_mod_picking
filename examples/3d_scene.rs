@@ -20,10 +20,25 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let camera_entity = Entity::new();
+
     // add entities to the world
     commands
-        // plane
+        // camera
+        .spawn(
+            Camera3dComponents {
+                transform: Transform::new(Mat4::face_toward(
+                    Vec3::new(-3.0, 5.0, 8.0),
+                    Vec3::new(0.0, 0.0, 0.0),
+                    Vec3::new(0.0, 1.0, 0.0),
+                )),
+                ..Default::default()
+            },
+        );
+
+    let camera_entity = commands.current_entity().unwrap();
+
+    commands
+        //plane
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 10.0 })),
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
@@ -59,19 +74,7 @@ fn setup(
         .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
             ..Default::default()
-        })
-        // camera
-        .spawn_as_entity(
-            camera_entity,
-            Camera3dComponents {
-                transform: Transform::new(Mat4::face_toward(
-                    Vec3::new(-3.0, 5.0, 8.0),
-                    Vec3::new(0.0, 0.0, 0.0),
-                    Vec3::new(0.0, 1.0, 0.0),
-                )),
-                ..Default::default()
-            },
-        );
+        });
 }
 
 pub struct CursorEvents {

@@ -278,7 +278,7 @@ fn pick_highlighting(
         &SelectablePickMesh,
         &Handle<StandardMaterial>,
     )>,
-    query_selectables: Query<&SelectablePickMesh>,
+    mut query_selectables: Query<&SelectablePickMesh>,
 ) {
     // Query selectable entities that have changed
     for (mut highlightable, selectable, material_handle) in &mut query_selected.iter() {

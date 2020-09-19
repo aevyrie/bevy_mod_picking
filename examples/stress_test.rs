@@ -22,11 +22,29 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let camera_entity = Entity::new();
+
+
+
     let edge_length: usize = 10;
     let subdivision: usize = 40;
     println!("Tris per mesh: {}",(subdivision+1).pow(2)*20);
     println!("Total tris: {}",(subdivision+1).pow(2)*20*edge_length.pow(3));
+
+    // camera
+    commands
+        .spawn(
+        Camera3dComponents {
+            transform: Transform::new(Mat4::face_toward(
+                Vec3::new(edge_length as f32*1.2, edge_length as f32*0.8, edge_length as f32*1.2),
+                Vec3::new(0.0, -(edge_length as f32)*0.1, 0.0),
+                Vec3::new(0.0, 1.0, 0.0),
+            )),
+            ..Default::default()
+        },
+    );
+
+    let camera_entity = commands.current_entity().unwrap();
+
     for i in 0..edge_length.pow(3) {
         let f_edge_length = edge_length as f32;
         let _a = commands
@@ -43,21 +61,10 @@ fn setup(
             .with(HighlightablePickMesh::new())
             .with(SelectablePickMesh::new());
     }
+
     commands
         .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
             ..Default::default()
-        })
-        // camera
-        .spawn_as_entity(
-            camera_entity,
-            Camera3dComponents {
-                transform: Transform::new(Mat4::face_toward(
-                    Vec3::new(edge_length as f32*1.2, edge_length as f32*0.8, edge_length as f32*1.2),
-                    Vec3::new(0.0, -(edge_length as f32)*0.1, 0.0),
-                    Vec3::new(0.0, 1.0, 0.0),
-                )),
-                ..Default::default()
-            },
-        );
+        });
 }
