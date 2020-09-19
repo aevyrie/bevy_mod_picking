@@ -9,6 +9,7 @@ use bevy::{
     window::CursorMoved,
 };
 use raycast::*;
+use std::collections::HashMap;
 
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
@@ -278,7 +279,7 @@ fn pick_highlighting(
         &SelectablePickMesh,
         &Handle<StandardMaterial>,
     )>,
-    query_selectables: Query<&SelectablePickMesh>,
+    mut query_selectables: Query<&SelectablePickMesh>,
 ) {
     // Query selectable entities that have changed
     for (mut highlightable, selectable, material_handle) in &mut query_selected.iter() {
@@ -358,7 +359,7 @@ fn pick_mesh(
     windows: Res<Windows>,
     // Queries
     mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, Entity, &Draw)>,
-    mut camera_query: Query<(&Transform, &Camera)>,
+    mut camera_query: Query<(&Transform, &Camera, Entity)>,
 ) {
     // Get the cursor position
     let cursor_pos_screen: Vec2 = match pick_state.cursor_event_reader.latest(&cursor) {
@@ -374,94 +375,100 @@ fn pick_mesh(
     let cursor_pos_ndc: Vec3 =
         ((cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0])).extend(1.0);
 
-    // Get the view transform and projection matrix from the camera
-    let mut camera_matrix = Mat4::zero();
-    let mut projection_matrix = Mat4::zero();
-    for (transform, camera) in &mut camera_query.iter() {
-        camera_matrix = *transform.value();
-        projection_matrix = camera.projection_matrix;
+    // collect and calculate pick_ray and camera_position from all cameras
+    let mut rays: HashMap<Entity, (Ray3D, Vec3)> = HashMap::new();
+
+    for (transform, camera, entity) in &mut camera_query.iter() {
+        let camera_matrix = *transform.value();
+        let projection_matrix = camera.projection_matrix;
+        let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
+
+        let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
+        let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
+
+        let ray_direction = cursor_position - camera_position;
+
+        let pick_ray = Ray3D::new(camera_position, ray_direction);
+
+        rays.insert(entity.clone(), (pick_ray, camera_position));
     }
-    let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
-
-    let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
-    let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
-
-    let ray_direction = cursor_position - camera_position;
-
-    let pick_ray = Ray3D::new(camera_position, ray_direction);
 
     // After initial checks completed, clear the pick list
     pick_state.ordered_pick_list.clear();
 
     // Iterate through each pickable mesh in the scene
-    for (mesh_handle, transform, _pickable, entity, draw) in &mut mesh_query.iter() {
+    for (mesh_handle, transform, pickable, entity, draw) in &mut mesh_query.iter() {
         if !draw.is_visible {
             continue;
         }
 
-        // Use the mesh handle to get a reference to a mesh asset
-        if let Some(mesh) = meshes.get(mesh_handle) {
-            if mesh.primitive_topology != PrimitiveTopology::TriangleList {
-                continue;
-            }
+        if let Some((pick_ray, camera_position)) = rays.get(&pickable.camera_entity) {
+            // Use the mesh handle to get a reference to a mesh asset
+            if let Some(mesh) = meshes.get(mesh_handle) {
+                if mesh.primitive_topology != PrimitiveTopology::TriangleList {
+                    continue;
+                }
 
-            // The ray cast can hit the same mesh many times, so we need to track which hit is
-            // closest to the camera, and record that.
-            let mut min_pick_distance = f32::MAX;
+                // The ray cast can hit the same mesh many times, so we need to track which hit is
+                // closest to the camera, and record that.
+                let mut min_pick_distance = f32::MAX;
 
-            // Get the vertex positions from the mesh reference resolved from the mesh handle
-            let vertex_positions: Vec<[f32; 3]> = mesh
-                .attributes
-                .iter()
-                .filter(|attribute| attribute.name == VertexAttribute::POSITION)
-                .filter_map(|attribute| match &attribute.values {
-                    VertexAttributeValues::Float3(positions) => Some(positions.clone()),
-                    _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
-                })
-                .last()
-                .unwrap();
+                // Get the vertex positions from the mesh reference resolved from the mesh handle
+                let vertex_positions: Vec<[f32; 3]> = mesh
+                    .attributes
+                    .iter()
+                    .filter(|attribute| attribute.name == VertexAttribute::POSITION)
+                    .filter_map(|attribute| match &attribute.values {
+                        VertexAttributeValues::Float3(positions) => Some(positions.clone()),
+                        _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
+                    })
+                    .last()
+                    .unwrap();
 
-            if let Some(indices) = &mesh.indices {
-                let mesh_to_world = transform.value();
-                let mut pick_intersection: Option<PickIntersection> = None;
-                // Now that we're in the vector of vertex indices, we want to look at the vertex
-                // positions for each triangle, so we'll take indices in chunks of three, where each
-                // chunk of three indices are references to the three vertices of a triangle.
-                for index in indices.chunks(3) {
-                    // Make sure this chunk has 3 vertices to avoid a panic.
-                    if index.len() != 3 {
-                        break;
-                    }
-                    // Construct a triangle in world space using the mesh data
-                    let mut vertices: [Vec3; 3] = [Vec3::zero(), Vec3::zero(), Vec3::zero()];
-                    for i in 0..3 {
-                        let vertex_pos_local = Vec3::from(vertex_positions[index[i] as usize]);
-                        vertices[i] = mesh_to_world.transform_point3(vertex_pos_local)
-                    }
-                    let triangle = Triangle::from(vertices);
-                    // Run the raycast on the ray and triangle
-                    if let Some(intersection) =
-                        ray_triangle_intersection(&pick_ray, &triangle, RaycastAlgorithm::default())
-                    {
-                        let distance: f32 =
-                            (*intersection.origin() - camera_position).length().abs();
-                        if distance < min_pick_distance {
-                            min_pick_distance = distance;
-                            pick_intersection =
-                                Some(PickIntersection::new(entity, intersection, distance));
+                if let Some(indices) = &mesh.indices {
+                    let mesh_to_world = transform.value();
+                    let mut pick_intersection: Option<PickIntersection> = None;
+                    // Now that we're in the vector of vertex indices, we want to look at the vertex
+                    // positions for each triangle, so we'll take indices in chunks of three, where each
+                    // chunk of three indices are references to the three vertices of a triangle.
+                    for index in indices.chunks(3) {
+                        // Make sure this chunk has 3 vertices to avoid a panic.
+                        if index.len() != 3 {
+                            break;
+                        }
+                        // Construct a triangle in world space using the mesh data
+                        let mut vertices: [Vec3; 3] = [Vec3::zero(), Vec3::zero(), Vec3::zero()];
+                        for i in 0..3 {
+                            let vertex_pos_local = Vec3::from(vertex_positions[index[i] as usize]);
+                            vertices[i] = mesh_to_world.transform_point3(vertex_pos_local)
+                        }
+                        let triangle = Triangle::from(vertices);
+                        // Run the raycast on the ray and triangle
+                        if let Some(intersection) = ray_triangle_intersection(
+                            &pick_ray,
+                            &triangle,
+                            RaycastAlgorithm::default(),
+                        ) {
+                            let distance: f32 =
+                                (*intersection.origin() - *camera_position).length().abs();
+                            if distance < min_pick_distance {
+                                min_pick_distance = distance;
+                                pick_intersection =
+                                    Some(PickIntersection::new(entity, intersection, distance));
+                            }
                         }
                     }
+                    // Finished going through the current mesh, update pick states
+                    if let Some(pick) = pick_intersection {
+                        pick_state.ordered_pick_list.push(pick);
+                    }
+                } else {
+                    // If we get here the mesh doesn't have an index list!
+                    panic!(
+                        "No index matrix found in mesh {:?}\n{:?}",
+                        mesh_handle, mesh
+                    );
                 }
-                // Finished going through the current mesh, update pick states
-                if let Some(pick) = pick_intersection {
-                    pick_state.ordered_pick_list.push(pick);
-                }
-            } else {
-                // If we get here the mesh doesn't have an index list!
-                panic!(
-                    "No index matrix found in mesh {:?}\n{:?}",
-                    mesh_handle, mesh
-                );
             }
         }
     }
