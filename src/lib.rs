@@ -390,7 +390,7 @@ fn pick_mesh(
 
         let pick_ray = Ray3D::new(camera_position, ray_direction);
 
-        rays.insert(entity.clone(), (pick_ray, camera_position));
+        rays.insert(entity, (pick_ray, camera_position));
     }
 
     // After initial checks completed, clear the pick list
