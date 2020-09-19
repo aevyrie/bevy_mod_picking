@@ -21,8 +21,8 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // add entities to the world
-    commands
-        // camera
+    // camera
+    let camera_entity = commands
         .spawn(Camera3dComponents {
             transform: Transform::new(Mat4::face_toward(
                 Vec3::new(-3.0, 5.0, 8.0),
@@ -30,9 +30,8 @@ fn setup(
                 Vec3::new(0.0, 1.0, 0.0),
             )),
             ..Default::default()
-        });
-
-    let camera_entity = commands.current_entity().unwrap();
+        })
+        .current_entity().unwrap();
 
     commands
         //plane
