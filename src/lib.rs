@@ -260,7 +260,7 @@ fn setup_debug_cursor(
 }
 
 /// Given the current selected and hovered meshes and provided materials, update the meshes with the
-/// appropriate materials.
+/// appropriate materials...
 fn pick_highlighting(
     // Resources
     pick_state: Res<PickState>,
@@ -278,7 +278,7 @@ fn pick_highlighting(
         &SelectablePickMesh,
         &Handle<StandardMaterial>,
     )>,
-    query_selectables: Query<&SelectablePickMesh>,
+    mut query_selectables: Query<&SelectablePickMesh>,
 ) {
     // Query selectable entities that have changed
     for (mut highlightable, selectable, material_handle) in &mut query_selected.iter() {
