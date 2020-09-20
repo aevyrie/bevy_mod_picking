@@ -375,8 +375,8 @@ fn pick_mesh(
     let cursor_pos_ndc: Vec3 =
         ((cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0])).extend(1.0);
 
-    // collect and calculate pick_ray and camera_position from all cameras
-    let mut rays: HashMap<Entity, (Ray3D, Vec3)> = HashMap::new();
+    // collect and calculate pick_ray from all cameras
+    let mut rays: HashMap<Entity, Ray3D> = HashMap::new();
 
     for (transform, camera, entity) in &mut camera_query.iter() {
         let camera_matrix = *transform.value();
@@ -390,7 +390,7 @@ fn pick_mesh(
 
         let pick_ray = Ray3D::new(camera_position, ray_direction);
 
-        rays.insert(entity, (pick_ray, camera_position));
+        rays.insert(entity, pick_ray);
     }
 
     // After initial checks completed, clear the pick list
@@ -402,7 +402,7 @@ fn pick_mesh(
             continue;
         }
 
-        if let Some((pick_ray, camera_position)) = rays.get(&pickable.camera_entity) {
+        if let Some(pick_ray) = rays.get(&pickable.camera_entity) {
             // Use the mesh handle to get a reference to a mesh asset
             if let Some(mesh) = meshes.get(mesh_handle) {
                 if mesh.primitive_topology != PrimitiveTopology::TriangleList {
@@ -450,7 +450,7 @@ fn pick_mesh(
                             RaycastAlgorithm::default(),
                         ) {
                             let distance: f32 =
-                                (*intersection.origin() - *camera_position).length().abs();
+                                (*intersection.origin() - *pick_ray.origin()).length().abs();
                             if distance < min_pick_distance {
                                 min_pick_distance = distance;
                                 pick_intersection =
