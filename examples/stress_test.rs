@@ -40,8 +40,8 @@ fn setup(
             )),
             ..Default::default()
         })
-        .current_entity().unwrap();
-
+        .current_entity()
+        .unwrap();
 
     for i in 0..edge_length.pow(3) {
         let f_edge_length = edge_length as f32;
