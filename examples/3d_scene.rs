@@ -31,7 +31,8 @@ fn setup(
             )),
             ..Default::default()
         })
-        .current_entity().unwrap();
+        .current_entity()
+        .unwrap();
 
     commands
         //plane
