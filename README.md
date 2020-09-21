@@ -4,13 +4,13 @@ This is a 3D mouse picking plugin for [Bevy](https://github.com/bevyengine/bevy)
 
 Out of the box, the plugin provides: pick depth, pick coordinates, and surface normal of the picked mesh triangle.
 
-**Expect Breaking Changes - Issues/PRs Welcome**
+**Expect Breaking Changes in `master` - Contributions Welcome**
 
-![Picking demo](docs/demo.webp)
+![Picking demo](https://raw.githubusercontent.com/aevyrie/bevy_mod_picking/master/docs/picking_demo.webp)
 
 ## Getting Started
 
-To run the `3d_scene` example - a modified version of the `bevy` example of the same name - clone this repository and run:
+To run the `3d_scene` example - a modified version of the `Bevy` example of the same name - clone this repository and run:
 ```console
 cargo run --example 3d_scene
 ```
@@ -19,10 +19,10 @@ cargo run --example 3d_scene
 
 ### Setup
 
-Add the repo to your dependencies in Cargo.toml
+Add the most recent crates.io release to your dependencies in Cargo.toml
 
 ```toml
-bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking", branch = "master" }
+bevy_mod_picking = "0.1.2"
 ```
 
 Import the plugin:
@@ -42,13 +42,12 @@ Add it to your App::build() in the plugins section of your Bevy app:
 Make sure you have your camera's entity on hand, you could do the following in your setup system:
 
 ```rust
-let camera_entity = Entity::new();
-
-// ...
-
-.spawn_as_entity(camera_entity, Camera3dComponents {
-
-// ...
+let camera_entity = commands
+        .spawn(Camera3dComponents {
+            ..Default::default()
+        })
+        .current_entity()
+        .unwrap();
 ```
 
 Now all you have to do is mark any mesh entities with the `PickableMesh` component:
