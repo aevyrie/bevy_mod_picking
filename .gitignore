@@ -2,3 +2,4 @@
 Cargo.lock
 .cargo/config
 .vscode
+.cargo/credentials.toml
