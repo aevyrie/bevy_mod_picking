@@ -116,18 +116,56 @@ impl Default for PickHighlightParams {
     }
 }
 
+/// Used to group pickable meshes with a camera into sets
+#[derive(Debug)]
+pub enum PickingGroup {
+    None,
+    Group(usize),
+}
+
 /// Marks an entity as pickable
 #[derive(Debug)]
 pub struct PickableMesh {
-    camera_entity: Entity,
+    picking_group: PickingGroup,
     bounding_sphere: Option<BoundingSphere>,
 }
 
 impl PickableMesh {
-    pub fn new(camera_entity: Entity) -> Self {
+    pub fn new(picking_group: PickingGroup) -> Self {
         PickableMesh {
-            camera_entity,
+            picking_group,
             bounding_sphere: None,
+        }
+    }
+}
+
+impl Default for PickableMesh {
+    fn default() -> Self {
+        PickableMesh {
+            picking_group: PickingGroup::Group(0),
+            bounding_sphere: None,
+        }
+    }
+}
+
+// Marks a camera to be used for picking
+#[derive(Debug)]
+pub struct PickingCamera {
+    picking_group: PickingGroup,
+}
+
+impl PickingCamera {
+    pub fn new(picking_group: PickingGroup) -> Self {
+        PickingCamera {
+            picking_group,
+        }
+    }
+}
+
+impl Default for PickingCamera {
+    fn default() -> Self {
+        PickingCamera {
+            picking_group: PickingGroup::Group(0),
         }
     }
 }
@@ -359,7 +397,7 @@ fn pick_mesh(
     windows: Res<Windows>,
     // Queries
     mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, Entity, &Draw)>,
-    mut camera_query: Query<(&Transform, &Camera, Entity)>,
+    mut camera_query: Query<(&Transform, &Camera, &PickingCamera)>,
 ) {
     // Get the cursor position
     let cursor_pos_screen: Vec2 = match pick_state.cursor_event_reader.latest(&cursor) {
@@ -375,24 +413,28 @@ fn pick_mesh(
     let cursor_pos_ndc: Vec3 =
         ((cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0])).extend(1.0);
 
-    // collect and calculate pick_ray from all cameras
-    let mut rays: HashMap<Entity, Ray3D> = HashMap::new();
+    // Collect and calculate pick_ray from all cameras
+    let mut rays: HashMap<PickingGroup, Ray3D> = HashMap::new();
 
-    for (transform, camera, entity) in &mut camera_query.iter() {
-        let camera_matrix = *transform.value();
-        let projection_matrix = camera.projection_matrix;
-        let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
+    for (transform, camera, picking_cam) in &mut camera_query.iter() {
+        if let PickingGroup::Group(group_number) = picking_cam.picking_group {
+            let camera_matrix = *transform.value();
+            let projection_matrix = camera.projection_matrix;
+            let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
 
-        let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
-        let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
+            let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
+            let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
 
-        let ray_direction = cursor_position - camera_position;
+            let ray_direction = cursor_position - camera_position;
 
-        let pick_ray = Ray3D::new(camera_position, ray_direction);
+            let pick_ray = Ray3D::new(camera_position, ray_direction);
 
-        rays.insert(entity, pick_ray);
+            if let Some(ray) = rays.insert(picking_cam.picking_group, pick_ray) {
+                panic!("Multiple cameras have been added to group: {}", group_number);
+            }
+        }
     }
-
+    
     // After initial checks completed, clear the pick list
     pick_state.ordered_pick_list.clear();
 
@@ -402,7 +444,12 @@ fn pick_mesh(
             continue;
         }
 
-        if let Some(pick_ray) = rays.get(&pickable.camera_entity) {
+        if let PickingGroup::None = &pickable.picking_group {
+            continue;
+        }
+
+        if let Some(ray) = rays.get(&pickable.picking_group) {
+               
             // Use the mesh handle to get a reference to a mesh asset
             if let Some(mesh) = meshes.get(mesh_handle) {
                 if mesh.primitive_topology != PrimitiveTopology::TriangleList {
