@@ -11,6 +11,7 @@ Out of the box, the plugin provides: pick depth, pick coordinates, and surface n
 ## Getting Started
 
 To run the `3d_scene` example - a modified version of the `Bevy` example of the same name - clone this repository and run:
+
 ```console
 cargo run --example 3d_scene
 ```
