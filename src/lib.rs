@@ -18,6 +18,7 @@ impl Plugin for PickingPlugin {
             .init_resource::<PickHighlightParams>()
             .add_system(pick_mesh.system())
             .add_system(select_mesh.system())
+            .add_system(build_rays.system())
             .add_system(pick_highlighting.system());
     }
 }
@@ -415,59 +416,125 @@ fn select_mesh(
     }
 }
 
-fn pick_mesh(
+fn build_rays(
     // Resources
     mut pick_state: ResMut<PickState>,
     cursor: Res<Events<CursorMoved>>,
-    meshes: Res<Assets<Mesh>>,
     windows: Res<Windows>,
     // Queries
-    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, Entity, &Draw)>,
-    mut pick_source_query: Query<(&Transform, &Camera, &PickingSource)>,
+    mut pick_source_query: Query<&PickingSource>,
+    mut camera_query: Query<(&Transform, &Camera)>,
+    mut transform_query: Query<&Transform>,
 ) {
-    // Get the cursor position
-    let cursor_pos_screen: Vec2 = match pick_state.cursor_event_reader.latest(&cursor) {
-        Some(cursor_moved) => cursor_moved.position,
-        None => return,
-    };
-
-    // Get current screen size
-    let window = windows.get_primary().unwrap();
-    let screen_size = Vec2::from([window.width as f32, window.height as f32]);
-
-    // Normalized device coordinates (NDC) describes cursor position from (-1, -1, -1) to (1, 1, 1)
-    let cursor_pos_ndc: Vec3 =
-        ((cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0])).extend(1.0);
-
     // Collect and calculate pick_ray from all cameras
     pick_state.ray_map.clear();
-    for (transform, camera, pick_source) in &mut pick_source_query.iter() {
-        if let PickingGroup::Group(group_number) = pick_source.group {
-            let camera_matrix = *transform.value();
-            let projection_matrix = camera.projection_matrix;
-            let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
 
-            let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
-            let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
+    for pick_source in &mut pick_source_query.iter() {
+        let group_number = match pick_source.group {
+            PickingGroup::Group(num) => num,
+            PickingGroup::None => continue,
+        };
 
-            let ray_direction = cursor_position - camera_position;
+        match pick_source.pick_method {
+            PickingMethod::Cursor(window_id) => {
+                // Get the cursor position
+                let cursor_pos_screen: Vec2 = match pick_state.cursor_event_reader.latest(&cursor) {
+                    Some(cursor_moved) => cursor_moved.position,
+                    None => continue,
+                };
 
-            let pick_ray = Ray3D::new(camera_position, ray_direction);
+                // Get current screen size
+                let window = windows.get(window_id).unwrap();
+                let screen_size = Vec2::from([window.width as f32, window.height as f32]);
 
-            if pick_state
-                .ray_map
-                .insert(pick_source.group, pick_ray)
-                .is_some()
-            {
-                panic!(
-                    "Multiple cameras have been added to group: {}",
-                    group_number
-                );
+                // Normalized device coordinates (NDC) describes cursor position from (-1, -1, -1) to (1, 1, 1)
+                let cursor_pos_ndc: Vec3 =
+                    ((cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0])).extend(1.0);
+
+                for (transform, camera) in &mut camera_query.iter() {
+                    let camera_matrix = *transform.value();
+                    let projection_matrix = camera.projection_matrix;
+                    let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
+
+                    let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
+                    let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
+
+                    let ray_direction = cursor_position - camera_position;
+
+                    let pick_ray = Ray3D::new(camera_position, ray_direction);
+
+                    if pick_state
+                        .ray_map
+                        .insert(pick_source.group, pick_ray)
+                        .is_some()
+                    {
+                        panic!(
+                            "Multiple PickingSources have been added to pick group: {}",
+                            group_number
+                        );
+                    }
+                }
+            }
+            PickingMethod::ScreenSpace(coordinates_ndc) => {
+                for (transform, camera) in &mut camera_query.iter() {
+                    let cursor_pos_ndc: Vec3 = coordinates_ndc.extend(1.0);
+                    let camera_matrix = *transform.value();
+                    let projection_matrix = camera.projection_matrix;
+                    let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
+
+                    let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
+                    let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
+
+                    let ray_direction = cursor_position - camera_position;
+
+                    let pick_ray = Ray3D::new(camera_position, ray_direction);
+
+                    if pick_state
+                        .ray_map
+                        .insert(pick_source.group, pick_ray)
+                        .is_some()
+                    {
+                        panic!(
+                            "Multiple PickingSources have been added to pick group: {}",
+                            group_number
+                        );
+                    }
+                }
+            }
+            PickingMethod::Center => {
+                for transform in &mut transform_query.iter() {
+                    let pick_position_ndc = Vec3::from([0.0, 0.0, 1.0]);
+                    let source_transform = *transform.value();
+                    let pick_position = source_transform.transform_point3(pick_position_ndc);
+
+                    let (_, _, source_origin) = source_transform.to_scale_rotation_translation();
+                    let ray_direction = pick_position - source_origin;
+
+                    let pick_ray = Ray3D::new(source_origin, ray_direction);
+
+                    if pick_state
+                        .ray_map
+                        .insert(pick_source.group, pick_ray)
+                        .is_some()
+                    {
+                        panic!(
+                            "Multiple PickingSources have been added to pick group: {}",
+                            group_number
+                        );
+                    }
+                }
             }
         }
     }
+}
 
-    // After initial checks completed, clear the pick list
+fn pick_mesh(
+    // Resources
+    mut pick_state: ResMut<PickState>,
+    meshes: Res<Assets<Mesh>>,
+    // Queries
+    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, Entity, &Draw)>,
+) {
     pick_state.ordered_pick_list_map.clear();
 
     // Iterate through each pickable mesh in the scene
