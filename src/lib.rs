@@ -156,9 +156,7 @@ pub struct PickingCamera {
 
 impl PickingCamera {
     pub fn new(picking_group: PickingGroup) -> Self {
-        PickingCamera {
-            picking_group,
-        }
+        PickingCamera { picking_group }
     }
 }
 
@@ -429,12 +427,15 @@ fn pick_mesh(
 
             let pick_ray = Ray3D::new(camera_position, ray_direction);
 
-            if let Some(_) = rays.insert(picking_cam.picking_group, pick_ray) {
-                panic!("Multiple cameras have been added to group: {}", group_number);
+            if rays.insert(picking_cam.picking_group, pick_ray).is_some() {
+                panic!(
+                    "Multiple cameras have been added to group: {}",
+                    group_number
+                );
             }
         }
     }
-    
+
     // After initial checks completed, clear the pick list
     pick_state.ordered_pick_list.clear();
 
@@ -449,7 +450,6 @@ fn pick_mesh(
         }
 
         if let Some(pick_ray) = rays.get(&pickable.picking_group) {
-               
             // Use the mesh handle to get a reference to a mesh asset
             if let Some(mesh) = meshes.get(mesh_handle) {
                 if mesh.primitive_topology != PrimitiveTopology::TriangleList {
