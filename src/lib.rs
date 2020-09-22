@@ -423,8 +423,8 @@ fn build_rays(
     windows: Res<Windows>,
     // Queries
     mut pick_source_query: Query<&PickingSource>,
-    mut camera_query: Query<(&Transform, &Camera)>,
-    mut transform_query: Query<&Transform>,
+    mut camera_query: Query<With<PickingSource,(&Transform, &Camera)>>,
+    mut transform_query: Query<With<PickingSource,&Transform>>,
 ) {
     // Collect and calculate pick_ray from all cameras
     pick_state.ray_map.clear();
