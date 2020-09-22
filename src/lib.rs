@@ -138,12 +138,12 @@ impl Default for PickingGroup {
 /// Marks an entity as pickable
 #[derive(Debug)]
 pub struct PickableMesh {
-    group: PickingGroup,
+    group: Vec<PickingGroup>,
     bounding_sphere: Option<BoundingSphere>,
 }
 
 impl PickableMesh {
-    pub fn new(picking_group: PickingGroup) -> Self {
+    pub fn new(picking_group: Vec<PickingGroup>) -> Self {
         PickableMesh {
             group: picking_group,
             bounding_sphere: None,
@@ -154,7 +154,7 @@ impl PickableMesh {
 impl Default for PickableMesh {
     fn default() -> Self {
         PickableMesh {
-            group: PickingGroup::default(),
+            group: [PickingGroup::default()].into(),
             bounding_sphere: None,
         }
     }
@@ -535,7 +535,14 @@ fn pick_mesh(
     // Queries
     mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, Entity, &Draw)>,
 ) {
-    pick_state.ordered_pick_list_map.clear();
+
+    // If there are no rays, then there is nothing to do here
+    if pick_state.ray_map.is_empty() {
+        return
+    } else {
+        // TODO only clear out lists if the corresponding group has a ray
+        pick_state.ordered_pick_list_map.clear();
+    }
 
     // Iterate through each pickable mesh in the scene
     for (mesh_handle, transform, pickable, entity, draw) in &mut mesh_query.iter() {
@@ -545,12 +552,15 @@ fn pick_mesh(
 
         let pick_group = &pickable.group;
 
-        // Check for a pick ray in the group this mesh belongs to
-        let pick_ray = if let Some(ray) = pick_state.ray_map.get(pick_group) {
-            *ray
-        } else {
-            continue;
-        };
+        // Check for a pick ray(s) in the group this mesh belongs to
+        let mut pick_rays: Vec<(&PickingGroup, Ray3D)> = Vec::new();
+        for group in pick_group.iter() {
+            if let Some(ray) = pick_state.ray_map.get(group) {
+                pick_rays.push((group, *ray));
+            }
+        }
+
+        if pick_rays.is_empty() { continue }
 
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
@@ -558,62 +568,67 @@ fn pick_mesh(
                 continue;
             }
 
-            // The ray cast can hit the same mesh many times, so we need to track which hit is
-            // closest to the camera, and record that.
-            let mut min_pick_distance = f32::MAX;
-
             // Get the vertex positions from the mesh reference resolved from the mesh handle
             let vertex_positions: Vec<[f32; 3]> = mesh
-                .attributes
-                .iter()
-                .filter(|attribute| attribute.name == VertexAttribute::POSITION)
-                .filter_map(|attribute| match &attribute.values {
-                    VertexAttributeValues::Float3(positions) => Some(positions.clone()),
-                    _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
-                })
-                .last()
-                .unwrap();
+            .attributes
+            .iter()
+            .filter(|attribute| attribute.name == VertexAttribute::POSITION)
+            .filter_map(|attribute| match &attribute.values {
+                VertexAttributeValues::Float3(positions) => Some(positions.clone()),
+                _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
+            })
+            .last()
+            .unwrap();
 
             if let Some(indices) = &mesh.indices {
-                let mesh_to_world = transform.value();
-                let mut pick_intersection: Option<PickIntersection> = None;
-                // Now that we're in the vector of vertex indices, we want to look at the vertex
-                // positions for each triangle, so we'll take indices in chunks of three, where each
-                // chunk of three indices are references to the three vertices of a triangle.
-                for index in indices.chunks(3) {
-                    // Make sure this chunk has 3 vertices to avoid a panic.
-                    if index.len() != 3 {
-                        break;
-                    }
-                    // Construct a triangle in world space using the mesh data
-                    let mut vertices: [Vec3; 3] = [Vec3::zero(), Vec3::zero(), Vec3::zero()];
-                    for i in 0..3 {
-                        let vertex_pos_local = Vec3::from(vertex_positions[index[i] as usize]);
-                        vertices[i] = mesh_to_world.transform_point3(vertex_pos_local)
-                    }
-                    let triangle = Triangle::from(vertices);
-                    // Run the raycast on the ray and triangle
-                    if let Some(intersection) =
-                        ray_triangle_intersection(&pick_ray, &triangle, RaycastAlgorithm::default())
-                    {
-                        let distance: f32 =
-                            (*intersection.origin() - *pick_ray.origin()).length().abs();
-                        if distance < min_pick_distance {
-                            min_pick_distance = distance;
-                            pick_intersection =
-                                Some(PickIntersection::new(entity, intersection, distance));
+
+                // Iterate over the list of pick rays that belong to the same group as this mesh
+                for (pick_group, pick_ray) in pick_rays {
+
+                    // The ray cast can hit the same mesh many times, so we need to track which hit is
+                    // closest to the camera, and record that.
+                    let mut min_pick_distance = f32::MAX;
+
+                    let mesh_to_world = transform.value();
+                    let mut pick_intersection: Option<PickIntersection> = None;
+                    // Now that we're in the vector of vertex indices, we want to look at the vertex
+                    // positions for each triangle, so we'll take indices in chunks of three, where each
+                    // chunk of three indices are references to the three vertices of a triangle.
+                    for index in indices.chunks(3) {
+                        // Make sure this chunk has 3 vertices to avoid a panic.
+                        if index.len() != 3 {
+                            break;
+                        }
+                        // Construct a triangle in world space using the mesh data
+                        let mut vertices: [Vec3; 3] = [Vec3::zero(), Vec3::zero(), Vec3::zero()];
+                        for i in 0..3 {
+                            let vertex_pos_local = Vec3::from(vertex_positions[index[i] as usize]);
+                            vertices[i] = mesh_to_world.transform_point3(vertex_pos_local)
+                        }
+                        let triangle = Triangle::from(vertices);
+                        // Run the raycast on the ray and triangle
+                        if let Some(intersection) =
+                            ray_triangle_intersection(&pick_ray, &triangle, RaycastAlgorithm::default())
+                        {
+                            let distance: f32 =
+                                (*intersection.origin() - *pick_ray.origin()).length().abs();
+                            if distance < min_pick_distance {
+                                min_pick_distance = distance;
+                                pick_intersection =
+                                    Some(PickIntersection::new(entity, intersection, distance));
+                            }
                         }
                     }
-                }
-                // Finished going through the current mesh, update pick states
-                if let Some(pick) = pick_intersection {
-                    // Make sure the pick list map contains the key
-                    match pick_state.ordered_pick_list_map.get_mut(pick_group) {
-                        Some(list) => list.push(pick),
-                        None => {
-                            pick_state
-                                .ordered_pick_list_map
-                                .insert(*pick_group, Vec::from([pick]));
+                    // Finished going through the current mesh, update pick states
+                    if let Some(pick) = pick_intersection {
+                        // Make sure the pick list map contains the key
+                        match pick_state.ordered_pick_list_map.get_mut(pick_group) {
+                            Some(list) => list.push(pick),
+                            None => {
+                                pick_state
+                                    .ordered_pick_list_map
+                                    .insert(*pick_group, Vec::from([pick]));
+                            }
                         }
                     }
                 }
