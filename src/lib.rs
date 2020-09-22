@@ -117,7 +117,7 @@ impl Default for PickHighlightParams {
 }
 
 /// Used to group pickable meshes with a camera into sets
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum PickingGroup {
     None,
     Group(usize),
@@ -429,7 +429,7 @@ fn pick_mesh(
 
             let pick_ray = Ray3D::new(camera_position, ray_direction);
 
-            if let Some(ray) = rays.insert(picking_cam.picking_group, pick_ray) {
+            if let Some(_) = rays.insert(picking_cam.picking_group, pick_ray) {
                 panic!("Multiple cameras have been added to group: {}", group_number);
             }
         }
@@ -448,7 +448,7 @@ fn pick_mesh(
             continue;
         }
 
-        if let Some(ray) = rays.get(&pickable.picking_group) {
+        if let Some(pick_ray) = rays.get(&pickable.picking_group) {
                
             // Use the mesh handle to get a reference to a mesh asset
             if let Some(mesh) = meshes.get(mesh_handle) {

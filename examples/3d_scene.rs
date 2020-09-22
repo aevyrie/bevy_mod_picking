@@ -22,7 +22,7 @@ fn setup(
 ) {
     // add entities to the world
     // camera
-    let camera_entity = commands
+    commands
         .spawn(Camera3dComponents {
             transform: Transform::new(Mat4::face_toward(
                 Vec3::new(-3.0, 5.0, 8.0),
@@ -31,17 +31,14 @@ fn setup(
             )),
             ..Default::default()
         })
-        .current_entity()
-        .unwrap();
-
-    commands
+        .with(PickingCamera::default())
         //plane
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 10.0 })),
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
-        .with(PickableMesh::new(camera_entity))
+        .with(PickableMesh::default())
         .with(HighlightablePickMesh::new())
         .with(SelectablePickMesh::new())
         // cube
@@ -51,7 +48,7 @@ fn setup(
             transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
             ..Default::default()
         })
-        .with(PickableMesh::new(camera_entity))
+        .with(PickableMesh::default())
         .with(HighlightablePickMesh::new())
         .with(SelectablePickMesh::new())
         // sphere
@@ -64,7 +61,7 @@ fn setup(
             transform: Transform::from_translation(Vec3::new(1.5, 1.5, 1.5)),
             ..Default::default()
         })
-        .with(PickableMesh::new(camera_entity))
+        .with(PickableMesh::default())
         .with(HighlightablePickMesh::new())
         .with(SelectablePickMesh::new())
         // light
