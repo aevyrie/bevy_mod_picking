@@ -40,7 +40,7 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with(PickingCamera::default());
+        .with(PickingSource::default());
 
     for i in 0..edge_length.pow(3) {
         let f_edge_length = edge_length as f32;

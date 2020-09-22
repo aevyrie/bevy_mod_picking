@@ -31,7 +31,7 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with(PickingCamera::default())
+        .with(PickingSource::default())
         //plane
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 10.0 })),
@@ -89,7 +89,10 @@ fn get_picks(
     cursor: Res<Events<CursorMoved>>,
 ) {
     match cursor_events.cursor_event_reader.latest(&cursor) {
-        Some(_) => println!("Top entity:\n{:#?}", pick_state.top()),
+        Some(_) => println!(
+            "Top entity:\n{:#?}",
+            pick_state.top(PickingGroup::default())
+        ),
         None => return,
     };
 }
