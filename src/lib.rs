@@ -439,86 +439,76 @@ fn build_rays(
 
         match pick_source.pick_method {
             PickingMethod::Cursor(window_id) => {
-                match camera_query.get::<Camera>(entity) {
-                    Ok(camera) => {
-                        // Get the cursor position
-                        let cursor_pos_screen: Vec2 =
-                            match pick_source.cursor_events.latest(&cursor) {
-                                Some(cursor_moved) => {
-                                    if cursor_moved.id == window_id {
-                                        cursor_moved.position
-                                    } else {
-                                        continue;
-                                    }
-                                }
-                                None => continue,
-                            };
-
-                        // Get current screen size
-                        let window = windows.get(window_id).unwrap();
-                        let screen_size = Vec2::from([window.width as f32, window.height as f32]);
-
-                        // Normalized device coordinates (NDC) describes cursor position from (-1, -1, -1) to (1, 1, 1)
-                        let cursor_pos_ndc: Vec3 = ((cursor_pos_screen / screen_size) * 2.0
-                            - Vec2::from([1.0, 1.0]))
-                        .extend(1.0);
-
-                        let camera_matrix = *transform.value();
-                        let projection_matrix = camera.projection_matrix;
-                        let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
-
-                        let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
-                        let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
-
-                        let ray_direction = cursor_position - camera_position;
-
-                        let pick_ray = Ray3D::new(camera_position, ray_direction);
-
-                        if pick_state
-                            .ray_map
-                            .insert(pick_source.group, pick_ray)
-                            .is_some()
-                        {
-                            panic!(
-                                "Multiple PickingSources have been added to pick group: {}",
-                                group_number
-                            );
+                let projection_matrix = match camera_query.get::<Camera>(entity) {
+                    Ok(camera) => camera.projection_matrix,
+                    Err(_) => panic!("The PickingSource in group {} has a {:?} but no associated Camera component", group_number, pick_source.pick_method),
+                };
+                // Get the cursor position
+                let cursor_pos_screen: Vec2 = match pick_source.cursor_events.latest(&cursor) {
+                    Some(cursor_moved) => {
+                        if cursor_moved.id == window_id {
+                            cursor_moved.position
+                        } else {
+                            continue;
                         }
                     }
-                    Err(_) => {
-                        panic!("The PickingSource in group {} has a {:?} but no associated Camera component", group_number, pick_source.pick_method);
-                    }
+                    None => continue,
+                };
+
+                // Get current screen size
+                let window = windows.get(window_id).unwrap();
+                let screen_size = Vec2::from([window.width as f32, window.height as f32]);
+
+                // Normalized device coordinates (NDC) describes cursor position from (-1, -1, -1) to (1, 1, 1)
+                let cursor_pos_ndc: Vec3 =
+                    ((cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0])).extend(1.0);
+
+                let camera_matrix = *transform.value();
+                let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
+
+                let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
+                let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
+
+                let ray_direction = cursor_position - camera_position;
+
+                let pick_ray = Ray3D::new(camera_position, ray_direction);
+
+                if pick_state
+                    .ray_map
+                    .insert(pick_source.group, pick_ray)
+                    .is_some()
+                {
+                    panic!(
+                        "Multiple PickingSources have been added to pick group: {}",
+                        group_number
+                    );
                 }
             }
             PickingMethod::ScreenSpace(coordinates_ndc) => {
-                match camera_query.get::<Camera>(entity) {
-                    Ok(camera) => {
-                        let cursor_pos_ndc: Vec3 = coordinates_ndc.extend(1.0);
-                        let camera_matrix = *transform.value();
-                        let projection_matrix = camera.projection_matrix;
-                        let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
+                let projection_matrix = match camera_query.get::<Camera>(entity) {
+                    Ok(camera) => camera.projection_matrix,
+                    Err(_) => panic!("The PickingSource in group {} has a {:?} but no associated Camera component", group_number, pick_source.pick_method),
+                };
+                let cursor_pos_ndc: Vec3 = coordinates_ndc.extend(1.0);
+                let camera_matrix = *transform.value();
+                let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
 
-                        let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
-                        let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
+                let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
+                let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
 
-                        let ray_direction = cursor_position - camera_position;
+                let ray_direction = cursor_position - camera_position;
 
-                        let pick_ray = Ray3D::new(camera_position, ray_direction);
+                let pick_ray = Ray3D::new(camera_position, ray_direction);
 
-                        if pick_state
-                            .ray_map
-                            .insert(pick_source.group, pick_ray)
-                            .is_some()
-                        {
-                            panic!(
-                                "Multiple PickingSources have been added to pick group: {}",
-                                group_number
-                            );
-                        }
-                    }
-                    Err(_) => {
-                        panic!("The PickingSource in group {} has a {:?} but no associated Camera component", group_number, pick_source.pick_method);
-                    }
+                if pick_state
+                    .ray_map
+                    .insert(pick_source.group, pick_ray)
+                    .is_some()
+                {
+                    panic!(
+                        "Multiple PickingSources have been added to pick group: {}",
+                        group_number
+                    );
                 }
             }
             PickingMethod::Center => {
