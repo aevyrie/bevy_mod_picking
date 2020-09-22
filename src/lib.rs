@@ -424,7 +424,7 @@ fn build_rays(
     mut pick_state: ResMut<PickState>,
     cursor: Res<Events<CursorMoved>>,
     windows: Res<Windows>,
-    // Querieses
+    // Queries
     mut pick_source_query: Query<(&mut PickingSource, &Transform, Entity)>,
     camera_query: Query<With<PickingSource, &Camera>>,
 ) {
@@ -437,8 +437,6 @@ fn build_rays(
             PickingGroup::None => continue,
         };
 
-        pick_source.pick_method = PickingMethod::Center;
-
         match pick_source.pick_method {
             PickingMethod::Cursor(window_id) => {
                 match camera_query.get::<Camera>(entity) {
@@ -448,7 +446,6 @@ fn build_rays(
                             match pick_source.cursor_events.latest(&cursor) {
                                 Some(cursor_moved) => {
                                     if cursor_moved.id == window_id {
-                                        println!("UPDATE");
                                         cursor_moved.position
                                     } else {
                                         continue;
