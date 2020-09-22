@@ -424,7 +424,7 @@ fn build_rays(
     mut pick_state: ResMut<PickState>,
     cursor: Res<Events<CursorMoved>>,
     windows: Res<Windows>,
-    // Queries
+    // Querieses
     mut pick_source_query: Query<(&mut PickingSource, &Transform, Entity)>,
     camera_query: Query<With<PickingSource, &Camera>>,
 ) {
