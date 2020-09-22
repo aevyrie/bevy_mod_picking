@@ -535,10 +535,9 @@ fn pick_mesh(
     // Queries
     mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, Entity, &Draw)>,
 ) {
-
     // If there are no rays, then there is nothing to do here
     if pick_state.ray_map.is_empty() {
-        return
+        return;
     } else {
         // TODO only clear out lists if the corresponding group has a ray
         pick_state.ordered_pick_list_map.clear();
@@ -560,7 +559,9 @@ fn pick_mesh(
             }
         }
 
-        if pick_rays.is_empty() { continue }
+        if pick_rays.is_empty() {
+            continue;
+        }
 
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get(mesh_handle) {
@@ -570,21 +571,19 @@ fn pick_mesh(
 
             // Get the vertex positions from the mesh reference resolved from the mesh handle
             let vertex_positions: Vec<[f32; 3]> = mesh
-            .attributes
-            .iter()
-            .filter(|attribute| attribute.name == VertexAttribute::POSITION)
-            .filter_map(|attribute| match &attribute.values {
-                VertexAttributeValues::Float3(positions) => Some(positions.clone()),
-                _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
-            })
-            .last()
-            .unwrap();
+                .attributes
+                .iter()
+                .filter(|attribute| attribute.name == VertexAttribute::POSITION)
+                .filter_map(|attribute| match &attribute.values {
+                    VertexAttributeValues::Float3(positions) => Some(positions.clone()),
+                    _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
+                })
+                .last()
+                .unwrap();
 
             if let Some(indices) = &mesh.indices {
-
                 // Iterate over the list of pick rays that belong to the same group as this mesh
                 for (pick_group, pick_ray) in pick_rays {
-
                     // The ray cast can hit the same mesh many times, so we need to track which hit is
                     // closest to the camera, and record that.
                     let mut min_pick_distance = f32::MAX;
@@ -607,9 +606,11 @@ fn pick_mesh(
                         }
                         let triangle = Triangle::from(vertices);
                         // Run the raycast on the ray and triangle
-                        if let Some(intersection) =
-                            ray_triangle_intersection(&pick_ray, &triangle, RaycastAlgorithm::default())
-                        {
+                        if let Some(intersection) = ray_triangle_intersection(
+                            &pick_ray,
+                            &triangle,
+                            RaycastAlgorithm::default(),
+                        ) {
                             let distance: f32 =
                                 (*intersection.origin() - *pick_ray.origin()).length().abs();
                             if distance < min_pick_distance {
