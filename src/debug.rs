@@ -30,7 +30,7 @@ fn get_picks(
 ) {
     match cursor_events.cursor_event_reader.latest(&cursor) {
         Some(_) => println!("Top entities:\n{:#?}", pick_state.top_all()),
-        None => return,
+        None => {},
     };
 }
 
