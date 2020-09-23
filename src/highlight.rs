@@ -1,5 +1,4 @@
-use super::select::*;
-use super::*;
+use super::{*,select::*};
 use bevy::{prelude::*, render::color::Color};
 
 #[derive(Debug)]

@@ -135,7 +135,7 @@ pub enum PickingMethod {
     Center,
 }
 
-// Marks an entity to be used for picking, probably a camera
+/// Marks an entity to be used for picking
 pub struct PickingSource {
     group: PickingGroup,
     pick_method: PickingMethod,
