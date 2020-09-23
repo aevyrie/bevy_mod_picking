@@ -40,21 +40,16 @@ Add it to your App::build() in the plugins section of your Bevy app:
 
 ### Marking Entities for Picking
 
-Make sure you have your camera's entity on hand, you could do the following in your setup system:
+For simple use cases, you will probably be using the mouse to pick items in a 3d scene. You will need to mark your camera with a component:
 
 ```rust
-let camera_entity = commands
-        .spawn(Camera3dComponents {
-            ..Default::default()
-        })
-        .current_entity()
-        .unwrap();
+.with(PickingSource::default())
 ```
 
 Now all you have to do is mark any mesh entities with the `PickableMesh` component:
 
 ```rust
-.with(PickableMesh::new(camera_entity))
+.with(PickableMesh::default())
 ```
 
 If you want it to highlight when you hover, add the `HighlightablePickMesh` component:
@@ -69,6 +64,18 @@ If you also want to select meshes and keep them highlighted with the left mouse 
 .with(SelectablePickMesh::new())
 ```
 
+### Pick Groups
+
+Pick groups allow you to associate meshes with a ray casting sources. For simple use cases, such as a single 3d view and camera, you can ignore this.
+
+For these simple cases, you can just use `PickingGroup::default()` any time a `PickingGroup` is required. This will assign the `PickableMesh` or `PickingSource` to picking group 0.
+
+#### Details
+
+ - Only one PickingSource can be assigned to a PickingGroup
+ - A PickableMesh can be assigned to one or many PickingGroups
+ - The result of running the picking system is an ordered list of all intersections of each PickingSource with the PickableMeshs in its PickingGroup. The ordered list of intersections are stored by PickingGroup `HashMap<PickingGroup, Vec<PickIntersection>>`
+
 ### Getting Pick Data
 
 #### Pick Intersections Under the Cursor
@@ -79,8 +86,8 @@ Mesh picking intersection are reported in world coordinates. You can use the `Pi
 fn get_picks(
     pick_state: Res<PickState>,
 ) {
-    println!("All entities:\n{:?}", pick_state.list());
-    println!("Top entity:\n{:?}", pick_state.top());
+    println!("All entities:\n{:?}", pick_state.list(PickingGroup::default()));
+    println!("Top entity:\n{:?}", pick_state.top(PickingGroup::default()));
 }
 ```
 
