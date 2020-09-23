@@ -18,7 +18,7 @@ fn main() {
     App::build()
         .add_default_plugins()
         .add_plugin(PickingPlugin)
-        //.add_plugin(DebugPickingPlugin)
+        .add_plugin(DebugPickingPlugin)
         .add_startup_system(setup.system())
         .run();
 }
@@ -29,8 +29,8 @@ fn setup(
     mut active_cameras: ResMut<ActiveCameras>,
     mut render_graph: ResMut<RenderGraph>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>,
     msaa: Res<Msaa>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let window_id = WindowId::new();
 
@@ -156,9 +156,10 @@ fn setup(
     // SETUP SCENE
 
     // load the mesh
-    let mesh_handle = asset_server
-        .load("assets/models/monkey/Monkey.gltf")
-        .unwrap();
+    let mesh_handle = meshes.add(Mesh::from(shape::Icosphere {
+        subdivisions: 4,
+        radius: 1.0,
+    }));
 
     // create a material for the mesh
     let material_handle = materials.add(StandardMaterial {
@@ -193,7 +194,10 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with(PickingSource::default().with_group(PickingGroup::Group(0)))
+        .with(PickingSource::new(
+            PickingGroup::Group(0),
+            PickingMethod::Cursor(WindowId::primary()),
+        ))
         // second window camera
         .spawn(Camera3dComponents {
             camera: Camera {
