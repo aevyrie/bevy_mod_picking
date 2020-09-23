@@ -45,18 +45,7 @@ fn update_debug_cursor_position(
 ) {
     // Set the cursor translation to the top pick's world coordinates
     for (_group, top_pick) in pick_state.top_all() {
-        let position = top_pick.position();
-        let normal = top_pick.normal();
-        let up = Vec3::from([0.0, 1.0, 0.0]);
-        let axis = up.cross(*normal).normalize();
-        let angle = up.dot(*normal).acos();
-        let epsilon = 0.0001;
-        let new_rotation = if angle.abs() > epsilon {
-            Quat::from_axis_angle(axis, angle)
-        } else {
-            Quat::default()
-        };
-        let transform_new = Mat4::from_rotation_translation(new_rotation, *position);
+        let transform_new = top_pick.intersection.as_transform();
         for mut transform in &mut query.iter() {
             *transform.value_mut() = transform_new;
         }

@@ -34,6 +34,20 @@ pub mod rays {
         pub fn direction(&self) -> &Vec3 {
             &self.direction
         }
+        pub fn as_transform(&self) -> Mat4 {
+            let position = self.origin;
+            let normal = self.direction;
+            let up = Vec3::from([0.0, 1.0, 0.0]);
+            let axis = up.cross(normal).normalize();
+            let angle = up.dot(normal).acos();
+            let epsilon = 0.0001;
+            let new_rotation = if angle.abs() > epsilon {
+                Quat::from_axis_angle(axis, angle)
+            } else {
+                Quat::default()
+            };
+            Mat4::from_rotation_translation(new_rotation, position)
+        }
     }
 }
 
