@@ -28,10 +28,9 @@ fn get_picks(
     mut cursor_events: ResMut<CursorEvents>,
     cursor: Res<Events<CursorMoved>>,
 ) {
-    match cursor_events.cursor_event_reader.latest(&cursor) {
-        Some(_) => println!("Top entities:\n{:#?}", pick_state.top_all()),
-        None => {}
-    };
+    if cursor_events.cursor_event_reader.latest(&cursor).is_some() {
+        println!("Top entities:\n{:#?}", pick_state.top_all())
+    }
 }
 
 struct DebugCursor;
