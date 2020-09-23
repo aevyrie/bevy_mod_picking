@@ -31,7 +31,7 @@ fn setup(
     );
 
     // camera
-    let camera_entity = commands
+    commands
         .spawn(Camera3dComponents {
             transform: Transform::new(Mat4::face_toward(
                 Vec3::new(-3.0, 5.0, 8.0),
@@ -40,8 +40,7 @@ fn setup(
             )),
             ..Default::default()
         })
-        .current_entity()
-        .unwrap();
+        .with(PickingSource::default());
 
     for i in 0..edge_length.pow(3) {
         let f_edge_length = edge_length as f32;
@@ -60,7 +59,7 @@ fn setup(
                 )),
                 ..Default::default()
             })
-            .with(PickableMesh::new(camera_entity))
+            .with(PickableMesh::default())
             .with(HighlightablePickMesh::new())
             .with(SelectablePickMesh::new());
     }
