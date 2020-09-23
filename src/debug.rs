@@ -4,9 +4,34 @@ use bevy::prelude::*;
 pub struct DebugPickingPlugin;
 impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(setup_debug_cursor.system())
-            .add_system(update_debug_cursor_position.system());
+        app.init_resource::<CursorEvents>()
+            .add_startup_system(setup_debug_cursor.system())
+            .add_system(update_debug_cursor_position.system())
+            .add_system(get_picks.system());
     }
+}
+
+pub struct CursorEvents {
+    cursor_event_reader: EventReader<CursorMoved>,
+}
+
+impl Default for CursorEvents {
+    fn default() -> Self {
+        CursorEvents {
+            cursor_event_reader: EventReader::default(),
+        }
+    }
+}
+
+fn get_picks(
+    pick_state: Res<PickState>,
+    mut cursor_events: ResMut<CursorEvents>,
+    cursor: Res<Events<CursorMoved>>,
+) {
+    match cursor_events.cursor_event_reader.latest(&cursor) {
+        Some(_) => println!("Top entities:\n{:#?}", pick_state.top_all()),
+        None => return,
+    };
 }
 
 struct DebugCursor;
@@ -20,7 +45,7 @@ fn update_debug_cursor_position(
     mut visibility_query: Query<With<DebugCursorMesh, &mut Draw>>,
 ) {
     // Set the cursor translation to the top pick's world coordinates
-    if let Some(top_pick) = pick_state.top(PickingGroup::default()) {
+    for (_group, top_pick) in pick_state.top_all() {
         let position = top_pick.position();
         let normal = top_pick.normal();
         let up = Vec3::from([0.0, 1.0, 0.0]);
@@ -39,7 +64,8 @@ fn update_debug_cursor_position(
         for mut draw in &mut visibility_query.iter() {
             draw.is_visible = true;
         }
-    } else {
+    }
+    if pick_state.top_all().is_empty() {
         for mut draw in &mut visibility_query.iter() {
             draw.is_visible = false;
         }

@@ -1,4 +1,4 @@
-use super::{*,select::*};
+use super::{select::*, *};
 use bevy::{prelude::*, render::color::Color};
 
 #[derive(Debug)]
@@ -102,8 +102,11 @@ pub fn pick_highlighting(
             Some(color) => color,
         };
         let mut topmost = false;
-        if let Some(pick_depth) = pick_state.top(PickingGroup::default()) {
-            topmost = pick_depth.entity == entity;
+        for (_group, pick) in pick_state.top_all() {
+            if pick.entity == entity {
+                topmost = true;
+                break;
+            }
         }
         if topmost {
             *current_color = highlight_params.hover_color;

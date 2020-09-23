@@ -46,6 +46,15 @@ impl PickState {
             None => None,
         }
     }
+    pub fn top_all(&self) -> Vec<(&PickingGroup, &PickIntersection)> {
+        let mut result = Vec::new();
+        for (group, picklist) in self.ordered_pick_list_map.iter() {
+            if let Some(pick) = picklist.first() {
+                result.push((group, pick));
+            }
+        }
+        result
+    }
 }
 
 impl Default for PickState {
