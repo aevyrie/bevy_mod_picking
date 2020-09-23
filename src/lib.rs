@@ -1,14 +1,22 @@
+mod debug;
+mod highlight;
 mod raycast;
+mod select;
 
+pub use crate::{
+    debug::DebugPickingPlugin,
+    highlight::{HighlightablePickMesh, PickHighlightParams},
+    select::SelectablePickMesh,
+};
+
+use crate::{highlight::*, raycast::*, select::*};
 use bevy::{
     prelude::*,
     render::camera::Camera,
-    render::color::Color,
     render::mesh::{VertexAttribute, VertexAttributeValues},
     render::pipeline::PrimitiveTopology,
     window::{CursorMoved, WindowId},
 };
-use raycast::*;
 use std::collections::HashMap;
 
 pub struct PickingPlugin;
@@ -20,14 +28,6 @@ impl Plugin for PickingPlugin {
             .add_system(select_mesh.system())
             .add_system(build_rays.system())
             .add_system(pick_highlighting.system());
-    }
-}
-
-pub struct DebugPickingPlugin;
-impl Plugin for DebugPickingPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(setup_debug_cursor.system())
-            .add_system(update_debug_cursor_position.system());
     }
 }
 
@@ -87,36 +87,6 @@ impl PickIntersection {
     /// Depth, distance from camera to intersection.
     pub fn distance(&self) -> f32 {
         self.distance
-    }
-}
-
-#[derive(Debug)]
-pub struct PickHighlightParams {
-    hover_color: Color,
-    selection_color: Color,
-}
-
-impl PickHighlightParams {
-    pub fn hover_color_mut(&mut self) -> &mut Color {
-        &mut self.hover_color
-    }
-    pub fn selection_color_mut(&mut self) -> &mut Color {
-        &mut self.selection_color
-    }
-    pub fn set_hover_color(&mut self, color: Color) {
-        self.hover_color = color;
-    }
-    pub fn set_selection_color(&mut self, color: Color) {
-        self.selection_color = color;
-    }
-}
-
-impl Default for PickHighlightParams {
-    fn default() -> Self {
-        PickHighlightParams {
-            hover_color: Color::rgb(0.3, 0.5, 0.8),
-            selection_color: Color::rgb(0.3, 0.8, 0.5),
-        }
     }
 }
 
@@ -196,225 +166,6 @@ impl Default for PickingSource {
             group: PickingGroup::Group(0),
             pick_method: PickingMethod::Cursor(WindowId::primary()),
             cursor_events: EventReader::default(),
-        }
-    }
-}
-
-/// Meshes with `SelectableMesh` will have selection state managed
-#[derive(Debug)]
-pub struct SelectablePickMesh {
-    selected: bool,
-}
-
-impl SelectablePickMesh {
-    pub fn new() -> Self {
-        SelectablePickMesh::default()
-    }
-    pub fn selected(&self) -> bool {
-        self.selected
-    }
-}
-
-impl Default for SelectablePickMesh {
-    fn default() -> Self {
-        SelectablePickMesh { selected: false }
-    }
-}
-
-/// Meshes with `HighlightablePickMesh` will be highlighted when hovered over.
-/// If the mesh also has the `SelectablePickMesh` component, it will highlight when selected.
-#[derive(Debug)]
-pub struct HighlightablePickMesh {
-    // Stores the initial color of the mesh material prior to selecting/hovering
-    initial_color: Option<Color>,
-}
-
-impl HighlightablePickMesh {
-    pub fn new() -> Self {
-        HighlightablePickMesh::default()
-    }
-}
-
-impl Default for HighlightablePickMesh {
-    fn default() -> Self {
-        HighlightablePickMesh {
-            initial_color: None,
-        }
-    }
-}
-
-struct DebugCursor;
-
-struct DebugCursorMesh;
-
-/// Updates the 3d cursor to be in the pointed world coordinates
-fn update_debug_cursor_position(
-    pick_state: Res<PickState>,
-    mut query: Query<With<DebugCursor, &mut Transform>>,
-    mut visibility_query: Query<With<DebugCursorMesh, &mut Draw>>,
-) {
-    // Set the cursor translation to the top pick's world coordinates
-    if let Some(top_pick) = pick_state.top(PickingGroup::default()) {
-        let position = top_pick.position();
-        let normal = top_pick.normal();
-        let up = Vec3::from([0.0, 1.0, 0.0]);
-        let axis = up.cross(*normal).normalize();
-        let angle = up.dot(*normal).acos();
-        let epsilon = 0.0001;
-        let new_rotation = if angle.abs() > epsilon {
-            Quat::from_axis_angle(axis, angle)
-        } else {
-            Quat::default()
-        };
-        let transform_new = Mat4::from_rotation_translation(new_rotation, *position);
-        for mut transform in &mut query.iter() {
-            *transform.value_mut() = transform_new;
-        }
-        for mut draw in &mut visibility_query.iter() {
-            draw.is_visible = true;
-        }
-    } else {
-        for mut draw in &mut visibility_query.iter() {
-            draw.is_visible = false;
-        }
-    }
-}
-
-/// Start up system to create 3d Debug cursor
-fn setup_debug_cursor(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    let debug_matl = materials.add(StandardMaterial {
-        albedo: Color::rgb(0.0, 1.0, 0.0),
-        shaded: false,
-        ..Default::default()
-    });
-    let cube_size = 0.02;
-    let cube_tail_scale = 20.0;
-    let ball_size = 0.08;
-    commands
-        // cursor
-        .spawn(PbrComponents {
-            mesh: meshes.add(Mesh::from(shape::Icosphere {
-                subdivisions: 4,
-                radius: ball_size,
-            })),
-            material: debug_matl,
-            ..Default::default()
-        })
-        .with_children(|parent| {
-            // child cube
-            parent
-                .spawn(PbrComponents {
-                    mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
-                    material: debug_matl,
-                    transform: Transform::from_non_uniform_scale(Vec3::from([
-                        1.0,
-                        cube_tail_scale,
-                        1.0,
-                    ]))
-                    .with_translation(Vec3::new(
-                        0.0,
-                        cube_size * cube_tail_scale,
-                        0.0,
-                    )),
-                    ..Default::default()
-                })
-                .with(DebugCursorMesh);
-        })
-        .with(DebugCursor)
-        .with(DebugCursorMesh);
-}
-
-/// Given the current selected and hovered meshes and provided materials, update the meshes with the
-/// appropriate materials...
-fn pick_highlighting(
-    // Resources
-    pick_state: Res<PickState>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    highlight_params: Res<PickHighlightParams>,
-    // Queries
-    mut query_picked: Query<(
-        &mut HighlightablePickMesh,
-        &PickableMesh,
-        &Handle<StandardMaterial>,
-        Entity,
-    )>,
-    mut query_selected: Query<(
-        &mut HighlightablePickMesh,
-        &SelectablePickMesh,
-        &Handle<StandardMaterial>,
-    )>,
-    mut query_selectables: Query<&SelectablePickMesh>,
-) {
-    // Query selectable entities that have changed
-    for (mut highlightable, selectable, material_handle) in &mut query_selected.iter() {
-        let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
-        let initial_color = match highlightable.initial_color {
-            None => {
-                highlightable.initial_color = Some(*current_color);
-                *current_color
-            }
-            Some(color) => color,
-        };
-        if selectable.selected {
-            *current_color = highlight_params.selection_color;
-        } else {
-            *current_color = initial_color;
-        }
-    }
-
-    // Query highlightable entities that have changed
-    for (mut highlightable, _pickable, material_handle, entity) in &mut query_picked.iter() {
-        let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
-        let initial_color = match highlightable.initial_color {
-            None => {
-                highlightable.initial_color = Some(*current_color);
-                *current_color
-            }
-            Some(color) => color,
-        };
-        let mut topmost = false;
-        if let Some(pick_depth) = pick_state.top(PickingGroup::default()) {
-            topmost = pick_depth.entity == entity;
-        }
-        if topmost {
-            *current_color = highlight_params.hover_color;
-        } else if let Ok(mut query) = query_selectables.entity(entity) {
-            if let Some(selectable) = query.get() {
-                if selectable.selected {
-                    *current_color = highlight_params.selection_color;
-                } else {
-                    *current_color = initial_color;
-                }
-            }
-        } else {
-            *current_color = initial_color;
-        }
-    }
-}
-
-/// Given the currently hovered mesh, checks for a user click and if detected, sets the selected
-/// field in the entity's component to true.
-fn select_mesh(
-    // Resources
-    pick_state: Res<PickState>,
-    mouse_button_inputs: Res<Input<MouseButton>>,
-    // Queries
-    mut query: Query<&mut SelectablePickMesh>,
-) {
-    if mouse_button_inputs.just_pressed(MouseButton::Left) {
-        // Deselect everything
-        for mut selectable in &mut query.iter() {
-            selectable.selected = false;
-        }
-
-        if let Some(pick_depth) = pick_state.top(PickingGroup::default()) {
-            if let Ok(mut top_mesh) = query.get_mut::<SelectablePickMesh>(pick_depth.entity) {
-                top_mesh.selected = true;
-            }
         }
     }
 }
