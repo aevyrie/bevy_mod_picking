@@ -196,7 +196,7 @@ fn setup(
         })
         .with(PickingSource::new(
             PickingGroup::Group(0),
-            PickingMethod::Cursor(WindowId::primary()),
+            PickingMethod::CameraCursor(WindowId::primary()),
         ))
         // second window camera
         .spawn(Camera3dComponents {
@@ -214,6 +214,6 @@ fn setup(
         })
         .with(PickingSource::new(
             PickingGroup::Group(1),
-            PickingMethod::Cursor(window_id),
+            PickingMethod::CameraCursor(window_id),
         ));
 }

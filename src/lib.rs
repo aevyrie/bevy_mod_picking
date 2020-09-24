@@ -99,10 +99,10 @@ impl PickIntersection {
     }
 }
 
-/// Used to group pickable meshes with a camera into sets
+/// Used to group pickable entities with pick rays
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum PickingGroup {
-    None,
+    Disabled,
     Group(usize),
 }
 
@@ -112,7 +112,7 @@ impl Default for PickingGroup {
     }
 }
 
-/// Marks an entity as pickable
+/// Marks a Mesh entity as pickable
 #[derive(Debug)]
 pub struct PickableMesh {
     group: Vec<PickingGroup>,
@@ -137,11 +137,15 @@ impl Default for PickableMesh {
     }
 }
 
+/// Specifies the method used to generate pick rays
 #[derive(Debug)]
 pub enum PickingMethod {
-    Cursor(WindowId),
-    ScreenSpace(Vec2),
-    Center,
+    /// Use cursor events to get coords  relative to a camera
+    CameraCursor(WindowId),
+    /// Manually specify screen coords relative to a camera
+    CameraScreenSpace(Vec2),
+    /// Use a tranform in world space to define pick ray
+    Transform,
 }
 
 /// Marks an entity to be used for picking
@@ -173,7 +177,7 @@ impl Default for PickingSource {
     fn default() -> Self {
         PickingSource {
             group: PickingGroup::Group(0),
-            pick_method: PickingMethod::Cursor(WindowId::primary()),
+            pick_method: PickingMethod::CameraCursor(WindowId::primary()),
             cursor_events: EventReader::default(),
         }
     }
@@ -185,23 +189,24 @@ fn build_rays(
     cursor: Res<Events<CursorMoved>>,
     windows: Res<Windows>,
     // Queries
-    mut pick_source_query: Query<(&mut PickingSource, &Transform, Entity)>,
-    camera_query: Query<With<PickingSource, &Camera>>,
+    mut pick_source_query: Query<(&mut PickingSource, &Transform, Option<&Camera>)>,
 ) {
     // Collect and calculate pick_ray from all cameras
     pick_state.ray_map.clear();
 
-    for (mut pick_source, transform, entity) in &mut pick_source_query.iter() {
+    // Generate a ray for each picking source based on the pick method
+    for (mut pick_source, transform, camera_opt) in &mut pick_source_query.iter() {
         let group_number = match pick_source.group {
-            PickingGroup::Group(num) => num,
-            PickingGroup::None => continue,
+            PickingGroup::Group(n) => n,
+            PickingGroup::Disabled => continue,
         };
 
         match pick_source.pick_method {
-            PickingMethod::Cursor(window_id) => {
-                let projection_matrix = match camera_query.get::<Camera>(entity) {
-                    Ok(camera) => camera.projection_matrix,
-                    Err(_) => panic!("The PickingSource in group {} has a {:?} but no associated Camera component", group_number, pick_source.pick_method),
+            // Use cursor events and specified window/camera to generate a ray
+            PickingMethod::CameraCursor(window_id) => {
+                let projection_matrix = match camera_opt {
+                    Some(camera) => camera.projection_matrix,
+                    None => panic!("The PickingSource in group {} has a {:?} but no associated Camera component", group_number, pick_source.pick_method),
                 };
                 // Get the cursor position
                 let cursor_pos_screen: Vec2 = match pick_source.cursor_events.latest(&cursor) {
@@ -244,10 +249,11 @@ fn build_rays(
                     );
                 }
             }
-            PickingMethod::ScreenSpace(coordinates_ndc) => {
-                let projection_matrix = match camera_query.get::<Camera>(entity) {
-                    Ok(camera) => camera.projection_matrix,
-                    Err(_) => panic!("The PickingSource in group {} has a {:?} but no associated Camera component", group_number, pick_source.pick_method),
+            // Use the camera and specified screen cordinates to generate a ray
+            PickingMethod::CameraScreenSpace(coordinates_ndc) => {
+                let projection_matrix = match camera_opt {
+                    Some(camera) => camera.projection_matrix,
+                    None => panic!("The PickingSource in group {} has a {:?} but no associated Camera component", group_number, pick_source.pick_method),
                 };
                 let cursor_pos_ndc: Vec3 = coordinates_ndc.extend(1.0);
                 let camera_matrix = *transform.value();
@@ -271,7 +277,8 @@ fn build_rays(
                     );
                 }
             }
-            PickingMethod::Center => {
+            // Use the specified transform as the origin and direction of the ray
+            PickingMethod::Transform => {
                 let pick_position_ndc = Vec3::from([0.0, 0.0, 1.0]);
                 let source_transform = *transform.value();
                 let pick_position = source_transform.transform_point3(pick_position_ndc);
