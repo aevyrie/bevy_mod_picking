@@ -29,7 +29,7 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with(PickingSource::default())
+        .with(PickSource::default())
         //plane
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 10.0 })),

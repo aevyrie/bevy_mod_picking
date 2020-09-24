@@ -13,15 +13,15 @@ pub mod rays {
 
     /// A 3D ray, with an origin and direction. The direction is guaranteed to be normalized.
     #[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
-    pub struct Ray3D {
+    pub struct Ray3d {
         origin: Vec3,
         direction: Vec3,
     }
 
-    impl Ray3D {
+    impl Ray3d {
         /// Constructs a `Ray3d`, normalizing the direction vector.
         pub fn new(origin: Vec3, direction: Vec3) -> Self {
-            Ray3D {
+            Ray3d {
                 origin,
                 direction: direction.normalize(),
             }
@@ -34,7 +34,7 @@ pub mod rays {
         pub fn direction(&self) -> &Vec3 {
             &self.direction
         }
-        pub fn as_transform(&self) -> Mat4 {
+        pub fn to_transform(&self) -> Mat4 {
             let position = self.origin;
             let normal = self.direction;
             let up = Vec3::from([0.0, 1.0, 0.0]);
@@ -143,10 +143,10 @@ pub enum Backfaces {
 
 /// Takes a ray and triangle and computes the intersection and normal
 pub fn ray_triangle_intersection(
-    ray: &Ray3D,
+    ray: &Ray3d,
     triangle: &Triangle,
     algorithm: RaycastAlgorithm,
-) -> Option<Ray3D> {
+) -> Option<Ray3d> {
     match algorithm {
         RaycastAlgorithm::Geometric => raycast_geometric(ray, triangle),
         RaycastAlgorithm::MollerTrumbore(backface_culling) => {
@@ -157,10 +157,10 @@ pub fn ray_triangle_intersection(
 
 /// Implementation of the Möller-Trumbore ray-triangle intersection test
 pub fn raycast_moller_trumbore(
-    ray: &Ray3D,
+    ray: &Ray3d,
     triangle: &Triangle,
     backface_culling: Backfaces,
-) -> Option<Ray3D> {
+) -> Option<Ray3d> {
     // Source: https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection
     let epsilon: f32 = 0.000001;
     let vector_v0_to_v1: Vec3 = triangle.v1 - triangle.v0;
@@ -206,11 +206,11 @@ pub fn raycast_moller_trumbore(
     let point_intersection = *ray.origin() + *ray.direction() * t;
     let triangle_normal = vector_v0_to_v1.cross(vector_v0_to_v2);
 
-    Some(Ray3D::new(point_intersection, triangle_normal))
+    Some(Ray3d::new(point_intersection, triangle_normal))
 }
 
 /// Geometric method of computing a ray-triangle intersection
-pub fn raycast_geometric(ray: &Ray3D, triangle: &Triangle) -> Option<Ray3D> {
+pub fn raycast_geometric(ray: &Ray3d, triangle: &Triangle) -> Option<Ray3d> {
     // Source: https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution
     let epsilon = 0.000001;
 
@@ -267,7 +267,7 @@ pub fn raycast_geometric(ray: &Ray3D, triangle: &Triangle) -> Option<Ray3D> {
         return None;
     } // P is on the right side;
 
-    Some(Ray3D::new(point_intersection, triangle_normal))
+    Some(Ray3d::new(point_intersection, triangle_normal))
 }
 
 #[cfg(test)]
@@ -282,19 +282,19 @@ mod tests {
     #[test]
     fn raycast_triangle_mt() {
         let triangle = Triangle::from([V0.into(), V1.into(), V2.into()]);
-        let ray = Ray3D::new(Vec3::zero(), Vec3::unit_x());
+        let ray = Ray3d::new(Vec3::zero(), Vec3::unit_x());
         let algorithm = RaycastAlgorithm::MollerTrumbore(Backfaces::Include);
         let result = ray_triangle_intersection(&ray, &triangle, algorithm);
         assert_eq!(
             result,
-            Some(Ray3D::new([1.0, 0.0, 0.0].into(), [-1.0, 0.0, 0.0].into()))
+            Some(Ray3d::new([1.0, 0.0, 0.0].into(), [-1.0, 0.0, 0.0].into()))
         );
     }
 
     #[test]
     fn raycast_triangle_mt_culling() {
         let triangle = Triangle::from([V2.into(), V1.into(), V0.into()]);
-        let ray = Ray3D::new(Vec3::zero(), Vec3::unit_x());
+        let ray = Ray3d::new(Vec3::zero(), Vec3::unit_x());
         let algorithm = RaycastAlgorithm::MollerTrumbore(Backfaces::Cull);
         let result = ray_triangle_intersection(&ray, &triangle, algorithm);
         assert_eq!(result, None);
@@ -303,12 +303,12 @@ mod tests {
     #[test]
     fn raycast_triangle_geometric() {
         let triangle = Triangle::from([V0.into(), V1.into(), V2.into()]);
-        let ray = Ray3D::new(Vec3::zero(), Vec3::unit_x());
+        let ray = Ray3d::new(Vec3::zero(), Vec3::unit_x());
         let algorithm = RaycastAlgorithm::Geometric;
         let result = ray_triangle_intersection(&ray, &triangle, algorithm);
         assert_eq!(
             result,
-            Some(Ray3D::new([1.0, 0.0, 0.0].into(), [-1.0, 0.0, 0.0].into()))
+            Some(Ray3d::new([1.0, 0.0, 0.0].into(), [-1.0, 0.0, 0.0].into()))
         );
     }
 }

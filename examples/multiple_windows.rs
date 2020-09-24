@@ -176,7 +176,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::new(
-            [PickingGroup::Group(0), PickingGroup::Group(1)].into(),
+            [PickGroup::Group(0), PickGroup::Group(1)].into(),
         ))
         .with(HighlightablePickMesh::new())
         .with(SelectablePickMesh::new())
@@ -194,9 +194,9 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with(PickingSource::new(
-            PickingGroup::Group(0),
-            PickingMethod::CameraCursor(WindowId::primary()),
+        .with(PickSource::new(
+            PickGroup::Group(0),
+            PickMethod::CameraCursor(WindowId::primary()),
         ))
         // second window camera
         .spawn(Camera3dComponents {
@@ -212,8 +212,8 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with(PickingSource::new(
-            PickingGroup::Group(1),
-            PickingMethod::CameraCursor(window_id),
+        .with(PickSource::new(
+            PickGroup::Group(1),
+            PickMethod::CameraCursor(window_id),
         ));
 }
