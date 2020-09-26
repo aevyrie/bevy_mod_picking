@@ -74,22 +74,14 @@ pub struct PickIntersection {
     entity: Entity,
     intersection: Ray3d,
     distance: f32,
-    mesh_triangle: Triangle,
     world_triangle: Triangle,
 }
 impl PickIntersection {
-    fn new(
-        entity: Entity,
-        intersection: Ray3d,
-        distance: f32,
-        mesh_triangle: Triangle,
-        world_triangle: Triangle,
-    ) -> Self {
+    fn new(entity: Entity, intersection: Ray3d, distance: f32, world_triangle: Triangle) -> Self {
         PickIntersection {
             entity,
             intersection,
             distance,
-            mesh_triangle,
             world_triangle,
         }
     }
@@ -108,10 +100,6 @@ impl PickIntersection {
     /// Depth, distance from camera to intersection.
     pub fn distance(&self) -> f32 {
         self.distance
-    }
-    /// Triangle that was intersected with in Mesh coordinates
-    pub fn mesh_triangle(&self) -> Triangle {
-        self.mesh_triangle
     }
     /// Triangle that was intersected with in World coordinates
     pub fn world_triangle(&self) -> Triangle {
@@ -396,13 +384,10 @@ fn pick_mesh(
                         // Construct a triangle in world space using the mesh data
                         let mut world_vertices: [Vec3; 3] =
                             [Vec3::zero(), Vec3::zero(), Vec3::zero()];
-                        let mut mesh_vertices: [Vec3; 3] =
-                            [Vec3::zero(), Vec3::zero(), Vec3::zero()];
                         for i in 0..3 {
-                            mesh_vertices[i] = Vec3::from(vertex_positions[index[i] as usize]);
-                            world_vertices[i] = mesh_to_world.transform_point3(mesh_vertices[i])
+                            world_vertices[i] = mesh_to_world
+                                .transform_point3(Vec3::from(vertex_positions[index[i] as usize]));
                         }
-                        let mesh_triangle = Triangle::from(mesh_vertices);
                         let world_triangle = Triangle::from(world_vertices);
                         // Run the raycast on the ray and triangle
                         if let Some(intersection) = ray_triangle_intersection(
@@ -418,7 +403,6 @@ fn pick_mesh(
                                     entity,
                                     intersection,
                                     distance,
-                                    mesh_triangle,
                                     world_triangle,
                                 ));
                             }
