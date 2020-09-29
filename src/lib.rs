@@ -2,11 +2,13 @@ mod debug;
 mod highlight;
 mod raycast;
 mod select;
+mod interactable;
 
 pub use crate::{
     debug::DebugPickingPlugin,
     highlight::{HighlightablePickMesh, PickHighlightParams},
     select::SelectablePickMesh,
+    interactable::*
 };
 
 use crate::{highlight::*, raycast::*, select::*};
@@ -28,6 +30,7 @@ impl Plugin for PickingPlugin {
             .init_resource::<PickHighlightParams>()
             .add_system(build_rays.system())
             .add_system(pick_mesh.system())
+            .add_system(cursor_events.system())
             .add_system(select_mesh.system())
             .add_system(pick_highlighting.system());
     }
