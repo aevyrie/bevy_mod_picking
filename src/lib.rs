@@ -74,13 +74,15 @@ pub struct PickIntersection {
     entity: Entity,
     intersection: Ray3d,
     distance: f32,
+    world_triangle: Triangle,
 }
 impl PickIntersection {
-    fn new(entity: Entity, intersection: Ray3d, distance: f32) -> Self {
+    fn new(entity: Entity, intersection: Ray3d, distance: f32, world_triangle: Triangle) -> Self {
         PickIntersection {
             entity,
             intersection,
             distance,
+            world_triangle,
         }
     }
     /// Entity intersected with
@@ -98,6 +100,10 @@ impl PickIntersection {
     /// Depth, distance from camera to intersection.
     pub fn distance(&self) -> f32 {
         self.distance
+    }
+    /// Triangle that was intersected with in World coordinates
+    pub fn world_triangle(&self) -> Triangle {
+        self.world_triangle
     }
 }
 
@@ -376,24 +382,29 @@ fn pick_mesh(
                             break;
                         }
                         // Construct a triangle in world space using the mesh data
-                        let mut vertices: [Vec3; 3] = [Vec3::zero(), Vec3::zero(), Vec3::zero()];
+                        let mut world_vertices: [Vec3; 3] =
+                            [Vec3::zero(), Vec3::zero(), Vec3::zero()];
                         for i in 0..3 {
-                            let vertex_pos_local = Vec3::from(vertex_positions[index[i] as usize]);
-                            vertices[i] = mesh_to_world.transform_point3(vertex_pos_local)
+                            world_vertices[i] = mesh_to_world
+                                .transform_point3(Vec3::from(vertex_positions[index[i] as usize]));
                         }
-                        let triangle = Triangle::from(vertices);
+                        let world_triangle = Triangle::from(world_vertices);
                         // Run the raycast on the ray and triangle
                         if let Some(intersection) = ray_triangle_intersection(
                             &pick_ray,
-                            &triangle,
+                            &world_triangle,
                             RaycastAlgorithm::default(),
                         ) {
                             let distance: f32 =
                                 (*intersection.origin() - *pick_ray.origin()).length().abs();
                             if distance < min_pick_distance {
                                 min_pick_distance = distance;
-                                pick_intersection =
-                                    Some(PickIntersection::new(entity, intersection, distance));
+                                pick_intersection = Some(PickIntersection::new(
+                                    entity,
+                                    intersection,
+                                    distance,
+                                    world_triangle,
+                                ));
                             }
                         }
                     }
