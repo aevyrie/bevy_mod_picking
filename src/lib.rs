@@ -1,14 +1,14 @@
 mod debug;
 mod highlight;
+mod interactable;
 mod raycast;
 mod select;
-mod interactable;
 
 pub use crate::{
     debug::DebugPickingPlugin,
     highlight::{HighlightablePickMesh, PickHighlightParams},
+    interactable::*,
     select::SelectablePickMesh,
-    interactable::*
 };
 
 use crate::{highlight::*, raycast::*, select::*};

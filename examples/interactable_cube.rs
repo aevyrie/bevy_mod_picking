@@ -1,20 +1,21 @@
 use bevy::prelude::*;
 use bevy_mod_picking::*;
 
-fn main(){
+fn main() {
     App::build()
-    .add_resource(Msaa { samples: 4 })
-    .add_default_plugins()
-    .add_plugin(PickingPlugin)
-    .add_startup_system(setup.system())
-    .add_system(interactable_demo.system())
-    .run();
+        .add_resource(Msaa { samples: 4 })
+        .add_default_plugins()
+        .add_plugin(PickingPlugin)
+        .add_startup_system(setup.system())
+        .add_system(interactable_demo.system())
+        .run();
 }
 
-fn setup(mut commands: Commands,
-        mut meshes: ResMut<Assets<Mesh>>,
-        mut materials: ResMut<Assets<StandardMaterial>>,)
-{
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     // camera
     commands
         .spawn(Camera3dComponents {
@@ -63,9 +64,8 @@ fn setup(mut commands: Commands,
         });
 }
 
-fn interactable_demo(mut imesh_entities: Query<&InteractableMesh>){
-    for imesh in imesh_entities.iter().iter(){
-
+fn interactable_demo(mut imesh_entities: Query<&InteractableMesh>) {
+    for imesh in imesh_entities.iter().iter() {
         if imesh.mouse_hover {
             //println!("Hovering!");
         }
@@ -80,17 +80,17 @@ fn interactable_demo(mut imesh_entities: Query<&InteractableMesh>){
 
         match imesh.mouse_down(MouseButton::Left) {
             Some(v) => println!("Left Mouse Button is Down"),
-            None => ()
+            None => (),
         }
 
         match imesh.mouse_just_pressed(MouseButton::Left) {
             Some(v) => println!("Left Mouse just Clicked"),
-            None => ()
+            None => (),
         }
 
-        match imesh.mouse_just_released(MouseButton::Left){
+        match imesh.mouse_just_released(MouseButton::Left) {
             Some(v) => println!("Left Mouse just Released"),
-            None => ()
+            None => (),
         }
     }
 }
