@@ -16,8 +16,8 @@ impl InteractableMesh {
     pub fn new(pick_group: PickGroup, button_group: Vec<MouseButton>) -> Self{
 
         InteractableMesh{
-            pick_group: pick_group,
-            button_group: button_group,
+            pick_group,
+            button_group,
             ..Default::default()
         }
     }
@@ -30,8 +30,8 @@ impl InteractableMesh {
         });
 
         match filter.next() {
-            Some(val) => return Some(&val.1),
-            None => return None
+            Some(val) => Some(&val.1),
+            None => None
         }
     }
 
@@ -42,8 +42,8 @@ impl InteractableMesh {
         });
 
         match filter.next() {
-            Some(val) => return Some(&val.1),
-            None => return None
+            Some(val) =>  Some(&val.1),
+            None =>  None
         }
     }
 
@@ -54,8 +54,8 @@ impl InteractableMesh {
         });
 
         match filter.next() {
-            Some(val) => return Some(&val.1),
-            None => return None
+            Some(val) =>  Some(&val.1),
+            None =>  None
         }
     }
 
