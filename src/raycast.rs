@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    render::mesh::{VertexAttribute, VertexAttributeValues},
+    render::mesh::{Indices, VertexAttribute, VertexAttributeValues},
     render::pipeline::PrimitiveTopology,
 };
 
@@ -111,10 +111,20 @@ impl From<&Mesh> for BoundingSphere {
             }
         }
         if let Some(indices) = &mesh.indices {
-            for index in indices.iter() {
-                mesh_radius =
-                    mesh_radius.max(Vec3::from(vertex_positions[*index as usize]).length());
-            }
+            match indices {
+                Indices::U16(vector) => {
+                    for index in vector.iter() {
+                        mesh_radius =
+                            mesh_radius.max(Vec3::from(vertex_positions[*index as usize]).length());
+                    }
+                }
+                Indices::U32(vector) => {
+                    for index in vector.iter() {
+                        mesh_radius =
+                            mesh_radius.max(Vec3::from(vertex_positions[*index as usize]).length());
+                    }
+                }
+            };
         }
         BoundingSphere {
             mesh_radius,
