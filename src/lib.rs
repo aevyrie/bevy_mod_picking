@@ -382,7 +382,7 @@ fn pick_mesh(
 
                     match indices {
                         Indices::U16(vector) => {
-                            for index in indices.chunks(3) {
+                            for index in vector.chunks(3) {
                                 // Make sure this chunk has 3 vertices to avoid a panic.
                                 if index.len() != 3 {
                                     break;
