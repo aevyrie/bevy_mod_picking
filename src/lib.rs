@@ -21,6 +21,7 @@ use bevy::{
     },
     window::{CursorMoved, WindowId},
 };
+use core::convert::TryInto;
 use std::collections::HashMap;
 
 pub struct PickingPlugin;
@@ -370,92 +371,24 @@ fn pick_mesh(
             if let Some(indices) = &mesh.indices {
                 // Iterate over the list of pick rays that belong to the same group as this mesh
                 for (pick_group, pick_ray) in pick_rays {
-                    // The ray cast can hit the same mesh many times, so we need to track which hit is
-                    // closest to the camera, and record that.
-                    let mut min_pick_distance = f32::MAX;
-
                     let mesh_to_world = transform.value();
-                    let mut pick_intersection: Option<PickIntersection> = None;
-                    // Now that we're in the vector of vertex indices, we want to look at the vertex
-                    // positions for each triangle, so we'll take indices in chunks of three, where each
-                    // chunk of three indices are references to the three vertices of a triangle.
-
-                    match indices {
-                        Indices::U16(vector) => {
-                            for index in vector.chunks(3) {
-                                // Make sure this chunk has 3 vertices to avoid a panic.
-                                if index.len() != 3 {
-                                    break;
-                                }
-                                // Construct a triangle in world space using the mesh data
-                                let mut world_vertices: [Vec3; 3] =
-                                    [Vec3::zero(), Vec3::zero(), Vec3::zero()];
-                                for i in 0..3 {
-                                    world_vertices[i] = mesh_to_world.transform_point3(Vec3::from(
-                                        vertex_positions[index[i] as usize],
-                                    ));
-                                }
-                                let world_triangle = Triangle::from(world_vertices);
-                                // Run the raycast on the ray and triangle
-                                if let Some(intersection) = ray_triangle_intersection(
-                                    &pick_ray,
-                                    &world_triangle,
-                                    RaycastAlgorithm::default(),
-                                ) {
-                                    let distance: f32 = (*intersection.origin()
-                                        - *pick_ray.origin())
-                                    .length()
-                                    .abs();
-                                    if distance < min_pick_distance {
-                                        min_pick_distance = distance;
-                                        pick_intersection = Some(PickIntersection::new(
-                                            entity,
-                                            intersection,
-                                            distance,
-                                            world_triangle,
-                                        ));
-                                    }
-                                }
-                            }
-                        }
-                        Indices::U32(vector) => {
-                            for index in vector.chunks(3) {
-                                // Make sure this chunk has 3 vertices to avoid a panic.
-                                if index.len() != 3 {
-                                    break;
-                                }
-                                // Construct a triangle in world space using the mesh data
-                                let mut world_vertices: [Vec3; 3] =
-                                    [Vec3::zero(), Vec3::zero(), Vec3::zero()];
-                                for i in 0..3 {
-                                    world_vertices[i] = mesh_to_world.transform_point3(Vec3::from(
-                                        vertex_positions[index[i] as usize],
-                                    ));
-                                }
-                                let world_triangle = Triangle::from(world_vertices);
-                                // Run the raycast on the ray and triangle
-                                if let Some(intersection) = ray_triangle_intersection(
-                                    &pick_ray,
-                                    &world_triangle,
-                                    RaycastAlgorithm::default(),
-                                ) {
-                                    let distance: f32 = (*intersection.origin()
-                                        - *pick_ray.origin())
-                                    .length()
-                                    .abs();
-                                    if distance < min_pick_distance {
-                                        min_pick_distance = distance;
-                                        pick_intersection = Some(PickIntersection::new(
-                                            entity,
-                                            intersection,
-                                            distance,
-                                            world_triangle,
-                                        ));
-                                    }
-                                }
-                            }
-                        }
+                    let pick_intersection = match indices {
+                        Indices::U16(vector) => ray_mesh_intersection(
+                            mesh_to_world,
+                            &vertex_positions,
+                            &pick_ray,
+                            entity,
+                            vector,
+                        ),
+                        Indices::U32(vector) => ray_mesh_intersection(
+                            mesh_to_world,
+                            &vertex_positions,
+                            &pick_ray,
+                            entity,
+                            vector,
+                        ),
                     };
+
                     // Finished going through the current mesh, update pick states
                     if let Some(pick) = pick_intersection {
                         // Make sure the pick list map contains the key
@@ -486,4 +419,51 @@ fn pick_mesh(
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
     }
+}
+
+fn ray_mesh_intersection<T: TryInto<usize> + Copy>(
+    mesh_to_world: &Mat4,
+    vertex_positions: &Vec<[f32; 3]>,
+    pick_ray: &Ray3d,
+    entity: Entity,
+    indices: &Vec<T>,
+) -> Option<PickIntersection> {
+    // The ray cast can hit the same mesh many times, so we need to track which hit is
+    // closest to the camera, and record that.
+    let mut min_pick_distance = f32::MAX;
+    let mut pick_intersection: Option<PickIntersection> = None;
+
+    // Make sure this chunk has 3 vertices to avoid a panic.
+    if indices.len() % 3 == 0 {
+        // Now that we're in the vector of vertex indices, we want to look at the vertex
+        // positions for each triangle, so we'll take indices in chunks of three, where each
+        // chunk of three indices are references to the three vertices of a triangle.
+        for index in indices.chunks(3) {
+            // Construct a triangle in world space using the mesh data
+            let mut world_vertices: [Vec3; 3] = [Vec3::zero(), Vec3::zero(), Vec3::zero()];
+            for i in 0..3 {
+                let vertex_index = index[i].try_into().unwrap_or_default();
+                world_vertices[i] =
+                    mesh_to_world.transform_point3(Vec3::from(vertex_positions[vertex_index]));
+            }
+            let world_triangle = Triangle::from(world_vertices);
+            // Run the raycast on the ray and triangle
+            if let Some(intersection) =
+                ray_triangle_intersection(pick_ray, &world_triangle, RaycastAlgorithm::default())
+            {
+                let distance: f32 = (*intersection.origin() - *pick_ray.origin()).length().abs();
+                if distance < min_pick_distance {
+                    min_pick_distance = distance;
+                    pick_intersection = Some(PickIntersection::new(
+                        entity,
+                        intersection,
+                        distance,
+                        world_triangle,
+                    ));
+                }
+            }
+        }
+    }
+
+    pick_intersection
 }
