@@ -423,7 +423,7 @@ fn pick_mesh(
 
 fn ray_mesh_intersection<T: TryInto<usize> + Copy>(
     mesh_to_world: &Mat4,
-    vertex_positions: &Vec<[f32; 3]>,
+    vertex_positions: &[[f32; 3]],
     pick_ray: &Ray3d,
     entity: Entity,
     indices: &[T],
