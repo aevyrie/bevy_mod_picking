@@ -426,7 +426,7 @@ fn ray_mesh_intersection<T: TryInto<usize> + Copy>(
     vertex_positions: &Vec<[f32; 3]>,
     pick_ray: &Ray3d,
     entity: Entity,
-    indices: &Vec<T>,
+    indices: &[T],
 ) -> Option<PickIntersection> {
     // The ray cast can hit the same mesh many times, so we need to track which hit is
     // closest to the camera, and record that.
