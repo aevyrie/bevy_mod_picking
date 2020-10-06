@@ -121,3 +121,9 @@ You can also enable a debug cursor that will place a sphere at the intersection,
 ```rust
 .add_plugin(DebugPickingPlugin)
 ```
+
+## License
+This project is licensed under the [MIT license](https://github.com/aevyrie/bevy_mod_picking/blob/master/LICENSE).
+
+### Contribution
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in bevy_mod_picking by you, shall be licensed as MIT, without any additional terms or conditions.
