@@ -442,9 +442,12 @@ fn ray_mesh_intersection<T: TryInto<usize> + Copy>(
             // Construct a triangle in world space using the mesh data
             let mut world_vertices: [Vec3; 3] = [Vec3::zero(), Vec3::zero(), Vec3::zero()];
             for i in 0..3 {
-                let vertex_index = index[i].try_into().unwrap_or_default();
-                world_vertices[i] =
-                    mesh_to_world.transform_point3(Vec3::from(vertex_positions[vertex_index]));
+                if let Ok(vertex_index) = index[i].try_into() {
+                    world_vertices[i] =
+                        mesh_to_world.transform_point3(Vec3::from(vertex_positions[vertex_index]));
+                } else {
+                    panic!("Failed to convert index into usize.");
+                }
             }
             let world_triangle = Triangle::from(world_vertices);
             // Run the raycast on the ray and triangle
