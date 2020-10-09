@@ -201,7 +201,7 @@ fn build_rays(
     cursor: Res<Events<CursorMoved>>,
     windows: Res<Windows>,
     // Queries
-    mut pick_source_query: Query<(&mut PickSource, &Transform, Option<&Camera>)>,
+    mut pick_source_query: Query<(&mut PickSource, &GlobalTransform, Option<&Camera>)>,
 ) {
     // Collect and calculate pick_ray from all cameras
     pick_state.ray_map.clear();
@@ -320,7 +320,13 @@ fn pick_mesh(
     mut pick_state: ResMut<PickState>,
     meshes: Res<Assets<Mesh>>,
     // Queries
-    mut mesh_query: Query<(&Handle<Mesh>, &Transform, &PickableMesh, Entity, &Draw)>,
+    mut mesh_query: Query<(
+        &Handle<Mesh>,
+        &GlobalTransform,
+        &PickableMesh,
+        Entity,
+        &Draw,
+    )>,
 ) {
     // If there are no rays, then there is nothing to do here
     if pick_state.ray_map.is_empty() {
