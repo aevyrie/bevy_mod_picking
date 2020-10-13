@@ -102,7 +102,7 @@ impl PickIntersection {
 
 /// Used to group pickable entities with pick rays
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-pub struct PickGroup(usize);
+pub struct PickGroup(pub usize);
 
 impl core::ops::Deref for PickGroup {
     type Target = usize;
