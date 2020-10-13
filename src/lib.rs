@@ -40,6 +40,7 @@ impl Plugin for PickingPlugin {
 pub struct PickState {
     ray_map: HashMap<PickGroup, Ray3d>,
     ordered_pick_list_map: HashMap<PickGroup, Vec<PickIntersection>>,
+    pub enabled: bool,
 }
 
 impl PickState {
@@ -68,6 +69,7 @@ impl Default for PickState {
         PickState {
             ray_map: HashMap::new(),
             ordered_pick_list_map: HashMap::new(),
+            enabled: true,
         }
     }
 }
@@ -206,6 +208,10 @@ fn build_rays(
     // Collect and calculate pick_ray from all cameras
     pick_state.ray_map.clear();
 
+    if !pick_state.enabled {
+        return;
+    }
+
     // Generate a ray for each picking source based on the pick method
     for (mut pick_source, transform, camera_opt) in &mut pick_source_query.iter() {
         let group_number = match pick_source.group {
@@ -328,6 +334,11 @@ fn pick_mesh(
         &Draw,
     )>,
 ) {
+    if !pick_state.enabled {
+        pick_state.ordered_pick_list_map.clear();
+        return;
+    }
+
     // If there are no rays, then there is nothing to do here
     if pick_state.ray_map.is_empty() {
         return;
