@@ -103,7 +103,7 @@ pub fn pick_highlighting(
         };
         let mut topmost = false;
         for (_group, pick) in pick_state.top_all() {
-            if pick.entity == entity {
+            if pick.0 == entity {
                 topmost = true;
                 break;
             }

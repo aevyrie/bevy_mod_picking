@@ -38,7 +38,7 @@ pub fn select_mesh(
         }
 
         for (_group, pick) in pick_state.top_all() {
-            if let Ok(mut top_mesh) = query.get_mut::<SelectablePickMesh>(pick.entity) {
+            if let Ok(mut top_mesh) = query.get_mut::<SelectablePickMesh>(pick.0) {
                 top_mesh.selected = true;
                 break;
             }

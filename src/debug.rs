@@ -45,7 +45,7 @@ fn update_debug_cursor_position(
 ) {
     // Set the cursor translation to the top pick's world coordinates
     for (_group, top_pick) in pick_state.top_all() {
-        let transform_new = top_pick.intersection.to_transform();
+        let transform_new = top_pick.1.intersection_normal.to_transform();
         for mut transform in &mut query.iter() {
             *transform.value_mut() = transform_new;
         }

@@ -176,7 +176,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::new(
-            [PickGroup::Group(0), PickGroup::Group(1)].into(),
+            [PickGroup::Groups(0), PickGroup::Groups(1)].into(),
         ))
         .with(HighlightablePickMesh::new())
         .with(SelectablePickMesh::new())
@@ -195,7 +195,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickSource::new(
-            PickGroup::Group(0),
+            PickGroup::Groups(0),
             PickMethod::CameraCursor(WindowId::primary()),
         ))
         // second window camera
@@ -213,7 +213,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickSource::new(
-            PickGroup::Group(1),
+            PickGroup::Groups(1),
             PickMethod::CameraCursor(window_id),
         ));
 }
