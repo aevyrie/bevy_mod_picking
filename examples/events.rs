@@ -7,7 +7,7 @@ fn main() {
         .add_default_plugins()
         .add_plugin(PickingPlugin)
         .add_startup_system(setup.system())
-        .add_system(interactable_demo.system())
+        .add_system(event_example.system())
         .run();
 }
 
@@ -16,6 +16,7 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    // add entities to the world
     // camera
     commands
         .spawn(Camera3dComponents {
@@ -44,7 +45,8 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        .with(InteractableMesh::default())
+        .with(HighlightablePickMesh::new())
+        .with(SelectablePickMesh::new())
         // sphere
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Icosphere {
@@ -56,7 +58,8 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        .with(InteractableMesh::default())
+        .with(HighlightablePickMesh::new())
+        .with(SelectablePickMesh::new())
         // light
         .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
@@ -64,33 +67,12 @@ fn setup(
         });
 }
 
-fn interactable_demo(mut imesh_entities: Query<&InteractableMesh>) {
-    for imesh in imesh_entities.iter().iter() {
-        if imesh.mouse_hover {
-            //println!("Hovering!");
-        }
-
-        if imesh.mouse_entered {
-            println!("Mouse Entered");
-        }
-
-        if imesh.mouse_exited {
-            println!("Mouse Exited");
-        }
-
-        match imesh.mouse_down(MouseButton::Left) {
-            Some(v) => println!("Left Mouse Button is Down"),
-            None => (),
-        }
-
-        match imesh.mouse_just_pressed(MouseButton::Left) {
-            Some(v) => println!("Left Mouse just Clicked"),
-            None => (),
-        }
-
-        match imesh.mouse_just_released(MouseButton::Left) {
-            Some(v) => println!("Left Mouse just Released"),
-            None => (),
+fn event_example(mut query: Query<&PickableMesh>) {
+    for entity in query.iter().iter() {
+        match entity.event() {
+            PickEvents::None => continue,
+            PickEvents::JustEntered => println!("Mouse Entered"),
+            PickEvents::JustExited => println!("Mouse Exited"),
         }
     }
 }

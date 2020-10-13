@@ -118,7 +118,7 @@ impl Default for PickGroup {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum PickEvents {
     None,
     JustEntered,
@@ -147,6 +147,12 @@ impl PickableMesh {
             intersection: None,
             event: PickEvents::None,
         }
+    }
+    pub fn event(&self) -> PickEvents {
+        self.event
+    }
+    pub fn intersection(&self) -> &Option<PickIntersection> {
+        &self.intersection
     }
 }
 
@@ -405,7 +411,7 @@ fn pick_mesh(
                 // Iterate over the list of pick rays that belong to the same group as this mesh
                 for (pick_group, pick_ray) in pick_rays {
                     let mesh_to_world = transform.value();
-                    let pick_intersection = match indices {
+                    let new_pick = match indices {
                         Indices::U16(vector) => ray_mesh_intersection(
                             mesh_to_world,
                             &vertex_positions,
@@ -421,7 +427,7 @@ fn pick_mesh(
                     };
 
                     // Finished going through the current mesh, update pick states
-                    match pick_intersection {
+                    match new_pick {
                         Some(pick) => {
                             pickable.event = match pickable.intersection {
                                 // From Some to Some -> None
@@ -448,6 +454,7 @@ fn pick_mesh(
                             };
                         }
                     }
+                    pickable.intersection = new_pick;
                 }
             } else {
                 // If we get here the mesh doesn't have an index list!
