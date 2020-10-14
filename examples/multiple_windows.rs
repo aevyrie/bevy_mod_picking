@@ -175,7 +175,7 @@ fn setup(
             material: material_handle,
             ..Default::default()
         })
-        .with(PickableMesh::new([PickGroup(0), PickGroup(1)].into()))
+        .with(PickableMesh::new([Group(0), Group(1)].into()))
         .with(HighlightablePickMesh::new())
         .with(SelectablePickMesh::new())
         // light
@@ -193,7 +193,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickSource::new(
-            [PickGroup(0)].into(),
+            [Group(0)].into(),
             PickMethod::CameraCursor(WindowId::primary()),
         ))
         // second window camera
@@ -211,7 +211,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickSource::new(
-            [PickGroup(1)].into(),
+            [Group(1)].into(),
             PickMethod::CameraCursor(window_id),
         ));
 }

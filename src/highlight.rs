@@ -102,10 +102,12 @@ pub fn pick_highlighting(
             Some(color) => color,
         };
         let mut topmost = false;
-        for (_group, pick) in pick_state.top_all() {
-            if pick.0 == entity {
-                topmost = true;
-                break;
+        if let Some(top_list) = pick_state.top_all() {
+            for (_group, top_entity, _top_intersection) in top_list {
+                if *top_entity == entity {
+                    topmost = true;
+                    break;
+                }
             }
         }
         if topmost {

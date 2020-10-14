@@ -44,18 +44,22 @@ fn update_debug_cursor_position(
     mut visibility_query: Query<With<DebugCursorMesh, &mut Draw>>,
 ) {
     // Set the cursor translation to the top pick's world coordinates
-    for (_group, top_pick) in pick_state.top_all() {
-        let transform_new = top_pick.1.intersection_normal.to_transform();
-        for mut transform in &mut query.iter() {
-            *transform.value_mut() = transform_new;
+    match pick_state.top_all() {
+        Some(top_list) => {
+            for (_group, _entity, intersection) in top_list {
+                let transform_new = intersection.normal.to_transform();
+                for mut transform in &mut query.iter() {
+                    *transform.value_mut() = transform_new;
+                }
+                for mut draw in &mut visibility_query.iter() {
+                    draw.is_visible = true;
+                }
+            }
         }
-        for mut draw in &mut visibility_query.iter() {
-            draw.is_visible = true;
-        }
-    }
-    if pick_state.top_all().is_empty() {
-        for mut draw in &mut visibility_query.iter() {
-            draw.is_visible = false;
+        None => {
+            for mut draw in &mut visibility_query.iter() {
+                draw.is_visible = false;
+            }
         }
     }
 }

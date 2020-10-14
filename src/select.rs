@@ -36,11 +36,12 @@ pub fn select_mesh(
         for mut selectable in &mut query.iter() {
             selectable.selected = false;
         }
-
-        for (_group, pick) in pick_state.top_all() {
-            if let Ok(mut top_mesh) = query.get_mut::<SelectablePickMesh>(pick.0) {
-                top_mesh.selected = true;
-                break;
+        if let Some(top_list) = pick_state.top_all() {
+            for (_group, entity, _intersection) in top_list {
+                if let Ok(mut top_mesh) = query.get_mut::<SelectablePickMesh>(*entity) {
+                    top_mesh.selected = true;
+                    break;
+                }
             }
         }
     }
