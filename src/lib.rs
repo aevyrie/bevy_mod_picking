@@ -22,7 +22,6 @@ use bevy::{
 use core::convert::TryInto;
 use std::collections::HashMap;
 
-
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
@@ -106,8 +105,7 @@ pub struct PickGroup(pub usize);
 
 impl core::ops::Deref for PickGroup {
     type Target = usize;
-    fn deref (self: &'_ Self) -> &'_ Self::Target
-    {
+    fn deref(self: &'_ Self) -> &'_ Self::Target {
         &self.0
     }
 }
@@ -125,44 +123,60 @@ pub enum PickEvents {
     JustExited,
 }
 
+#[derive(Debug)]
+pub struct PickResult {
+    intersection: PickIntersection,
+    topmost: bool,
+}
+
 /// Marks a Mesh entity as pickable
 #[derive(Debug)]
 pub struct PickableMesh {
-    groups: Option<Vec<PickGroup>>,
+    groups: Vec<PickGroup>,
+    picks: HashMap<PickGroup, Option<PickResult>>,
+    events: HashMap<PickGroup, PickEvents>,
     bounding_sphere: Option<BoundingSphere>,
-    // What states can a mesh be in?
-    // Picked or not picked
-    intersection: Option<PickIntersection>,
-    // transition: just entered, just exited, none
-    event: PickEvents,
-
 }
 
 impl PickableMesh {
     /// Create a new PickableMesh with the specified pick group.
-    pub fn new(picking_group: Vec<PickGroup>) -> Self {
+    pub fn new(groups: Vec<PickGroup>) -> Self {
+        let mut picks: HashMap<PickGroup, Option<PickResult>> = HashMap::new();
+        let mut events = HashMap::new();
+        for group in &groups {
+            picks.insert(*group, None);
+            events.insert(*group, PickEvents::None);
+        }
         PickableMesh {
-            groups: Some(picking_group),
+            groups,
+            picks,
+            events,
             bounding_sphere: None,
-            intersection: None,
-            event: PickEvents::None,
         }
     }
-    pub fn event(&self) -> PickEvents {
-        self.event
+    pub fn event(&self, group: &PickGroup) -> Result<&PickEvents, String> {
+        self.events
+            .get(group)
+            .ok_or(format!("PickableMesh does not belong to group {}", **group))
     }
-    pub fn intersection(&self) -> &Option<PickIntersection> {
-        &self.intersection
+    pub fn intersection(&self, group: &PickGroup) -> Result<&Option<PickResult>, String> {
+        self.picks
+            .get(group)
+            .ok_or(format!("PickableMesh does not belong to group {}", **group))
     }
 }
 
 impl Default for PickableMesh {
     fn default() -> Self {
+        let mut picks: HashMap<PickGroup, Option<PickResult>> = HashMap::new();
+        let mut events = HashMap::new();
+        picks.insert(PickGroup::default(), None);
+        events.insert(PickGroup::default(), PickEvents::None);
         PickableMesh {
-            groups: Some(vec![PickGroup::default()]),
+            groups: [PickGroup::default()].into(),
             bounding_sphere: None,
-            intersection: None,
-            event: PickEvents::None,
+            picks,
+            events,
         }
     }
 }
@@ -203,7 +217,7 @@ impl PickSource {
             }
             None => Some(vec![new_group]),
         };
-        PickSource{
+        PickSource {
             groups: new_groups,
             ..self
         }
@@ -230,7 +244,7 @@ fn build_rays(
     cursor: Res<Events<CursorMoved>>,
     windows: Res<Windows>,
     // Queries
-    mut pick_source_query: Query<(&mut PickSource, &GlobalTransform, Option<&Camera>)>,
+    mut pick_source_query: Query<(&mut PickSource, &Transform, Option<&Camera>)>,
 ) {
     // Collect and calculate pick_ray from all cameras
     pick_state.ray_map.clear();
@@ -281,11 +295,7 @@ fn build_rays(
                 let pick_ray = Ray3d::new(camera_position, ray_direction);
 
                 for group in group_numbers {
-                    if pick_state
-                        .ray_map
-                        .insert(group, pick_ray)
-                        .is_some()
-                    {
+                    if pick_state.ray_map.insert(group, pick_ray).is_some() {
                         panic!(
                             "Multiple PickingSources have been added to pick group: {:?}",
                             group
@@ -311,11 +321,7 @@ fn build_rays(
                 let pick_ray = Ray3d::new(camera_position, ray_direction);
 
                 for group in group_numbers {
-                    if pick_state
-                        .ray_map
-                        .insert(group, pick_ray)
-                        .is_some()
-                    {
+                    if pick_state.ray_map.insert(group, pick_ray).is_some() {
                         panic!(
                             "Multiple PickingSources have been added to pick group: {:?}",
                             group
@@ -335,11 +341,7 @@ fn build_rays(
                 let pick_ray = Ray3d::new(source_origin, ray_direction);
 
                 for group in group_numbers {
-                    if pick_state
-                        .ray_map
-                        .insert(group, pick_ray)
-                        .is_some()
-                    {
+                    if pick_state.ray_map.insert(group, pick_ray).is_some() {
                         panic!(
                             "Multiple PickingSources have been added to pick group: {:?}",
                             group
@@ -359,7 +361,7 @@ fn pick_mesh(
     mut mesh_query: Query<(
         &Handle<Mesh>,
         &GlobalTransform,
-        &PickableMesh,
+        &mut PickableMesh,
         Entity,
         &Draw,
     )>,
@@ -378,14 +380,10 @@ fn pick_mesh(
             continue;
         }
 
-        let pick_groups = match &pickable.groups {
-            Some(groups) => groups.clone(),
-            None => continue,
-        };
-
-        // Check for a pick ray(s) in the pick group(s) this mesh belongs to
+        // Check for a pick ray in each pick group(s) this mesh belongs to
         let mut pick_rays: Vec<(PickGroup, Ray3d)> = Vec::new();
-        for group in pick_groups.iter() {
+
+        for group in &pickable.groups {
             if let Some(ray) = pick_state.ray_map.get(group) {
                 pick_rays.push((*group, *ray));
             }
@@ -417,7 +415,7 @@ fn pick_mesh(
                 // Iterate over the list of pick rays that belong to the same group as this mesh
                 for (pick_group, pick_ray) in pick_rays {
                     let mesh_to_world = transform.value();
-                    let new_pick = match indices {
+                    let new_intersection = match indices {
                         Indices::U16(vector) => ray_mesh_intersection(
                             mesh_to_world,
                             &vertex_positions,
@@ -432,35 +430,52 @@ fn pick_mesh(
                         ),
                     };
 
+                    let mut is_intersection = false;
+
+                    let was_intersection = pickable
+                        .picks
+                        .get(&pick_group)
+                        .unwrap_or_else(|| {
+                            panic!("PickableMesh does not belong to group {}", *pick_group)
+                        })
+                        .is_some();
+
                     // Finished going through the current mesh, update pick states
-                    match new_pick {
-                        Some(pick) => {
-                            pickable.event = match pickable.intersection {
-                                // From Some to Some -> None
-                                Some(_) => PickEvents::None,
-                                // From None to Some -> JustEntered
-                                None => PickEvents::JustEntered,
-                            };
-                            // Make sure the pick list map contains the key
-                            match pick_state.ordered_pick_list_map.get_mut(&pick_group) {
-                                Some(list) => list.push((entity, pick)),
-                                None => {
-                                    pick_state
-                                        .ordered_pick_list_map
-                                        .insert(pick_group, Vec::from([(entity, pick)]));
+                    pickable.picks.insert(
+                        pick_group,
+                        match new_intersection {
+                            Some(intersection) => {
+                                is_intersection = true;
+                                // Make sure the pick list map contains the key
+                                match pick_state.ordered_pick_list_map.get_mut(&pick_group) {
+                                    Some(list) => list.push((entity, intersection)),
+                                    None => {
+                                        pick_state.ordered_pick_list_map.insert(
+                                            pick_group,
+                                            Vec::from([(entity, intersection)]),
+                                        );
+                                    }
                                 }
+                                Some(PickResult {
+                                    intersection,
+                                    topmost: false,
+                                })
                             }
-                        }
-                        None => {
-                            pickable.event = match pickable.intersection {
-                                // From Some to None -> JustExited
-                                Some(_) => PickEvents::JustExited,
-                                // From None to None -> None
-                                None => PickEvents::None,
-                            };
-                        }
-                    }
-                    pickable.intersection = new_pick;
+                            None => None,
+                        },
+                    );
+
+                    let next_event = if is_intersection && !was_intersection {
+                        // From None to Some -> JustEntered
+                        PickEvents::JustEntered
+                    } else if !is_intersection && was_intersection {
+                        // From Some to None -> JustExited
+                        PickEvents::JustExited
+                    } else {
+                        // From None to None -> None
+                        PickEvents::None
+                    };
+                    pickable.events.insert(pick_group, next_event);
                 }
             } else {
                 // If we get here the mesh doesn't have an index list!

@@ -17,8 +17,8 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // add entities to the world
-    // camera
     commands
+        // camera
         .spawn(Camera3dComponents {
             transform: Transform::new(Mat4::face_toward(
                 Vec3::new(-3.0, 5.0, 8.0),
@@ -35,8 +35,6 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        .with(HighlightablePickMesh::new())
-        .with(SelectablePickMesh::new())
         // cube
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -45,8 +43,6 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        .with(HighlightablePickMesh::new())
-        .with(SelectablePickMesh::new())
         // sphere
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Icosphere {
@@ -58,8 +54,6 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        .with(HighlightablePickMesh::new())
-        .with(SelectablePickMesh::new())
         // light
         .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
@@ -67,12 +61,15 @@ fn setup(
         });
 }
 
-fn event_example(mut query: Query<&PickableMesh>) {
-    for entity in query.iter().iter() {
-        match entity.event() {
-            PickEvents::None => continue,
-            PickEvents::JustEntered => println!("Mouse Entered"),
-            PickEvents::JustExited => println!("Mouse Exited"),
+fn event_example(mut query: Query<(&PickableMesh, Entity)>) {
+    for (pickable, entity) in query.iter().iter() {
+        match pickable.event(&PickGroup::default()) {
+            Ok(event) => match event {
+                PickEvents::None => continue,
+                PickEvents::JustEntered => println!("Mouse Entered {:?}", entity),
+                PickEvents::JustExited => println!("Mouse Exited {:?}", entity),
+            },
+            Err(e) => panic!(e),
         }
     }
 }

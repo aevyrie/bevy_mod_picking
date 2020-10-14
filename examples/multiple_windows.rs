@@ -175,9 +175,7 @@ fn setup(
             material: material_handle,
             ..Default::default()
         })
-        .with(PickableMesh::new(
-            [PickGroup(0), PickGroup(1)].into(),
-        ))
+        .with(PickableMesh::new([PickGroup(0), PickGroup(1)].into()))
         .with(HighlightablePickMesh::new())
         .with(SelectablePickMesh::new())
         // light
