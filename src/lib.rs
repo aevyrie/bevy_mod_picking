@@ -405,9 +405,10 @@ fn pick_mesh(
     // If there are no rays, then there is nothing to do here
     if pick_state.ray_map.is_empty() {
         return;
+    } else {
+        // Clear picks in list only if there are new picking rays, otherwise keep state same
+        pick_state.empty_pick_list();
     }
-
-    pick_state.empty_pick_list();
 
     // Iterate through each pickable mesh in the scene
     for (mesh_handle, transform, mut pickable, entity, draw) in &mut mesh_query.iter() {
