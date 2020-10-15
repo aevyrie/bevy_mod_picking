@@ -29,6 +29,7 @@ impl Plugin for PickingPlugin {
             .init_resource::<PickHighlightParams>()
             .add_system(build_rays.system())
             .add_system(pick_mesh.system())
+            .add_system(generate_events.system())
             .add_system(select_mesh.system())
             .add_system(pick_highlighting.system());
     }
@@ -63,6 +64,11 @@ impl PickState {
             None
         } else {
             Some(result)
+        }
+    }
+    fn empty_pick_list(&mut self) {
+        for (_group, intersection_list) in self.ordered_pick_list_map.iter_mut() {
+            intersection_list.clear();
         }
     }
 }
@@ -100,6 +106,10 @@ impl Intersection {
     pub fn normal(&self) -> &Vec3 {
         self.normal.direction()
     }
+    /// Distance from the picking source to the entity.
+    pub fn distance(&self) -> f32 {
+        self.pick_distance
+    }
     /// Triangle that was intersected with in World coordinates
     pub fn world_triangle(&self) -> Triangle {
         self.triangle
@@ -134,7 +144,7 @@ pub enum PickEvents {
 #[derive(Debug)]
 pub struct PickableMesh {
     groups: Vec<Group>,
-    picks: HashMap<Group, Option<Intersection>>,
+    intersections: HashMap<Group, Option<Intersection>>,
     events: HashMap<Group, PickEvents>,
     topmost: HashMap<Group, bool>,
     bounding_sphere: Option<BoundingSphere>,
@@ -153,19 +163,27 @@ impl PickableMesh {
         }
         PickableMesh {
             groups,
-            picks,
+            intersections: picks,
             events,
             topmost,
             bounding_sphere: None,
         }
     }
+    /// Returns the current event state of the PickableMesh in the provided group.
     pub fn event(&self, group: &Group) -> Result<&PickEvents, String> {
         self.events
             .get(group)
             .ok_or(format!("PickableMesh does not belong to group {}", **group))
     }
+    /// Returns the nearest intersection of the PickableMesh in the provided group.
     pub fn intersection(&self, group: &Group) -> Result<&Option<Intersection>, String> {
-        self.picks
+        self.intersections
+            .get(group)
+            .ok_or(format!("PickableMesh does not belong to group {}", **group))
+    }
+    /// Returns true iff the PickableMesh is the topost entity in the specified group.
+    pub fn topmost(&self, group: &Group) -> Result<&bool, String> {
+        self.topmost
             .get(group)
             .ok_or(format!("PickableMesh does not belong to group {}", **group))
     }
@@ -182,7 +200,7 @@ impl Default for PickableMesh {
         PickableMesh {
             groups: [Group::default()].into(),
             bounding_sphere: None,
-            picks,
+            intersections: picks,
             events,
             topmost,
         }
@@ -370,7 +388,6 @@ fn pick_mesh(
     mut pick_state: ResMut<PickState>,
     meshes: Res<Assets<Mesh>>,
     // Queries
-    mut pickable_query: Query<(&mut PickableMesh, Entity)>,
     mut mesh_query: Query<(
         &Handle<Mesh>,
         &GlobalTransform,
@@ -379,18 +396,19 @@ fn pick_mesh(
         &Draw,
     )>,
 ) {
+
+    // If picking is disabled, do not continue
     if !pick_state.enabled {
-        pick_state.ordered_pick_list_map.clear();
+        pick_state.empty_pick_list();
         return;
     }
 
     // If there are no rays, then there is nothing to do here
     if pick_state.ray_map.is_empty() {
         return;
-    } else {
-        // TODO only clear out lists if the corresponding group has a ray
-        pick_state.ordered_pick_list_map.clear();
     }
+
+    pick_state.empty_pick_list();
 
     // Iterate through each pickable mesh in the scene
     for (mesh_handle, transform, mut pickable, entity, draw) in &mut mesh_query.iter() {
@@ -445,22 +463,21 @@ fn pick_mesh(
                             vector,
                         ),
                     };
-
+                    
                     // Finished going through the current mesh, update pick states
                     if let Some(intersection) = new_intersection {
                         // Make sure the pick list map contains the key
                         match pick_state.ordered_pick_list_map.get_mut(&pick_group) {
                             Some(list) => list.push((entity, intersection)),
                             None => {
-                                pick_state.ordered_pick_list_map.insert(
-                                    pick_group,
-                                    Vec::from([(entity, intersection)]),
-                                );
+                                pick_state
+                                    .ordered_pick_list_map
+                                    .insert(pick_group, Vec::from([(entity, intersection)]));
                             }
                         }
                     }
 
-                    pickable.picks.insert(pick_group, new_intersection);
+                    pickable.intersections.insert(pick_group, new_intersection);
                 }
             } else {
                 // If we get here the mesh doesn't have an index list!
@@ -472,18 +489,32 @@ fn pick_mesh(
         }
     }
     // Sort the pick list
-    for (group, intersection_list) in pick_state.ordered_pick_list_map.iter_mut() {
+    for (_group, intersection_list) in pick_state.ordered_pick_list_map.iter_mut() {
         intersection_list.sort_by(|a, b| {
             a.1.pick_distance
                 .partial_cmp(&b.1.pick_distance)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
+    }
+}
+
+fn generate_events(
+    // Resources
+    mut pick_state: ResMut<PickState>,
+    // Queries
+    mut pickable_query: Query<(&mut PickableMesh, Entity)>,
+) {
+    for (group, intersection_list) in pick_state.ordered_pick_list_map.iter_mut() {
         match intersection_list.first() {
+            // There is at last one entity under the cursor
             Some(top_pick) => {
                 let top_entity = top_pick.0;
                 for (mut pickable, entity) in &mut pickable_query.iter() {
                     let is_topmost = entity == top_entity;
-                    let was_topmost = pickable.topmost.insert(*group, is_topmost).expect("Group missing");
+                    let was_topmost = pickable
+                        .topmost
+                        .insert(*group, is_topmost)
+                        .expect("Group missing");
                     let new_event = if is_topmost && !was_topmost {
                         PickEvents::JustEntered
                     } else if !is_topmost && was_topmost {
@@ -494,10 +525,13 @@ fn pick_mesh(
                     pickable.events.insert(*group, new_event);
                 }
             }
+            // There are no entities under the cursor
             None => {
-                println!("yoooo");
                 for (mut pickable, _entity) in &mut pickable_query.iter() {
-                    let was_topmost = pickable.topmost.insert(*group, false).expect("Group missing");
+                    let was_topmost = pickable
+                        .topmost
+                        .insert(*group, false)
+                        .expect("Group missing");
                     let new_event = if was_topmost {
                         PickEvents::JustExited
                     } else {
@@ -545,15 +579,11 @@ fn ray_mesh_intersection<T: TryInto<usize> + Copy>(
                 let distance: f32 = (*intersection.origin() - *pick_ray.origin()).length().abs();
                 if distance < min_pick_distance {
                     min_pick_distance = distance;
-                    pick_intersection = Some(Intersection::new(
-                        intersection,
-                        distance,
-                        world_triangle,
-                    ));
+                    pick_intersection =
+                        Some(Intersection::new(intersection, distance, world_triangle));
                 }
             }
         }
     }
-
     pick_intersection
 }

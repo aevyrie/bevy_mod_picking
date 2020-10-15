@@ -43,17 +43,6 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        // sphere
-        .spawn(PbrComponents {
-            mesh: meshes.add(Mesh::from(shape::Icosphere {
-                subdivisions: 4,
-                radius: 0.5,
-            })),
-            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
-            transform: Transform::from_translation(Vec3::new(1.5, 1.5, 1.5)),
-            ..Default::default()
-        })
-        .with(PickableMesh::default())
         // light
         .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
@@ -63,13 +52,12 @@ fn setup(
 
 fn event_example(mut query: Query<(&PickableMesh, Entity)>) {
     for (pickable, entity) in query.iter().iter() {
-        match pickable.event(&Group::default()) {
-            Ok(event) => match event {
-                PickEvents::None => continue,
-                PickEvents::JustEntered => println!("Mouse Entered {:?}", entity),
-                PickEvents::JustExited => println!("Mouse Exited {:?}", entity),
-            },
-            Err(e) => panic!(e),
-        }
+        let event_text = match pickable.event(&Group::default()).unwrap() {
+            PickEvents::None => "None",
+            PickEvents::JustEntered => "Mouse Entered",
+            PickEvents::JustExited => "Mouse Exited",
+        };
+        let hovered_text = pickable.topmost(&Group::default()).unwrap().to_string();
+        println!("ENTITY: {:?}, HOVER: {}, EVENT: {}", entity, hovered_text, event_text);
     }
 }
