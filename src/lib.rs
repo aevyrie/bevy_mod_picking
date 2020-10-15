@@ -219,7 +219,6 @@ pub enum PickMethod {
 }
 
 /// Marks an entity to be used for picking
-#[derive(Debug)]
 pub struct PickSource {
     groups: Option<Vec<Group>>,
     pick_method: PickMethod,
