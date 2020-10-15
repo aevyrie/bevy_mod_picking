@@ -58,6 +58,9 @@ fn event_example(mut query: Query<(&PickableMesh, Entity)>) {
             PickEvents::JustExited => "Mouse Exited",
         };
         let hovered_text = pickable.topmost(&Group::default()).unwrap().to_string();
-        println!("ENTITY: {:?}, HOVER: {}, EVENT: {}", entity, hovered_text, event_text);
+        println!(
+            "ENTITY: {:?}, HOVER: {}, EVENT: {}",
+            entity, hovered_text, event_text
+        );
     }
 }

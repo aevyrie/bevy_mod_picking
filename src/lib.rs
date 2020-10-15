@@ -396,7 +396,6 @@ fn pick_mesh(
         &Draw,
     )>,
 ) {
-
     // If picking is disabled, do not continue
     if !pick_state.enabled {
         pick_state.empty_pick_list();
@@ -463,7 +462,7 @@ fn pick_mesh(
                             vector,
                         ),
                     };
-                    
+
                     // Finished going through the current mesh, update pick states
                     if let Some(intersection) = new_intersection {
                         // Make sure the pick list map contains the key
