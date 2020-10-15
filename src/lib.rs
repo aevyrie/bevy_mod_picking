@@ -122,7 +122,7 @@ pub struct Group(pub u8);
 
 impl core::ops::Deref for Group {
     type Target = u8;
-    fn deref(self: &'_ Self) -> &'_ Self::Target {
+    fn deref(&'_ self) -> &'_ Self::Target {
         &self.0
     }
 }
