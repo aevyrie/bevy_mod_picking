@@ -69,7 +69,7 @@ If you also want to select meshes and keep them highlighted with the left mouse 
 
 ### Pick Groups
 
-Pick groups allow you to associate meshes with a ray casting sources. For simple use cases, such as a single 3d view and camera, you can ignore this.
+Pick groups allow you to associate meshes with ray casting sources, and produce a pick result for each group. For simple use cases, such as a single 3d view and camera, you can ignore this.
 
 For these simple cases, you can just use `PickingGroup::default()` any time a `PickingGroup` is required. This will assign the `PickableMesh` or `PickingSource` to picking group 0.
 
