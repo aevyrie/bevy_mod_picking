@@ -240,13 +240,13 @@ fn build_rays(
 
                 // Get current screen size
                 let window = windows.get(window_id).unwrap();
-                let screen_size = Vec2::from([window.width as f32, window.height as f32]);
+                let screen_size = Vec2::from([window.width() as f32, window.height() as f32]);
 
                 // Normalized device coordinates (NDC) describes cursor position from (-1, -1, -1) to (1, 1, 1)
                 let cursor_pos_ndc: Vec3 =
                     ((cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0])).extend(1.0);
 
-                let camera_matrix = *transform.value();
+                let camera_matrix = transform.compute_matrix();
                 let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
 
                 let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
@@ -274,7 +274,7 @@ fn build_rays(
                     None => panic!("The PickingSource in group {} has a {:?} but no associated Camera component", group_number, pick_source.pick_method),
                 };
                 let cursor_pos_ndc: Vec3 = coordinates_ndc.extend(1.0);
-                let camera_matrix = *transform.value();
+                let camera_matrix = transform.compute_matrix();
                 let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
 
                 let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
@@ -298,7 +298,7 @@ fn build_rays(
             // Use the specified transform as the origin and direction of the ray
             PickMethod::Transform => {
                 let pick_position_ndc = Vec3::from([0.0, 0.0, 1.0]);
-                let source_transform = *transform.value();
+                let source_transform = transform.compute_matrix();
                 let pick_position = source_transform.transform_point3(pick_position_ndc);
 
                 let (_, _, source_origin) = source_transform.to_scale_rotation_translation();
@@ -388,17 +388,17 @@ fn pick_mesh(
             if let Some(indices) = &mesh.indices {
                 // Iterate over the list of pick rays that belong to the same group as this mesh
                 for (pick_group, pick_ray) in pick_rays {
-                    let mesh_to_world = transform.value();
+                    let mesh_to_world = transform.compute_matrix();
                     let pick_intersection = match indices {
                         Indices::U16(vector) => ray_mesh_intersection(
-                            mesh_to_world,
+                            &mesh_to_world,
                             &vertex_positions,
                             &pick_ray,
                             entity,
                             vector,
                         ),
                         Indices::U32(vector) => ray_mesh_intersection(
-                            mesh_to_world,
+                            &mesh_to_world,
                             &vertex_positions,
                             &pick_ray,
                             entity,
