@@ -97,7 +97,7 @@ fn get_picks(
 ```
 #### Pick Interactions
 
-A InteractableMesh Plugin has been provided that will provide events such as mouse_entered, mouse_exited, mouse_down(MouseButton), mouse_just_pressed / mouse_just_released. You can view the implementations in interactable_cube.rs
+An InteractableMesh Plugin has been provided that will provide events such as mouse_entered, mouse_exited, mouse_down(MouseButton), mouse_just_pressed / mouse_just_released. You can view the implementations in interactable_cube.rs
 
 #### Selection State
 
