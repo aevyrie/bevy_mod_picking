@@ -73,6 +73,8 @@ Pick groups allow you to associate meshes with ray casting sources, and produce 
 
 For these simple cases, you can just use `PickingGroup::default()` any time a `PickingGroup` is required. This will assign the `PickableMesh` or `PickingSource` to picking group 0.
 
+Pick groups are useful in cases such as multiple windows, where you want each window to have its own picking source (cursor relative to that window's camera), and each window might have a different set of meshes. The primary window might assign the camera and all relavent meshes to pick group 0, while the secondary window uses pick group 1 for these. See the [multiple_windows](https://github.com/aevyrie/bevy_mod_picking/blob/master/examples/multiple_windows.rs) example for implementation details.
+
 #### Details
 
  - Only one PickingSource can be assigned to a PickingGroup
