@@ -224,7 +224,10 @@ fn build_rays(
             PickMethod::CameraCursor(window_id) => {
                 let projection_matrix = match camera_opt {
                     Some(camera) => camera.projection_matrix,
-                    None => panic!("The PickingSource in group {} has a {:?} but no associated Camera component", group_number, pick_source.pick_method),
+                    None => panic!(
+                        "The PickSource in group {} has a {:?} but no associated Camera component",
+                        group_number, pick_source.pick_method
+                    ),
                 };
                 // Get the cursor position
                 let cursor_pos_screen: Vec2 = match pick_source.cursor_events.latest(&cursor) {
@@ -262,7 +265,7 @@ fn build_rays(
                     .is_some()
                 {
                     panic!(
-                        "Multiple PickingSources have been added to pick group: {}",
+                        "Multiple PickSources have been added to pick group: {}",
                         group_number
                     );
                 }
@@ -271,7 +274,10 @@ fn build_rays(
             PickMethod::CameraScreenSpace(coordinates_ndc) => {
                 let projection_matrix = match camera_opt {
                     Some(camera) => camera.projection_matrix,
-                    None => panic!("The PickingSource in group {} has a {:?} but no associated Camera component", group_number, pick_source.pick_method),
+                    None => panic!(
+                        "The PickSource in group {} has a {:?} but no associated Camera component",
+                        group_number, pick_source.pick_method
+                    ),
                 };
                 let cursor_pos_ndc: Vec3 = coordinates_ndc.extend(1.0);
                 let camera_matrix = transform.compute_matrix();
@@ -290,7 +296,7 @@ fn build_rays(
                     .is_some()
                 {
                     panic!(
-                        "Multiple PickingSources have been added to pick group: {}",
+                        "Multiple PickSources have been added to pick group: {}",
                         group_number
                     );
                 }
@@ -312,7 +318,7 @@ fn build_rays(
                     .is_some()
                 {
                     panic!(
-                        "Multiple PickingSources have been added to pick group: {}",
+                        "Multiple PickSources have been added to pick group: {}",
                         group_number
                     );
                 }
