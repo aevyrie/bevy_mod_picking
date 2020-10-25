@@ -49,7 +49,7 @@ fn update_debug_cursor_position(
             for (_group, _entity, intersection) in top_list {
                 let transform_new = intersection.normal.to_transform();
                 for mut transform in &mut query.iter() {
-                    *transform.value_mut() = transform_new;
+                    *transform = Transform::from_matrix(transform_new);
                 }
                 for mut draw in &mut visibility_query.iter() {
                     draw.is_visible = true;
@@ -85,25 +85,20 @@ fn setup_debug_cursor(
                 subdivisions: 4,
                 radius: ball_size,
             })),
-            material: debug_matl,
+            material: debug_matl.clone(),
             ..Default::default()
         })
         .with_children(|parent| {
+            let mut transform =
+                Transform::from_translation(Vec3::new(0.0, cube_size * cube_tail_scale, 0.0));
+            transform.apply_non_uniform_scale(Vec3::from([1.0, cube_tail_scale, 1.0]));
+
             // child cube
             parent
                 .spawn(PbrComponents {
                     mesh: meshes.add(Mesh::from(shape::Cube { size: cube_size })),
                     material: debug_matl,
-                    transform: Transform::from_non_uniform_scale(Vec3::from([
-                        1.0,
-                        cube_tail_scale,
-                        1.0,
-                    ]))
-                    .with_translation(Vec3::new(
-                        0.0,
-                        cube_size * cube_tail_scale,
-                        0.0,
-                    )),
+                    transform,
                     ..Default::default()
                 })
                 .with(DebugCursorMesh);
