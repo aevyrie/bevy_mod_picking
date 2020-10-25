@@ -25,7 +25,7 @@ cargo run --example 3d_scene
 Add the plugin to your dependencies in Cargo.toml
 
 ```toml
-bevy_mod_picking = { git = "https://https://github.com/aevyrie/bevy_mod_picking", branch = "master" }
+bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking", branch = "master" }
 #bevy_mod_picking = "0.1.2"
 ```
 
