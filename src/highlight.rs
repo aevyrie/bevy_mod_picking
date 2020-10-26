@@ -43,7 +43,7 @@ pub struct HighlightablePickMesh {
 
 impl HighlightablePickMesh {
     pub fn new(group: Group) -> Self {
-        HighlightablePickMesh{
+        HighlightablePickMesh {
             group,
             ..Default::default()
         }

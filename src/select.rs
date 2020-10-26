@@ -13,16 +13,15 @@ impl SelectablePickMesh {
         SelectablePickMesh::default()
     }
     pub fn selected(&self, group: &Group) -> bool {
-        match self.selected.get(group) {
-            Some(_) => true,
-            None => false,
-        }
+        self.selected.get(group).is_some()
     }
 }
 
 impl Default for SelectablePickMesh {
     fn default() -> Self {
-        SelectablePickMesh { selected: HashSet::new() }
+        SelectablePickMesh {
+            selected: HashSet::new(),
+        }
     }
 }
 
