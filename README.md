@@ -25,7 +25,7 @@ cargo run --example 3d_scene
 Add the plugin to your dependencies in Cargo.toml
 
 ```toml
-bevy_mod_picking = { git = "https://https://github.com/aevyrie/bevy_mod_picking", branch = "master" }
+bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking", branch = "master" }
 #bevy_mod_picking = "0.1.2"
 ```
 
@@ -46,7 +46,7 @@ Add it to your App::build() in the plugins section of your Bevy app:
 For simple use cases, you will probably be using the mouse to pick items in a 3d scene. You will need to mark your camera with a component:
 
 ```rust
-.with(PickingSource::default())
+.with(PickSource::default())
 ```
 
 Now all you have to do is mark any mesh entities with the `PickableMesh` component:
@@ -69,15 +69,17 @@ If you also want to select meshes and keep them highlighted with the left mouse 
 
 ### Pick Groups
 
-Pick groups allow you to associate meshes with a ray casting sources. For simple use cases, such as a single 3d view and camera, you can ignore this.
+Pick groups allow you to associate meshes with ray casting sources, and produce a pick result for each group. For simple use cases, such as a single 3d view and camera, you can ignore this.
 
-For these simple cases, you can just use `PickingGroup::default()` any time a `PickingGroup` is required. This will assign the `PickableMesh` or `PickingSource` to picking group 0.
+For these simple cases, you can just use `PickingGroup::default()` any time a `PickingGroup` is required. This will assign the `PickableMesh` or `PickSource` to picking group 0.
+
+Pick groups are useful in cases such as multiple windows, where you want each window to have its own picking source (cursor relative to that window's camera), and each window might have a different set of meshes. The primary window might assign the camera and all relavent meshes to pick group 0, while the secondary window uses pick group 1 for these. See the [multiple_windows](https://github.com/aevyrie/bevy_mod_picking/blob/master/examples/multiple_windows.rs) example for implementation details.
 
 #### Details
 
- - Only one PickingSource can be assigned to a PickingGroup
- - A PickableMesh can be assigned to one or many PickingGroups
- - The result of running the picking system is an ordered list of all intersections of each PickingSource with the PickableMeshs in its PickingGroup. The ordered list of intersections are stored by PickingGroup `HashMap<PickingGroup, Vec<PickIntersection>>`
+- Only one PickSource can be assigned to a PickingGroup
+- A PickableMesh can be assigned to one or many PickingGroups
+- The result of running the picking system is an ordered list of all intersections of each PickSource with the PickableMeshs in its PickingGroup. The ordered list of intersections are stored by PickingGroup `HashMap<PickingGroup, Vec<PickIntersection>>`
 
 ### Getting Pick Data
 
@@ -93,9 +95,10 @@ fn get_picks(
     println!("Top entity:\n{:?}", pick_state.top(PickingGroup::default()));
 }
 ```
+
 #### Pick Interactions
 
-A InteractableMesh Plugin has been provided that will provide events such as mouse_entered, mouse_exited, mouse_down(MouseButton), mouse_just_pressed / mouse_just_released. You can view the implementations in interactable_cube.rs
+An InteractableMesh Plugin has been provided that will provide events such as mouse_entered, mouse_exited, mouse_down(MouseButton), mouse_just_pressed / mouse_just_released. You can view the implementations in interactable_cube.rs
 
 #### Selection State
 
@@ -123,7 +126,9 @@ You can also enable a debug cursor that will place a sphere at the intersection,
 ```
 
 ## License
+
 This project is licensed under the [MIT license](https://github.com/aevyrie/bevy_mod_picking/blob/master/LICENSE).
 
 ### Contribution
+
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in bevy_mod_picking by you, shall be licensed as MIT, without any additional terms or conditions.
