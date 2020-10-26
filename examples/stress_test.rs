@@ -60,8 +60,8 @@ fn setup(
                 ..Default::default()
             })
             .with(PickableMesh::default())
-            .with(HighlightablePickMesh::new())
-            .with(SelectablePickMesh::new());
+            .with(HighlightablePickMesh::default())
+            .with(SelectablePickMesh::default());
     }
 
     commands.spawn(LightComponents {

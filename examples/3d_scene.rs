@@ -37,8 +37,8 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        .with(HighlightablePickMesh::new())
-        .with(SelectablePickMesh::new())
+        .with(HighlightablePickMesh::default())
+        .with(SelectablePickMesh::default())
         // cube
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -47,8 +47,8 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        .with(HighlightablePickMesh::new())
-        .with(SelectablePickMesh::new())
+        .with(HighlightablePickMesh::default())
+        .with(SelectablePickMesh::default())
         // sphere
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Icosphere {
@@ -60,8 +60,8 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        .with(HighlightablePickMesh::new())
-        .with(SelectablePickMesh::new())
+        .with(HighlightablePickMesh::default())
+        .with(SelectablePickMesh::default())
         // light
         .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),

@@ -176,8 +176,8 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::new([Group(0), Group(1)].into()))
-        .with(HighlightablePickMesh::new())
-        .with(SelectablePickMesh::new())
+        .with(HighlightablePickMesh::default())
+        .with(SelectablePickMesh::default())
         // light
         .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(4.0, 5.0, 4.0)),

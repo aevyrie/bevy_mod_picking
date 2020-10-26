@@ -1,24 +1,28 @@
 use super::*;
 use bevy::prelude::*;
+use std::collections::HashSet;
 
 /// Meshes with `SelectableMesh` will have selection state managed
 #[derive(Debug)]
 pub struct SelectablePickMesh {
-    selected: bool,
+    selected: HashSet<Group>,
 }
 
 impl SelectablePickMesh {
     pub fn new() -> Self {
         SelectablePickMesh::default()
     }
-    pub fn selected(&self) -> bool {
-        self.selected
+    pub fn selected(&self, group: &Group) -> bool {
+        match self.selected.get(group) {
+            Some(_) => true,
+            None => false,
+        }
     }
 }
 
 impl Default for SelectablePickMesh {
     fn default() -> Self {
-        SelectablePickMesh { selected: false }
+        SelectablePickMesh { selected: HashSet::new() }
     }
 }
 
@@ -34,13 +38,12 @@ pub fn select_mesh(
     if mouse_button_inputs.just_pressed(MouseButton::Left) {
         // Deselect everything
         for mut selectable in &mut query.iter() {
-            selectable.selected = false;
+            selectable.selected = HashSet::new();
         }
         if let Some(top_list) = pick_state.top_all() {
-            for (_group, entity, _intersection) in top_list {
+            for (group, entity, _intersection) in top_list {
                 if let Ok(mut top_mesh) = query.get_mut::<SelectablePickMesh>(*entity) {
-                    top_mesh.selected = true;
-                    break;
+                    top_mesh.selected.insert(*group);
                 }
             }
         }
