@@ -53,7 +53,7 @@ fn setup(
 fn event_example(mut query: Query<(&PickableMesh, Entity)>) {
     for (pickable, entity) in query.iter().iter() {
         let event_text = match pickable.event(&Group::default()).unwrap() {
-            PickEvents::None => "None",
+            PickEvents::None => continue,
             PickEvents::JustEntered => "Mouse Entered",
             PickEvents::JustExited => "Mouse Exited",
         };
