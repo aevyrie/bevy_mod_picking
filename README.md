@@ -71,15 +71,15 @@ If you also want to select meshes and keep them highlighted with the left mouse 
 
 Pick groups allow you to associate meshes with ray casting sources, and produce a pick result for each group. For simple use cases, such as a single 3d view and camera, you can ignore this.
 
-For these simple cases, you can just use `PickingGroup::default()` any time a `PickingGroup` is required. This will assign the `PickableMesh` or `PickSource` to picking group 0.
+For these simple cases, you can just use `PickGroup::default()` any time a `PickGroup` is required. This will assign the `PickableMesh` or `PickSource` to picking group 0.
 
 Pick groups are useful in cases such as multiple windows, where you want each window to have its own picking source (cursor relative to that window's camera), and each window might have a different set of meshes. The primary window might assign the camera and all relavent meshes to pick group 0, while the secondary window uses pick group 1 for these. See the [multiple_windows](https://github.com/aevyrie/bevy_mod_picking/blob/master/examples/multiple_windows.rs) example for implementation details.
 
 #### Details
 
-- Only one PickSource can be assigned to a PickingGroup
-- A PickableMesh can be assigned to one or many PickingGroups
-- The result of running the picking system is an ordered list of all intersections of each PickSource with the PickableMeshs in its PickingGroup. The ordered list of intersections are stored by PickingGroup `HashMap<PickingGroup, Vec<PickIntersection>>`
+- Only one PickSource can be assigned to a PickGroup
+- A PickableMesh can be assigned to one or many PickGroups
+- The result of running the picking system is an ordered list of all intersections of each PickSource with the PickableMeshs in its PickGroup. The ordered list of intersections are stored by PickGroup `HashMap<PickGroup, Vec<PickIntersection>>`
 
 ### Getting Pick Data
 
@@ -91,8 +91,8 @@ Mesh picking intersection are reported in world coordinates. You can use the `Pi
 fn get_picks(
     pick_state: Res<PickState>,
 ) {
-    println!("All entities:\n{:?}", pick_state.list(PickingGroup::default()));
-    println!("Top entity:\n{:?}", pick_state.top(PickingGroup::default()));
+    println!("All entities:\n{:?}", pick_state.list(PickGroup::default()));
+    println!("Top entity:\n{:?}", pick_state.top(PickGroup::default()));
 }
 ```
 
