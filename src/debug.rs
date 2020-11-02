@@ -48,16 +48,16 @@ fn update_debug_cursor_position(
         Some(top_list) => {
             for (_group, _entity, intersection) in top_list {
                 let transform_new = intersection.normal.to_transform();
-                for mut transform in &mut query.iter() {
+                for mut transform in &mut query.iter_mut() {
                     *transform = Transform::from_matrix(transform_new);
                 }
-                for mut draw in &mut visibility_query.iter() {
+                for mut draw in &mut visibility_query.iter_mut() {
                     draw.is_visible = true;
                 }
             }
         }
         None => {
-            for mut draw in &mut visibility_query.iter() {
+            for mut draw in &mut visibility_query.iter_mut() {
                 draw.is_visible = false;
             }
         }

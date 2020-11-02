@@ -14,7 +14,7 @@ use bevy::{
     prelude::*,
     render::{
         camera::Camera,
-        mesh::{Indices, VertexAttribute, VertexAttributeValues},
+        mesh::{Indices, Mesh, VertexAttributeValues},
         pipeline::PrimitiveTopology,
     },
     window::{CursorMoved, WindowId},
@@ -279,7 +279,7 @@ fn build_rays(
     }
 
     // Generate a ray for each picking source based on the pick method
-    for (mut pick_source, transform, camera) in &mut pick_source_query.iter() {
+    for (mut pick_source, transform, camera) in &mut pick_source_query.iter_mut() {
         let group_numbers = match &pick_source.groups {
             Some(groups) => groups.clone(),
             None => continue,
@@ -410,7 +410,7 @@ fn pick_mesh(
     }
 
     // Iterate through each pickable mesh in the scene
-    for (mesh_handle, transform, mut pickable, entity, draw) in &mut mesh_query.iter() {
+    for (mesh_handle, transform, mut pickable, entity, draw) in &mut mesh_query.iter_mut() {
         if !draw.is_visible {
             continue;
         }
@@ -436,8 +436,8 @@ fn pick_mesh(
             let vertex_positions: Vec<[f32; 3]> = mesh
                 .attributes
                 .iter()
-                .filter(|attribute| attribute.name == VertexAttribute::POSITION)
-                .filter_map(|attribute| match &attribute.values {
+                .filter(|attribute| attribute.0 == Mesh::ATTRIBUTE_POSITION)
+                .filter_map(|attribute| match &attribute.1 {
                     VertexAttributeValues::Float3(positions) => Some(positions.clone()),
                     _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
                 })
@@ -508,7 +508,7 @@ fn generate_events(
             // There is at last one entity under the cursor
             Some(top_pick) => {
                 let top_entity = top_pick.0;
-                for (mut pickable, entity) in &mut pickable_query.iter() {
+                for (mut pickable, entity) in &mut pickable_query.iter_mut() {
                     let is_topmost = entity == top_entity;
                     let was_topmost = pickable
                         .topmost
@@ -526,7 +526,7 @@ fn generate_events(
             }
             // There are no entities under the cursor
             None => {
-                for (mut pickable, _entity) in &mut pickable_query.iter() {
+                for (mut pickable, _entity) in &mut pickable_query.iter_mut() {
                     let was_topmost = pickable
                         .topmost
                         .insert(*group, false)

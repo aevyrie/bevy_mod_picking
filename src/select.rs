@@ -36,12 +36,12 @@ pub fn select_mesh(
 ) {
     if mouse_button_inputs.just_pressed(MouseButton::Left) {
         // Deselect everything
-        for mut selectable in &mut query.iter() {
+        for mut selectable in &mut query.iter_mut() {
             selectable.selected = HashSet::new();
         }
         if let Some(top_list) = pick_state.top_all() {
             for (group, entity, _intersection) in top_list {
-                if let Ok(mut top_mesh) = query.get_mut::<SelectablePickMesh>(*entity) {
+                if let Ok(mut top_mesh) = query.get_mut(*entity) {
                     top_mesh.selected.insert(*group);
                 }
             }

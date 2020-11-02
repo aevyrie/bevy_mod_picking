@@ -73,7 +73,7 @@ pub fn pick_highlighting(
         &PickableMesh,
     )>,
 ) {
-    for (mut highlightable, selectable, material_handle, pickable) in &mut query_selected.iter() {
+    for (mut highlightable, selectable, material_handle, pickable) in &mut query_selected.iter_mut() {
         let group = highlightable.group;
         let hovered = *pickable.topmost(&group).unwrap();
         let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;

@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    render::mesh::{Indices, VertexAttribute, VertexAttributeValues},
+    render::mesh::{Indices, Mesh, VertexAttributeValues},
     render::pipeline::PrimitiveTopology,
 };
 
@@ -103,8 +103,8 @@ impl From<&Mesh> for BoundingSphere {
         }
         let mut vertex_positions = Vec::new();
         for attribute in mesh.attributes.iter() {
-            if attribute.name == VertexAttribute::POSITION {
-                vertex_positions = match &attribute.values {
+            if attribute.0 == Mesh::ATTRIBUTE_POSITION {
+                vertex_positions = match &attribute.1 {
                     VertexAttributeValues::Float3(positions) => positions.clone(),
                     _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
                 };
