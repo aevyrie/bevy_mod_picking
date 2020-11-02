@@ -122,6 +122,8 @@ pub fn pick_selecting(
         } else if let Ok(selectable) = query_selectables.get(entity) {
             if selectable.selected() {
                 *current_color = highlight_params.selection_color;
+            } else {
+                *current_color = initial_color;
             }
         } else {
             *current_color = initial_color;
