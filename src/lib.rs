@@ -33,7 +33,8 @@ impl Plugin for PickingPlugin {
             .add_system(pick_mesh.system())
             .add_system(cursor_events.system())
             .add_system(select_mesh.system())
-            .add_system(pick_highlighting.system());
+            .add_system(pick_highlighting.system())
+            .add_system(pick_selecting.system());
     }
 }
 

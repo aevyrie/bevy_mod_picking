@@ -57,22 +57,14 @@ impl Default for HighlightablePickMesh {
 /// appropriate materials...
 pub fn pick_highlighting(
     // Resources
-    pick_state: Res<PickState>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     highlight_params: Res<PickHighlightParams>,
     // Queries
-    mut query_picked: Query<(
-        &mut HighlightablePickMesh,
-        &PickableMesh,
-        &Handle<StandardMaterial>,
-        Entity,
-    )>,
     mut query_selected: Query<(
         &mut HighlightablePickMesh,
         &SelectablePickMesh,
         &Handle<StandardMaterial>,
     )>,
-    query_selectables: Query<&SelectablePickMesh>,
 ) {
     // Query selectable entities that have changed
     for (mut highlightable, selectable, material_handle) in &mut query_selected.iter_mut() {
@@ -90,7 +82,24 @@ pub fn pick_highlighting(
             *current_color = initial_color;
         }
     }
+}
 
+/// Given the current selected meshes and provided materials, update the meshes with the
+/// appropriate materials...
+pub fn pick_selecting(
+    // Resources
+    pick_state: Res<PickState>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    highlight_params: Res<PickHighlightParams>,
+    // Queries
+    mut query_picked: Query<(
+        &mut HighlightablePickMesh,
+        &PickableMesh,
+        &Handle<StandardMaterial>,
+        Entity,
+    )>,
+    query_selectables: Query<&SelectablePickMesh>,
+) {
     // Query highlightable entities that have changed
     for (mut highlightable, _pickable, material_handle, entity) in &mut query_picked.iter_mut() {
         let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
