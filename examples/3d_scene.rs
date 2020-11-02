@@ -7,6 +7,7 @@ fn main() {
         .add_default_plugins()
         .add_plugin(PickingPlugin)
         .add_plugin(DebugPickingPlugin)
+        .add_plugin(InteractablePickingPlugin)
         .add_startup_system(setup.system())
         .add_startup_system(set_highlight_params.system())
         .run();
@@ -37,6 +38,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
+        .with(InteractableMesh::default())
         .with(HighlightablePickMesh::default())
         .with(SelectablePickMesh::default())
         // cube
@@ -47,6 +49,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
+        .with(InteractableMesh::default())
         .with(HighlightablePickMesh::default())
         .with(SelectablePickMesh::default())
         // sphere
@@ -60,6 +63,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
+        .with(InteractableMesh::default())
         .with(HighlightablePickMesh::default())
         .with(SelectablePickMesh::default())
         // light

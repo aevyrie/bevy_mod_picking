@@ -6,6 +6,7 @@ fn main() {
         .add_resource(Msaa { samples: 4 })
         .add_default_plugins()
         .add_plugin(PickingPlugin)
+        .add_plugin(InteractablePickingPlugin)
         .add_startup_system(setup.system())
         .add_system(event_example.system())
         .run();
@@ -35,6 +36,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
+        .with(InteractableMesh::default())
         // cube
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -43,6 +45,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
+        .with(InteractableMesh::default())
         // light
         .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
@@ -50,17 +53,28 @@ fn setup(
         });
 }
 
-fn event_example(query: Query<(&PickableMesh, Entity)>) {
-    for (pickable, entity) in &mut query.iter() {
-        let event_text = match pickable.event(&Group::default()).unwrap() {
-            PickEvents::None => continue,
-            PickEvents::JustEntered => "Mouse Entered",
-            PickEvents::JustExited => "Mouse Exited",
+fn event_example(query: Query<(&InteractableMesh, Entity)>) {
+    for (interactable, entity) in &mut query.iter() {
+        let hover_event_text = match interactable.hover_event(&Group::default()).unwrap() {
+            HoverEvents::None => "",
+            HoverEvents::JustEntered => "Mouse Entered",
+            HoverEvents::JustExited => "Mouse Exited",
         };
-        let hovered_text = pickable.topmost(&Group::default()).unwrap().to_string();
+        let hovered_text = interactable.hovered(&Group::default()).unwrap().to_string();
+        let mouse_down_event_text = match interactable
+            .mouse_down_event(&Group::default(), MouseButton::Left)
+            .unwrap()
+        {
+            MouseDownEvents::None => "",
+            MouseDownEvents::MouseJustPressed => "Mouse Pressed",
+            MouseDownEvents::MouseJustReleased => "Mouse Released",
+        };
+        if hover_event_text.is_empty() && mouse_down_event_text.is_empty() {
+            continue;
+        }
         println!(
-            "ENTITY: {:?}, HOVER: {}, EVENT: {}",
-            entity, hovered_text, event_text
+            "ENTITY: {:?}, HOVER: {}, HOVER EVENT: {}, CLICK_EVENT: {}",
+            entity, hovered_text, hover_event_text, mouse_down_event_text
         );
     }
 }

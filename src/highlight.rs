@@ -70,13 +70,14 @@ pub fn pick_highlighting(
         &mut HighlightablePickMesh,
         Option<&SelectablePickMesh>, // Optional to work with non-selectable entities
         &Handle<StandardMaterial>,
-        &PickableMesh,
+        &InteractableMesh,
     )>,
 ) {
-    for (mut highlightable, selectable, material_handle, pickable) in &mut query_selected.iter_mut()
+    for (mut highlightable, selectable, material_handle, interactable) in
+        &mut query_selected.iter_mut()
     {
         let group = highlightable.group;
-        let hovered = *pickable.topmost(&group).unwrap();
+        let hovered = *interactable.hovered(&group).unwrap();
         let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
         // If the initial color hasn't been set, we should set it now.
         let initial_color = match highlightable.initial_color {
@@ -100,8 +101,8 @@ pub fn pick_highlighting(
             None => initial_color,
         };
         // Update the current entity's color based on selection and highlight state
-        *current_color = match pickable.event(&group).unwrap() {
-            PickEvents::None => {
+        *current_color = match interactable.hover_event(&group).unwrap() {
+            HoverEvents::None => {
                 // This is needed when the user clicks elsewhere and the selection state changes.
                 // Otherwise, the color would only change after a JustEntered or JustExited.
                 // In a more complex example, this might be handled only if
@@ -111,8 +112,8 @@ pub fn pick_highlighting(
                     unhighlight_color
                 }
             }
-            PickEvents::JustEntered => highlight_params.hover_color,
-            PickEvents::JustExited => unhighlight_color,
+            HoverEvents::JustEntered => highlight_params.hover_color,
+            HoverEvents::JustExited => unhighlight_color,
         };
     }
 }

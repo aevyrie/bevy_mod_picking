@@ -25,26 +25,17 @@ impl Default for SelectablePickMesh {
     }
 }
 
-/// Given the currently hovered mesh, checks for a user click and if detected, sets the selected
-/// field in the entity's component to true.
+/// Update all entities with the groups they are selected in.
 pub fn select_mesh(
     // Resources
-    pick_state: Res<PickState>,
     mouse_button_inputs: Res<Input<MouseButton>>,
     // Queries
-    mut query: Query<&mut SelectablePickMesh>,
+    mut query: Query<(&mut SelectablePickMesh, &InteractableMesh)>,
 ) {
     if mouse_button_inputs.just_pressed(MouseButton::Left) {
-        // Deselect everything
-        for mut selectable in &mut query.iter_mut() {
-            selectable.selected = HashSet::new();
-        }
-        if let Some(top_list) = pick_state.top_all() {
-            for (group, entity, _intersection) in top_list {
-                if let Ok(mut top_mesh) = query.get_mut(*entity) {
-                    top_mesh.selected.insert(*group);
-                }
-            }
+        // Update Selections
+        for (mut selectable, interactable) in &mut query.iter_mut() {
+            selectable.selected = interactable.groups_just_pressed(MouseButton::Left);
         }
     }
 }

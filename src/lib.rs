@@ -1,15 +1,17 @@
 mod debug;
 mod highlight;
+mod interactable;
 mod raycast;
 mod select;
 
 pub use crate::{
     debug::DebugPickingPlugin,
     highlight::{HighlightablePickMesh, PickHighlightParams},
+    interactable::{HoverEvents, InteractableMesh, InteractablePickingPlugin, MouseDownEvents},
     select::SelectablePickMesh,
 };
 
-use crate::{highlight::*, raycast::*, select::*};
+use crate::raycast::*;
 use bevy::{
     prelude::*,
     render::{
@@ -28,10 +30,7 @@ impl Plugin for PickingPlugin {
         app.init_resource::<PickState>()
             .init_resource::<PickHighlightParams>()
             .add_system(build_rays.system())
-            .add_system(pick_mesh.system())
-            .add_system(generate_events.system())
-            .add_system(select_mesh.system())
-            .add_system(pick_highlighting.system());
+            .add_system(pick_mesh.system());
     }
 }
 
@@ -133,20 +132,11 @@ impl Default for Group {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-pub enum PickEvents {
-    None,
-    JustEntered,
-    JustExited,
-}
-
 /// Marks a Mesh entity as pickable
 #[derive(Debug)]
 pub struct PickableMesh {
     groups: Vec<Group>,
     intersections: HashMap<Group, Option<Intersection>>,
-    events: HashMap<Group, PickEvents>,
-    topmost: HashMap<Group, bool>,
     bounding_sphere: Option<BoundingSphere>,
 }
 
@@ -154,36 +144,18 @@ impl PickableMesh {
     /// Create a new PickableMesh with the specified pick group.
     pub fn new(groups: Vec<Group>) -> Self {
         let mut picks: HashMap<Group, Option<Intersection>> = HashMap::new();
-        let mut events = HashMap::new();
-        let mut topmost = HashMap::new();
         for group in &groups {
             picks.insert(*group, None);
-            events.insert(*group, PickEvents::None);
-            topmost.insert(*group, false);
         }
         PickableMesh {
             groups,
             intersections: picks,
-            events,
-            topmost,
             bounding_sphere: None,
         }
-    }
-    /// Returns the current event state of the PickableMesh in the provided group.
-    pub fn event(&self, group: &Group) -> Result<&PickEvents, String> {
-        self.events
-            .get(group)
-            .ok_or(format!("PickableMesh does not belong to group {}", **group))
     }
     /// Returns the nearest intersection of the PickableMesh in the provided group.
     pub fn intersection(&self, group: &Group) -> Result<&Option<Intersection>, String> {
         self.intersections
-            .get(group)
-            .ok_or(format!("PickableMesh does not belong to group {}", **group))
-    }
-    /// Returns true iff the PickableMesh is the topost entity in the specified group.
-    pub fn topmost(&self, group: &Group) -> Result<&bool, String> {
-        self.topmost
             .get(group)
             .ok_or(format!("PickableMesh does not belong to group {}", **group))
     }
@@ -192,17 +164,11 @@ impl PickableMesh {
 impl Default for PickableMesh {
     fn default() -> Self {
         let mut picks = HashMap::new();
-        let mut events = HashMap::new();
-        let mut topmost = HashMap::new();
         picks.insert(Group::default(), None);
-        events.insert(Group::default(), PickEvents::None);
-        topmost.insert(Group::default(), false);
         PickableMesh {
             groups: [Group::default()].into(),
             bounding_sphere: None,
             intersections: picks,
-            events,
-            topmost,
         }
     }
 }
@@ -494,52 +460,6 @@ fn pick_mesh(
                 .partial_cmp(&b.1.pick_distance)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-    }
-}
-
-fn generate_events(
-    // Resources
-    mut pick_state: ResMut<PickState>,
-    // Queries
-    mut pickable_query: Query<(&mut PickableMesh, Entity)>,
-) {
-    for (group, intersection_list) in pick_state.ordered_pick_list_map.iter_mut() {
-        match intersection_list.first() {
-            // There is at last one entity under the cursor
-            Some(top_pick) => {
-                let top_entity = top_pick.0;
-                for (mut pickable, entity) in &mut pickable_query.iter_mut() {
-                    let is_topmost = entity == top_entity;
-                    let was_topmost = pickable
-                        .topmost
-                        .insert(*group, is_topmost)
-                        .expect("Group missing");
-                    let new_event = if is_topmost && !was_topmost {
-                        PickEvents::JustEntered
-                    } else if !is_topmost && was_topmost {
-                        PickEvents::JustExited
-                    } else {
-                        PickEvents::None
-                    };
-                    pickable.events.insert(*group, new_event);
-                }
-            }
-            // There are no entities under the cursor
-            None => {
-                for (mut pickable, _entity) in &mut pickable_query.iter_mut() {
-                    let was_topmost = pickable
-                        .topmost
-                        .insert(*group, false)
-                        .expect("Group missing");
-                    let new_event = if was_topmost {
-                        PickEvents::JustExited
-                    } else {
-                        PickEvents::None
-                    };
-                    pickable.events.insert(*group, new_event);
-                }
-            }
-        }
     }
 }
 
