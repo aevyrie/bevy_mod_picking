@@ -164,7 +164,7 @@ pub fn generate_hover_events(
                     let was_hovered = interactable
                         .hovering
                         .insert(*group, is_hovered)
-                        .expect("Group missing");
+                        .unwrap_or(false);
                     let new_event = if is_hovered && !was_hovered {
                         HoverEvents::JustEntered
                     } else if !is_hovered && was_hovered {
@@ -202,8 +202,10 @@ pub fn generate_click_events(
 ) {
     for (mut interactable, pickable) in interactable_query.iter_mut() {
         for group in &pickable.groups {
-            if !interactable.hovered(&group).expect("Group missing") {
-                continue;
+            match interactable.hovered(&group) {
+                Ok(false) => continue,
+                Err(_) => continue,
+                _ => (),
             }
             let new_event = interactable
                 .watched_mouse_inputs

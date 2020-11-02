@@ -19,6 +19,7 @@ fn main() {
         .add_default_plugins()
         .add_plugin(PickingPlugin)
         .add_plugin(DebugPickingPlugin)
+        .add_plugin(InteractablePickingPlugin)
         .add_startup_system(setup.system())
         .run();
 }
@@ -176,6 +177,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::new([Group(0), Group(1)].into()))
+        .with(InteractableMesh::new([Group(0), Group(1)].into()))
         .with(HighlightablePickMesh::default())
         .with(SelectablePickMesh::default())
         // light
