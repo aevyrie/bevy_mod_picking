@@ -46,15 +46,15 @@ fn update_debug_cursor_position(
     // Set the cursor translation to the top pick's world coordinates
     for (_group, top_pick) in pick_state.top_all() {
         let transform_new = top_pick.intersection.to_transform();
-        for mut transform in &mut query.iter() {
+        for mut transform in &mut query.iter_mut() {
             *transform = Transform::from_matrix(transform_new);
         }
-        for mut draw in &mut visibility_query.iter() {
+        for mut draw in &mut visibility_query.iter_mut() {
             draw.is_visible = true;
         }
     }
     if pick_state.top_all().is_empty() {
-        for mut draw in &mut visibility_query.iter() {
+        for mut draw in &mut visibility_query.iter_mut() {
             draw.is_visible = false;
         }
     }

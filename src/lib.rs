@@ -16,7 +16,7 @@ use bevy::{
     prelude::*,
     render::{
         camera::Camera,
-        mesh::{Indices, VertexAttribute, VertexAttributeValues},
+        mesh::{Indices, Mesh, VertexAttributeValues},
         pipeline::PrimitiveTopology,
     },
     window::{CursorMoved, WindowId},
@@ -213,7 +213,7 @@ fn build_rays(
     }
 
     // Generate a ray for each picking source based on the pick method
-    for (mut pick_source, transform, camera_opt) in &mut pick_source_query.iter() {
+    for (mut pick_source, transform, camera_opt) in &mut pick_source_query.iter_mut() {
         let group_number = match pick_source.group {
             PickGroup::Group(n) => n,
             PickGroup::Disabled => continue,
@@ -332,7 +332,7 @@ fn pick_mesh(
     mut pick_state: ResMut<PickState>,
     meshes: Res<Assets<Mesh>>,
     // Queries
-    mut mesh_query: Query<(
+    mesh_query: Query<(
         &Handle<Mesh>,
         &GlobalTransform,
         &PickableMesh,
@@ -383,8 +383,8 @@ fn pick_mesh(
             let vertex_positions: Vec<[f32; 3]> = mesh
                 .attributes
                 .iter()
-                .filter(|attribute| attribute.name == VertexAttribute::POSITION)
-                .filter_map(|attribute| match &attribute.values {
+                .filter(|attribute| attribute.0 == Mesh::ATTRIBUTE_POSITION)
+                .filter_map(|attribute| match &attribute.1 {
                     VertexAttributeValues::Float3(positions) => Some(positions.clone()),
                     _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
                 })

@@ -33,12 +33,12 @@ pub fn select_mesh(
 ) {
     if mouse_button_inputs.just_pressed(MouseButton::Left) {
         // Deselect everything
-        for mut selectable in &mut query.iter() {
+        for mut selectable in &mut query.iter_mut() {
             selectable.selected = false;
         }
 
         for (_group, pick) in pick_state.top_all() {
-            if let Ok(mut top_mesh) = query.get_mut::<SelectablePickMesh>(pick.entity) {
+            if let Ok(mut top_mesh) = query.get_mut(pick.entity) {
                 top_mesh.selected = true;
                 break;
             }

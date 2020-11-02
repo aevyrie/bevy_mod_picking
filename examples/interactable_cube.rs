@@ -64,8 +64,8 @@ fn setup(
         });
 }
 
-fn interactable_demo(mut imesh_entities: Query<&InteractableMesh>) {
-    for imesh in imesh_entities.iter().iter() {
+fn interactable_demo(imesh_entities: Query<&InteractableMesh>) {
+    for imesh in imesh_entities.iter() {
         if imesh.mouse_hover {
             //println!("Hovering!");
         }
@@ -78,19 +78,16 @@ fn interactable_demo(mut imesh_entities: Query<&InteractableMesh>) {
             println!("Mouse Exited");
         }
 
-        match imesh.mouse_down(MouseButton::Left) {
-            Some(v) => println!("Left Mouse Button is Down"),
-            None => (),
+        if imesh.mouse_down(MouseButton::Left).is_some() {
+            println!("Left Mouse Button is Down");
         }
 
-        match imesh.mouse_just_pressed(MouseButton::Left) {
-            Some(v) => println!("Left Mouse just Clicked"),
-            None => (),
+        if imesh.mouse_just_pressed(MouseButton::Left).is_some() {
+            println!("Left Mouse just Clicked");
         }
 
-        match imesh.mouse_just_released(MouseButton::Left) {
-            Some(v) => println!("Left Mouse just Released"),
-            None => (),
+        if imesh.mouse_just_released(MouseButton::Left).is_some() {
+            println!("Left Mouse just Released");
         }
     }
 }

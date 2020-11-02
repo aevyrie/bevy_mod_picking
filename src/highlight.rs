@@ -72,10 +72,10 @@ pub fn pick_highlighting(
         &SelectablePickMesh,
         &Handle<StandardMaterial>,
     )>,
-    mut query_selectables: Query<&SelectablePickMesh>,
+    query_selectables: Query<&SelectablePickMesh>,
 ) {
     // Query selectable entities that have changed
-    for (mut highlightable, selectable, material_handle) in &mut query_selected.iter() {
+    for (mut highlightable, selectable, material_handle) in &mut query_selected.iter_mut() {
         let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
         let initial_color = match highlightable.initial_color {
             None => {
@@ -92,7 +92,7 @@ pub fn pick_highlighting(
     }
 
     // Query highlightable entities that have changed
-    for (mut highlightable, _pickable, material_handle, entity) in &mut query_picked.iter() {
+    for (mut highlightable, _pickable, material_handle, entity) in &mut query_picked.iter_mut() {
         let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
         let initial_color = match highlightable.initial_color {
             None => {
@@ -110,13 +110,9 @@ pub fn pick_highlighting(
         }
         if topmost {
             *current_color = highlight_params.hover_color;
-        } else if let Ok(mut query) = query_selectables.entity(entity) {
-            if let Some(selectable) = query.get() {
-                if selectable.selected() {
-                    *current_color = highlight_params.selection_color;
-                } else {
-                    *current_color = initial_color;
-                }
+        } else if let Ok(selectable) = query_selectables.get(entity) {
+            if selectable.selected() {
+                *current_color = highlight_params.selection_color;
             }
         } else {
             *current_color = initial_color;

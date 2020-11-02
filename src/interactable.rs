@@ -92,8 +92,7 @@ pub fn cursor_events(
 ) {
     //Go through the pick state and find the
     q_imesh
-        .iter()
-        .iter()
+        .iter_mut()
         .for_each(|mut element| match pickstate.top(element.0.pick_group) {
             Some(v) => process_pick((&mut element.0, element.1), v, &mouse_inputs),
 
