@@ -4,9 +4,10 @@ use bevy_mod_picking::*;
 fn main() {
     App::build()
         .add_resource(Msaa { samples: 4 })
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
         .add_plugin(DebugPickingPlugin)
+        .add_plugin(InteractablePickingPlugin)
         .add_startup_system(setup.system())
         .add_startup_system(set_highlight_params.system())
         .run();
@@ -37,8 +38,9 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        .with(HighlightablePickMesh::new())
-        .with(SelectablePickMesh::new())
+        .with(InteractableMesh::default())
+        .with(HighlightablePickMesh::default())
+        .with(SelectablePickMesh::default())
         // cube
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -47,8 +49,9 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        .with(HighlightablePickMesh::new())
-        .with(SelectablePickMesh::new())
+        .with(InteractableMesh::default())
+        .with(HighlightablePickMesh::default())
+        .with(SelectablePickMesh::default())
         // sphere
         .spawn(PbrComponents {
             mesh: meshes.add(Mesh::from(shape::Icosphere {
@@ -60,8 +63,9 @@ fn setup(
             ..Default::default()
         })
         .with(PickableMesh::default())
-        .with(HighlightablePickMesh::new())
-        .with(SelectablePickMesh::new())
+        .with(InteractableMesh::default())
+        .with(HighlightablePickMesh::default())
+        .with(SelectablePickMesh::default())
         // light
         .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),

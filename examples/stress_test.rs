@@ -7,7 +7,7 @@ use bevy_mod_picking::*;
 fn main() {
     App::build()
         .add_resource(Msaa { samples: 4 })
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
         .add_plugin(DebugPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
@@ -60,8 +60,8 @@ fn setup(
                 ..Default::default()
             })
             .with(PickableMesh::default())
-            .with(HighlightablePickMesh::new())
-            .with(SelectablePickMesh::new());
+            .with(HighlightablePickMesh::default())
+            .with(SelectablePickMesh::default());
     }
 
     commands.spawn(LightComponents {

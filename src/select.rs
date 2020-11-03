@@ -1,47 +1,41 @@
 use super::*;
 use bevy::prelude::*;
+use std::collections::HashSet;
 
 /// Meshes with `SelectableMesh` will have selection state managed
 #[derive(Debug)]
 pub struct SelectablePickMesh {
-    selected: bool,
+    selected: HashSet<Group>,
 }
 
 impl SelectablePickMesh {
     pub fn new() -> Self {
         SelectablePickMesh::default()
     }
-    pub fn selected(&self) -> bool {
-        self.selected
+    pub fn selected(&self, group: &Group) -> bool {
+        self.selected.get(group).is_some()
     }
 }
 
 impl Default for SelectablePickMesh {
     fn default() -> Self {
-        SelectablePickMesh { selected: false }
+        SelectablePickMesh {
+            selected: HashSet::new(),
+        }
     }
 }
 
-/// Given the currently hovered mesh, checks for a user click and if detected, sets the selected
-/// field in the entity's component to true.
+/// Update all entities with the groups they are selected in.
 pub fn select_mesh(
     // Resources
-    pick_state: Res<PickState>,
     mouse_button_inputs: Res<Input<MouseButton>>,
     // Queries
-    mut query: Query<&mut SelectablePickMesh>,
+    mut query: Query<(&mut SelectablePickMesh, &InteractableMesh)>,
 ) {
     if mouse_button_inputs.just_pressed(MouseButton::Left) {
-        // Deselect everything
-        for mut selectable in &mut query.iter() {
-            selectable.selected = false;
-        }
-
-        for (_group, pick) in pick_state.top_all() {
-            if let Ok(mut top_mesh) = query.get_mut::<SelectablePickMesh>(pick.entity) {
-                top_mesh.selected = true;
-                break;
-            }
+        // Update Selections
+        for (mut selectable, interactable) in &mut query.iter_mut() {
+            selectable.selected = interactable.groups_just_pressed(MouseButton::Left);
         }
     }
 }

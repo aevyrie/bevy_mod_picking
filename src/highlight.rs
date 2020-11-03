@@ -37,11 +37,16 @@ impl Default for PickHighlightParams {
 pub struct HighlightablePickMesh {
     // Stores the initial color of the mesh material prior to selecting/hovering
     initial_color: Option<Color>,
+    // The pick group to use for determining highlight state
+    group: Group,
 }
 
 impl HighlightablePickMesh {
-    pub fn new() -> Self {
-        HighlightablePickMesh::default()
+    pub fn new(group: Group) -> Self {
+        HighlightablePickMesh {
+            group,
+            ..Default::default()
+        }
     }
 }
 
@@ -49,34 +54,32 @@ impl Default for HighlightablePickMesh {
     fn default() -> Self {
         HighlightablePickMesh {
             initial_color: None,
+            group: Group::default(),
         }
     }
 }
 
-/// Given the current selected and hovered meshes and provided materials, update the meshes with the
-/// appropriate materials...
+/// Applies highlight an selection color to HighlightablePickMesh entities. Uses the group specified
+/// in the component.
 pub fn pick_highlighting(
     // Resources
-    pick_state: Res<PickState>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     highlight_params: Res<PickHighlightParams>,
     // Queries
-    mut query_picked: Query<(
-        &mut HighlightablePickMesh,
-        &PickableMesh,
-        &Handle<StandardMaterial>,
-        Entity,
-    )>,
     mut query_selected: Query<(
         &mut HighlightablePickMesh,
-        &SelectablePickMesh,
+        Option<&SelectablePickMesh>, // Optional to work with non-selectable entities
         &Handle<StandardMaterial>,
+        &InteractableMesh,
     )>,
-    mut query_selectables: Query<&SelectablePickMesh>,
 ) {
-    // Query selectable entities that have changed
-    for (mut highlightable, selectable, material_handle) in &mut query_selected.iter() {
+    for (mut highlightable, selectable, material_handle, interactable) in
+        &mut query_selected.iter_mut()
+    {
+        let group = highlightable.group;
+        let hovered = *interactable.hover(&group).unwrap();
         let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
+        // If the initial color hasn't been set, we should set it now.
         let initial_color = match highlightable.initial_color {
             None => {
                 highlightable.initial_color = Some(*current_color);
@@ -84,42 +87,33 @@ pub fn pick_highlighting(
             }
             Some(color) => color,
         };
-        if selectable.selected() {
-            *current_color = highlight_params.selection_color;
-        } else {
-            *current_color = initial_color;
-        }
-    }
-
-    // Query highlightable entities that have changed
-    for (mut highlightable, _pickable, material_handle, entity) in &mut query_picked.iter() {
-        let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
-        let initial_color = match highlightable.initial_color {
-            None => {
-                highlightable.initial_color = Some(*current_color);
-                *current_color
-            }
-            Some(color) => color,
-        };
-        let mut topmost = false;
-        for (_group, pick) in pick_state.top_all() {
-            if pick.entity == entity {
-                topmost = true;
-                break;
-            }
-        }
-        if topmost {
-            *current_color = highlight_params.hover_color;
-        } else if let Ok(mut query) = query_selectables.entity(entity) {
-            if let Some(selectable) = query.get() {
-                if selectable.selected() {
-                    *current_color = highlight_params.selection_color;
+        // When the color is no longer highlighted, the new color depends on selection state. If the
+        // entity is selected, the color should be selection color, otherwise it should be the
+        // entity's initial color.
+        let unhighlight_color = match selectable {
+            Some(selectable) => {
+                if selectable.selected(&group) {
+                    highlight_params.selection_color
                 } else {
-                    *current_color = initial_color;
+                    initial_color
                 }
             }
-        } else {
-            *current_color = initial_color;
-        }
+            None => initial_color,
+        };
+        // Update the current entity's color based on selection and highlight state
+        *current_color = match interactable.hover_event(&group).unwrap() {
+            HoverEvents::None => {
+                // This is needed when the user clicks elsewhere and the selection state changes.
+                // Otherwise, the color would only change after a JustEntered or JustExited.
+                // In a more complex example, this might be handled only if
+                if hovered {
+                    continue;
+                } else {
+                    unhighlight_color
+                }
+            }
+            HoverEvents::JustEntered => highlight_params.hover_color,
+            HoverEvents::JustExited => unhighlight_color,
+        };
     }
 }

@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    render::mesh::{Indices, VertexAttribute, VertexAttributeValues},
+    render::mesh::{Indices, Mesh, VertexAttributeValues},
     render::pipeline::PrimitiveTopology,
 };
 
@@ -95,22 +95,21 @@ pub struct BoundingSphere {
     transformed_radius: Option<f32>,
 }
 
-impl From<&Mesh> for BoundingSphere {
-    fn from(mesh: &Mesh) -> Self {
+impl From<&mut Mesh> for BoundingSphere {
+    fn from(mesh: &mut Mesh) -> Self {
         let mut mesh_radius = 0f32;
-        if mesh.primitive_topology != PrimitiveTopology::TriangleList {
+        if mesh.primitive_topology() != PrimitiveTopology::TriangleList {
             panic!("Non-TriangleList mesh supplied for bounding sphere generation")
         }
-        let mut vertex_positions = Vec::new();
-        for attribute in mesh.attributes.iter() {
-            if attribute.name == VertexAttribute::POSITION {
-                vertex_positions = match &attribute.values {
-                    VertexAttributeValues::Float3(positions) => positions.clone(),
-                    _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
-                };
-            }
-        }
-        if let Some(indices) = &mesh.indices {
+
+        let vertex_positions: Vec<[f32; 3]> = match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
+            None => panic!("Mesh does not contain vertex positions"),
+            Some(vertex_values) => match &vertex_values {
+                VertexAttributeValues::Float3(positions) => positions.clone(),
+                _ => panic!("Unexpected vertex types in ATTRIBUTE_POSITION"),
+            },
+        };
+        if let Some(indices) = &mesh.indices() {
             match indices {
                 Indices::U16(vector) => {
                     for index in vector.iter() {

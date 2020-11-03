@@ -16,9 +16,10 @@ use bevy_mod_picking::*;
 /// This example creates a second window and draws a mesh from two different cameras.
 fn main() {
     App::build()
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
         .add_plugin(DebugPickingPlugin)
+        .add_plugin(InteractablePickingPlugin)
         .add_startup_system(setup.system())
         .run();
 }
@@ -175,11 +176,10 @@ fn setup(
             material: material_handle,
             ..Default::default()
         })
-        .with(PickableMesh::new(
-            [PickGroup::Group(0), PickGroup::Group(1)].into(),
-        ))
-        .with(HighlightablePickMesh::new())
-        .with(SelectablePickMesh::new())
+        .with(PickableMesh::new([Group(0), Group(1)].into()))
+        .with(InteractableMesh::new([Group(0), Group(1)].into()))
+        .with(HighlightablePickMesh::default())
+        .with(SelectablePickMesh::default())
         // light
         .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(4.0, 5.0, 4.0)),
@@ -195,7 +195,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickSource::new(
-            PickGroup::Group(0),
+            [Group(0)].into(),
             PickMethod::CameraCursor(WindowId::primary()),
         ))
         // second window camera
@@ -213,7 +213,7 @@ fn setup(
             ..Default::default()
         })
         .with(PickSource::new(
-            PickGroup::Group(1),
+            [Group(1)].into(),
             PickMethod::CameraCursor(window_id),
         ));
 }

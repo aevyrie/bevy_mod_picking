@@ -1,159 +1,240 @@
-use super::*;
+use super::{highlight::*, select::*, *};
 use bevy::prelude::*;
+use std::collections::HashSet;
 
-pub struct InteractableMesh {
-    mouse_down: Vec<(MouseButton, PickIntersection)>,
-    mouse_just_pressed: Vec<(MouseButton, PickIntersection)>,
-    mouse_just_released: Vec<(MouseButton, PickIntersection)>,
-    pub mouse_entered: bool,
-    pub mouse_exited: bool,
-    pub mouse_hover: bool,
-    pick_group: PickGroup,
-    button_group: Vec<MouseButton>,
+pub struct InteractablePickingPlugin;
+impl Plugin for InteractablePickingPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_system(generate_hover_events.system())
+            .add_system(generate_click_events.system())
+            .add_system(select_mesh.system())
+            .add_system(pick_highlighting.system());
+    }
 }
 
-impl InteractableMesh {
-    pub fn new(pick_group: PickGroup, button_group: Vec<MouseButton>) -> Self {
-        InteractableMesh {
-            pick_group,
-            button_group,
-            ..Default::default()
-        }
+#[derive(Debug, Copy, Clone)]
+pub enum HoverEvents {
+    None,
+    JustEntered,
+    JustExited,
+}
+
+impl HoverEvents {
+    pub fn is_none(&self) -> bool {
+        matches!(self, HoverEvents::None)
     }
+}
 
-    pub fn mouse_down(&self, button: MouseButton) -> Option<&PickIntersection> {
-        //Filter for any values where the first tuple matches the mouse button
-        let mut filter = self
-            .mouse_down
-            .iter()
-            .filter(|element| -> bool { element.0 == button });
+#[derive(Debug, Copy, Clone)]
+pub enum MouseDownEvents {
+    None,
+    MouseJustPressed,
+    MouseJustReleased,
+}
 
-        match filter.next() {
-            Some(val) => Some(&val.1),
-            None => None,
-        }
+impl MouseDownEvents {
+    pub fn is_none(&self) -> bool {
+        matches!(self, MouseDownEvents::None)
     }
+}
 
-    pub fn mouse_just_released(&self, button: MouseButton) -> Option<&PickIntersection> {
-        //Filter for any values where the first tuple matches the mouse button
-        let mut filter = self
-            .mouse_just_released
-            .iter()
-            .filter(|element| -> bool { element.0 == button });
-
-        match filter.next() {
-            Some(val) => Some(&val.1),
-            None => None,
-        }
-    }
-
-    pub fn mouse_just_pressed(&self, button: MouseButton) -> Option<&PickIntersection> {
-        //Filter for any values where the first tuple matches the mouse button
-        let mut filter = self
-            .mouse_just_pressed
-            .iter()
-            .filter(|element| -> bool { element.0 == button });
-
-        match filter.next() {
-            Some(val) => Some(&val.1),
-            None => None,
-        }
-    }
-
-    pub fn mouse_entered(&self) -> bool {
-        self.mouse_entered
-    }
-
-    pub fn mouse_exited(&self) -> bool {
-        self.mouse_exited
-    }
+#[derive(Debug)]
+pub struct InteractableMesh {
+    hover_events: HashMap<Group, HoverEvents>,
+    mouse_down_events: HashMap<Group, HashMap<MouseButton, MouseDownEvents>>,
+    hovering: HashMap<Group, bool>,
+    mouse_down: HashMap<Group, Vec<MouseButton>>,
+    watched_mouse_inputs: Vec<MouseButton>,
 }
 
 impl Default for InteractableMesh {
     fn default() -> Self {
+        let mut hover_events = HashMap::new();
+        let mut mouse_down_events = HashMap::new();
+        let mut hovering = HashMap::new();
+        let mut mouse_down = HashMap::new();
+        let mut mouse_down_eventmap: HashMap<MouseButton, MouseDownEvents> = HashMap::new();
+        let watched_mouse_inputs =
+            Vec::from([MouseButton::Left, MouseButton::Right, MouseButton::Middle]);
+        for button in &watched_mouse_inputs {
+            mouse_down_eventmap.insert(*button, MouseDownEvents::None);
+        }
+        hover_events.insert(Group::default(), HoverEvents::None);
+        mouse_down_events.insert(Group::default(), mouse_down_eventmap);
+        hovering.insert(Group::default(), false);
+        mouse_down.insert(Group::default(), Vec::new());
         InteractableMesh {
-            mouse_entered: false,
-            mouse_exited: false,
-            mouse_hover: false,
-            mouse_down: vec![],
-            mouse_just_released: vec![],
-            mouse_just_pressed: vec![],
-            pick_group: PickGroup::default(),
-            button_group: vec![MouseButton::Left, MouseButton::Right],
+            hover_events,
+            mouse_down_events,
+            hovering,
+            mouse_down,
+            watched_mouse_inputs,
         }
     }
 }
 
-// Now the System for Cursor Events make sure this runs before the update stage but after the pickstate / raycasting system runs
-pub fn cursor_events(
-    pickstate: Res<PickState>,
+impl InteractableMesh {
+    pub fn new(groups: Vec<Group>) -> Self {
+        let mut hover_events = HashMap::new();
+        let mut mouse_down_events = HashMap::new();
+        let mut hovering = HashMap::new();
+        let mut mouse_down = HashMap::new();
+        let mut mouse_down_eventmap: HashMap<MouseButton, MouseDownEvents> = HashMap::new();
+        let watched_mouse_inputs =
+            Vec::from([MouseButton::Left, MouseButton::Right, MouseButton::Middle]);
+        for button in &watched_mouse_inputs {
+            mouse_down_eventmap.insert(*button, MouseDownEvents::None);
+        }
+        for group in &groups {
+            hover_events.insert(*group, HoverEvents::None);
+            mouse_down_events.insert(*group, mouse_down_eventmap.clone());
+            hovering.insert(*group, false);
+            mouse_down.insert(*group, Vec::new());
+        }
+        InteractableMesh {
+            hover_events,
+            mouse_down_events,
+            hovering,
+            mouse_down,
+            watched_mouse_inputs,
+        }
+    }
+
+    /// Returns the current hover event state of the InteractableMesh in the provided group.
+    pub fn hover_event(&self, group: &Group) -> Result<&HoverEvents, String> {
+        self.hover_events.get(group).ok_or(format!(
+            "InteractableMesh does not belong to group {}",
+            **group
+        ))
+    }
+
+    /// Returns true iff the InteractableMesh is the topost entity in the specified group.
+    pub fn hover(&self, group: &Group) -> Result<&bool, String> {
+        self.hovering.get(group).ok_or(format!(
+            "InteractableMesh does not belong to group {}",
+            **group
+        ))
+    }
+
+    /// Returns the current mousedown event state of the InteractableMesh in the provided group.
+    pub fn mouse_down_event_list(
+        &self,
+        group: &Group,
+    ) -> Result<&HashMap<MouseButton, MouseDownEvents>, String> {
+        self.mouse_down_events.get(group).ok_or(format!(
+            "InteractableMesh does not belong to group {}",
+            **group
+        ))
+    }
+
+    pub fn mouse_down_event(
+        &self,
+        group: &Group,
+        button: MouseButton,
+    ) -> Result<&MouseDownEvents, String> {
+        match self.mouse_down_events.get(group).ok_or(format!(
+            "InteractableMesh does not belong to group {}",
+            **group
+        )) {
+            Ok(event_map) => event_map.get(&button).ok_or(format!(
+                "MouseButton {:?} not found in this InteractableMesh",
+                button
+            )),
+            Err(e) => Err(e),
+        }
+    }
+
+    /// Returns a HashSet of Groups in which the current InteractableMesh is just pressed
+    pub fn groups_just_pressed(&self, button: MouseButton) -> HashSet<Group> {
+        self.mouse_down_events
+            .iter()
+            .filter(|(_group, event_map)| {
+                matches!(
+                    event_map.get(&button),
+                    Some(MouseDownEvents::MouseJustPressed)
+                )
+            })
+            .map(|(group, _event_map)| *group)
+            .collect()
+    }
+}
+
+pub fn generate_hover_events(
+    // Resources
+    mut pick_state: ResMut<PickState>,
+    // Queries
+    mut interactable_query: Query<(&mut InteractableMesh, Entity)>,
+) {
+    for (group, intersection_list) in pick_state.ordered_pick_list_map.iter_mut() {
+        match intersection_list.first() {
+            // There is at last one entity under the cursor
+            Some(top_pick) => {
+                let top_entity = top_pick.0;
+                for (mut interactable, entity) in &mut interactable_query.iter_mut() {
+                    let is_hovered = entity == top_entity;
+                    let was_hovered = interactable
+                        .hovering
+                        .insert(*group, is_hovered)
+                        .unwrap_or(false);
+                    let new_event = if is_hovered && !was_hovered {
+                        HoverEvents::JustEntered
+                    } else if !is_hovered && was_hovered {
+                        HoverEvents::JustExited
+                    } else {
+                        HoverEvents::None
+                    };
+                    interactable.hover_events.insert(*group, new_event);
+                }
+            }
+            // There are no entities under the cursor
+            None => {
+                for (mut interactable, _entity) in &mut interactable_query.iter_mut() {
+                    let was_hovered = interactable
+                        .hovering
+                        .insert(*group, false)
+                        .expect("Group missing");
+                    let new_event = if was_hovered {
+                        HoverEvents::JustExited
+                    } else {
+                        HoverEvents::None
+                    };
+                    interactable.hover_events.insert(*group, new_event);
+                }
+            }
+        }
+    }
+}
+
+pub fn generate_click_events(
+    // Resources
     mouse_inputs: Res<Input<MouseButton>>,
-    mut q_imesh: Query<(&mut InteractableMesh, Entity)>,
+    // Queries
+    mut interactable_query: Query<(&mut InteractableMesh, &PickableMesh)>,
 ) {
-    //Go through the pick state and find the
-    q_imesh
-        .iter()
-        .iter()
-        .for_each(|mut element| match pickstate.top(element.0.pick_group) {
-            Some(v) => process_pick((&mut element.0, element.1), v, &mouse_inputs),
-
-            None => process_inactive_mesh((&mut element.0, element.1)),
-        });
-}
-
-fn process_pick(
-    elem: (&mut InteractableMesh, Entity),
-    pick: &PickIntersection,
-    mouse_inputs: &Res<Input<MouseButton>>,
-) {
-    //If entity is the top pick
-    let mesh = elem.0;
-    let entity = elem.1;
-
-    //Clear Vecs from last frame
-    mesh.mouse_just_released.clear();
-    mesh.mouse_just_pressed.clear();
-    mesh.mouse_down.clear();
-
-    if entity.id() == pick.entity.id() {
-        //If it was hovered previously, that means that this is not the first frame the mouse has been over this mesh
-        if mesh.mouse_hover {
-            mesh.mouse_entered = false;
-        } else {
-            mesh.mouse_entered = true;
+    for (mut interactable, pickable) in interactable_query.iter_mut() {
+        for group in &pickable.groups {
+            match interactable.hover(&group) {
+                Ok(false) => continue,
+                Err(_) => continue,
+                _ => (),
+            }
+            let new_event = interactable
+                .watched_mouse_inputs
+                .iter()
+                .map(|button| {
+                    (
+                        *button,
+                        if mouse_inputs.just_released(*button) {
+                            MouseDownEvents::MouseJustReleased
+                        } else if mouse_inputs.just_pressed(*button) {
+                            MouseDownEvents::MouseJustPressed
+                        } else {
+                            MouseDownEvents::None
+                        },
+                    )
+                })
+                .collect();
+            interactable.mouse_down_events.insert(*group, new_event);
         }
-
-        mesh.mouse_hover = true;
-        mesh.mouse_exited = false;
-
-        for button in mesh.button_group.iter() {
-            //Map just_released
-            if mouse_inputs.just_released(*button) {
-                mesh.mouse_just_released.push((*button, *pick));
-            }
-
-            //Map just_pressed
-            if mouse_inputs.just_pressed(*button) {
-                mesh.mouse_just_pressed.push((*button, *pick));
-            }
-
-            //Map Pressed
-            if mouse_inputs.pressed(*button) {
-                mesh.mouse_down.push((*button, *pick));
-            }
-        }
-    } else {
-        process_inactive_mesh((mesh, entity));
     }
-}
-
-fn process_inactive_mesh(elem: (&mut InteractableMesh, Entity)) {
-    if elem.0.mouse_hover {
-        elem.0.mouse_hover = false;
-        elem.0.mouse_exited = true;
-    } else {
-        elem.0.mouse_exited = false;
-    }
-
-    elem.0.mouse_entered = false;
 }
