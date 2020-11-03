@@ -21,11 +21,7 @@ pub enum HoverEvents {
 
 impl HoverEvents {
     pub fn is_none(&self) -> bool {
-        if let HoverEvents::None = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, HoverEvents::None)
     }
 }
 
@@ -38,11 +34,7 @@ pub enum MouseDownEvents {
 
 impl MouseDownEvents {
     pub fn is_none(&self) -> bool {
-        if let MouseDownEvents::None = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, MouseDownEvents::None)
     }
 }
 
