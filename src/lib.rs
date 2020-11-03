@@ -351,7 +351,7 @@ fn build_rays(
 fn pick_mesh(
     // Resources
     mut pick_state: ResMut<PickState>,
-    meshes: Res<Assets<Mesh>>,
+    mut meshes: ResMut<Assets<Mesh>>,
     // Queries
     mut mesh_query: Query<(
         &Handle<Mesh>,
@@ -393,24 +393,21 @@ fn pick_mesh(
         }
 
         // Use the mesh handle to get a reference to a mesh asset
-        if let Some(mesh) = meshes.get(mesh_handle) {
-            if mesh.primitive_topology != PrimitiveTopology::TriangleList {
+        if let Some(mesh) = meshes.get_mut(mesh_handle) {
+            if mesh.primitive_topology() != PrimitiveTopology::TriangleList {
                 continue;
             }
 
             // Get the vertex positions from the mesh reference resolved from the mesh handle
-            let vertex_positions: Vec<[f32; 3]> = mesh
-                .attributes
-                .iter()
-                .filter(|attribute| attribute.0 == Mesh::ATTRIBUTE_POSITION)
-                .filter_map(|attribute| match &attribute.1 {
-                    VertexAttributeValues::Float3(positions) => Some(positions.clone()),
-                    _ => panic!("Unexpected vertex types in VertexAttribute::POSITION"),
-                })
-                .last()
-                .unwrap();
+            let vertex_positions: Vec<[f32; 3]> = match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
+                None => panic!("Mesh does not contain vertex positions"),
+                Some(vertex_values) => match &vertex_values {
+                    VertexAttributeValues::Float3(positions) => positions.clone(),
+                    _ => panic!("Unexpected vertex types in ATTRIBUTE_POSITION"),
+                },
+            };
 
-            if let Some(indices) = &mesh.indices {
+            if let Some(indices) = &mesh.indices() {
                 // Iterate over the list of pick rays that belong to the same group as this mesh
                 for (pick_group, pick_ray) in pick_rays {
                     let mesh_to_world = transform.compute_matrix();

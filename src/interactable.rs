@@ -137,11 +137,10 @@ impl InteractableMesh {
         self.mouse_down_events
             .iter()
             .filter(|(_group, event_map)| {
-                if let Some(MouseDownEvents::MouseJustPressed) = event_map.get(&button) {
-                    true
-                } else {
-                    false
-                }
+                matches!(
+                    event_map.get(&button),
+                    Some(MouseDownEvents::MouseJustPressed)
+                )
             })
             .map(|(group, _event_map)| *group)
             .collect()

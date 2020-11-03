@@ -16,7 +16,7 @@ use bevy_mod_picking::*;
 /// This example creates a second window and draws a mesh from two different cameras.
 fn main() {
     App::build()
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
         .add_plugin(DebugPickingPlugin)
         .add_plugin(InteractablePickingPlugin)
