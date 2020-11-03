@@ -55,26 +55,18 @@ fn setup(
 
 fn event_example(query: Query<(&InteractableMesh, Entity)>) {
     for (interactable, entity) in &mut query.iter() {
-        let hover_event_text = match interactable.hover_event(&Group::default()).unwrap() {
-            HoverEvents::None => "",
-            HoverEvents::JustEntered => "Mouse Entered",
-            HoverEvents::JustExited => "Mouse Exited",
-        };
-        let hovered_text = interactable.hovered(&Group::default()).unwrap().to_string();
-        let mouse_down_event_text = match interactable
+        let is_hovered = interactable.hover(&Group::default()).unwrap();
+        let hover_event = interactable.hover_event(&Group::default()).unwrap();
+        let mouse_down_event = interactable
             .mouse_down_event(&Group::default(), MouseButton::Left)
-            .unwrap()
-        {
-            MouseDownEvents::None => "",
-            MouseDownEvents::MouseJustPressed => "Mouse Pressed",
-            MouseDownEvents::MouseJustReleased => "Mouse Released",
-        };
-        if hover_event_text.is_empty() && mouse_down_event_text.is_empty() {
+            .unwrap();
+        // Only print updates if at least one event has occured.
+        if hover_event.is_none() && mouse_down_event.is_none() {
             continue;
         }
         println!(
-            "ENTITY: {:?}, HOVER: {}, HOVER EVENT: {}, CLICK_EVENT: {}",
-            entity, hovered_text, hover_event_text, mouse_down_event_text
+            "ENTITY: {:?}, HOVER: {}, HOVER EVENT: {:?}, CLICK_EVENT: {:?}",
+            entity, is_hovered, hover_event, mouse_down_event
         );
     }
 }

@@ -77,7 +77,7 @@ pub fn pick_highlighting(
         &mut query_selected.iter_mut()
     {
         let group = highlightable.group;
-        let hovered = *interactable.hovered(&group).unwrap();
+        let hovered = *interactable.hover(&group).unwrap();
         let current_color = &mut materials.get_mut(material_handle).unwrap().albedo;
         // If the initial color hasn't been set, we should set it now.
         let initial_color = match highlightable.initial_color {

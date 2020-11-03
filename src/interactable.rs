@@ -19,11 +19,31 @@ pub enum HoverEvents {
     JustExited,
 }
 
+impl HoverEvents {
+    pub fn is_none(&self) -> bool {
+        if let HoverEvents::None = self {
+            true
+        } else {
+            false
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub enum MouseDownEvents {
     None,
     MouseJustPressed,
     MouseJustReleased,
+}
+
+impl MouseDownEvents {
+    pub fn is_none(&self) -> bool {
+        if let MouseDownEvents::None = self {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -97,7 +117,7 @@ impl InteractableMesh {
     }
 
     /// Returns true iff the InteractableMesh is the topost entity in the specified group.
-    pub fn hovered(&self, group: &Group) -> Result<&bool, String> {
+    pub fn hover(&self, group: &Group) -> Result<&bool, String> {
         self.hovering.get(group).ok_or(format!(
             "InteractableMesh does not belong to group {}",
             **group
@@ -201,7 +221,7 @@ pub fn generate_click_events(
 ) {
     for (mut interactable, pickable) in interactable_query.iter_mut() {
         for group in &pickable.groups {
-            match interactable.hovered(&group) {
+            match interactable.hover(&group) {
                 Ok(false) => continue,
                 Err(_) => continue,
                 _ => (),
