@@ -2,9 +2,9 @@
 
 ![](https://img.shields.io/github/workflow/status/aevyrie/bevy_mod_picking/Continuous%20integration)
 
-This is a 3D mouse picking plugin for [Bevy](https://github.com/bevyengine/bevy). The plugin will cast a ray into the scene and check for intersection against all meshes tagged with the `PickableMesh` component. The built-in highlighting and selection state, as well as the debug cursor, are opt-in.
+This is a 3D mouse picking plugin for [Bevy](https://github.com/bevyengine/bevy). The plugin will cast a ray into the scene and check for intersection against all meshes tagged with the `PickableMesh` component. The built-in cursor events, highlighting, selection state, and debug cursor are opt-in.
 
-Out of the box, the plugin provides: pick depth, pick coordinates, and surface normal of the picked mesh triangle.
+Out of the box, the plugin provides: pick depth, pick coordinates, and surface normal of the picked mesh triangle. Using the [Interactable](#interacting-with-meshes) features gives you mouseover and click events.
 
 **Expect Breaking Changes in `master` - Contributions Welcome**
 
@@ -18,7 +18,7 @@ To run the `3d_scene` example - a modified version of the `Bevy` example of the 
 cargo run --example 3d_scene
 ```
 
-## Quickstart
+## Getting Started
 
 ### Setup
 
@@ -68,14 +68,14 @@ See the [Pick Interactions](#pick-interactions) section for more details on the 
 If you want a mesh to highlight when you hover, add the `HighlightablePickMesh` component:
 
 ```rust
-//InteractablePickingPlugin is a prerequisite for this to work
+// InteractablePickingPlugin is a prerequisite for this to work
 .with(HighlightablePickMesh::default())
 ```
 
 If you also want to select meshes and keep them highlighted when clicked with the left mouse button, add the `SelectablePickMesh` component:
 
 ```rust
-//InteractablePickingPlugin is a prerequisite for this to work
+// InteractablePickingPlugin is a prerequisite for this to work
 .with(SelectablePickMesh::default())
 ```
 
@@ -116,7 +116,11 @@ pickable_entity.intersection(Group::default());
 
 #### Pick Interactions
 
-An InteractableMesh Plugin has been provided that will provide events such as mouse_entered, mouse_exited, mouse_down(MouseButton), mouse_just_pressed / mouse_just_released. You can view the implementations in interactable_cube.rs
+Run the `events` example to see mouseover and mouseclick events in action:
+
+```console
+cargo run --example events
+```
 
 #### Selection State
 
@@ -127,6 +131,7 @@ If you're using the `SelectablePickMesh` component for selection, you can access
 If you're using the built in `HighlightablePickMash` component for highlighting, you can change the colors by accessing the `PickHighlightParams` and setting the colors:
 
 ```rust
+// Example Bevy system to set the highlight colors
 fn set_highlight_params(
     mut highlight_params: ResMut<PickHighlightParams>,
 ) {
