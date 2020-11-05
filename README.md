@@ -13,17 +13,17 @@ This is a 3D mouse picking plugin for [Bevy](https://github.com/bevyengine/bevy)
     * Mouse (relative to supplied camera)
     * Screen space coordinates (relative to supplied camera)
     * Manually defined ray using a transform
-* Pick Data
+* [Pick Data](#getting-pick-data)
     * Pick depth
     * Pick coordinates (in world space)
     * Surface normal at the pick ray intersection
     * Vertex coordinates of the intersected triangle
-* Mesh Interaction
+* [Mesh Interaction](#interacting-with-meshes)
     * Mouseover and click events
     * Configurable color highlighting for hovering and selection
     * Mesh selection state management
-* 3D Debug cursor to show pick intersection and surface normal
-* Picking Groups (associate a picking source with a set of meshes)
+* [3D Debug cursor to show pick intersection and surface normal](#debug)
+* [Picking Groups](#pick-groups) (associate a picking source with a set of meshes)
     * Multi window support
 
 ## Demo
