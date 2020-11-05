@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/github/workflow/status/aevyrie/bevy_mod_picking/Continuous%20integration)
 
-This is a 3D mouse picking plugin for [Bevy](https://github.com/bevyengine/bevy). The plugin will cast a ray into the scene and check for intersection against all meshes tagged with the `PickableMesh` component. The built-in cursor events, highlighting, selection state, and debug cursor are opt-in.
+This is a 3D mouse picking plugin for [Bevy](https://github.com/bevyengine/bevy). The plugin will cast a ray into the scene and check for intersection against all meshes tagged with the `PickableMesh` component. The built-in mouse events, highlighting, selection state, and debug cursor are opt-in.
 
 **Expect Breaking Changes in `master` - Contributions Welcome**
 
