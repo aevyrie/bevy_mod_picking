@@ -10,7 +10,7 @@ Out of the box, the plugin provides: pick depth, pick coordinates, and surface n
 
 ![Picking demo](https://raw.githubusercontent.com/aevyrie/bevy_mod_picking/master/docs/picking_demo.webp)
 
-## Getting Started
+## Demo
 
 To run the `3d_scene` example - a modified version of the `Bevy` example of the same name - clone this repository and run:
 
@@ -18,15 +18,14 @@ To run the `3d_scene` example - a modified version of the `Bevy` example of the 
 cargo run --example 3d_scene
 ```
 
-## Usage
+## Quickstart
 
 ### Setup
 
 Add the plugin to your dependencies in Cargo.toml
 
 ```toml
-bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking", branch = "master" }
-#bevy_mod_picking = "0.1.2"
+bevy_mod_picking = "0.2.0"
 ```
 
 Import the plugin:
@@ -64,17 +63,19 @@ To get mouseover and mouseclick events, as well as built-in highlighting and sel
 .add_plugin(InteractablePickingPlugin)
 ```
 
-This also adds cursor event functionality, such as mouseovers and mouseclicks. See the [Pick Interactions](#pick-interactions) section for more details.
+See the [Pick Interactions](#pick-interactions) section for more details on the features this provides.
 
 If you want a mesh to highlight when you hover, add the `HighlightablePickMesh` component:
 
 ```rust
+//InteractablePickingPlugin is a prerequisite for this to work
 .with(HighlightablePickMesh::default())
 ```
 
 If you also want to select meshes and keep them highlighted when clicked with the left mouse button, add the `SelectablePickMesh` component:
 
 ```rust
+//InteractablePickingPlugin is a prerequisite for this to work
 .with(SelectablePickMesh::default())
 ```
 
