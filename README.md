@@ -4,11 +4,27 @@
 
 This is a 3D mouse picking plugin for [Bevy](https://github.com/bevyengine/bevy). The plugin will cast a ray into the scene and check for intersection against all meshes tagged with the `PickableMesh` component. The built-in cursor events, highlighting, selection state, and debug cursor are opt-in.
 
-Out of the box, the plugin provides: pick depth, pick coordinates, and surface normal of the picked mesh triangle. Using the [Interactable](#interacting-with-meshes) features gives you mouseover and click events.
-
 **Expect Breaking Changes in `master` - Contributions Welcome**
 
 ![Picking demo](https://raw.githubusercontent.com/aevyrie/bevy_mod_picking/master/docs/picking_demo.webp)
+
+## Features
+* Multiple picking sources
+    * Mouse (relative to supplied camera)
+    * Screen space coordinates (relative to supplied camera)
+    * Manually defined ray using a transform
+* Pick Data
+    * Pick depth
+    * Pick coordinates (in world space)
+    * Surface normal at the pick ray intersection
+    * Vertex coordinates of the intersected triangle
+* Mesh Interaction
+    * Mouseover and click events
+    * Configurable color highlighting for hovering and selection
+    * Mesh selection state management
+* 3D Debug cursor to show pick intersection and surface normal
+* Picking Groups (associate a picking source with a set of meshes)
+    * Multi window support
 
 ## Demo
 
