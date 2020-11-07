@@ -36,6 +36,8 @@ cargo run --example 3d_scene
 
 ## Getting Started
 
+It only takes a few lines to get picking working in your Bevy application; check out the 3d_scene example for a minimal implementation and demo! The following sections will walk you through what is needed to get the plugin working, and how everything fits together.
+
 ### Setup
 
 Add the plugin to your dependencies in Cargo.toml
