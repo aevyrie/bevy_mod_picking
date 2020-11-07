@@ -121,8 +121,8 @@ Mesh picking intersection are reported in world coordinates. You can use the `Pi
 fn get_picks(
     pick_state: Res<PickState>,
 ) {
-    println!("All entities:\n{:?}", pick_state.list(PickGroup::default()));
-    println!("Top entity:\n{:?}", pick_state.top(PickGroup::default()));
+    println!("All entities:\n{:?}", pick_state.list(Group::default()));
+    println!("Top entity:\n{:?}", pick_state.top(Group::default()));
 }
 ```
 
