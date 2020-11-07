@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/github/workflow/status/aevyrie/bevy_mod_picking/Continuous%20integration) ![](https://img.shields.io/crates/v/bevy_mod_picking)
 
-A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking, making it easy to interact with 3D geometry using your mouse or any other ray casting source!. The plugin includes built-in mouse events, highlighting, selection state, multi-window support, and a debug cursor, all of which are opt-in.
+A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking, making it easy to interact with 3D geometry using your mouse or any other ray casting source! The plugin includes built-in mouse events, highlighting, selection state, multi-window support, and a debug cursor, all of which are opt-in.
 
 **Expect breaking changes in `master` branch - contributions are welcome!**
 
