@@ -74,7 +74,7 @@ Now all you have to do is mark any mesh entities with the `PickableMesh` compone
 
 ### Interacting with Meshes
 
-To get mouseover and mouseclick events, as well as built-in highlighting and selection state, you will need to add the `InteractableMesh` plugin. This is intentionally left optional, in case you only need pick intersection results.
+To get mouseover and mouseclick events, as well as built-in highlighting and selection state, you will need to add the `InteractablePickingPlugin` plugin. This is intentionally left optional, in case you only need pick intersection results.
 
 ```rust
 // Add this below the PickingPlugin line
@@ -82,18 +82,24 @@ To get mouseover and mouseclick events, as well as built-in highlighting and sel
 ```
 
 See the [Pick Interactions](#pick-interactions) section for more details on the features this provides.
+You will need to add the `InteractableMesh` component to entities to use these features.
+
+```rust
+.with(PickableMesh::default())
+.with(InteractableMesh::default())
+```
 
 If you want a mesh to highlight when you hover, add the `HighlightablePickMesh` component:
 
 ```rust
-// InteractablePickingPlugin is a prerequisite for this to work
+// InteractableMesh component is a prerequisite for this to work
 .with(HighlightablePickMesh::default())
 ```
 
 If you also want to select meshes and keep them highlighted when clicked with the left mouse button, add the `SelectablePickMesh` component:
 
 ```rust
-// InteractablePickingPlugin is a prerequisite for this to work
+// InteractableMesh component is a prerequisite for this to work
 .with(SelectablePickMesh::default())
 ```
 
@@ -140,9 +146,11 @@ Run the `events` example to see mouseover and mouseclick events in action:
 cargo run --example events
 ```
 
+The `InteractableMesh` component stores mouseover event state, mouseclick event state (left, right, and middle buttons), and hover state.
+
 #### Selection State
 
-If you're using the `SelectablePickMesh` component for selection, you can access the selection state by querying all selectable entities and accessing the `.selected()` function.
+If you're using the `SelectablePickMesh` component for selection, you can access the selection state by querying your selectable entities and accessing the `.selected()` function.
 
 ### Plugin Parameters
 
