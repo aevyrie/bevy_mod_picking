@@ -36,7 +36,7 @@ cargo run --example 3d_scene
 
 ## Getting Started
 
-It only takes a few lines to get picking working in your Bevy application; [check out the 3d_scene example](https://github.com/aevyrie/bevy_mod_picking/blob/master/examples/3d_scene.rs) for a minimal implementation and demo! The following sections will walk you through what is needed to get the plugin working, and how everything fits together.
+It only takes a few lines to get mouse picking working in your Bevy application using this plugin; [check out the 3d_scene example](https://github.com/aevyrie/bevy_mod_picking/blob/master/examples/3d_scene.rs) for a minimal implementation and demo! The following sections will walk you through what is needed to get the plugin working, and how everything fits together.
 
 ### Setup
 
