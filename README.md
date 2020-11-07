@@ -1,16 +1,32 @@
 # 3D Mouse Picking for Bevy
 
-![](https://img.shields.io/github/workflow/status/aevyrie/bevy_mod_picking/Continuous%20integration)
+![](https://img.shields.io/github/workflow/status/aevyrie/bevy_mod_picking/Continuous%20integration) ![](https://img.shields.io/crates/v/bevy_mod_picking)
 
-This is a 3D mouse picking plugin for [Bevy](https://github.com/bevyengine/bevy). The plugin will cast a ray into the scene and check for intersection against all meshes tagged with the `PickableMesh` component. The built-in highlighting and selection state, as well as the debug cursor, are opt-in.
+A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking, making it easy to interact with 3D geometry using your mouse or any other ray casting source!. The plugin includes built-in mouse events, highlighting, selection state, multi-window support, and a debug cursor, all of which are opt-in.
 
-Out of the box, the plugin provides: pick depth, pick coordinates, and surface normal of the picked mesh triangle.
-
-**Expect Breaking Changes in `master` - Contributions Welcome**
+**Expect breaking changes in `master` branch - contributions are welcome!**
 
 ![Picking demo](https://raw.githubusercontent.com/aevyrie/bevy_mod_picking/master/docs/picking_demo.webp)
 
-## Getting Started
+## Features
+* Multiple picking sources
+    * Mouse (relative to supplied camera)
+    * Screen space coordinates (relative to supplied camera)
+    * Manually defined ray using a transform
+* [Pick Data](#getting-pick-data)
+    * Pick depth
+    * Pick coordinates (in world space)
+    * Surface normal at the pick ray intersection
+    * Vertex coordinates of the intersected triangle
+* [Mesh Interaction](#interacting-with-meshes)
+    * Mouseover and click events
+    * Configurable color highlighting for hovering and selection
+    * Mesh selection state management
+* [3D Debug cursor to show pick intersection and surface normal](#debug)
+* [Picking Groups](#pick-groups) (associate a picking source with a set of meshes)
+    * Multi window support
+
+## Demo
 
 To run the `3d_scene` example - a modified version of the `Bevy` example of the same name - clone this repository and run:
 
@@ -18,15 +34,16 @@ To run the `3d_scene` example - a modified version of the `Bevy` example of the 
 cargo run --example 3d_scene
 ```
 
-## Usage
+## Getting Started
+
+It only takes a few lines to get mouse picking working in your Bevy application using this plugin; [check out the 3d_scene example](https://github.com/aevyrie/bevy_mod_picking/blob/master/examples/3d_scene.rs) for a minimal implementation and demo! The following sections will walk you through what is needed to get the plugin working, and how everything fits together.
 
 ### Setup
 
 Add the plugin to your dependencies in Cargo.toml
 
 ```toml
-bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking", branch = "master" }
-#bevy_mod_picking = "0.1.2"
+bevy_mod_picking = "0.2.0"
 ```
 
 Import the plugin:
@@ -43,7 +60,7 @@ Add it to your App::build() in the plugins section of your Bevy app:
 
 ### Marking Entities for Picking
 
-For simple use cases, you will probably be using the mouse to pick items in a 3d scene. You will need to mark your camera with a component:
+For simple use cases, you will probably be using the mouse to pick items in a 3d scene. You will can mark your camera with a default PickSource component:
 
 ```rust
 .with(PickSource::default())
@@ -55,31 +72,50 @@ Now all you have to do is mark any mesh entities with the `PickableMesh` compone
 .with(PickableMesh::default())
 ```
 
-If you want it to highlight when you hover, add the `HighlightablePickMesh` component:
+### Interacting with Meshes
+
+To get mouseover and mouseclick events, as well as built-in highlighting and selection state, you will need to add the `InteractablePickingPlugin` plugin. This is intentionally left optional, in case you only need pick intersection results.
 
 ```rust
-.with(HighlightablePickMesh::new())
+// Add this below the PickingPlugin line
+.add_plugin(InteractablePickingPlugin)
 ```
 
-If you also want to select meshes and keep them highlighted with the left mouse button, add the `SelectablePickMesh` component:
+See the [Pick Interactions](#pick-interactions) section for more details on the features this provides.
+You will need to add the `InteractableMesh` component to entities to use these features.
 
 ```rust
-.with(SelectablePickMesh::new())
+.with(PickableMesh::default())
+.with(InteractableMesh::default())
+```
+
+If you want a mesh to highlight when you hover, add the `HighlightablePickMesh` component:
+
+```rust
+// InteractableMesh component is a prerequisite for this to work
+.with(HighlightablePickMesh::default())
+```
+
+If you also want to select meshes and keep them highlighted when clicked with the left mouse button, add the `SelectablePickMesh` component:
+
+```rust
+// InteractableMesh component is a prerequisite for this to work
+.with(SelectablePickMesh::default())
 ```
 
 ### Pick Groups
 
-Pick groups allow you to associate meshes with ray casting sources, and produce a pick result for each group. For simple use cases, such as a single 3d view and camera, you can ignore this.
+Pick groups allow you to associate meshes with a ray casting source, and produce a pick result for each group. For simple use cases, such as a single 3d view and camera, you can ignore this.
 
-For these simple cases, you can just use `PickGroup::default()` any time a `PickGroup` is required. This will assign the `PickableMesh` or `PickSource` to picking group 0.
+For those simple cases, you can just use `Group::default()` any time a `Group` is required. This will assign the `PickableMesh` or `PickSource` to picking group 0.
 
-Pick groups are useful in cases such as multiple windows, where you want each window to have its own picking source (cursor relative to that window's camera), and each window might have a different set of meshes. The primary window might assign the camera and all relavent meshes to pick group 0, while the secondary window uses pick group 1 for these. See the [multiple_windows](https://github.com/aevyrie/bevy_mod_picking/blob/master/examples/multiple_windows.rs) example for implementation details.
+Pick groups are useful in cases such as multiple windows, where you want each window to have its own picking source (cursor relative to that window's camera), and each window might have a different set of meshes that this picking source can intersect. The primary window might assign the camera and all relavent meshes to pick group 0, while the secondary window uses pick group 1 for these. See the [multiple_windows](https://github.com/aevyrie/bevy_mod_picking/blob/master/examples/multiple_windows.rs) example for implementation details.
 
-#### Details
+#### Constraints
 
-- Only one PickSource can be assigned to a PickGroup
-- A PickableMesh can be assigned to one or many PickGroups
-- The result of running the picking system is an ordered list of all intersections of each PickSource with the PickableMeshs in its PickGroup. The ordered list of intersections are stored by PickGroup `HashMap<PickGroup, Vec<PickIntersection>>`
+- Only one PickSource can be assigned to a `Group`
+- A PickableMesh can be assigned to one or more `Group`s
+- The result of running the picking system is an ordered list of all intersections of each `PickSource` with the `PickableMesh`s in that `Group`. The ordered list of intersections are stored by `Group`, `HashMap<Group, Vec<PickIntersection>>`
 
 ### Getting Pick Data
 
@@ -91,24 +127,37 @@ Mesh picking intersection are reported in world coordinates. You can use the `Pi
 fn get_picks(
     pick_state: Res<PickState>,
 ) {
-    println!("All entities:\n{:?}", pick_state.list(PickGroup::default()));
-    println!("Top entity:\n{:?}", pick_state.top(PickGroup::default()));
+    println!("All entities:\n{:?}", pick_state.list(Group::default()));
+    println!("Top entity:\n{:?}", pick_state.top(Group::default()));
 }
+```
+
+Alternatively, and perhaps more idiomatic to the Bevy ECS system, you can get the intersections for entities that have the `PickableMesh` component using:
+
+```rust
+pickable_entity.intersection(Group::default());
 ```
 
 #### Pick Interactions
 
-An InteractableMesh Plugin has been provided that will provide events such as mouse_entered, mouse_exited, mouse_down(MouseButton), mouse_just_pressed / mouse_just_released. You can view the implementations in interactable_cube.rs
+Run the `events` example to see mouseover and mouseclick events in action:
+
+```console
+cargo run --example events
+```
+
+The `InteractableMesh` component stores mouseover event state, mouseclick event state (left, right, and middle buttons), and hover state.
 
 #### Selection State
 
-If you're using the `SelectablePickMesh` component for selection, you can access the selection state by querying all selectable entities and accessing the `.selected()` function.
+If you're using the `SelectablePickMesh` component for selection, you can access the selection state by querying your selectable entities and accessing the `.selected()` function.
 
 ### Plugin Parameters
 
 If you're using the built in `HighlightablePickMash` component for highlighting, you can change the colors by accessing the `PickHighlightParams` and setting the colors:
 
 ```rust
+// Example Bevy system to set the highlight colors
 fn set_highlight_params(
     mut highlight_params: ResMut<PickHighlightParams>,
 ) {

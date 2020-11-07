@@ -28,7 +28,7 @@ fn get_picks(
     mut cursor_events: ResMut<CursorEvents>,
     cursor: Res<Events<CursorMoved>>,
 ) {
-    if cursor_events.cursor_event_reader.latest(&cursor).is_some() {
+    if cfg!(debug_assertions) && cursor_events.cursor_event_reader.latest(&cursor).is_some() {
         println!("Top entities:\n{:#?}", pick_state.top_all())
     }
 }
