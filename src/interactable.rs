@@ -5,10 +5,10 @@ use std::collections::HashSet;
 pub struct InteractablePickingPlugin;
 impl Plugin for InteractablePickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(generate_hover_events.system())
-            .add_system(generate_click_events.system())
-            .add_system(select_mesh.system())
-            .add_system(pick_highlighting.system());
+        app.add_system(generate_hover_events)
+            .add_system(generate_click_events)
+            .add_system(select_mesh)
+            .add_system(pick_highlighting);
     }
 }
 
