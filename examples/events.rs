@@ -7,20 +7,20 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
-        .add_startup_system(setup.system())
-        .add_system(event_example.system())
+        .add_startup_system(setup)
+        .add_system(event_example)
         .run();
 }
 
 fn setup(
-    mut commands: Commands,
+    commands: &mut Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // add entities to the world
     commands
         // camera
-        .spawn(Camera3dComponents {
+        .spawn(Camera3dBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(-3.0, 5.0, 8.0),
                 Vec3::new(0.0, 0.0, 0.0),
@@ -30,7 +30,7 @@ fn setup(
         })
         .with(PickSource::default())
         //plane
-        .spawn(PbrComponents {
+        .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 10.0 })),
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
@@ -38,7 +38,7 @@ fn setup(
         .with(PickableMesh::default())
         .with(InteractableMesh::default())
         // cube
-        .spawn(PbrComponents {
+        .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
@@ -47,7 +47,7 @@ fn setup(
         .with(PickableMesh::default())
         .with(InteractableMesh::default())
         // light
-        .spawn(LightComponents {
+        .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
             ..Default::default()
         });
