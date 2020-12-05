@@ -274,12 +274,12 @@ fn build_rays(
                         }
                     }
                     None => {
-                      if (pick_source.always_on) {
-                        pick_state.last_cursor_pos
-                      } else {
-                        continue
-                      }
-                    },
+                        if (pick_source.always_on) {
+                            pick_state.last_cursor_pos
+                        } else {
+                            continue;
+                        }
+                    }
                 };
                 pick_state.last_cursor_pos = cursor_pos_screen;
 
