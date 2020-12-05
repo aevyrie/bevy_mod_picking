@@ -274,7 +274,7 @@ fn build_rays(
                         }
                     }
                     None => {
-                        if (pick_source.always_on) {
+                        if pick_source.always_on {
                             pick_state.last_cursor_pos
                         } else {
                             continue;
