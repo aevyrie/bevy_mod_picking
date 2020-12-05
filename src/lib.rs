@@ -39,6 +39,7 @@ pub struct PickState {
     ray_map: HashMap<Group, Ray3d>,
     ordered_pick_list_map: HashMap<Group, Vec<(Entity, Intersection)>>,
     pub enabled: bool,
+    pub last_cursor_pos: Vec2,
 }
 
 impl PickState {
@@ -78,6 +79,7 @@ impl Default for PickState {
             ray_map: HashMap::new(),
             ordered_pick_list_map: HashMap::new(),
             enabled: true,
+            last_cursor_pos: Vec2::zero(),
         }
     }
 }
@@ -186,9 +188,10 @@ pub enum PickMethod {
 
 /// Marks an entity to be used for picking
 pub struct PickSource {
-    groups: Option<Vec<Group>>,
-    pick_method: PickMethod,
-    cursor_events: EventReader<CursorMoved>,
+    pub groups: Option<Vec<Group>>,
+    pub pick_method: PickMethod,
+    pub always_on: bool,
+    pub cursor_events: EventReader<CursorMoved>,
 }
 
 impl PickSource {
@@ -196,6 +199,7 @@ impl PickSource {
         PickSource {
             groups: Some(group),
             pick_method,
+            always_on: false,
             ..Default::default()
         }
     }
@@ -224,6 +228,7 @@ impl Default for PickSource {
         PickSource {
             groups: Some(vec![Group::default()]),
             pick_method: PickMethod::CameraCursor(WindowId::primary()),
+            always_on: false,
             cursor_events: EventReader::default(),
         }
     }
@@ -268,8 +273,15 @@ fn build_rays(
                             continue;
                         }
                     }
-                    None => continue,
+                    None => {
+                      if (pick_source.always_on) {
+                        pick_state.last_cursor_pos
+                      } else {
+                        continue
+                      }
+                    },
                 };
+                pick_state.last_cursor_pos = cursor_pos_screen;
 
                 // Get current screen size
                 let window = windows.get(window_id).unwrap();
