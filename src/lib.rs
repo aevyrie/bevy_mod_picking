@@ -179,18 +179,23 @@ impl Default for PickableMesh {
 #[derive(Debug)]
 pub enum PickMethod {
     /// Use cursor events to get coordinatess  relative to a camera
-    CameraCursor(WindowId),
+    CameraCursor(WindowId, UpdatePicks),
     /// Manually specify screen coordinatess relative to a camera
     CameraScreenSpace(Vec2),
     /// Use a tranform in world space to define pick ray
     Transform,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum UpdatePicks {
+    Always,
+    OnMouseEvent,
+}
+
 /// Marks an entity to be used for picking
 pub struct PickSource {
     pub groups: Option<Vec<Group>>,
     pub pick_method: PickMethod,
-    pub always_on: bool,
     pub cursor_events: EventReader<CursorMoved>,
 }
 
@@ -199,7 +204,6 @@ impl PickSource {
         PickSource {
             groups: Some(group),
             pick_method,
-            always_on: false,
             ..Default::default()
         }
     }
@@ -227,8 +231,7 @@ impl Default for PickSource {
     fn default() -> Self {
         PickSource {
             groups: Some(vec![Group::default()]),
-            pick_method: PickMethod::CameraCursor(WindowId::primary()),
-            always_on: false,
+            pick_method: PickMethod::CameraCursor(WindowId::primary(), UpdatePicks::OnMouseEvent),
             cursor_events: EventReader::default(),
         }
     }
@@ -258,7 +261,8 @@ fn build_rays(
 
         match pick_source.pick_method {
             // Use cursor events and specified window/camera to generate a ray
-            PickMethod::CameraCursor(window_id) => {
+            // PickMethod::CameraCursor(window_id) => {
+            PickMethod::CameraCursor(window_id, update_picks) => {
                 // Option<Camera> allows us to query entities that may or may not have a camera. This pick method requres a camera!
                 let projection_matrix = match camera {
                     Some(camera) => camera.projection_matrix,
@@ -274,10 +278,13 @@ fn build_rays(
                         }
                     }
                     None => {
-                        if pick_source.always_on {
-                            pick_state.last_cursor_pos
-                        } else {
-                            continue;
+                        match update_picks {
+                            UpdatePicks::Always => {
+                                pick_state.last_cursor_pos
+                            }
+                            UpdatePicks::OnMouseEvent => {
+                                continue;
+                            }
                         }
                     }
                 };
