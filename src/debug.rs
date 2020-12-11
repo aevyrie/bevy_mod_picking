@@ -41,7 +41,7 @@ struct DebugCursorMesh;
 fn update_debug_cursor_position(
     pick_state: Res<PickState>,
     mut query: Query<&mut Transform, With<DebugCursor>>,
-    mut visibility_query: Query<&mut Draw, With<DebugCursorMesh>>,
+    mut visibility_query: Query<&mut Visible, With<DebugCursorMesh>>,
 ) {
     // Set the cursor translation to the top pick's world coordinates
     match pick_state.top_all() {
@@ -51,14 +51,14 @@ fn update_debug_cursor_position(
                 for mut transform in &mut query.iter_mut() {
                     *transform = Transform::from_matrix(transform_new);
                 }
-                for mut draw in &mut visibility_query.iter_mut() {
-                    draw.is_visible = true;
+                for mut visible in &mut visibility_query.iter_mut() {
+                    visible.is_visible = true;
                 }
             }
         }
         None => {
-            for mut draw in &mut visibility_query.iter_mut() {
-                draw.is_visible = false;
+            for mut visible in &mut visibility_query.iter_mut() {
+                visible.is_visible = false;
             }
         }
     }
