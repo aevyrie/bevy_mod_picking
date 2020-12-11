@@ -12,13 +12,13 @@ fn main() {
         .add_plugin(DebugPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(PrintDiagnosticsPlugin::default())
-        .add_startup_system(setup.system())
+        .add_startup_system(setup)
         .run();
 }
 
 /// set up a simple 3D scene
 fn setup(
-    mut commands: Commands,
+    commands: &mut Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
@@ -32,7 +32,7 @@ fn setup(
 
     // camera
     commands
-        .spawn(Camera3dComponents {
+        .spawn(Camera3dBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(-3.0, 5.0, 8.0),
                 Vec3::new(0.0, 0.0, 0.0),
@@ -45,7 +45,7 @@ fn setup(
     for i in 0..edge_length.pow(3) {
         let f_edge_length = edge_length as f32;
         let _a = commands
-            .spawn(PbrComponents {
+            .spawn(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Icosphere {
                     radius: 0.25,
                     subdivisions: subdivision,
@@ -64,7 +64,7 @@ fn setup(
             .with(SelectablePickMesh::default());
     }
 
-    commands.spawn(LightComponents {
+    commands.spawn(LightBundle {
         transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
         ..Default::default()
     });

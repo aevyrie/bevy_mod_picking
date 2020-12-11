@@ -20,12 +20,12 @@ fn main() {
         .add_plugin(PickingPlugin)
         .add_plugin(DebugPickingPlugin)
         .add_plugin(InteractablePickingPlugin)
-        .add_startup_system(setup.system())
+        .add_startup_system(setup)
         .run();
 }
 
 fn setup(
-    mut commands: Commands,
+    commands: &mut Commands,
     mut create_window_events: ResMut<Events<CreateWindow>>,
     mut active_cameras: ResMut<ActiveCameras>,
     mut render_graph: ResMut<RenderGraph>,
@@ -171,7 +171,7 @@ fn setup(
     // add entities to the world
     commands
         // mesh
-        .spawn(PbrComponents {
+        .spawn(PbrBundle {
             mesh: mesh_handle,
             material: material_handle,
             ..Default::default()
@@ -181,12 +181,12 @@ fn setup(
         .with(HighlightablePickMesh::default())
         .with(SelectablePickMesh::default())
         // light
-        .spawn(LightComponents {
+        .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(4.0, 5.0, 4.0)),
             ..Default::default()
         })
         // main camera
-        .spawn(Camera3dComponents {
+        .spawn(Camera3dBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(0.0, 0.0, 6.0),
                 Vec3::new(0.0, 0.0, 0.0),
@@ -199,7 +199,7 @@ fn setup(
             PickMethod::CameraCursor(WindowId::primary()),
         ))
         // second window camera
-        .spawn(Camera3dComponents {
+        .spawn(Camera3dBundle {
             camera: Camera {
                 name: Some("Secondary".to_string()),
                 window: window_id,
