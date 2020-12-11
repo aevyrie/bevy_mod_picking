@@ -29,8 +29,8 @@ impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<PickState>()
             .init_resource::<PickHighlightParams>()
-            .add_system(build_rays.system())
-            .add_system(pick_mesh.system());
+            .add_system(build_rays)
+            .add_system(pick_mesh);
     }
 }
 
