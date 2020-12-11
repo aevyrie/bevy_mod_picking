@@ -277,16 +277,12 @@ fn build_rays(
                             continue;
                         }
                     }
-                    None => {
-                        match update_picks {
-                            UpdatePicks::Always => {
-                                pick_state.last_cursor_pos
-                            }
-                            UpdatePicks::OnMouseEvent => {
-                                continue;
-                            }
+                    None => match update_picks {
+                        UpdatePicks::Always => pick_state.last_cursor_pos,
+                        UpdatePicks::OnMouseEvent => {
+                            continue;
                         }
-                    }
+                    },
                 };
                 pick_state.last_cursor_pos = cursor_pos_screen;
 
