@@ -358,7 +358,7 @@ fn pick_mesh(
         &GlobalTransform,
         &mut PickableMesh,
         Entity,
-        &Draw,
+        &Visible,
     )>,
 ) {
     // If picking is disabled, do not continue
