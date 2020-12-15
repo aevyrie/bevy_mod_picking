@@ -39,8 +39,8 @@ fn setup(
     create_window_events.send(CreateWindow {
         id: window_id,
         descriptor: WindowDescriptor {
-            width: 800,
-            height: 600,
+            width: 800.0,
+            height: 600.0,
             vsync: false,
             title: "second window".to_string(),
             ..Default::default()
@@ -196,7 +196,7 @@ fn setup(
         })
         .with(PickSource::new(
             [Group(0)].into(),
-            PickMethod::CameraCursor(WindowId::primary()),
+            PickMethod::CameraCursor(WindowId::primary(), UpdatePicks::Always),
         ))
         // second window camera
         .spawn(Camera3dBundle {
@@ -214,6 +214,6 @@ fn setup(
         })
         .with(PickSource::new(
             [Group(1)].into(),
-            PickMethod::CameraCursor(window_id),
+            PickMethod::CameraCursor(window_id, UpdatePicks::Always),
         ));
 }
