@@ -12,5 +12,24 @@ categories = ["game-engines", "rendering"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# bevy = "^0.3"
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "master" }
+# bevy = { version = "^0.3", default-features = false, features = ["render"] }
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "master", default-features = false, features = ["render"] }
+
+[features]
+example_deps = [ "bevy/bevy_wgpu", "bevy/bevy_winit" ]
+
+[[example]]
+name = "3d_scene"
+required-features = [ "example_deps" ]
+
+[[example]]
+name = "events"
+required-features = [ "example_deps" ]
+
+[[example]]
+name = "multiple_windows"
+required-features = [ "example_deps" ]
+
+[[example]]
+name = "stress_test"
+required-features = [ "example_deps" ]
