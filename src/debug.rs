@@ -75,7 +75,7 @@ fn setup_debug_cursor(
         shaded: false,
         ..Default::default()
     });
-    let cube_size = 0.02;
+    let cube_size = 0.04;
     let cube_tail_scale = 20.0;
     let ball_size = 0.08;
     commands
@@ -89,8 +89,11 @@ fn setup_debug_cursor(
             ..Default::default()
         })
         .with_children(|parent| {
-            let mut transform =
-                Transform::from_translation(Vec3::new(0.0, cube_size * cube_tail_scale, 0.0));
+            let mut transform = Transform::from_translation(Vec3::new(
+                0.0,
+                (cube_size * cube_tail_scale) / 2.0,
+                0.0,
+            ));
             transform.apply_non_uniform_scale(Vec3::from([1.0, cube_tail_scale, 1.0]));
 
             // child cube
