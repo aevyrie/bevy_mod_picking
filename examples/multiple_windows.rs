@@ -196,7 +196,7 @@ fn setup(
         })
         .with(PickSource::new(
             [Group(0)].into(),
-            PickMethod::CameraCursor(WindowId::primary()),
+            PickMethod::CameraCursor(WindowId::primary(), UpdatePicks::Always),
         ))
         // second window camera
         .spawn(Camera3dBundle {
@@ -214,6 +214,6 @@ fn setup(
         })
         .with(PickSource::new(
             [Group(1)].into(),
-            PickMethod::CameraCursor(window_id),
+            PickMethod::CameraCursor(window_id, UpdatePicks::Always),
         ));
 }

@@ -39,6 +39,7 @@ pub struct PickState {
     ray_map: HashMap<Group, Ray3d>,
     ordered_pick_list_map: HashMap<Group, Vec<(Entity, Intersection)>>,
     pub enabled: bool,
+    pub last_cursor_pos: Vec2,
 }
 
 impl PickState {
@@ -78,6 +79,7 @@ impl Default for PickState {
             ray_map: HashMap::new(),
             ordered_pick_list_map: HashMap::new(),
             enabled: true,
+            last_cursor_pos: Vec2::zero(),
         }
     }
 }
@@ -177,18 +179,24 @@ impl Default for PickableMesh {
 #[derive(Debug)]
 pub enum PickMethod {
     /// Use cursor events to get coordinatess  relative to a camera
-    CameraCursor(WindowId),
+    CameraCursor(WindowId, UpdatePicks),
     /// Manually specify screen coordinatess relative to a camera
     CameraScreenSpace(Vec2),
     /// Use a tranform in world space to define pick ray
     Transform,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum UpdatePicks {
+    Always,
+    OnMouseEvent,
+}
+
 /// Marks an entity to be used for picking
 pub struct PickSource {
-    groups: Option<Vec<Group>>,
-    pick_method: PickMethod,
-    cursor_events: EventReader<CursorMoved>,
+    pub groups: Option<Vec<Group>>,
+    pub pick_method: PickMethod,
+    pub cursor_events: EventReader<CursorMoved>,
 }
 
 impl PickSource {
@@ -223,7 +231,7 @@ impl Default for PickSource {
     fn default() -> Self {
         PickSource {
             groups: Some(vec![Group::default()]),
-            pick_method: PickMethod::CameraCursor(WindowId::primary()),
+            pick_method: PickMethod::CameraCursor(WindowId::primary(), UpdatePicks::OnMouseEvent),
             cursor_events: EventReader::default(),
         }
     }
@@ -253,7 +261,8 @@ fn build_rays(
 
         match pick_source.pick_method {
             // Use cursor events and specified window/camera to generate a ray
-            PickMethod::CameraCursor(window_id) => {
+            // PickMethod::CameraCursor(window_id) => {
+            PickMethod::CameraCursor(window_id, update_picks) => {
                 // Option<Camera> allows us to query entities that may or may not have a camera. This pick method requres a camera!
                 let projection_matrix = match camera {
                     Some(camera) => camera.projection_matrix,
@@ -268,8 +277,14 @@ fn build_rays(
                             continue;
                         }
                     }
-                    None => continue,
+                    None => match update_picks {
+                        UpdatePicks::Always => pick_state.last_cursor_pos,
+                        UpdatePicks::OnMouseEvent => {
+                            continue;
+                        }
+                    },
                 };
+                pick_state.last_cursor_pos = cursor_pos_screen;
 
                 // Get current screen size
                 let window = windows.get(window_id).unwrap();
