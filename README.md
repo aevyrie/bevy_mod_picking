@@ -36,7 +36,7 @@ To run the `3d_scene` example - a modified version of the `Bevy` example of the 
 cargo run --example 3d_scene --features="example_deps"
 ```
 
-Note that by default this plugin only depends on bevy's `render` feature to minimize dependencies. This is why the feature flag is needed to run examples.
+Note that by default this plugin only depends on bevy's `render` feature to minimize dependency count and build time, and allow for wasm support. This is why the feature flag is needed to run examples.
 
 ## Getting Started
 
