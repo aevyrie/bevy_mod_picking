@@ -4,31 +4,14 @@ use bevy::prelude::*;
 pub struct DebugPickingPlugin;
 impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<CursorEvents>()
-            .add_startup_system(setup_debug_cursor.system())
+        app.add_startup_system(setup_debug_cursor.system())
             .add_system(update_debug_cursor_position.system())
             .add_system(get_picks.system());
     }
 }
 
-pub struct CursorEvents {
-    cursor_event_reader: EventReader<CursorMoved>,
-}
-
-impl Default for CursorEvents {
-    fn default() -> Self {
-        CursorEvents {
-            cursor_event_reader: EventReader::default(),
-        }
-    }
-}
-
-fn get_picks(
-    pick_state: Res<PickState>,
-    mut cursor_events: ResMut<CursorEvents>,
-    cursor: Res<Events<CursorMoved>>,
-) {
-    if cfg!(debug_assertions) && cursor_events.cursor_event_reader.latest(&cursor).is_some() {
+fn get_picks(pick_state: Res<PickState>) {
+    if cfg!(debug_assertions) {
         println!("Top entities:\n{:#?}", pick_state.top_all())
     }
 }
