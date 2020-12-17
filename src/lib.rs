@@ -1,3 +1,4 @@
+mod bounding;
 mod debug;
 mod highlight;
 mod interactable;
@@ -11,6 +12,7 @@ pub use crate::{
     select::SelectablePickMesh,
 };
 
+use crate::bounding::*;
 use crate::raycast::*;
 use bevy::{
     prelude::*,
