@@ -20,7 +20,7 @@ fn main() {
         .add_plugin(PickingPlugin)
         .add_plugin(DebugPickingPlugin)
         .add_plugin(InteractablePickingPlugin)
-        .add_startup_system(setup)
+        .add_startup_system(setup.system())
         .run();
 }
 

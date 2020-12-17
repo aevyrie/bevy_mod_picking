@@ -213,18 +213,16 @@ pub fn generate_click_events(
 ) {
     for (mut interactable, pickable) in interactable_query.iter_mut() {
         for group in &pickable.groups {
-            match interactable.hover(&group) {
-                Ok(false) => continue,
-                Err(_) => continue,
-                _ => (),
-            }
+            let hover = matches!(interactable.hover(&group), Ok(true));
             let new_event = interactable
                 .watched_mouse_inputs
                 .iter()
                 .map(|button| {
                     (
                         *button,
-                        if mouse_inputs.just_released(*button) {
+                        if !hover {
+                            MouseDownEvents::None
+                        } else if mouse_inputs.just_released(*button) {
                             MouseDownEvents::MouseJustReleased
                         } else if mouse_inputs.just_pressed(*button) {
                             MouseDownEvents::MouseJustPressed
