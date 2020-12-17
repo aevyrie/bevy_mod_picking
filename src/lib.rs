@@ -420,10 +420,11 @@ fn pick_mesh(
             if let Some(sphere) = &pickable.bounding_sphere {
                 let det = (pick_ray
                     .direction()
-                    .dot(*pick_ray.origin() - (sphere.origin()+transform.translation)))
-                    .powi(2)
-                    - (Vec3::length_squared(*pick_ray.origin() - (sphere.origin()+transform.translation))
-                        - sphere.radius().powi(2));
+                    .dot(*pick_ray.origin() - (sphere.origin() + transform.translation)))
+                .powi(2)
+                    - (Vec3::length_squared(
+                        *pick_ray.origin() - (sphere.origin() + transform.translation),
+                    ) - sphere.radius().powi(2));
                 det >= 0.0
 
             /*let ray_transform = Mat4::face_toward(
