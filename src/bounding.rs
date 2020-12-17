@@ -10,6 +10,15 @@ pub struct BoundingSphere {
     scaled_radius: Option<f32>,
 }
 
+impl BoundingSphere {
+    pub fn origin(&self) -> Vec3 {
+        self.origin
+    }
+    pub fn radius(&self) -> f32 {
+        self.radius
+    }
+}
+
 impl From<&Mesh> for BoundingSphere {
     fn from(mesh: &Mesh) -> Self {
         // Grab a vector of vertex coordinates we can use to iterate through
@@ -46,7 +55,7 @@ impl From<&Mesh> for BoundingSphere {
         // Construct a bounding sphere using these two points as the poles
         let mut sphere = BoundingSphere {
             origin: point_y.lerp(point_z, 0.5),
-            radius: point_y.distance(point_z)/2.0,
+            radius: point_y.distance(point_z) / 2.0,
             scaled_radius: None,
         };
         // Iteratively adjust sphere until it encloses all points
@@ -62,15 +71,15 @@ impl From<&Mesh> for BoundingSphere {
             // If the furthest point is outside the sphere, we need to sdjust it
             let point_dist = point_n.distance(sphere.origin);
             if point_dist > sphere.radius {
-                let radius_new = (sphere.radius + point_dist)/2.0;
-                let lerp_ratio = (point_dist - radius_new)/point_dist;
+                let radius_new = (sphere.radius + point_dist) / 2.0;
+                let lerp_ratio = (point_dist - radius_new) / point_dist;
                 sphere = BoundingSphere {
                     origin: sphere.origin.lerp(point_n, lerp_ratio),
                     radius: radius_new,
                     scaled_radius: None,
                 };
-            } else { 
-                return sphere 
+            } else {
+                return sphere;
             }
         }
     }
