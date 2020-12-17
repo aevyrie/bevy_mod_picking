@@ -5,9 +5,9 @@ pub struct DebugPickingPlugin;
 impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<CursorEvents>()
-            .add_startup_system(setup_debug_cursor)
-            .add_system(update_debug_cursor_position)
-            .add_system(get_picks);
+            .add_startup_system(setup_debug_cursor.system())
+            .add_system(update_debug_cursor_position.system())
+            .add_system(get_picks.system());
     }
 }
 
