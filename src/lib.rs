@@ -163,6 +163,13 @@ impl PickableMesh {
             .get(group)
             .ok_or(format!("PickableMesh does not belong to group {}", **group))
     }
+    pub fn with_bounding_sphere(&self, mesh: &Mesh) -> Self {
+        PickableMesh {
+            groups: self.groups.clone(),
+            intersections: self.intersections.clone(),
+            bounding_sphere: Some(BoundingSphere::from(mesh)),
+        }
+    }
 }
 
 impl Default for PickableMesh {

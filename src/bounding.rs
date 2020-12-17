@@ -10,8 +10,9 @@ pub struct BoundingSphere {
     scaled_radius: Option<f32>,
 }
 
-impl From<&mut Mesh> for BoundingSphere {
-    fn from(mesh: &mut Mesh) -> Self {
+impl From<&Mesh> for BoundingSphere {
+    fn from(mesh: &Mesh) -> Self {
+        // Grab a vector of vertex coordinates we can use to iterate through
         if mesh.primitive_topology() != PrimitiveTopology::TriangleList {
             panic!("Non-TriangleList mesh supplied for bounding sphere generation")
         }
@@ -25,9 +26,6 @@ impl From<&mut Mesh> for BoundingSphere {
                 _ => panic!("Unexpected vertex types in ATTRIBUTE_POSITION"),
             },
         };
-        //
-        // Ritter's bounding sphere method
-        //
         let point_x = vertices[0];
         // Find point y, the point furthest from point x
         let point_y = vertices.iter().fold(point_x, |acc, x| {
