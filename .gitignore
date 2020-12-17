@@ -3,3 +3,4 @@ Cargo.lock
 .cargo/config
 .vscode
 .cargo/credentials.toml
+.cargo/config_fast_compile
