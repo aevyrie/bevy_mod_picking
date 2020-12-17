@@ -22,8 +22,8 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let edge_length: usize = 10;
-    let subdivision: usize = 10;
+    let edge_length: usize = 12;
+    let subdivision: usize = 15;
     println!("Tris per mesh: {}", (subdivision + 1).pow(2) * 20);
     println!(
         "Total tris: {}",
@@ -43,7 +43,7 @@ fn setup(
         .with(PickSource::default());
 
     let mesh_handle = meshes.add(Mesh::from(shape::Icosphere {
-        radius: 0.25,
+        radius: 0.15,
         subdivisions: subdivision,
     }));
 
