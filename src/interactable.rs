@@ -213,10 +213,7 @@ pub fn generate_click_events(
 ) {
     for (mut interactable, pickable) in interactable_query.iter_mut() {
         for group in &pickable.groups {
-            let hover = match interactable.hover(&group) {
-                Ok(true) => true,
-                _ => false,
-            };
+            let hover = matches!(interactable.hover(&group), Ok(true));
             let new_event = interactable
                 .watched_mouse_inputs
                 .iter()
