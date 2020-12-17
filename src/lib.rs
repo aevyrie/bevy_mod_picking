@@ -1,3 +1,4 @@
+mod bounding;
 mod debug;
 mod highlight;
 mod interactable;
@@ -11,6 +12,7 @@ pub use crate::{
     select::SelectablePickMesh,
 };
 
+use crate::bounding::*;
 use crate::raycast::*;
 use bevy::{
     prelude::*,
@@ -160,6 +162,13 @@ impl PickableMesh {
         self.intersections
             .get(group)
             .ok_or(format!("PickableMesh does not belong to group {}", **group))
+    }
+    pub fn with_bounding_sphere(&self, mesh: &Mesh) -> Self {
+        PickableMesh {
+            groups: self.groups.clone(),
+            intersections: self.intersections.clone(),
+            bounding_sphere: Some(BoundingSphere::from(mesh)),
+        }
     }
 }
 
@@ -406,6 +415,33 @@ fn pick_mesh(
         if pick_rays.is_empty() {
             continue;
         }
+        // Cull pick rays that don't intersect the bounding sphere
+        pick_rays.retain(|(_group, pick_ray)| {
+            if let Some(sphere) = &pickable.bounding_sphere {
+                let det = (pick_ray
+                    .direction()
+                    .dot(*pick_ray.origin() - (sphere.origin() + transform.translation)))
+                .powi(2)
+                    - (Vec3::length_squared(
+                        *pick_ray.origin() - (sphere.origin() + transform.translation),
+                    ) - sphere.radius().powi(2));
+                det >= 0.0
+
+            /*let ray_transform = Mat4::face_toward(
+                *pick_ray.origin(),
+                *pick_ray.direction(),
+                Vec3::new(0.0, 1.0, 0.0),
+            )
+            .inverse();
+            let translated_sphere = ray_transform.transform_point3(sphere.origin());
+            // Ray-sphere (point-circle) intersection
+            let circle_origin = Vec2::new(translated_sphere.x, translated_sphere.y);
+            // Only retain the pick entry if the ray falls withing the bounding sphere
+            circle_origin.distance(Vec2::zero()) <= sphere.radius()*/
+            } else {
+                true
+            }
+        });
 
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get_mut(mesh_handle) {

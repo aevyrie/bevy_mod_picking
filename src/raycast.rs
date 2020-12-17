@@ -1,8 +1,4 @@
-use bevy::{
-    prelude::*,
-    render::mesh::{Indices, Mesh, VertexAttributeValues},
-    render::pipeline::PrimitiveTopology,
-};
+use bevy::prelude::*;
 
 pub use rays::*;
 
@@ -84,50 +80,6 @@ impl From<[Vec3; 3]> for Triangle {
             v0: vertices[0],
             v1: vertices[1],
             v2: vertices[2],
-        }
-    }
-}
-
-/// Defines a bounding sphere with a center point coordinate and a radius
-#[derive(Debug)]
-pub struct BoundingSphere {
-    mesh_radius: f32,
-    transformed_radius: Option<f32>,
-}
-
-impl From<&mut Mesh> for BoundingSphere {
-    fn from(mesh: &mut Mesh) -> Self {
-        let mut mesh_radius = 0f32;
-        if mesh.primitive_topology() != PrimitiveTopology::TriangleList {
-            panic!("Non-TriangleList mesh supplied for bounding sphere generation")
-        }
-
-        let vertex_positions: Vec<[f32; 3]> = match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
-            None => panic!("Mesh does not contain vertex positions"),
-            Some(vertex_values) => match &vertex_values {
-                VertexAttributeValues::Float3(positions) => positions.clone(),
-                _ => panic!("Unexpected vertex types in ATTRIBUTE_POSITION"),
-            },
-        };
-        if let Some(indices) = &mesh.indices() {
-            match indices {
-                Indices::U16(vector) => {
-                    for index in vector.iter() {
-                        mesh_radius =
-                            mesh_radius.max(Vec3::from(vertex_positions[*index as usize]).length());
-                    }
-                }
-                Indices::U32(vector) => {
-                    for index in vector.iter() {
-                        mesh_radius =
-                            mesh_radius.max(Vec3::from(vertex_positions[*index as usize]).length());
-                    }
-                }
-            };
-        }
-        BoundingSphere {
-            mesh_radius,
-            transformed_radius: None,
         }
     }
 }

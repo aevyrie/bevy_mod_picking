@@ -22,8 +22,8 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let edge_length: usize = 10;
-    let subdivision: usize = 40;
+    let edge_length: usize = 12;
+    let subdivision: usize = 15;
     println!("Tris per mesh: {}", (subdivision + 1).pow(2) * 20);
     println!(
         "Total tris: {}",
@@ -42,14 +42,16 @@ fn setup(
         })
         .with(PickSource::default());
 
+    let mesh_handle = meshes.add(Mesh::from(shape::Icosphere {
+        radius: 0.15,
+        subdivisions: subdivision,
+    }));
+
     for i in 0..edge_length.pow(3) {
         let f_edge_length = edge_length as f32;
         let _a = commands
             .spawn(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Icosphere {
-                    radius: 0.25,
-                    subdivisions: subdivision,
-                })),
+                mesh: mesh_handle.clone(),
                 material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
                 transform: Transform::from_translation(Vec3::new(
                     i as f32 % f_edge_length - f_edge_length / 2.0,
@@ -59,7 +61,10 @@ fn setup(
                 )),
                 ..Default::default()
             })
-            .with(PickableMesh::default())
+            .with(
+                PickableMesh::default()
+                    .with_bounding_sphere(meshes.get(mesh_handle.clone()).unwrap()),
+            )
             .with(HighlightablePickMesh::default())
             .with(SelectablePickMesh::default());
     }
