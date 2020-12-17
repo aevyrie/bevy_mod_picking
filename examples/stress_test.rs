@@ -12,7 +12,7 @@ fn main() {
         .add_plugin(DebugPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(PrintDiagnosticsPlugin::default())
-        .add_startup_system(setup)
+        .add_startup_system(setup.system())
         .run();
 }
 

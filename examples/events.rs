@@ -7,8 +7,8 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
-        .add_startup_system(setup)
-        .add_system(event_example)
+        .add_startup_system(setup.system())
+        .add_system(event_example.system())
         .run();
 }
 
