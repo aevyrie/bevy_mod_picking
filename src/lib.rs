@@ -231,7 +231,7 @@ impl Default for PickSource {
     fn default() -> Self {
         PickSource {
             groups: Some(vec![Group::default()]),
-            pick_method: PickMethod::CameraCursor(WindowId::primary(), UpdatePicks::OnMouseEvent),
+            pick_method: PickMethod::CameraCursor(WindowId::primary(), UpdatePicks::Always),
             cursor_events: EventReader::default(),
         }
     }

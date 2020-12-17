@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::Camera};
 use bevy_mod_picking::*;
 
 fn main() {
@@ -8,8 +8,9 @@ fn main() {
         .add_plugin(PickingPlugin)
         .add_plugin(DebugPickingPlugin)
         .add_plugin(InteractablePickingPlugin)
-        .add_startup_system(setup)
-        .add_startup_system(set_highlight_params)
+        .add_startup_system(setup.system())
+        .add_startup_system(set_highlight_params.system())
+        .add_system(oscillation_system.system())
         .run();
 }
 
@@ -76,4 +77,10 @@ fn setup(
 fn set_highlight_params(mut highlight_params: ResMut<PickHighlightParams>) {
     highlight_params.set_hover_color(Color::rgb(1.0, 0.0, 0.0));
     highlight_params.set_selection_color(Color::rgb(1.0, 0.0, 1.0));
+}
+
+fn oscillation_system(time: Res<Time>, mut query: Query<&mut Transform, With<Camera>>) {
+    for mut transform in query.iter_mut() {
+        transform.translation.y = 5.0 + time.seconds_since_startup().sin() as f32;
+    }
 }
