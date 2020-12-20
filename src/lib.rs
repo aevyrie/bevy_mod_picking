@@ -388,8 +388,8 @@ fn pick_mesh(
         &Visible,
     )>,
 ) {
-    let sphere_check = trace_span!("sphere check");
-    let raycast = trace_span!("raycast");
+    let sphere_check = info_span!("sphere check");
+    let raycast = info_span!("raycast");
     // If picking is disabled, do not continue
     if !pick_state.enabled {
         pick_state.empty_pick_list();
