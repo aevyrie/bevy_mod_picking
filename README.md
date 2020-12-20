@@ -1,6 +1,6 @@
 # 3D Mouse Picking for Bevy
 
-[![CI](https://img.shields.io/github/workflow/status/aevyrie/bevy_mod_picking/Continuous%20integration)](https://github.com/aevyrie/bevy_mod_picking/actions?query=workflow%3A%22Continuous+integration%22+branch%3Amaster)
+[![CI](https://img.shields.io/github/workflow/status/aevyrie/bevy_mod_picking/Continuous%20integration/master)](https://github.com/aevyrie/bevy_mod_picking/actions?query=workflow%3A%22Continuous+integration%22+branch%3Amaster)
 [![dependency status](https://deps.rs/repo/github/aevyrie/bevy_mod_picking/status.svg)](https://deps.rs/repo/github/aevyrie/bevy_mod_picking)
 [![crates.io](https://img.shields.io/crates/v/bevy_mod_picking)](https://crates.io/crates/bevy_mod_picking)
 [![docs.rs](https://docs.rs/bevy_mod_picking/badge.svg)](https://docs.rs/bevy_mod_picking)
