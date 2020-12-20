@@ -37,7 +37,7 @@ To run the `3d_scene` example - a modified version of the `Bevy` example of the 
 cargo run --example 3d_scene --features="example_deps"
 ```
 
-Note that by default this plugin only depends on bevy's `render` feature to minimize dependency count and build time, and allow for wasm support. This is why the feature flag is needed to run examples.
+Note that by default this plugin only depends on bevy's `render` feature to minimize dependency count and build time, and allow for wasm support. This is why the feature flag is needed to run examples, which need the winit and wgpu features to run.
 
 ## Getting Started
 
@@ -48,7 +48,7 @@ It only takes a few lines to get mouse picking working in your Bevy application 
 Add the plugin to your dependencies in Cargo.toml
 
 ```toml
-bevy_mod_picking = "0.2.0"
+bevy_mod_picking = "0.3.0"
 ```
 
 Import the plugin:
