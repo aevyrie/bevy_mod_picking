@@ -32,6 +32,7 @@ impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<PickState>()
             .init_resource::<PickHighlightParams>()
+            .add_system(build_bound_sphere.system())
             .add_system(build_rays.system())
             .add_system(pick_mesh.system());
     }
@@ -142,7 +143,7 @@ impl Default for Group {
 pub struct PickableMesh {
     groups: Vec<Group>,
     intersections: HashMap<Group, Option<Intersection>>,
-    bounding_sphere: Option<BoundingSphere>,
+    bounding_sphere: BoundVol,
 }
 
 impl PickableMesh {
@@ -155,7 +156,7 @@ impl PickableMesh {
         PickableMesh {
             groups,
             intersections: picks,
-            bounding_sphere: None,
+            bounding_sphere: BoundVol::None,
         }
     }
     /// Returns the nearest intersection of the PickableMesh in the provided group.
@@ -164,11 +165,11 @@ impl PickableMesh {
             .get(group)
             .ok_or(format!("PickableMesh does not belong to group {}", **group))
     }
-    pub fn with_bounding_sphere(&self, mesh: &Mesh) -> Self {
+    pub fn with_bounding_sphere(&self, mesh: Handle<Mesh>) -> Self {
         PickableMesh {
             groups: self.groups.clone(),
             intersections: self.intersections.clone(),
-            bounding_sphere: Some(BoundingSphere::from(mesh)),
+            bounding_sphere: BoundVol::Loading(mesh),
         }
     }
 }
@@ -179,7 +180,7 @@ impl Default for PickableMesh {
         picks.insert(Group::default(), None);
         PickableMesh {
             groups: [Group::default()].into(),
-            bounding_sphere: None,
+            bounding_sphere: BoundVol::None,
             intersections: picks,
         }
     }
@@ -418,14 +419,17 @@ fn pick_mesh(
                 let _ray_cull_guard = ray_cull.enter();
                 if let Some(ray) = pick_state.ray_map.get(group) {
                     // Cull pick rays that don't intersect the bounding sphere
-                    if let Some(sphere) = &pickable.bounding_sphere {
+                    // NOTE: this might cause stutters on load because bound spheres won't be loaded
+                    // and picking will be brute forcing.
+                    if let BoundVol::Loaded(sphere) = &pickable.bounding_sphere {
+                        let scaled_radius = sphere.radius() * transform.scale.max_element();
                         let det = (ray
                             .direction()
                             .dot(*ray.origin() - (sphere.origin() + transform.translation)))
                         .powi(2)
                             - (Vec3::length_squared(
                                 *ray.origin() - (sphere.origin() + transform.translation),
-                            ) - sphere.radius().powi(2));
+                            ) - scaled_radius.powi(2));
                         if det >= 0.0 {
                             Some((*group, *ray)) // Ray intersects the bounding sphere
                         } else {

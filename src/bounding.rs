@@ -2,8 +2,14 @@ use super::*;
 use bevy::prelude::*;
 use core::panic;
 
+#[derive(Debug, Clone)]
+pub enum BoundVol {
+    None,
+    Loading(Handle<Mesh>),
+    Loaded(BoundingSphere),
+}
 /// Defines a bounding sphere with a center point coordinate and a radius
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BoundingSphere {
     origin: Vec3,
     radius: f32,
@@ -16,6 +22,26 @@ impl BoundingSphere {
     }
     pub fn radius(&self) -> f32 {
         self.radius
+    }
+}
+
+pub fn build_bound_sphere(
+    meshes: Res<Assets<Mesh>>,
+    mut mesh_query: Query<
+        &mut PickableMesh,
+    >,
+) {
+    for mut pickable in &mut mesh_query.iter_mut() {
+        let pickle = pickable.bounding_sphere.clone();
+        if let BoundVol::Loading(handle) = pickle {
+            match meshes.get(&handle) {
+                Some(mesh) => pickable.bounding_sphere = BoundVol::Loaded(BoundingSphere::from(mesh)),
+                None => {
+                    warn!("Unable to generate bounding sphere, waiting for mesh to load. Handle:{:?}", &handle);
+                    continue
+                }
+            }
+        }
     }
 }
 
