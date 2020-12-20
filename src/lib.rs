@@ -23,7 +23,6 @@ use bevy::{
     },
     tasks::ComputeTaskPool,
     window::{CursorMoved, WindowId},
-    utils::tracing::trace_span,
 };
 use core::convert::TryInto;
 use std::collections::HashMap;
@@ -378,7 +377,7 @@ fn pick_mesh(
     // Resources
     mut pick_state: ResMut<PickState>,
     mut meshes: ResMut<Assets<Mesh>>,
-    pool: Res<ComputeTaskPool>,
+    _pool: Res<ComputeTaskPool>,
     // Queries
     mut mesh_query: Query<(
         &Handle<Mesh>,
