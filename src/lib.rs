@@ -21,7 +21,7 @@ use bevy::{
         mesh::{Indices, Mesh, VertexAttributeValues},
         pipeline::PrimitiveTopology,
     },
-    tasks::ComputeTaskPool,
+    tasks::prelude::*,
     window::{CursorMoved, WindowId},
 };
 use core::convert::TryInto;
@@ -387,7 +387,7 @@ fn pick_mesh(
         &Visible,
     )>,
 ) {
-    let sphere_check = info_span!("sphere check");
+    let ray_cull = info_span!("ray culling");
     let raycast = info_span!("raycast");
     // If picking is disabled, do not continue
     if !pick_state.enabled {
@@ -404,43 +404,49 @@ fn pick_mesh(
     }
 
     // Iterate through each pickable mesh in the scene
+    //mesh_query.par_iter_mut(32).for_each(&pool,|(mesh_handle, transform, mut pickable, entity, draw)| {},);
     for (mesh_handle, transform, mut pickable, entity, draw) in &mut mesh_query.iter_mut() {
         if !draw.is_visible {
             continue;
         }
 
         // Check for a pick ray in each pick group(s) this mesh belongs to
-        let mut pick_rays: Vec<(Group, Ray3d)> = Vec::new();
-        for group in &pickable.groups {
-            if let Some(ray) = pick_state.ray_map.get(group) {
-                pick_rays.push((*group, *ray));
-            }
-        }
+        let pick_rays: Vec<(Group, Ray3d)> = pickable
+            .groups
+            .iter()
+            .filter_map(|group| {
+                let _ray_cull_guard = ray_cull.enter();
+                if let Some(ray) = pick_state.ray_map.get(group) {
+                    // Cull pick rays that don't intersect the bounding sphere
+                    if let Some(sphere) = &pickable.bounding_sphere {
+                        let det = (ray
+                            .direction()
+                            .dot(*ray.origin() - (sphere.origin() + transform.translation)))
+                        .powi(2)
+                            - (Vec3::length_squared(
+                                *ray.origin() - (sphere.origin() + transform.translation),
+                            ) - sphere.radius().powi(2));
+                        if det >= 0.0 {
+                            Some((*group, *ray)) // Ray intersects the bounding sphere
+                        } else {
+                            None // Ray does not intersect the bounding sphere - discard
+                        }
+                    } else {
+                        Some((*group, *ray)) // No bounding sphere present - can't discard
+                    }
+                } else {
+                    None // No ray present in the map for this group
+                }
+            })
+            .collect();
         if pick_rays.is_empty() {
             continue;
         }
 
-        // Cull pick rays that don't intersect the bounding sphere
-        pick_rays.retain(|(_group, pick_ray)| {
-            let _sphere_guard = sphere_check.enter();
-            if let Some(sphere) = &pickable.bounding_sphere {
-                let det = (pick_ray
-                    .direction()
-                    .dot(*pick_ray.origin() - (sphere.origin() + transform.translation)))
-                .powi(2)
-                    - (Vec3::length_squared(
-                        *pick_ray.origin() - (sphere.origin() + transform.translation),
-                    ) - sphere.radius().powi(2));
-                det >= 0.0
-            } else {
-                true
-            }
-        });
-
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get_mut(mesh_handle) {
             if mesh.primitive_topology() != PrimitiveTopology::TriangleList {
-                continue;
+                panic!("bevy_mod_picking only supports TriangleList topology");
             }
 
             let _raycast_guard = raycast.enter();
