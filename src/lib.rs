@@ -21,7 +21,9 @@ use bevy::{
         mesh::{Indices, Mesh, VertexAttributeValues},
         pipeline::PrimitiveTopology,
     },
+    tasks::ComputeTaskPool,
     window::{CursorMoved, WindowId},
+    utils::tracing::trace_span,
 };
 use core::convert::TryInto;
 use std::collections::HashMap;
@@ -376,6 +378,7 @@ fn pick_mesh(
     // Resources
     mut pick_state: ResMut<PickState>,
     mut meshes: ResMut<Assets<Mesh>>,
+    pool: Res<ComputeTaskPool>,
     // Queries
     mut mesh_query: Query<(
         &Handle<Mesh>,
@@ -385,6 +388,8 @@ fn pick_mesh(
         &Visible,
     )>,
 ) {
+    let sphere_check = trace_span!("sphere check");
+    let raycast = trace_span!("raycast");
     // If picking is disabled, do not continue
     if !pick_state.enabled {
         pick_state.empty_pick_list();
@@ -415,8 +420,10 @@ fn pick_mesh(
         if pick_rays.is_empty() {
             continue;
         }
+
         // Cull pick rays that don't intersect the bounding sphere
         pick_rays.retain(|(_group, pick_ray)| {
+            let _sphere_guard = sphere_check.enter();
             if let Some(sphere) = &pickable.bounding_sphere {
                 let det = (pick_ray
                     .direction()
@@ -426,18 +433,6 @@ fn pick_mesh(
                         *pick_ray.origin() - (sphere.origin() + transform.translation),
                     ) - sphere.radius().powi(2));
                 det >= 0.0
-
-            /*let ray_transform = Mat4::face_toward(
-                *pick_ray.origin(),
-                *pick_ray.direction(),
-                Vec3::new(0.0, 1.0, 0.0),
-            )
-            .inverse();
-            let translated_sphere = ray_transform.transform_point3(sphere.origin());
-            // Ray-sphere (point-circle) intersection
-            let circle_origin = Vec2::new(translated_sphere.x, translated_sphere.y);
-            // Only retain the pick entry if the ray falls withing the bounding sphere
-            circle_origin.distance(Vec2::zero()) <= sphere.radius()*/
             } else {
                 true
             }
@@ -449,6 +444,7 @@ fn pick_mesh(
                 continue;
             }
 
+            let _raycast_guard = raycast.enter();
             // Get the vertex positions from the mesh reference resolved from the mesh handle
             let vertex_positions: Vec<[f32; 3]> = match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
                 None => panic!("Mesh does not contain vertex positions"),
