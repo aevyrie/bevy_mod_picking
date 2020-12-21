@@ -56,7 +56,7 @@ fn setup(
         // sphere
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Icosphere {
-                subdivisions: 4,
+                subdivisions: 20,
                 radius: 0.5,
             })),
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),

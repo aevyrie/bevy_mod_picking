@@ -412,37 +412,41 @@ fn pick_mesh(
         }
 
         // Check for a pick ray in each pick group(s) this mesh belongs to
-        let pick_rays: Vec<(Group, Ray3d)> = pickable
-            .groups
-            .iter()
-            .filter_map(|group| {
-                let _ray_cull_guard = ray_cull.enter();
-                if let Some(ray) = pick_state.ray_map.get(group) {
-                    // Cull pick rays that don't intersect the bounding sphere
-                    // NOTE: this might cause stutters on load because bound spheres won't be loaded
-                    // and picking will be brute forcing.
-                    if let BoundVol::Loaded(sphere) = &pickable.bounding_sphere {
-                        let scaled_radius = sphere.radius() * transform.scale.max_element();
-                        let det = (ray
-                            .direction()
-                            .dot(*ray.origin() - (sphere.origin() + transform.translation)))
-                        .powi(2)
-                            - (Vec3::length_squared(
-                                *ray.origin() - (sphere.origin() + transform.translation),
-                            ) - scaled_radius.powi(2));
-                        if det >= 0.0 {
-                            Some((*group, *ray)) // Ray intersects the bounding sphere
+        let pick_rays: Vec<(Group, Ray3d)> = {
+            let _ray_cull_guard = ray_cull.enter();
+            pickable
+                .groups
+                .iter()
+                .filter_map(|group| {
+                    if let Some(ray) = pick_state.ray_map.get(group) {
+                        // Cull pick rays that don't intersect the bounding sphere
+                        // NOTE: this might cause stutters on load because bound spheres won't be loaded
+                        // and picking will be brute forcing.
+                        if let BoundVol::Loaded(sphere) = &pickable.bounding_sphere {
+                            let scaled_radius =
+                                1.01 * sphere.radius() * transform.scale.max_element();
+                            let translated_origin = sphere.origin()*transform.scale + transform.translation;
+                            let det = (ray
+                                .direction()
+                                .dot(*ray.origin() - translated_origin))
+                            .powi(2)
+                                - (Vec3::length_squared(
+                                    *ray.origin() - translated_origin,
+                                ) - scaled_radius.powi(2));
+                            if det >= 0.0 {
+                                Some((*group, *ray)) // Ray intersects the bounding sphere
+                            } else {
+                                None // Ray does not intersect the bounding sphere - discard
+                            }
                         } else {
-                            None // Ray does not intersect the bounding sphere - discard
+                            Some((*group, *ray)) // No bounding sphere present - can't discard
                         }
                     } else {
-                        Some((*group, *ray)) // No bounding sphere present - can't discard
+                        None // No ray present in the map for this group
                     }
-                } else {
-                    None // No ray present in the map for this group
-                }
-            })
-            .collect();
+                })
+                .collect()
+        };
         if pick_rays.is_empty() {
             continue;
         }
