@@ -4,7 +4,6 @@ use bevy::{
     window::WindowMode,
 };
 use bevy_mod_picking::*;
-use rand::prelude::*;
 
 fn main() {
     App::build()
@@ -41,11 +40,15 @@ fn setup(
         .spawn(Camera3dBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(
-                    -f32::from(edge_length) / 3.0,
-                    f32::from(edge_length) / 2.0,
-                    f32::from(edge_length) * 0.8,
+                    f32::from(edge_length) * -0.55,
+                    f32::from(edge_length) * 0.55,
+                    f32::from(edge_length) * 0.45,
                 ),
-                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(
+                    f32::from(edge_length) * 0.1,
+                    0.0,
+                    -f32::from(edge_length) * 0.1,
+                ),
                 Vec3::new(0.0, 1.0, 0.0),
             )),
             ..Default::default()
@@ -54,7 +57,6 @@ fn setup(
 
     let _scenes: Vec<HandleUntyped> = asset_server.load_folder("models/monkey").unwrap();
     let monkey_handle = asset_server.get_handle("models/monkey/Monkey.gltf#Mesh0/Primitive0");
-    let mut rng = thread_rng();
     for i in 0..edge_length.pow(3) {
         let f_edge_length = edge_length as f32;
         commands
@@ -62,14 +64,10 @@ fn setup(
                 mesh: monkey_handle.clone(),
                 material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
                 transform: Transform::from_translation(Vec3::new(
-                    (i as f32 % f_edge_length - f_edge_length / 2.0) + rng.gen::<f32>() - 0.5,
-                    ((i as f32 / f_edge_length).round() % f_edge_length - f_edge_length / 2.0)
-                        + rng.gen::<f32>()
-                        - 0.5,
-                    ((i as f32 / (f_edge_length * f_edge_length)).round() % f_edge_length
-                        - f_edge_length / 2.0)
-                        + rng.gen::<f32>()
-                        - 0.5,
+                    i as f32 % f_edge_length - f_edge_length / 2.0,
+                    (i as f32 / f_edge_length).round() % f_edge_length - f_edge_length / 2.0,
+                    (i as f32 / (f_edge_length * f_edge_length)).round() % f_edge_length
+                        - f_edge_length / 2.0,
                 )) * Transform::from_scale(Vec3::from([0.3, 0.3, 0.3])),
                 ..Default::default()
             })
@@ -78,7 +76,7 @@ fn setup(
 
     commands.spawn(LightBundle {
         transform: Transform::from_translation(Vec3::new(
-            -f32::from(edge_length),
+            0.0,
             f32::from(edge_length),
             f32::from(edge_length),
         )),
