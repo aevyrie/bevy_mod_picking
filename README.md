@@ -48,7 +48,7 @@ It only takes a few lines to get mouse picking working in your Bevy application 
 Add the plugin to your dependencies in Cargo.toml
 
 ```toml
-bevy_mod_picking = "0.3.0"
+bevy_mod_picking = "0.3.1"
 ```
 
 Import the plugin:
