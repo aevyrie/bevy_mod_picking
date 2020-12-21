@@ -21,6 +21,7 @@ use bevy::{
         mesh::{Indices, Mesh, VertexAttributeValues},
         pipeline::PrimitiveTopology,
     },
+    tasks::prelude::*,
     window::{CursorMoved, WindowId},
 };
 use core::convert::TryInto;
@@ -31,6 +32,7 @@ impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<PickState>()
             .init_resource::<PickHighlightParams>()
+            .add_system(build_bound_sphere.system())
             .add_system(build_rays.system())
             .add_system(pick_mesh.system());
     }
@@ -141,7 +143,7 @@ impl Default for Group {
 pub struct PickableMesh {
     groups: Vec<Group>,
     intersections: HashMap<Group, Option<Intersection>>,
-    bounding_sphere: Option<BoundingSphere>,
+    bounding_sphere: BoundVol,
 }
 
 impl PickableMesh {
@@ -154,7 +156,7 @@ impl PickableMesh {
         PickableMesh {
             groups,
             intersections: picks,
-            bounding_sphere: None,
+            bounding_sphere: BoundVol::None,
         }
     }
     /// Returns the nearest intersection of the PickableMesh in the provided group.
@@ -163,11 +165,11 @@ impl PickableMesh {
             .get(group)
             .ok_or(format!("PickableMesh does not belong to group {}", **group))
     }
-    pub fn with_bounding_sphere(&self, mesh: &Mesh) -> Self {
+    pub fn with_bounding_sphere(&self, mesh: Handle<Mesh>) -> Self {
         PickableMesh {
             groups: self.groups.clone(),
             intersections: self.intersections.clone(),
-            bounding_sphere: Some(BoundingSphere::from(mesh)),
+            bounding_sphere: BoundVol::Loading(mesh),
         }
     }
 }
@@ -178,7 +180,7 @@ impl Default for PickableMesh {
         picks.insert(Group::default(), None);
         PickableMesh {
             groups: [Group::default()].into(),
-            bounding_sphere: None,
+            bounding_sphere: BoundVol::None,
             intersections: picks,
         }
     }
@@ -376,6 +378,7 @@ fn pick_mesh(
     // Resources
     mut pick_state: ResMut<PickState>,
     mut meshes: ResMut<Assets<Mesh>>,
+    _pool: Res<ComputeTaskPool>,
     // Queries
     mut mesh_query: Query<(
         &Handle<Mesh>,
@@ -385,6 +388,8 @@ fn pick_mesh(
         &Visible,
     )>,
 ) {
+    let ray_cull = info_span!("ray culling");
+    let raycast = info_span!("raycast");
     // If picking is disabled, do not continue
     if !pick_state.enabled {
         pick_state.empty_pick_list();
@@ -400,55 +405,57 @@ fn pick_mesh(
     }
 
     // Iterate through each pickable mesh in the scene
+    //mesh_query.par_iter_mut(32).for_each(&pool,|(mesh_handle, transform, mut pickable, entity, draw)| {},);
     for (mesh_handle, transform, mut pickable, entity, draw) in &mut mesh_query.iter_mut() {
         if !draw.is_visible {
             continue;
         }
 
         // Check for a pick ray in each pick group(s) this mesh belongs to
-        let mut pick_rays: Vec<(Group, Ray3d)> = Vec::new();
-        for group in &pickable.groups {
-            if let Some(ray) = pick_state.ray_map.get(group) {
-                pick_rays.push((*group, *ray));
-            }
-        }
+        let pick_rays: Vec<(Group, Ray3d)> = {
+            let _ray_cull_guard = ray_cull.enter();
+            pickable
+                .groups
+                .iter()
+                .filter_map(|group| {
+                    if let Some(ray) = pick_state.ray_map.get(group) {
+                        // Cull pick rays that don't intersect the bounding sphere
+                        // NOTE: this might cause stutters on load because bound spheres won't be loaded
+                        // and picking will be brute forcing.
+                        if let BoundVol::Loaded(sphere) = &pickable.bounding_sphere {
+                            let scaled_radius =
+                                1.01 * sphere.radius() * transform.scale.max_element();
+                            let translated_origin =
+                                sphere.origin() * transform.scale + transform.translation;
+                            let det = (ray.direction().dot(*ray.origin() - translated_origin))
+                                .powi(2)
+                                - (Vec3::length_squared(*ray.origin() - translated_origin)
+                                    - scaled_radius.powi(2));
+                            if det >= 0.0 {
+                                Some((*group, *ray)) // Ray intersects the bounding sphere
+                            } else {
+                                None // Ray does not intersect the bounding sphere - discard
+                            }
+                        } else {
+                            Some((*group, *ray)) // No bounding sphere present - can't discard
+                        }
+                    } else {
+                        None // No ray present in the map for this group
+                    }
+                })
+                .collect()
+        };
         if pick_rays.is_empty() {
             continue;
         }
-        // Cull pick rays that don't intersect the bounding sphere
-        pick_rays.retain(|(_group, pick_ray)| {
-            if let Some(sphere) = &pickable.bounding_sphere {
-                let det = (pick_ray
-                    .direction()
-                    .dot(*pick_ray.origin() - (sphere.origin() + transform.translation)))
-                .powi(2)
-                    - (Vec3::length_squared(
-                        *pick_ray.origin() - (sphere.origin() + transform.translation),
-                    ) - sphere.radius().powi(2));
-                det >= 0.0
-
-            /*let ray_transform = Mat4::face_toward(
-                *pick_ray.origin(),
-                *pick_ray.direction(),
-                Vec3::new(0.0, 1.0, 0.0),
-            )
-            .inverse();
-            let translated_sphere = ray_transform.transform_point3(sphere.origin());
-            // Ray-sphere (point-circle) intersection
-            let circle_origin = Vec2::new(translated_sphere.x, translated_sphere.y);
-            // Only retain the pick entry if the ray falls withing the bounding sphere
-            circle_origin.distance(Vec2::zero()) <= sphere.radius()*/
-            } else {
-                true
-            }
-        });
 
         // Use the mesh handle to get a reference to a mesh asset
         if let Some(mesh) = meshes.get_mut(mesh_handle) {
             if mesh.primitive_topology() != PrimitiveTopology::TriangleList {
-                continue;
+                panic!("bevy_mod_picking only supports TriangleList topology");
             }
 
+            let _raycast_guard = raycast.enter();
             // Get the vertex positions from the mesh reference resolved from the mesh handle
             let vertex_positions: Vec<[f32; 3]> = match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
                 None => panic!("Mesh does not contain vertex positions"),
