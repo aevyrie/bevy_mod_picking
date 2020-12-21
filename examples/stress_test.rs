@@ -39,7 +39,11 @@ fn setup(
     commands
         .spawn(Camera3dBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::new(f32::from(edge_length)*0., f32::from(edge_length)*0., f32::from(edge_length)*0.8),
+                Vec3::new(
+                    f32::from(edge_length) * 0.,
+                    f32::from(edge_length) * 0.,
+                    f32::from(edge_length) * 0.8,
+                ),
                 Vec3::new(0.0, 0.0, 0.0),
                 Vec3::new(0.0, 1.0, 0.0),
             )),
@@ -58,8 +62,7 @@ fn setup(
                 material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
                 transform: Transform::from_translation(Vec3::new(
                     (i as f32 % f_edge_length - f_edge_length / 2.0),
-                    ((i as f32 / f_edge_length).round() % f_edge_length
-                        - f_edge_length / 2.0),
+                    ((i as f32 / f_edge_length).round() % f_edge_length - f_edge_length / 2.0),
                     ((i as f32 / (f_edge_length * f_edge_length)).round() % f_edge_length
                         - f_edge_length / 2.0),
                 )) * Transform::from_scale(Vec3::from([0.4, 0.4, 0.4])),
@@ -69,7 +72,11 @@ fn setup(
     }
 
     commands.spawn(LightBundle {
-        transform: Transform::from_translation(Vec3::new(-f32::from(edge_length),f32::from(edge_length),f32::from(edge_length))),
+        transform: Transform::from_translation(Vec3::new(
+            -f32::from(edge_length),
+            f32::from(edge_length),
+            f32::from(edge_length),
+        )),
         ..Default::default()
     });
 }

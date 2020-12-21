@@ -425,14 +425,12 @@ fn pick_mesh(
                         if let BoundVol::Loaded(sphere) = &pickable.bounding_sphere {
                             let scaled_radius =
                                 1.01 * sphere.radius() * transform.scale.max_element();
-                            let translated_origin = sphere.origin()*transform.scale + transform.translation;
-                            let det = (ray
-                                .direction()
-                                .dot(*ray.origin() - translated_origin))
-                            .powi(2)
-                                - (Vec3::length_squared(
-                                    *ray.origin() - translated_origin,
-                                ) - scaled_radius.powi(2));
+                            let translated_origin =
+                                sphere.origin() * transform.scale + transform.translation;
+                            let det = (ray.direction().dot(*ray.origin() - translated_origin))
+                                .powi(2)
+                                - (Vec3::length_squared(*ray.origin() - translated_origin)
+                                    - scaled_radius.powi(2));
                             if det >= 0.0 {
                                 Some((*group, *ray)) // Ray intersects the bounding sphere
                             } else {
