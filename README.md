@@ -187,7 +187,7 @@ This plugin has the ability to accelerate picking with bounding spheres; this ca
 );
 ```
 
-You can see an example of this in action in the `stress_test` example in this repo. Please be aware that the API for this feature is likely to change over coming releases.
+This will run a system in Bevy to automatically compute the bounding sphere of the supplied mesh.You can see an example of bounding spheres used in the `stress_test` example. Please be aware that the API for this feature is likely to change over coming releases.
 
 # License
 
