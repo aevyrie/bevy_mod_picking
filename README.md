@@ -39,7 +39,7 @@ cargo run --example 3d_scene --features="example_deps"
 
 Note that by default this plugin only depends on bevy's `render` feature to minimize dependency count and build time, and allow for wasm support. This is why the feature flag is needed to run examples, which need the winit and wgpu features to run.
 
-## Getting Started
+# Getting Started
 
 It only takes a few lines to get mouse picking working in your Bevy application using this plugin; [check out the 3d_scene example](https://github.com/aevyrie/bevy_mod_picking/blob/master/examples/3d_scene.rs) for a minimal implementation and demo! The following sections will walk you through what is needed to get the plugin working, and how everything fits together.
 
@@ -77,7 +77,7 @@ Now all you have to do is mark any mesh entities with the `PickableMesh` compone
 .with(PickableMesh::default())
 ```
 
-### Interacting with Meshes
+## Interacting with Meshes
 
 To get mouseover and mouseclick events, as well as built-in highlighting and selection state, you will need to add the `InteractablePickingPlugin` plugin. This is intentionally left optional, in case you only need pick intersection results.
 
@@ -108,7 +108,7 @@ If you also want to select meshes and keep them highlighted when clicked with th
 .with(SelectablePickMesh::default())
 ```
 
-### Pick Groups
+## Pick Groups
 
 Pick groups allow you to associate meshes with a ray casting source, and produce a pick result for each group. For simple use cases, such as a single 3d view and camera, you can ignore this.
 
@@ -116,15 +116,15 @@ For those simple cases, you can just use `Group::default()` any time a `Group` i
 
 Pick groups are useful in cases such as multiple windows, where you want each window to have its own picking source (cursor relative to that window's camera), and each window might have a different set of meshes that this picking source can intersect. The primary window might assign the camera and all relavent meshes to pick group 0, while the secondary window uses pick group 1 for these. See the [multiple_windows](https://github.com/aevyrie/bevy_mod_picking/blob/master/examples/multiple_windows.rs) example for implementation details.
 
-#### Constraints
+### Constraints
 
 - Only one PickSource can be assigned to a `Group`
 - A PickableMesh can be assigned to one or more `Group`s
 - The result of running the picking system is an ordered list of all intersections of each `PickSource` with the `PickableMesh`s in that `Group`. The ordered list of intersections are stored by `Group`, `HashMap<Group, Vec<PickIntersection>>`
 
-### Getting Pick Data
+# Getting Pick Data
 
-#### Pick Intersections Under the Cursor
+## Pick Intersections Under the Cursor
 
 Mesh picking intersection are reported in world coordinates. You can use the `PickState` resource to either get the topmost entity, or a list of all entities sorted by distance (near -> far) under the cursor:
 
@@ -143,7 +143,7 @@ Alternatively, and perhaps more idiomatic to the Bevy ECS system, you can get th
 pickable_entity.intersection(Group::default());
 ```
 
-#### Pick Interactions
+## Pick Interactions
 
 Run the `events` example to see mouseover and mouseclick events in action:
 
@@ -153,11 +153,11 @@ cargo run --example events
 
 The `InteractableMesh` component stores mouseover event state, mouseclick event state (left, right, and middle buttons), and hover state.
 
-#### Selection State
+## Selection State
 
 If you're using the `SelectablePickMesh` component for selection, you can access the selection state by querying your selectable entities and accessing the `.selected()` function.
 
-### Plugin Parameters
+## Plugin Parameters
 
 If you're using the built in `HighlightablePickMash` component for highlighting, you can change the colors by accessing the `PickHighlightParams` and setting the colors:
 
@@ -171,7 +171,7 @@ fn set_highlight_params(
 }
 ```
 
-### Debug
+# Debug
 
 You can also enable a debug cursor that will place a sphere at the intersection, with a tail pointing normal to the surface. Just add the `DebugPickingPlugin` to the `App::build()` in your Bevy program:
 
@@ -179,10 +179,22 @@ You can also enable a debug cursor that will place a sphere at the intersection,
 .add_plugin(DebugPickingPlugin)
 ```
 
-## License
+# Bounding Sphere Optimization
+
+This plugin has the ability to accelerate picking with bounding spheres. This speeds up the picking process by first checking to see if the picking source intersects a mesh's bounding sphere before going through every triangle in the mesh. To enable bounding spheres, you can use the builder pattern to pass a handle to your mesh into the `.with_bounding_sphere()` function:
+
+```rust
+.with(PickableMesh::default()
+    .with_bounding_sphere(mesh_handle)
+);
+```
+
+You can see an example of this in action in the `stress_test` example in this repo. Please be aware that the API for this feature is likely to change over coming releases.
+
+# License
 
 This project is licensed under the [MIT license](https://github.com/aevyrie/bevy_mod_picking/blob/master/LICENSE).
 
-### Contribution
+## Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in bevy_mod_picking by you, shall be licensed as MIT, without any additional terms or conditions.
