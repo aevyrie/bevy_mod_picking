@@ -27,19 +27,19 @@ impl BoundingSphere {
 
 pub fn build_bound_sphere(meshes: Res<Assets<Mesh>>, mut mesh_query: Query<&mut PickableMesh>) {
     for mut pickable in &mut mesh_query.iter_mut() {
-        let pickle = pickable.bounding_sphere.clone();
-        if let BoundVol::Loading(handle) = pickle {
-            match meshes.get(&handle) {
-                Some(mesh) => {
-                    pickable.bounding_sphere = BoundVol::Loaded(BoundingSphere::from(mesh))
-                }
-                None => {
-                    warn!(
-                        "Unable to generate bounding sphere, waiting for mesh to load. Handle:{:?}",
-                        &handle
-                    );
-                    continue;
-                }
+        let handle = if let BoundVol::Loading(handle) = &pickable.bounding_sphere {
+            handle
+        } else {
+            continue;
+        };
+        match meshes.get(handle) {
+            Some(mesh) => pickable.bounding_sphere = BoundVol::Loaded(BoundingSphere::from(mesh)),
+            None => {
+                warn!(
+                    "Unable to generate bounding sphere, waiting for mesh to load. Handle:{:?}",
+                    &handle
+                );
+                continue;
             }
         }
     }
