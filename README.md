@@ -179,7 +179,7 @@ You can enable a debug cursor that will place a sphere at the intersection, with
 
 # Bounding Sphere Optimization
 
-This plugin has the ability to accelerate picking with bounding spheres. This speeds up the picking process by first checking to see if the picking source intersects a mesh's bounding sphere before going through every triangle in the mesh. To enable bounding spheres, you can use the builder pattern to pass a handle to your mesh into the `.with_bounding_sphere()` function:
+This plugin has the ability to accelerate picking with bounding spheres; this can make picking as much as **30 times faster**! This speeds up the picking process by first checking to see if the picking source intersects a mesh's bounding sphere before going through every triangle in the mesh. To enable bounding spheres, you can use the builder pattern to pass a handle to your mesh into the `.with_bounding_sphere()` function:
 
 ```rust
 .with(PickableMesh::default()
