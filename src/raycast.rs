@@ -150,7 +150,7 @@ pub fn raycast_moller_trumbore(
 
     let t_vec: Vec3 = *ray.origin() - triangle.v0;
     let u = t_vec.dot(p_vec) * determinant_inverse;
-    if u < 0.0 || u > 1.0 {
+    if !(0.0..=1.0).contains(&u) {
         return None;
     }
 
