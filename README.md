@@ -43,7 +43,7 @@ Note that by default this plugin only depends on bevy's `render` feature to mini
 
 It only takes a few lines to get mouse picking working in your Bevy application using this plugin; [check out the 3d_scene example](https://github.com/aevyrie/bevy_mod_picking/blob/master/examples/3d_scene.rs) for a minimal implementation and demo! The following sections will walk you through what is needed to get the plugin working, and how everything fits together.
 
-### Setup
+## Setup
 
 Add the plugin to your dependencies in Cargo.toml
 
@@ -124,8 +124,6 @@ Pick groups are useful in cases such as multiple windows, where you want each wi
 
 # Getting Pick Data
 
-## Pick Intersections Under the Cursor
-
 Mesh picking intersection are reported in world coordinates. You can use the `PickState` resource to either get the topmost entity, or a list of all entities sorted by distance (near -> far) under the cursor:
 
 ```rust
@@ -173,7 +171,7 @@ fn set_highlight_params(
 
 # Debug
 
-You can also enable a debug cursor that will place a sphere at the intersection, with a tail pointing normal to the surface. Just add the `DebugPickingPlugin` to the `App::build()` in your Bevy program:
+You can enable a debug cursor that will place a sphere at the intersection, with a tail pointing normal to the surface. Just add the `DebugPickingPlugin` to the `App::build()` in your Bevy program:
 
 ```rust
 .add_plugin(DebugPickingPlugin)
