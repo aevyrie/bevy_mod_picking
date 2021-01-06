@@ -12,7 +12,7 @@ impl Plugin for DebugPickingPlugin {
 
 fn get_picks(pick_state: Res<PickState>) {
     if cfg!(debug_assertions) {
-        println!("Top entities:\n{:#?}", pick_state.top_all())
+        trace!("Top entities:\n{:#?}", pick_state.top_all())
     }
 }
 
