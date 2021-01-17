@@ -314,7 +314,7 @@ fn build_rays(
 
                 // Normalized device coordinates (NDC) describes cursor position from (-1, -1, -1) to (1, 1, 1)
                 let cursor_pos_ndc: Vec3 =
-                    ((cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0])).extend(1.0);
+                    ((cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0])).extend(-1.0);
 
                 let camera_matrix = match transform {
                     Some(matrix) => matrix,
