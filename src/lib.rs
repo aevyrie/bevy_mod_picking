@@ -327,7 +327,7 @@ fn build_rays(
 
                 let ray_direction = cursor_position - camera_position;
 
-                let pick_ray = Ray3d::new(camera_position, ray_direction);
+                let pick_ray = Ray3d::new(cursor_position, ray_direction);
 
                 for group in group_numbers {
                     if pick_state.ray_map.insert(group, pick_ray).is_some() {
