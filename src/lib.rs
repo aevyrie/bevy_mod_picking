@@ -328,7 +328,6 @@ fn build_rays(
                 let cursor_pos_near: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc_near);
                 let cursor_pos_far: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc_far);
 
-                //let ray_direction = cursor_position - camera_position;
                 let ray_direction = cursor_pos_far - cursor_pos_near;
 
                 let pick_ray = Ray3d::new(cursor_pos_near, ray_direction);
@@ -348,19 +347,20 @@ fn build_rays(
                     Some(camera) => camera.projection_matrix,
                     None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated Camera component", group_numbers, pick_source.pick_method),
                 };
-                let cursor_pos_ndc: Vec3 = coordinates_ndc.extend(1.0);
+                let cursor_pos_ndc_near: Vec3 = coordinates_ndc.extend(-1.0);
+                let cursor_pos_ndc_far: Vec3 = coordinates_ndc.extend(1.0);
                 let camera_matrix = match transform {
                     Some(matrix) => matrix,
                     None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated GlobalTransform component", group_numbers, pick_source.pick_method),
                 }.compute_matrix();
-                let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
 
                 let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
-                let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
+                let cursor_pos_near: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc_near);
+                let cursor_pos_far: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc_far);
 
-                let ray_direction = cursor_position - camera_position;
+                let ray_direction = cursor_pos_far - cursor_pos_near;
 
-                let pick_ray = Ray3d::new(camera_position, ray_direction);
+                let pick_ray = Ray3d::new(cursor_pos_near, ray_direction);
 
                 for group in group_numbers {
                     if pick_state.ray_map.insert(group, pick_ray).is_some() {
