@@ -43,7 +43,6 @@ pub struct PickState {
     ray_map: HashMap<Group, Ray3d>,
     ordered_pick_list_map: HashMap<Group, Vec<(Entity, Intersection)>>,
     pub enabled: bool,
-    pub last_cursor_pos: Vec2,
 }
 
 impl PickState {
@@ -83,7 +82,6 @@ impl Default for PickState {
             ray_map: HashMap::new(),
             ordered_pick_list_map: HashMap::new(),
             enabled: true,
-            last_cursor_pos: Vec2::zero(),
         }
     }
 }
@@ -199,7 +197,7 @@ pub enum PickMethod {
 
 #[derive(Debug, Clone, Copy)]
 pub enum UpdatePicks {
-    Always,
+    Always(Vec2),
     OnMouseEvent,
 }
 
@@ -242,7 +240,10 @@ impl Default for PickSource {
     fn default() -> Self {
         PickSource {
             groups: Some(vec![Group::default()]),
-            pick_method: PickMethod::CameraCursor(WindowId::primary(), UpdatePicks::Always),
+            pick_method: PickMethod::CameraCursor(
+                WindowId::primary(),
+                UpdatePicks::Always(Vec2::default()),
+            ),
             cursor_events: EventReader::default(),
         }
     }
@@ -254,7 +255,7 @@ fn build_rays(
     cursor: Res<Events<CursorMoved>>,
     windows: Res<Windows>,
     // Queries
-    mut pick_source_query: Query<(&mut PickSource, &GlobalTransform, Option<&Camera>)>,
+    mut pick_source_query: Query<(&mut PickSource, Option<&GlobalTransform>, Option<&Camera>)>,
 ) {
     // Collect and calculate pick_ray from all cameras
     pick_state.ray_map.clear();
@@ -272,30 +273,40 @@ fn build_rays(
 
         match pick_source.pick_method {
             // Use cursor events and specified window/camera to generate a ray
-            // PickMethod::CameraCursor(window_id) => {
             PickMethod::CameraCursor(window_id, update_picks) => {
-                // Option<Camera> allows us to query entities that may or may not have a camera. This pick method requres a camera!
+                // Option<Camera> allows us to query entities that may or may not have a camera. This pick method requires a camera!
                 let projection_matrix = match camera {
                     Some(camera) => camera.projection_matrix,
                     None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated Camera component", group_numbers, pick_source.pick_method),
                 };
                 // Get the cursor position
-                let cursor_pos_screen: Vec2 = match pick_source.cursor_events.latest(&cursor) {
+                let cursor_latest = match pick_source.cursor_events.latest(&cursor) {
                     Some(cursor_moved) => {
                         if cursor_moved.id == window_id {
-                            cursor_moved.position
+                            Some(cursor_moved)
                         } else {
-                            continue;
+                            None
                         }
                     }
-                    None => match update_picks {
-                        UpdatePicks::Always => pick_state.last_cursor_pos,
-                        UpdatePicks::OnMouseEvent => {
-                            continue;
+                    None => None,
+                };
+                let cursor_pos_screen: Vec2 = match update_picks {
+                    UpdatePicks::Always(cached_pos) => match cursor_latest {
+                        Some(cursor_moved) => {
+                            //Updated the cached cursor position
+                            pick_source.pick_method = PickMethod::CameraCursor(
+                                window_id,
+                                UpdatePicks::Always(cursor_moved.position),
+                            );
+                            cursor_moved.position
                         }
+                        None => cached_pos,
+                    },
+                    UpdatePicks::OnMouseEvent => match cursor_latest {
+                        Some(cursor_moved) => cursor_moved.position,
+                        None => continue,
                     },
                 };
-                pick_state.last_cursor_pos = cursor_pos_screen;
 
                 // Get current screen size
                 let window = windows.get(window_id).unwrap();
@@ -305,7 +316,10 @@ fn build_rays(
                 let cursor_pos_ndc: Vec3 =
                     ((cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0])).extend(1.0);
 
-                let camera_matrix = transform.compute_matrix();
+                let camera_matrix = match transform {
+                    Some(matrix) => matrix,
+                    None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated GlobalTransform component", group_numbers, pick_source.pick_method),
+                }.compute_matrix();
                 let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
 
                 let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
@@ -331,7 +345,10 @@ fn build_rays(
                     None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated Camera component", group_numbers, pick_source.pick_method),
                 };
                 let cursor_pos_ndc: Vec3 = coordinates_ndc.extend(1.0);
-                let camera_matrix = transform.compute_matrix();
+                let camera_matrix = match transform {
+                    Some(matrix) => matrix,
+                    None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated GlobalTransform component", group_numbers, pick_source.pick_method),
+                }.compute_matrix();
                 let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
 
                 let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
@@ -353,7 +370,10 @@ fn build_rays(
             // Use the specified transform as the origin and direction of the ray
             PickMethod::Transform => {
                 let pick_position_ndc = Vec3::from([0.0, 0.0, 1.0]);
-                let source_transform = transform.compute_matrix();
+                let source_transform = match transform {
+                    Some(matrix) => matrix,
+                    None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated GlobalTransform component", group_numbers, pick_source.pick_method),
+                }.compute_matrix();
                 let pick_position = source_transform.transform_point3(pick_position_ndc);
 
                 let (_, _, source_origin) = source_transform.to_scale_rotation_translation();

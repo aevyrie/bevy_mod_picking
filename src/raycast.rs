@@ -3,7 +3,7 @@ use bevy::prelude::*;
 pub use rays::*;
 
 /// Encapsulates Ray3D, preventing use of struct literal syntax. This allows us to guarantee that
-/// the `Ray3d` direction is normalized, because it can only be instantiated with the constuctor.
+/// the `Ray3d` direction is normalized, because it can only be instantiated with the constructor.
 pub mod rays {
     use bevy::prelude::*;
 
