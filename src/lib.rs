@@ -187,9 +187,9 @@ impl Default for PickableMesh {
 /// Specifies the method used to generate pick rays
 #[derive(Debug)]
 pub enum PickMethod {
-    /// Use cursor events to get coordinatess  relative to a camera
+    /// Use cursor events to get coordinates  relative to a camera
     CameraCursor(WindowId, UpdatePicks),
-    /// Manually specify screen coordinatess relative to a camera
+    /// Manually specify screen coordinates relative to a camera
     CameraScreenSpace(Vec2),
     /// Use a tranform in world space to define pick ray
     Transform,
@@ -309,25 +309,29 @@ fn build_rays(
                 };
 
                 // Get current screen size
-                let window = windows.get(window_id).unwrap();
+                let window = windows
+                    .get(window_id)
+                    .unwrap_or_else(|| panic!("WindowId {} does not exist", window_id));
                 let screen_size = Vec2::from([window.width() as f32, window.height() as f32]);
 
                 // Normalized device coordinates (NDC) describes cursor position from (-1, -1, -1) to (1, 1, 1)
-                let cursor_pos_ndc: Vec3 =
-                    ((cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0])).extend(1.0);
+                let cursor_ndc = (cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0]);
+                let cursor_pos_ndc_near: Vec3 = cursor_ndc.extend(-1.0);
+                let cursor_pos_ndc_far: Vec3 = cursor_ndc.extend(1.0);
 
                 let camera_matrix = match transform {
                     Some(matrix) => matrix,
                     None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated GlobalTransform component", group_numbers, pick_source.pick_method),
                 }.compute_matrix();
-                let (_, _, camera_position) = camera_matrix.to_scale_rotation_translation();
 
                 let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
-                let cursor_position: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc);
+                let cursor_pos_near: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc_near);
+                let cursor_pos_far: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc_far);
 
-                let ray_direction = cursor_position - camera_position;
+                //let ray_direction = cursor_position - camera_position;
+                let ray_direction = cursor_pos_far - cursor_pos_near;
 
-                let pick_ray = Ray3d::new(camera_position, ray_direction);
+                let pick_ray = Ray3d::new(cursor_pos_near, ray_direction);
 
                 for group in group_numbers {
                     if pick_state.ray_map.insert(group, pick_ray).is_some() {
@@ -338,7 +342,7 @@ fn build_rays(
                     }
                 }
             }
-            // Use the camera and specified screen cordinates to generate a ray
+            // Use the camera and specified screen coordinates to generate a ray
             PickMethod::CameraScreenSpace(coordinates_ndc) => {
                 let projection_matrix = match camera {
                     Some(camera) => camera.projection_matrix,
