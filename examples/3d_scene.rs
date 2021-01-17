@@ -81,8 +81,10 @@ fn set_highlight_params(mut highlight_params: ResMut<PickHighlightParams>) {
 
 fn oscillation_system(time: Res<Time>, window: Res<Windows>, mut query: Query<&mut Camera>) {
     for mut camera in query.iter_mut() {
-        let aspect_ratio = window.get_primary().unwrap().width()/window.get_primary().unwrap().height();
-        let oscillator = 3.14/6.0 + (((time.seconds_since_startup()*0.5).sin() + 1.0) * 3.14/4.0) as f32;
+        let aspect_ratio =
+            window.get_primary().unwrap().width() / window.get_primary().unwrap().height();
+        let oscillator =
+            3.14 / 6.0 + (((time.seconds_since_startup() * 0.5).sin() + 1.0) * 3.14 / 4.0) as f32;
         camera.projection_matrix = Mat4::perspective_rh(oscillator, aspect_ratio, 1.0, 1000.0);
     }
 }
