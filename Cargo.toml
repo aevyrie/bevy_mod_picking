@@ -4,9 +4,9 @@ version = "0.3.8-alpha.0"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 edition = "2018"
 license = "MIT"
-description = "A 3D mouse picking plugin for Bevy."
+description = "A 3D mouse picking and raycasting plugin for Bevy."
 repository = "https://github.com/aevyrie/bevy_mod_picking/"
-keywords = ["gamedev", "graphics", "picking", "bevy", "3d"]
+keywords = ["gamedev", "graphics", "picking", "bevy", "3d", "raycast"]
 categories = ["game-engines", "rendering"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
