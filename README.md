@@ -4,7 +4,7 @@
 [![crates.io](https://img.shields.io/crates/v/bevy_mod_picking)](https://crates.io/crates/bevy_mod_picking)
 [![docs.rs](https://docs.rs/bevy_mod_picking/badge.svg)](https://docs.rs/bevy_mod_picking)
 
-A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking and raycasting, making it easy to interact with 3D geometry using your mouse or any other raycasting source! The plugin includes built-in mouse events, highlighting, selection state, multi-window support, and a debug cursor, all of which are opt-in.
+A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking and raycasting, making it easy to interact with 3D geometry using your mouse or any other raycasting source! The plugin provides a number of raycasting sources, built-in mouse events, highlighting, selection state, multi-window support, and a 3D debug cursor.
 
 **Expect breaking changes in `master` branch - contributions are welcome!**
 
