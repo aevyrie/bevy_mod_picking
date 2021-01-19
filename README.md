@@ -11,14 +11,14 @@ A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking and ray
 ![Picking demo](https://raw.githubusercontent.com/aevyrie/bevy_mod_picking/master/docs/picking_demo.webp)
 
 ## Features
-* Built-in raycasting sources:
-    * Mouse (relative to supplied camera)
-    * Screen space coordinates (relative to supplied camera)
-    * Manually defined ray using a transform
-* [Pick Data](#getting-pick-data): Pick coordinates in world space and surface normal
-* [Mesh Interaction](#interacting-with-meshes): Mouseover and mouseclick events, highlighting, selection state management
-* [Debug cursor](#debug): Debug pick intersections and surface normals with a 3d cursor
-* [Picking Groups](#pick-groups): Associate a picking sources with sets of meshes, multi window support
+* Raycast into a scene and compute intersections:
+    * Mouse: use your mouse to pick 3d meshes
+    * Screen space coordinates: cast a ray from a point on screen (e.g. first person shooter)
+    * Transform: manually define a ray in space (e.g. third person shooter)
+* [Pick Data](#getting-pick-data): intersection surface normal and coordinates in world space
+* [Mesh Interaction](#interacting-with-meshes): mouseover and mouseclick events, highlighting, selection state management
+* [Debug cursor](#debug): debug pick intersections and surface normals with a 3d cursor
+* [Picking Groups](#pick-groups): associate raycasting sources with groups of meshes
 
 ## Demo
 
@@ -28,7 +28,7 @@ To run the `3d_scene` example - a modified version of the `Bevy` example of the 
 cargo run --example 3d_scene --features="example_deps"
 ```
 
-Note that by default this plugin only depends on bevy's `render` feature to minimize dependency count and build time, and allow for wasm support. This is why the feature flag is needed to run examples, which need the winit and wgpu features to run.
+Note that by default this plugin only depends on bevy's `render` feature to minimize both dependency count and compile time, as well as allow for wasm support. This is why the feature flag is needed to run examples, which need the winit and wgpu features to run.
 
 # Getting Started
 
