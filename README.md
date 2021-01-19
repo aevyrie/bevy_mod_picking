@@ -4,7 +4,7 @@
 [![crates.io](https://img.shields.io/crates/v/bevy_mod_picking)](https://crates.io/crates/bevy_mod_picking)
 [![docs.rs](https://docs.rs/bevy_mod_picking/badge.svg)](https://docs.rs/bevy_mod_picking)
 
-A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking and raycasting, making it easy to interact with 3D geometry using your mouse or any other ray casting source! The plugin includes built-in mouse events, highlighting, selection state, multi-window support, and a debug cursor, all of which are opt-in.
+A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking and raycasting, making it easy to interact with 3D geometry using your mouse or any other raycasting source! The plugin includes built-in mouse events, highlighting, selection state, multi-window support, and a debug cursor, all of which are opt-in.
 
 **Expect breaking changes in `master` branch - contributions are welcome!**
 
@@ -103,7 +103,7 @@ If you also want to select meshes and keep them highlighted when clicked with th
 
 # Pick Groups
 
-Pick groups allow you to associate meshes with a ray casting source, and produce a pick result for each group. For simple use cases, such as a single 3d view and camera, you can ignore this.
+Pick groups allow you to associate meshes with a raycasting source, and produce a pick result for each group. For simple use cases, such as a single 3d view and camera, you can ignore this.
 
 For those simple cases, you can just use `Group::default()` any time a `Group` is required. This will assign the `PickableMesh` or `PickSource` to picking group 0.
 
