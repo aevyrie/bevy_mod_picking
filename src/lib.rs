@@ -430,8 +430,8 @@ fn pick_mesh(
 
     // Iterate through each pickable mesh in the scene
     //mesh_query.par_iter_mut(32).for_each(&pool,|(mesh_handle, transform, mut pickable, entity, draw)| {},);
-    for (mesh_handle, transform, mut pickable, entity, draw) in &mut mesh_query.iter_mut() {
-        if !draw.is_visible {
+    for (mesh_handle, transform, mut pickable, entity, visibility) in &mut mesh_query.iter_mut() {
+        if !visibility.is_visible {
             continue;
         }
 
