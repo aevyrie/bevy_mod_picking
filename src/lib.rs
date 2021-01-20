@@ -14,7 +14,15 @@ pub use crate::{
 
 use crate::bounding::*;
 use crate::raycast::*;
-use bevy::{prelude::*, render::{camera::Camera, entity, mesh::{Indices, Mesh, VertexAttributeValues}, pipeline::PrimitiveTopology}, window::{CursorMoved, WindowId}};
+use bevy::{
+    prelude::*,
+    render::{
+        camera::Camera,
+        mesh::{Indices, Mesh, VertexAttributeValues},
+        pipeline::PrimitiveTopology,
+    },
+    window::{CursorMoved, WindowId},
+};
 use core::convert::TryInto;
 use std::{collections::HashMap, marker::PhantomData};
 
@@ -153,7 +161,10 @@ fn update_raycast<T>(
             PickMethod::CameraCursor(window_id, update_picks) => {
                 let projection_matrix = match camera {
                     Some(camera) => camera.projection_matrix,
-                    None => panic!("The PickingSource has a {:?} but no associated Camera component", pick_source.pick_method),
+                    None => panic!(
+                        "The PickingSource has a {:?} but no associated Camera component",
+                        pick_source.pick_method
+                    ),
                 };
                 let cursor_latest = match pick_source.cursor_events.latest(&cursor) {
                     Some(cursor_moved) => {
@@ -215,14 +226,21 @@ fn update_raycast<T>(
             PickMethod::CameraScreenSpace(coordinates_ndc) => {
                 let projection_matrix = match camera {
                     Some(camera) => camera.projection_matrix,
-                    None => panic!("The PickingSource has a {:?} but no associated Camera component", pick_source.pick_method),
+                    None => panic!(
+                        "The PickingSource has a {:?} but no associated Camera component",
+                        pick_source.pick_method
+                    ),
                 };
                 let cursor_pos_ndc_near: Vec3 = coordinates_ndc.extend(-1.0);
                 let cursor_pos_ndc_far: Vec3 = coordinates_ndc.extend(1.0);
                 let camera_matrix = match transform {
                     Some(matrix) => matrix,
-                    None => panic!("The PickingSource has a {:?} but no associated GlobalTransform component", pick_source.pick_method),
-                }.compute_matrix();
+                    None => panic!(
+                        "The PickingSource has a {:?} but no associated GlobalTransform component",
+                        pick_source.pick_method
+                    ),
+                }
+                .compute_matrix();
 
                 let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
                 let cursor_pos_near: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc_near);
@@ -237,8 +255,12 @@ fn update_raycast<T>(
                 let pick_position_ndc = Vec3::from([0.0, 0.0, 1.0]);
                 let source_transform = match transform {
                     Some(matrix) => matrix,
-                    None => panic!("The PickingSource has a {:?} but no associated GlobalTransform component", pick_source.pick_method),
-                }.compute_matrix();
+                    None => panic!(
+                        "The PickingSource has a {:?} but no associated GlobalTransform component",
+                        pick_source.pick_method
+                    ),
+                }
+                .compute_matrix();
                 let pick_position = source_transform.transform_point3(pick_position_ndc);
 
                 let (_, _, source_origin) = source_transform.to_scale_rotation_translation();
@@ -249,14 +271,15 @@ fn update_raycast<T>(
         };
 
         if let Some(ray) = pick_source.ray {
-
             // Create spans for tracing
             let ray_cull = info_span!("ray culling");
             let raycast = info_span!("raycast");
 
             // Iterate through each pickable mesh in the scene
             //mesh_query.par_iter_mut(32).for_each(&pool,|(mesh_handle, transform, mut pickable, entity, draw)| {},);
-            for (mesh_handle, transform, mut pickable, entity, visibility) in &mut mesh_query.iter_mut() {
+            for (mesh_handle, transform, mut pickable, entity, visibility) in
+                &mut mesh_query.iter_mut()
+            {
                 if !visibility.is_visible {
                     continue;
                 }
@@ -267,12 +290,10 @@ fn update_raycast<T>(
                 // NOTE: this might cause stutters on load because bound spheres won't be loaded
                 // and picking will be brute forcing.
                 if let BoundVol::Loaded(sphere) = &pickable.bounding_sphere {
-                    let scaled_radius =
-                        1.01 * sphere.radius() * transform.scale.max_element();
+                    let scaled_radius = 1.01 * sphere.radius() * transform.scale.max_element();
                     let translated_origin =
                         sphere.origin() * transform.scale + transform.translation;
-                    let det = (ray.direction().dot(*ray.origin() - translated_origin))
-                        .powi(2)
+                    let det = (ray.direction().dot(*ray.origin() - translated_origin)).powi(2)
                         - (Vec3::length_squared(*ray.origin() - translated_origin)
                             - scaled_radius.powi(2));
                     if det < 0.0 {
@@ -288,13 +309,14 @@ fn update_raycast<T>(
 
                     let _raycast_guard = raycast.enter();
                     // Get the vertex positions from the mesh reference resolved from the mesh handle
-                    let vertex_positions: Vec<[f32; 3]> = match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
-                        None => panic!("Mesh does not contain vertex positions"),
-                        Some(vertex_values) => match &vertex_values {
-                            VertexAttributeValues::Float3(positions) => positions.clone(),
-                            _ => panic!("Unexpected vertex types in ATTRIBUTE_POSITION"),
-                        },
-                    };
+                    let vertex_positions: Vec<[f32; 3]> =
+                        match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
+                            None => panic!("Mesh does not contain vertex positions"),
+                            Some(vertex_values) => match &vertex_values {
+                                VertexAttributeValues::Float3(positions) => positions.clone(),
+                                _ => panic!("Unexpected vertex types in ATTRIBUTE_POSITION"),
+                            },
+                        };
 
                     if let Some(indices) = &mesh.indices() {
                         // Iterate over the list of pick rays that belong to the same group as this mesh
