@@ -21,7 +21,6 @@ use bevy::{
         mesh::{Indices, Mesh, VertexAttributeValues},
         pipeline::PrimitiveTopology,
     },
-    tasks::prelude::*,
     window::{CursorMoved, WindowId},
 };
 use core::convert::TryInto;
@@ -33,8 +32,9 @@ impl Plugin for PickingPlugin {
         app.init_resource::<PickState>()
             .init_resource::<PickHighlightParams>()
             .add_system(build_bound_sphere.system())
-            .add_system(build_rays.system())
-            .add_system(pick_mesh.system());
+            .add_stage_after(stage::POST_UPDATE, "picking", SystemStage::serial())
+            .add_system_to_stage("picking", build_rays.system())
+            .add_system_to_stage("picking", pick_mesh.system());
     }
 }
 
@@ -363,7 +363,7 @@ fn pick_mesh(
     // Resources
     mut pick_state: ResMut<PickState>,
     mut meshes: ResMut<Assets<Mesh>>,
-    _pool: Res<ComputeTaskPool>,
+    //_pool: Res<ComputeTaskPool>,
     // Queries
     mut mesh_query: Query<(
         &Handle<Mesh>,

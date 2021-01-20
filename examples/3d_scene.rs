@@ -3,7 +3,11 @@ use bevy_mod_picking::*;
 
 fn main() {
     App::build()
-        .add_resource(Msaa { samples: 4 })
+        //.add_resource(Msaa { samples: 4 })
+        .add_resource(WindowDescriptor {
+            vsync: false,
+            ..Default::default()
+        })
         .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
         .add_plugin(DebugPickingPlugin)
