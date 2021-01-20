@@ -1,32 +1,24 @@
-# 3D Mouse Picking for Bevy
+# 3D Mouse Picking and Raycasting for Bevy
 
 [![CI](https://github.com/aevyrie/bevy_mod_picking/workflows/CI/badge.svg?branch=master)](https://github.com/aevyrie/bevy_mod_picking/actions?query=workflow%3A%22CI%22+branch%3Amaster)
 [![crates.io](https://img.shields.io/crates/v/bevy_mod_picking)](https://crates.io/crates/bevy_mod_picking)
 [![docs.rs](https://docs.rs/bevy_mod_picking/badge.svg)](https://docs.rs/bevy_mod_picking)
 
-A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking, making it easy to interact with 3D geometry using your mouse or any other ray casting source! The plugin includes built-in mouse events, highlighting, selection state, multi-window support, and a debug cursor, all of which are opt-in.
+A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking and raycasting, making it easy to interact with 3D geometry using your mouse or any other raycasting source! The plugin provides a number of raycasting sources, built-in mouse events, highlighting, selection state, multi-window support, and a 3D debug cursor.
 
 **Expect breaking changes in `master` branch - contributions are welcome!**
 
 ![Picking demo](https://raw.githubusercontent.com/aevyrie/bevy_mod_picking/master/docs/picking_demo.webp)
 
 ## Features
-* Multiple picking sources
-    * Mouse (relative to supplied camera)
-    * Screen space coordinates (relative to supplied camera)
-    * Manually defined ray using a transform
-* [Pick Data](#getting-pick-data)
-    * Pick depth
-    * Pick coordinates (in world space)
-    * Surface normal at the pick ray intersection
-    * Vertex coordinates of the intersected triangle
-* [Mesh Interaction](#interacting-with-meshes)
-    * Mouseover and click events
-    * Configurable color highlighting for hovering and selection
-    * Mesh selection state management
-* [3D Debug cursor to show pick intersection and surface normal](#debug)
-* [Picking Groups](#pick-groups) (associate a picking source with a set of meshes)
-    * Multi window support
+* Raycast into a scene and compute intersections:
+    * Mouse: use your mouse to pick 3d meshes
+    * Screen space coordinates: cast a ray from a point on screen (e.g. first person shooter)
+    * Transform: manually define a ray in space (e.g. third person shooter)
+* [Pick Data](#getting-pick-data): intersection surface normal and coordinates in world space
+* [Mesh Interaction](#interacting-with-meshes): mouseover and mouseclick events, highlighting, selection state management
+* [Debug cursor](#debug): debug pick intersections and surface normals with a 3d cursor
+* [Picking Groups](#pick-groups): associate raycasting sources with groups of meshes
 
 ## Demo
 
@@ -36,7 +28,7 @@ To run the `3d_scene` example - a modified version of the `Bevy` example of the 
 cargo run --example 3d_scene --features="example_deps"
 ```
 
-Note that by default this plugin only depends on bevy's `render` feature to minimize dependency count and build time, and allow for wasm support. This is why the feature flag is needed to run examples, which need the winit and wgpu features to run.
+Note that by default this plugin only depends on bevy's `render` feature to minimize both dependency count and compile time, as well as allow for wasm support. This is why the feature flag is needed to run examples, which need the winit and wgpu features to run.
 
 # Getting Started
 
@@ -111,7 +103,7 @@ If you also want to select meshes and keep them highlighted when clicked with th
 
 # Pick Groups
 
-Pick groups allow you to associate meshes with a ray casting source, and produce a pick result for each group. For simple use cases, such as a single 3d view and camera, you can ignore this.
+Pick groups allow you to associate meshes with a raycasting source, and produce a pick result for each group. For simple use cases, such as a single 3d view and camera, you can ignore this.
 
 For those simple cases, you can just use `Group::default()` any time a `Group` is required. This will assign the `PickableMesh` or `PickSource` to picking group 0.
 
