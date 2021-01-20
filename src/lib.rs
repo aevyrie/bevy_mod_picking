@@ -14,27 +14,17 @@ pub use crate::{
 
 use crate::bounding::*;
 use crate::raycast::*;
-use bevy::{
-    prelude::*,
-    render::{
-        camera::Camera,
-        mesh::{Indices, Mesh, VertexAttributeValues},
-        pipeline::PrimitiveTopology,
-    },
-    window::{CursorMoved, WindowId},
-};
+use bevy::{prelude::*, render::{camera::Camera, entity, mesh::{Indices, Mesh, VertexAttributeValues}, pipeline::PrimitiveTopology}, window::{CursorMoved, WindowId}};
 use core::convert::TryInto;
 use std::{collections::HashMap, marker::PhantomData};
 
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<PickState>()
-            .init_resource::<PickHighlightParams>()
+        app.init_resource::<PickHighlightParams>()
             .add_system(build_bound_sphere.system())
             .add_stage_after(stage::POST_UPDATE, "picking", SystemStage::serial())
-            .add_system_to_stage("picking", build_rays.system())
-            .add_system_to_stage("picking", pick_mesh.system());
+            .add_system_to_stage("picking", update_raycast.system());
     }
 }
 
@@ -156,14 +146,14 @@ fn update_raycast<T>(
         panic!("Multiple PickSource components of the same type exist");
     }
 
-    // Generate a ray the picking source based on the pick method
+    // Generate a ray for the picking source based on the pick method
     for (mut pick_source, transform, camera) in &mut pick_source_query.iter_mut() {
         pick_source.ray = match pick_source.pick_method {
             // Use cursor events and specified window/camera to generate a ray
             PickMethod::CameraCursor(window_id, update_picks) => {
                 let projection_matrix = match camera {
                     Some(camera) => camera.projection_matrix,
-                    None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated Camera component", group_numbers, pick_source.pick_method),
+                    None => panic!("The PickingSource has a {:?} but no associated Camera component", pick_source.pick_method),
                 };
                 let cursor_latest = match pick_source.cursor_events.latest(&cursor) {
                     Some(cursor_moved) => {
@@ -225,13 +215,13 @@ fn update_raycast<T>(
             PickMethod::CameraScreenSpace(coordinates_ndc) => {
                 let projection_matrix = match camera {
                     Some(camera) => camera.projection_matrix,
-                    None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated Camera component", group_numbers, pick_source.pick_method),
+                    None => panic!("The PickingSource has a {:?} but no associated Camera component", pick_source.pick_method),
                 };
                 let cursor_pos_ndc_near: Vec3 = coordinates_ndc.extend(-1.0);
                 let cursor_pos_ndc_far: Vec3 = coordinates_ndc.extend(1.0);
                 let camera_matrix = match transform {
                     Some(matrix) => matrix,
-                    None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated GlobalTransform component", group_numbers, pick_source.pick_method),
+                    None => panic!("The PickingSource has a {:?} but no associated GlobalTransform component", pick_source.pick_method),
                 }.compute_matrix();
 
                 let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
@@ -240,172 +230,109 @@ fn update_raycast<T>(
 
                 let ray_direction = cursor_pos_far - cursor_pos_near;
 
-                let pick_ray = Ray3d::new(cursor_pos_near, ray_direction);
-
-                for group in group_numbers {
-                    if pick_state.ray_map.insert(group, pick_ray).is_some() {
-                        panic!(
-                            "Multiple PickingSources have been added to pick group: {:?}",
-                            group
-                        );
-                    }
-                }
+                Some(Ray3d::new(cursor_pos_near, ray_direction))
             }
             // Use the specified transform as the origin and direction of the ray
             PickMethod::Transform => {
                 let pick_position_ndc = Vec3::from([0.0, 0.0, 1.0]);
                 let source_transform = match transform {
                     Some(matrix) => matrix,
-                    None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated GlobalTransform component", group_numbers, pick_source.pick_method),
+                    None => panic!("The PickingSource has a {:?} but no associated GlobalTransform component", pick_source.pick_method),
                 }.compute_matrix();
                 let pick_position = source_transform.transform_point3(pick_position_ndc);
 
                 let (_, _, source_origin) = source_transform.to_scale_rotation_translation();
                 let ray_direction = pick_position - source_origin;
 
-                let pick_ray = Ray3d::new(source_origin, ray_direction);
+                Some(Ray3d::new(source_origin, ray_direction))
+            }
+        };
 
-                for group in group_numbers {
-                    if pick_state.ray_map.insert(group, pick_ray).is_some() {
+        if let Some(ray) = pick_source.ray {
+
+            // Create spans for tracing
+            let ray_cull = info_span!("ray culling");
+            let raycast = info_span!("raycast");
+
+            // Iterate through each pickable mesh in the scene
+            //mesh_query.par_iter_mut(32).for_each(&pool,|(mesh_handle, transform, mut pickable, entity, draw)| {},);
+            for (mesh_handle, transform, mut pickable, entity, visibility) in &mut mesh_query.iter_mut() {
+                if !visibility.is_visible {
+                    continue;
+                }
+
+                // Check for a pick ray in each pick group(s) this mesh belongs to
+                let _ray_cull_guard = ray_cull.enter();
+                // Cull pick rays that don't intersect the bounding sphere
+                // NOTE: this might cause stutters on load because bound spheres won't be loaded
+                // and picking will be brute forcing.
+                if let BoundVol::Loaded(sphere) = &pickable.bounding_sphere {
+                    let scaled_radius =
+                        1.01 * sphere.radius() * transform.scale.max_element();
+                    let translated_origin =
+                        sphere.origin() * transform.scale + transform.translation;
+                    let det = (ray.direction().dot(*ray.origin() - translated_origin))
+                        .powi(2)
+                        - (Vec3::length_squared(*ray.origin() - translated_origin)
+                            - scaled_radius.powi(2));
+                    if det < 0.0 {
+                        continue; // Ray does not intersect the bounding sphere - skip entity
+                    }
+                }
+
+                // Use the mesh handle to get a reference to a mesh asset
+                if let Some(mesh) = meshes.get_mut(mesh_handle) {
+                    if mesh.primitive_topology() != PrimitiveTopology::TriangleList {
+                        panic!("bevy_mod_picking only supports TriangleList topology");
+                    }
+
+                    let _raycast_guard = raycast.enter();
+                    // Get the vertex positions from the mesh reference resolved from the mesh handle
+                    let vertex_positions: Vec<[f32; 3]> = match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
+                        None => panic!("Mesh does not contain vertex positions"),
+                        Some(vertex_values) => match &vertex_values {
+                            VertexAttributeValues::Float3(positions) => positions.clone(),
+                            _ => panic!("Unexpected vertex types in ATTRIBUTE_POSITION"),
+                        },
+                    };
+
+                    if let Some(indices) = &mesh.indices() {
+                        // Iterate over the list of pick rays that belong to the same group as this mesh
+                        let mesh_to_world = transform.compute_matrix();
+                        let new_intersection = match indices {
+                            Indices::U16(vector) => ray_mesh_intersection(
+                                &mesh_to_world,
+                                &vertex_positions,
+                                &ray,
+                                vector,
+                            ),
+                            Indices::U32(vector) => ray_mesh_intersection(
+                                &mesh_to_world,
+                                &vertex_positions,
+                                &ray,
+                                vector,
+                            ),
+                        };
+                        pick_source.intersections.push((entity, new_intersection));
+                    } else {
+                        // If we get here the mesh doesn't have an index list!
                         panic!(
-                            "Multiple PickingSources have been added to pick group: {:?}",
-                            group
+                            "No index matrix found in mesh {:?}\n{:?}",
+                            mesh_handle, mesh
                         );
                     }
                 }
             }
-        }
-    }
 
-    // Create spans for tracing
-    let ray_cull = info_span!("ray culling");
-    let raycast = info_span!("raycast");
-
-    // If picking is disabled, do not continue
-    if !pick_state.enabled {
-        pick_state.empty_pick_list();
-        return;
-    }
-
-    // If there are no rays, then there is nothing to do here
-    if pick_state.ray_map.is_empty() {
-        return;
-    } else {
-        // Clear picks in list only if there are new picking rays, otherwise keep state same
-        pick_state.empty_pick_list();
-    }
-
-    // Iterate through each pickable mesh in the scene
-    //mesh_query.par_iter_mut(32).for_each(&pool,|(mesh_handle, transform, mut pickable, entity, draw)| {},);
-    for (mesh_handle, transform, mut pickable, entity, visibility) in &mut mesh_query.iter_mut() {
-        if !visibility.is_visible {
-            continue;
-        }
-
-        // Check for a pick ray in each pick group(s) this mesh belongs to
-        let pick_rays: Vec<(Group, Ray3d)> = {
-            let _ray_cull_guard = ray_cull.enter();
-            pickable
-                .groups
-                .iter()
-                .filter_map(|group| {
-                    if let Some(ray) = pick_state.ray_map.get(group) {
-                        // Cull pick rays that don't intersect the bounding sphere
-                        // NOTE: this might cause stutters on load because bound spheres won't be loaded
-                        // and picking will be brute forcing.
-                        if let BoundVol::Loaded(sphere) = &pickable.bounding_sphere {
-                            let scaled_radius =
-                                1.01 * sphere.radius() * transform.scale.max_element();
-                            let translated_origin =
-                                sphere.origin() * transform.scale + transform.translation;
-                            let det = (ray.direction().dot(*ray.origin() - translated_origin))
-                                .powi(2)
-                                - (Vec3::length_squared(*ray.origin() - translated_origin)
-                                    - scaled_radius.powi(2));
-                            if det >= 0.0 {
-                                Some((*group, *ray)) // Ray intersects the bounding sphere
-                            } else {
-                                None // Ray does not intersect the bounding sphere - discard
-                            }
-                        } else {
-                            Some((*group, *ray)) // No bounding sphere present - can't discard
-                        }
-                    } else {
-                        None // No ray present in the map for this group
-                    }
-                })
-                .collect()
-        };
-        if pick_rays.is_empty() {
-            continue;
-        }
-
-        // Use the mesh handle to get a reference to a mesh asset
-        if let Some(mesh) = meshes.get_mut(mesh_handle) {
-            if mesh.primitive_topology() != PrimitiveTopology::TriangleList {
-                panic!("bevy_mod_picking only supports TriangleList topology");
-            }
-
-            let _raycast_guard = raycast.enter();
-            // Get the vertex positions from the mesh reference resolved from the mesh handle
-            let vertex_positions: Vec<[f32; 3]> = match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
-                None => panic!("Mesh does not contain vertex positions"),
-                Some(vertex_values) => match &vertex_values {
-                    VertexAttributeValues::Float3(positions) => positions.clone(),
-                    _ => panic!("Unexpected vertex types in ATTRIBUTE_POSITION"),
-                },
-            };
-
-            if let Some(indices) = &mesh.indices() {
-                // Iterate over the list of pick rays that belong to the same group as this mesh
-                for (pick_group, pick_ray) in pick_rays {
-                    let mesh_to_world = transform.compute_matrix();
-                    let new_intersection = match indices {
-                        Indices::U16(vector) => ray_mesh_intersection(
-                            &mesh_to_world,
-                            &vertex_positions,
-                            &pick_ray,
-                            vector,
-                        ),
-                        Indices::U32(vector) => ray_mesh_intersection(
-                            &mesh_to_world,
-                            &vertex_positions,
-                            &pick_ray,
-                            vector,
-                        ),
-                    };
-
-                    // Finished going through the current mesh, update pick states
-                    if let Some(intersection) = new_intersection {
-                        // Make sure the pick list map contains the key
-                        match pick_state.ordered_pick_list_map.get_mut(&pick_group) {
-                            Some(list) => list.push((entity, intersection)),
-                            None => {
-                                pick_state
-                                    .ordered_pick_list_map
-                                    .insert(pick_group, Vec::from([(entity, intersection)]));
-                            }
-                        }
-                    }
-
-                    pickable.intersections.insert(pick_group, new_intersection);
-                }
-            } else {
-                // If we get here the mesh doesn't have an index list!
-                panic!(
-                    "No index matrix found in mesh {:?}\n{:?}",
-                    mesh_handle, mesh
-                );
+            // Sort the pick list
+            if let Some(intersection_list) = pick_source.intersections {
+                intersection_list.sort_by(|a, b| {
+                    a.1.pick_distance
+                        .partial_cmp(&b.1.pick_distance)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                });
             }
         }
-    }
-    // Sort the pick list
-    for (_group, intersection_list) in pick_state.ordered_pick_list_map.iter_mut() {
-        intersection_list.sort_by(|a, b| {
-            a.1.pick_distance
-                .partial_cmp(&b.1.pick_distance)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
     }
 }
 
