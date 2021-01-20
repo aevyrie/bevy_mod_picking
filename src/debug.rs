@@ -5,8 +5,8 @@ pub struct DebugPickingPlugin;
 impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_startup_system(setup_debug_cursor.system())
-            .add_system(update_debug_cursor_position.system())
-            .add_system(get_picks.system());
+            .add_system_to_stage(stage::LAST, update_debug_cursor_position.system())
+            .add_system_to_stage(stage::LAST, get_picks.system());
     }
 }
 

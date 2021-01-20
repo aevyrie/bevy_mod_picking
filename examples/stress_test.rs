@@ -12,8 +12,6 @@ fn main() {
             width: 800.,
             height: 600.,
             vsync: false,
-            resizable: true,
-            mode: WindowMode::Windowed,
             ..Default::default()
         })
         //.add_resource(Msaa { samples: 4 })
