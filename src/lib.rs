@@ -21,7 +21,7 @@ use bevy::{
         mesh::{Indices, Mesh, VertexAttributeValues},
         pipeline::PrimitiveTopology,
     },
-    window::{CursorMoved, WindowId},
+    window::CursorMoved,
 };
 use core::convert::TryInto;
 use std::{collections::HashMap, marker::PhantomData};
