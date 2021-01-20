@@ -40,7 +40,7 @@ impl Plugin for PickingPlugin {
 
 pub struct PickState {
     /// Map of the single pick ray associated with each pick group
-    ray_map: HashMap<Group, Ray3d>,
+    ray_map: Vec<Ray3d>,
     ordered_pick_list_map: HashMap<Group, Vec<(Entity, Intersection)>>,
     pub enabled: bool,
 }
@@ -122,46 +122,19 @@ impl Intersection {
 /// Marks a Mesh entity as pickable
 #[derive(Debug)]
 pub struct PickableMesh<T> {
-    intersection: Option<Intersection>>,
-    bounding_sphere: BoundVol,
+    intersection: Option<Intersection>,
 }
 
-impl PickableMesh {
-    /// Create a new PickableMesh with the specified pick group.
-    pub fn new(groups: Vec<Group>) -> Self {
-        let mut picks: HashMap<Group, Option<Intersection>> = HashMap::new();
-        for group in &groups {
-            picks.insert(*group, None);
-        }
-        PickableMesh {
-            groups,
-            intersections: picks,
-            bounding_sphere: BoundVol::None,
-        }
-    }
-    /// Returns the nearest intersection of the PickableMesh in the provided group.
-    pub fn intersection(&self, group: &Group) -> Result<&Option<Intersection>, String> {
-        self.intersections
-            .get(group)
-            .ok_or(format!("PickableMesh does not belong to group {}", **group))
-    }
-    pub fn with_bounding_sphere(&self, mesh: Handle<Mesh>) -> Self {
-        PickableMesh {
-            groups: self.groups.clone(),
-            intersections: self.intersections.clone(),
-            bounding_sphere: BoundVol::Loading(mesh),
-        }
+impl<T> PickableMesh<T> {    
+    pub fn intersection(&self) -> Option<Intersection> {
+        self.intersection
     }
 }
 
-impl Default for PickableMesh {
+impl<T> Default for PickableMesh<T> {
     fn default() -> Self {
-        let mut picks = HashMap::new();
-        picks.insert(Group::default(), None);
         PickableMesh {
-            groups: [Group::default()].into(),
-            bounding_sphere: BoundVol::None,
-            intersections: picks,
+            intersection: None,
         }
     }
 }
@@ -177,22 +150,35 @@ pub enum PickMethod {
     Transform(GlobalTransform),
 }
 
+
+
+
+
+
+// TODO
+// instead of making user specify when to update the picks, have it be event driven in the bevy ecs system
+// basically, the user is responsible for triggering events. Need a way of having a default every frame method
+
+
+
+
 #[derive(Debug, Clone, Copy)]
 pub enum UpdatePicks {
     EveryFrame(Vec2),
     OnMouseEvent,
 }
 
-/// Marks an entity to be used for picking
 pub struct PickSource<T> {
     pub pick_method: PickMethod,
-    phantom: PhantomData<T>
+    ray: Option<Ray3d>,
+    _phantom: PhantomData<T>,
 }
 
 impl<T> PickSource<T> {
     pub fn new(pick_method: PickMethod) -> Self {
         PickSource {
             pick_method,
+            ray: None,
             ..Default::default()
         }
     }
