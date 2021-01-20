@@ -38,54 +38,6 @@ impl Plugin for PickingPlugin {
     }
 }
 
-pub struct PickState {
-    /// Map of the single pick ray associated with each pick group
-    ray_map: Vec<Ray3d>,
-    ordered_pick_list_map: HashMap<Group, Vec<(Entity, Intersection)>>,
-    pub enabled: bool,
-}
-
-impl PickState {
-    pub fn list(&self, group: Group) -> Option<&Vec<(Entity, Intersection)>> {
-        self.ordered_pick_list_map.get(&group)
-    }
-    pub fn top(&self, group: Group) -> Option<&(Entity, Intersection)> {
-        match self.ordered_pick_list_map.get(&group) {
-            Some(list) => list.first(),
-            None => None,
-        }
-    }
-    pub fn top_all(&self) -> Option<Vec<(&Group, &Entity, &Intersection)>> {
-        let mut result = Vec::new();
-        for (group, picklist) in self.ordered_pick_list_map.iter() {
-            if let Some(pick) = picklist.first() {
-                let (entity, intersection) = pick;
-                result.push((group, entity, intersection));
-            }
-        }
-        if result.is_empty() {
-            None
-        } else {
-            Some(result)
-        }
-    }
-    fn empty_pick_list(&mut self) {
-        for (_group, intersection_list) in self.ordered_pick_list_map.iter_mut() {
-            intersection_list.clear();
-        }
-    }
-}
-
-impl Default for PickState {
-    fn default() -> Self {
-        PickState {
-            ray_map: HashMap::new(),
-            ordered_pick_list_map: HashMap::new(),
-            enabled: true,
-        }
-    }
-}
-
 /// Holds computed intersection information
 #[derive(Debug, PartialOrd, PartialEq, Copy, Clone)]
 pub struct Intersection {
@@ -122,21 +74,7 @@ impl Intersection {
 /// Marks a Mesh entity as pickable
 #[derive(Debug)]
 pub struct PickableMesh<T> {
-    intersection: Option<Intersection>,
-}
-
-impl<T> PickableMesh<T> {    
-    pub fn intersection(&self) -> Option<Intersection> {
-        self.intersection
-    }
-}
-
-impl<T> Default for PickableMesh<T> {
-    fn default() -> Self {
-        PickableMesh {
-            intersection: None,
-        }
-    }
+    phantom: PhantomData<T>,
 }
 
 /// Specifies the method used to generate pick rays
@@ -147,20 +85,12 @@ pub enum PickMethod {
     /// Manually specify screen coordinates relative to a camera
     CameraScreenSpace(Vec2),
     /// Use a tranform in world space to define pick ray
-    Transform(GlobalTransform),
+    Transform,
 }
-
-
-
-
-
 
 // TODO
 // instead of making user specify when to update the picks, have it be event driven in the bevy ecs system
 // basically, the user is responsible for triggering events. Need a way of having a default every frame method
-
-
-
 
 #[derive(Debug, Clone, Copy)]
 pub enum UpdatePicks {
@@ -171,6 +101,7 @@ pub enum UpdatePicks {
 pub struct PickSource<T> {
     pub pick_method: PickMethod,
     ray: Option<Ray3d>,
+    intersections: Option<Vec<(Entity, Intersection)>>,
     _phantom: PhantomData<T>,
 }
 
@@ -181,6 +112,12 @@ impl<T> PickSource<T> {
             ray: None,
             ..Default::default()
         }
+    }
+    pub fn intersect_list(&self) -> Option<Vec<(Entity, Intersection)>> {
+        self.intersections
+    }
+    pub fn intersect_top(&self) -> Option<(Entity, Intersection)> {
+        self.intersections?.first()
     }
 }
 
@@ -196,37 +133,38 @@ impl<T> Default for PickSource<T> {
     }
 }
 
-fn build_rays(
+fn update_raycast<T>(
     // Resources
-    mut pick_state: ResMut<PickState>,
+    mut meshes: ResMut<Assets<Mesh>>,
     cursor: Res<Events<CursorMoved>>,
     windows: Res<Windows>,
     // Queries
-    mut pick_source_query: Query<(&mut PickSource, Option<&GlobalTransform>, Option<&Camera>)>,
+    mut pick_source_query: Query<(
+        &mut PickSource<T>,
+        Option<&GlobalTransform>,
+        Option<&Camera>,
+    )>,
+    mut mesh_query: Query<(
+        &Handle<Mesh>,
+        &GlobalTransform,
+        &mut PickableMesh<T>,
+        Entity,
+        &Visible,
+    )>,
 ) {
-    // Collect and calculate pick_ray from all cameras
-    pick_state.ray_map.clear();
-
-    if !pick_state.enabled {
-        return;
+    if pick_source_query.iter().count() > 1 {
+        panic!("Multiple PickSource components of the same type exist");
     }
 
-    // Generate a ray for each picking source based on the pick method
+    // Generate a ray the picking source based on the pick method
     for (mut pick_source, transform, camera) in &mut pick_source_query.iter_mut() {
-        let group_numbers = match &pick_source.groups {
-            Some(groups) => groups.clone(),
-            None => continue,
-        };
-
-        match pick_source.pick_method {
+        pick_source.ray = match pick_source.pick_method {
             // Use cursor events and specified window/camera to generate a ray
             PickMethod::CameraCursor(window_id, update_picks) => {
-                // Option<Camera> allows us to query entities that may or may not have a camera. This pick method requires a camera!
                 let projection_matrix = match camera {
                     Some(camera) => camera.projection_matrix,
                     None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated Camera component", group_numbers, pick_source.pick_method),
                 };
-                // Get the cursor position
                 let cursor_latest = match pick_source.cursor_events.latest(&cursor) {
                     Some(cursor_moved) => {
                         if cursor_moved.id == window_id {
@@ -268,8 +206,12 @@ fn build_rays(
 
                 let camera_matrix = match transform {
                     Some(matrix) => matrix,
-                    None => panic!("The PickingSource in group(s) {:?} has a {:?} but no associated GlobalTransform component", group_numbers, pick_source.pick_method),
-                }.compute_matrix();
+                    None => panic!(
+                        "The PickingSource {:?} has no associated GlobalTransform component",
+                        pick_source
+                    ),
+                }
+                .compute_matrix();
 
                 let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
                 let cursor_pos_near: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc_near);
@@ -277,16 +219,7 @@ fn build_rays(
 
                 let ray_direction = cursor_pos_far - cursor_pos_near;
 
-                let pick_ray = Ray3d::new(cursor_pos_near, ray_direction);
-
-                for group in group_numbers {
-                    if pick_state.ray_map.insert(group, pick_ray).is_some() {
-                        panic!(
-                            "Multiple PickingSources have been added to pick group: {:?}",
-                            group
-                        );
-                    }
-                }
+                Some(Ray3d::new(cursor_pos_near, ray_direction))
             }
             // Use the camera and specified screen coordinates to generate a ray
             PickMethod::CameraScreenSpace(coordinates_ndc) => {
@@ -343,22 +276,7 @@ fn build_rays(
             }
         }
     }
-}
 
-fn pick_mesh(
-    // Resources
-    mut pick_state: ResMut<PickState>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    //_pool: Res<ComputeTaskPool>,
-    // Queries
-    mut mesh_query: Query<(
-        &Handle<Mesh>,
-        &GlobalTransform,
-        &mut PickableMesh,
-        Entity,
-        &Visible,
-    )>,
-) {
     // Create spans for tracing
     let ray_cull = info_span!("ray culling");
     let raycast = info_span!("raycast");

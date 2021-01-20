@@ -196,7 +196,10 @@ fn setup(
         })
         .with(PickSource::new(
             [Group(0)].into(),
-            PickMethod::CameraCursor(WindowId::primary(), UpdatePicks::EveryFrame(Vec2::default())),
+            PickMethod::CameraCursor(
+                WindowId::primary(),
+                UpdatePicks::EveryFrame(Vec2::default()),
+            ),
         ))
         // second window camera
         .spawn(Camera3dBundle {
