@@ -25,7 +25,7 @@ use bevy::{
     window::{CursorMoved, WindowId},
 };
 use core::convert::TryInto;
-use std::collections::HashMap;
+use std::{collections::HashMap, marker::PhantomData};
 
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
@@ -119,28 +119,10 @@ impl Intersection {
     }
 }
 
-/// Used to group pickable entities with pick rays
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
-pub struct Group(pub u8);
-
-impl core::ops::Deref for Group {
-    type Target = u8;
-    fn deref(&'_ self) -> &'_ Self::Target {
-        &self.0
-    }
-}
-
-impl Default for Group {
-    fn default() -> Self {
-        Group(0)
-    }
-}
-
 /// Marks a Mesh entity as pickable
 #[derive(Debug)]
-pub struct PickableMesh {
-    groups: Vec<Group>,
-    intersections: HashMap<Group, Option<Intersection>>,
+pub struct PickableMesh<T> {
+    intersection: Option<Intersection>>,
     bounding_sphere: BoundVol,
 }
 
@@ -188,63 +170,42 @@ impl Default for PickableMesh {
 #[derive(Debug)]
 pub enum PickMethod {
     /// Use cursor events to get coordinates  relative to a camera
-    CameraCursor(WindowId, UpdatePicks),
+    CameraCursor(UpdatePicks, EventReader<CursorMoved>),
     /// Manually specify screen coordinates relative to a camera
     CameraScreenSpace(Vec2),
     /// Use a tranform in world space to define pick ray
-    Transform,
+    Transform(GlobalTransform),
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum UpdatePicks {
-    Always(Vec2),
+    EveryFrame(Vec2),
     OnMouseEvent,
 }
 
 /// Marks an entity to be used for picking
-pub struct PickSource {
-    pub groups: Option<Vec<Group>>,
+pub struct PickSource<T> {
     pub pick_method: PickMethod,
-    pub cursor_events: EventReader<CursorMoved>,
+    phantom: PhantomData<T>
 }
 
-impl PickSource {
-    pub fn new(group: Vec<Group>, pick_method: PickMethod) -> Self {
+impl<T> PickSource<T> {
+    pub fn new(pick_method: PickMethod) -> Self {
         PickSource {
-            groups: Some(group),
             pick_method,
             ..Default::default()
         }
     }
-    pub fn with_group(self, new_group: Group) -> Self {
-        let new_groups = match self.groups {
-            Some(group) => {
-                let mut new_groups = group;
-                new_groups.push(new_group);
-                Some(new_groups)
-            }
-            None => Some(vec![new_group]),
-        };
-        PickSource {
-            groups: new_groups,
-            ..self
-        }
-    }
-    pub fn with_pick_method(mut self, pick_method: PickMethod) -> Self {
-        self.pick_method = pick_method;
-        self
-    }
 }
 
-impl Default for PickSource {
+impl<T> Default for PickSource<T> {
     fn default() -> Self {
         PickSource {
-            groups: Some(vec![Group::default()]),
             pick_method: PickMethod::CameraCursor(
-                WindowId::primary(),
-                UpdatePicks::Always(Vec2::default()),
+                UpdatePicks::EveryFrame(Vec2::default()),
+                EventReader::default(),
             ),
-            cursor_events: EventReader::default(),
+            ..Default::default()
         }
     }
 }
@@ -291,12 +252,12 @@ fn build_rays(
                     None => None,
                 };
                 let cursor_pos_screen: Vec2 = match update_picks {
-                    UpdatePicks::Always(cached_pos) => match cursor_latest {
+                    UpdatePicks::EveryFrame(cached_pos) => match cursor_latest {
                         Some(cursor_moved) => {
                             //Updated the cached cursor position
                             pick_source.pick_method = PickMethod::CameraCursor(
                                 window_id,
-                                UpdatePicks::Always(cursor_moved.position),
+                                UpdatePicks::EveryFrame(cursor_moved.position),
                             );
                             cursor_moved.position
                         }
@@ -412,8 +373,10 @@ fn pick_mesh(
         &Visible,
     )>,
 ) {
+    // Create spans for tracing
     let ray_cull = info_span!("ray culling");
     let raycast = info_span!("raycast");
+
     // If picking is disabled, do not continue
     if !pick_state.enabled {
         pick_state.empty_pick_list();

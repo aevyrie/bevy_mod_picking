@@ -68,6 +68,7 @@ fn setup(
         .with(HighlightablePickMesh::default())
         .with(SelectablePickMesh::default())
         // light
+        .with_children(f)
         .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
             ..Default::default()
