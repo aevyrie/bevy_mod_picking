@@ -158,17 +158,17 @@ fn update_raycast<T>(
     for (mut pick_source, transform, camera) in &mut pick_source_query.iter_mut() {
         pick_source.ray = match pick_source.pick_method {
             // Use cursor events and specified window/camera to generate a ray
-            PickMethod::CameraCursor(window_id, update_picks) => {
-                let projection_matrix = match camera {
-                    Some(camera) => camera.projection_matrix,
+            PickMethod::CameraCursor(update_picks, event_reader) => {
+                let camera = match camera {
+                    Some(camera) => camera,
                     None => panic!(
                         "The PickingSource has a {:?} but no associated Camera component",
                         pick_source.pick_method
                     ),
                 };
-                let cursor_latest = match pick_source.cursor_events.latest(&cursor) {
+                let cursor_latest = match event_reader.latest(&cursor) {
                     Some(cursor_moved) => {
-                        if cursor_moved.id == window_id {
+                        if cursor_moved.id == camera.window {
                             Some(cursor_moved)
                         } else {
                             None
@@ -181,7 +181,7 @@ fn update_raycast<T>(
                         Some(cursor_moved) => {
                             //Updated the cached cursor position
                             pick_source.pick_method = PickMethod::CameraCursor(
-                                window_id,
+                                camera.window,
                                 UpdatePicks::EveryFrame(cursor_moved.position),
                             );
                             cursor_moved.position
@@ -196,8 +196,8 @@ fn update_raycast<T>(
 
                 // Get current screen size
                 let window = windows
-                    .get(window_id)
-                    .unwrap_or_else(|| panic!("WindowId {} does not exist", window_id));
+                    .get(camera.window)
+                    .unwrap_or_else(|| panic!("WindowId {} does not exist", camera.window));
                 let screen_size = Vec2::from([window.width() as f32, window.height() as f32]);
 
                 // Normalized device coordinates (NDC) describes cursor position from (-1, -1, -1) to (1, 1, 1)
@@ -214,7 +214,7 @@ fn update_raycast<T>(
                 }
                 .compute_matrix();
 
-                let ndc_to_world: Mat4 = camera_matrix * projection_matrix.inverse();
+                let ndc_to_world: Mat4 = camera_matrix * camera.projection_matrix.inverse();
                 let cursor_pos_near: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc_near);
                 let cursor_pos_far: Vec3 = ndc_to_world.transform_point3(cursor_pos_ndc_far);
 
