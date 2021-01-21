@@ -2,6 +2,8 @@ mod highlight;
 mod interactable;
 mod select;
 
+use std::ops::Deref;
+
 pub use crate::{
     highlight::{HighlightablePickMesh, PickHighlightParams},
     interactable::{HoverEvents, InteractableMesh, InteractablePickingPlugin, MouseDownEvents},
@@ -11,22 +13,38 @@ pub use crate::{
 use bevy::prelude::*;
 use bevy_mod_raycast::*;
 
+pub mod pick_stage {
+    pub const PICKING: &str = "picking";
+    pub const POST_PICKING: &str = "post_picking";
+}
+
 pub struct PickingRaycastSet;
 
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<PickHighlightParams>()
-            .add_plugin(InteractablePickingPlugin)
             .add_startup_system(setup_debug_cursor::<PickingRaycastSet>.system())
-            .add_system(build_bound_sphere.system())
-            .add_stage_after(stage::POST_UPDATE, "picking", SystemStage::serial())
-            .add_system_to_stage("picking", update_raycast::<PickingRaycastSet>.system())
-            .add_stage_after("picking", "post_picking", SystemStage::serial())
+            .add_stage_after(
+                stage::POST_UPDATE,
+                pick_stage::PICKING,
+                SystemStage::serial(),
+            )
+            .add_stage_after(
+                pick_stage::PICKING,
+                pick_stage::POST_PICKING,
+                SystemStage::serial(),
+            )
+            .add_system_to_stage(stage::POST_UPDATE, build_bound_sphere.system())
             .add_system_to_stage(
-                "post_picking",
+                pick_stage::PICKING,
+                update_raycast::<PickingRaycastSet>.system(),
+            )
+            .add_system_to_stage(
+                pick_stage::POST_PICKING,
                 update_debug_cursor::<PickingRaycastSet>.system(),
-            );
+            )
+            .add_plugin(InteractablePickingPlugin);
     }
 }
 
@@ -46,13 +64,20 @@ pub struct PickableBundle {
     select: SelectablePickMesh,
 }
 
-pub fn pickable_mesh() -> RayCastMesh<PickingRaycastSet> {
-    RayCastMesh::<PickingRaycastSet>::default()
-}
+pub type PickableMesh = RayCastMesh<PickingRaycastSet>;
 
-pub fn picking_camera() -> RayCastSource<PickingRaycastSet> {
-    RayCastSource::<PickingRaycastSet>::new(RayCastMethod::CameraCursor(
-        UpdateOn::EveryFrame(Vec2::zero()),
-        EventReader::default(),
-    ))
+pub struct PickingCamera(RayCastSource<PickingRaycastSet>);
+impl Deref for PickingCamera {
+    type Target = RayCastSource<PickingRaycastSet>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl Default for PickingCamera {
+    fn default() -> Self {
+        PickingCamera(RayCastSource::<PickingRaycastSet>::new(RayCastMethod::CameraCursor(
+            UpdateOn::EveryFrame(Vec2::zero()),
+            EventReader::default(),
+        )))
+    }  
 }

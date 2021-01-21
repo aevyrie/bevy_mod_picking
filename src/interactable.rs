@@ -100,6 +100,7 @@ pub fn generate_hover_events(
                             HoverEvents::None
                         }
                     };
+                    dbg!(interactable.hover_events);
                 }
             }
             // There are no entities under the cursor

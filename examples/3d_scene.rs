@@ -32,7 +32,7 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with(picking_camera())
+        .with(PickingCamera::default())
         //plane
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 10.0 })),
