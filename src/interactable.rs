@@ -84,6 +84,7 @@ pub fn generate_hover_events(
     mut interactable_query: Query<(&mut InteractableMesh, Entity)>,
 ) {
     for pick_source in pick_source_query.iter() {
+        dbg!(pick_source.intersect_top());
         match pick_source.intersect_top() {
             // There is at last one entity under the cursor
             Some(top_pick) => {

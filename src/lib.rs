@@ -2,8 +2,6 @@ mod highlight;
 mod interactable;
 mod select;
 
-use std::ops::Deref;
-
 pub use crate::{
     highlight::{HighlightablePickMesh, PickHighlightParams},
     interactable::{HoverEvents, InteractableMesh, InteractablePickingPlugin, MouseDownEvents},
@@ -64,6 +62,14 @@ pub struct PickableBundle {
     select: SelectablePickMesh,
 }
 
+pub fn picking_camera() -> RayCastSource<PickingRaycastSet> {
+    RayCastSource::<PickingRaycastSet>::new(RayCastMethod::CameraCursor(
+        UpdateOn::EveryFrame(Vec2::zero()),
+        EventReader::default(),
+    ))
+}
+
+/*
 pub type PickableMesh = RayCastMesh<PickingRaycastSet>;
 
 pub struct PickingCamera(RayCastSource<PickingRaycastSet>);
@@ -80,3 +86,4 @@ impl Default for PickingCamera {
         ))
     }
 }
+*/
