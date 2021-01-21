@@ -1,5 +1,5 @@
 use super::{highlight::*, select::*, *};
-use bevy::{prelude::*, tasks::ParallelIterator, utils::HashMap};
+use bevy::{prelude::*, utils::HashMap};
 
 pub struct InteractablePickingPlugin;
 impl Plugin for InteractablePickingPlugin {
@@ -66,19 +66,16 @@ impl InteractableMesh {
         &self.mouse_down_events
     }
     pub fn mouse_down_event(&self, button: MouseButton) -> Result<MouseDownEvents, String> {
-        self.mouse_down_events
-            .get(&button)
-            .map(|x| *x)
-            .ok_or(format!(
-                "MouseButton {:?} not found in this InteractableMesh",
-                button
-            ))
+        self.mouse_down_events.get(&button).copied().ok_or(format!(
+            "MouseButton {:?} not found in this InteractableMesh",
+            button
+        ))
     }
     pub fn just_pressed(&self, button: MouseButton) -> bool {
-        match self.mouse_down_events.get(&button) {
-            Some(&MouseDownEvents::MouseJustPressed) => true,
-            _ => false,
-        }
+        matches!(
+            self.mouse_down_events.get(&button),
+            Some(&MouseDownEvents::MouseJustPressed)
+        )
     }
 }
 

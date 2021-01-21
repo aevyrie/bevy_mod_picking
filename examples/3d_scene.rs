@@ -1,4 +1,4 @@
-use bevy::{prelude::*, render::camera::Camera};
+use bevy::prelude::*;
 use bevy_mod_picking::*;
 
 fn main() {

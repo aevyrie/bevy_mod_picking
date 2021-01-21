@@ -9,7 +9,7 @@ pub use crate::{
 };
 
 use bevy::prelude::*;
-use bevy_photon::*;
+use bevy_mod_raycast::*;
 
 pub struct PickingRaycastSet;
 
@@ -56,4 +56,3 @@ pub fn picking_camera() -> RayCastSource<PickingRaycastSet> {
         EventReader::default(),
     ))
 }
-
