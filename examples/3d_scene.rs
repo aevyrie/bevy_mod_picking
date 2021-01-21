@@ -10,7 +10,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
-        //.add_plugin(DebugPickingPlugin)
+        .add_plugin(DebugPickingPlugin)
         .add_startup_system(setup.system())
         .run();
 }
@@ -36,6 +36,7 @@ fn setup(
         //plane
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 10.0 })),
+            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
         .with(PickableBundle::default())
@@ -43,6 +44,7 @@ fn setup(
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
         .with(PickableBundle::default())
@@ -53,6 +55,7 @@ fn setup(
                 radius: 0.5,
             })),
             transform: Transform::from_translation(Vec3::new(1.5, 1.5, 1.5)),
+            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
         .with(PickableBundle::default())

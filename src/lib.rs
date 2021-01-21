@@ -30,6 +30,14 @@ impl Plugin for PickingPlugin {
     }
 }
 
+pub struct DebugPickingPlugin;
+impl Plugin for DebugPickingPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_system(update_debug_cursor::<PickingRaycastSet>.system())
+            .add_startup_system(setup_debug_cursor::<PickingRaycastSet>.system());
+    }
+}
+
 #[derive(Bundle, Default)]
 pub struct PickableBundle {
     mesh: RayCastMesh<PickingRaycastSet>,
@@ -48,3 +56,4 @@ pub fn picking_camera() -> RayCastSource<PickingRaycastSet> {
         EventReader::default(),
     ))
 }
+
