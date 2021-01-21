@@ -15,9 +15,7 @@ impl SelectablePickMesh {
 
 impl Default for SelectablePickMesh {
     fn default() -> Self {
-        SelectablePickMesh {
-            selected: false,
-        }
+        SelectablePickMesh { selected: false }
     }
 }
 

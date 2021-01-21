@@ -11,10 +11,13 @@ pub use crate::{
 use bevy::prelude::*;
 use bevy_photon::*;
 
+pub struct PickingRaycastSet;
+
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<PickHighlightParams>()
+            .add_plugin(InteractablePickingPlugin)
             .add_startup_system(setup_debug_cursor::<PickingRaycastSet>.system())
             .add_system(build_bound_sphere.system())
             .add_stage_after(stage::POST_UPDATE, "picking", SystemStage::serial())
@@ -27,4 +30,21 @@ impl Plugin for PickingPlugin {
     }
 }
 
-struct PickingRaycastSet;
+#[derive(Bundle, Default)]
+pub struct PickableBundle {
+    mesh: RayCastMesh<PickingRaycastSet>,
+    interact: InteractableMesh,
+    highlight: HighlightablePickMesh,
+    select: SelectablePickMesh,
+}
+
+pub fn pickable_mesh() -> RayCastMesh<PickingRaycastSet> {
+    RayCastMesh::<PickingRaycastSet>::default()
+}
+
+pub fn picking_camera() -> RayCastSource<PickingRaycastSet> {
+    RayCastSource::<PickingRaycastSet>::new(RayCastMethod::CameraCursor(
+        UpdateOn::EveryFrame(Vec2::zero()),
+        EventReader::default(),
+    ))
+}

@@ -1,5 +1,5 @@
 use super::{highlight::*, select::*, *};
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{prelude::*, tasks::ParallelIterator, utils::HashMap};
 
 pub struct InteractablePickingPlugin;
 impl Plugin for InteractablePickingPlugin {
@@ -62,57 +62,60 @@ impl InteractableMesh {
         self.hovering
     }
     /// Returns the current mousedown event state of the InteractableMesh in the provided group.
-    pub fn mouse_down_event_list(&self) -> HashMap<MouseButton, MouseDownEvents> {
-        self.mouse_down_events
+    pub fn mouse_down_event_list(&self) -> &HashMap<MouseButton, MouseDownEvents> {
+        &self.mouse_down_events
     }
     pub fn mouse_down_event(&self, button: MouseButton) -> Result<MouseDownEvents, String> {
-        self.mouse_down_events.get(&button).map(|x| *x).ok_or(format!(
+        self.mouse_down_events
+            .get(&button)
+            .map(|x| *x)
+            .ok_or(format!(
                 "MouseButton {:?} not found in this InteractableMesh",
                 button
-        ))
+            ))
+    }
+    pub fn just_pressed(&self, button: MouseButton) -> bool {
+        match self.mouse_down_events.get(&button) {
+            Some(&MouseDownEvents::MouseJustPressed) => true,
+            _ => false,
+        }
     }
 }
 
 pub fn generate_hover_events(
-    // Resources
-    mut pick_state: ResMut<PickState>,
-    // Queries
+    pick_source_query: Query<&RayCastSource<PickingRaycastSet>>,
     mut interactable_query: Query<(&mut InteractableMesh, Entity)>,
 ) {
-    for (group, intersection_list) in pick_state.ordered_pick_list_map.iter_mut() {
-        match intersection_list.first() {
+    for pick_source in pick_source_query.iter() {
+        match pick_source.intersect_top() {
             // There is at last one entity under the cursor
             Some(top_pick) => {
                 let top_entity = top_pick.0;
                 for (mut interactable, entity) in &mut interactable_query.iter_mut() {
                     let is_hovered = entity == top_entity;
-                    let was_hovered = interactable
-                        .hovering
-                        .insert(*group, is_hovered)
-                        .unwrap_or(false);
-                    let new_event = if is_hovered && !was_hovered {
-                        HoverEvents::JustEntered
-                    } else if !is_hovered && was_hovered {
-                        HoverEvents::JustExited
-                    } else {
-                        HoverEvents::None
+                    let was_hovered = interactable.hovering;
+                    interactable.hover_events = {
+                        if is_hovered && !was_hovered {
+                            HoverEvents::JustEntered
+                        } else if !is_hovered && was_hovered {
+                            HoverEvents::JustExited
+                        } else {
+                            HoverEvents::None
+                        }
                     };
-                    interactable.hover_events.insert(*group, new_event);
                 }
             }
             // There are no entities under the cursor
             None => {
                 for (mut interactable, _entity) in &mut interactable_query.iter_mut() {
-                    let was_hovered = interactable
-                        .hovering
-                        .insert(*group, false)
-                        .expect("Group missing");
-                    let new_event = if was_hovered {
-                        HoverEvents::JustExited
-                    } else {
-                        HoverEvents::None
+                    let was_hovered = interactable.hovering;
+                    interactable.hover_events = {
+                        if was_hovered {
+                            HoverEvents::JustExited
+                        } else {
+                            HoverEvents::None
+                        }
                     };
-                    interactable.hover_events.insert(*group, new_event);
                 }
             }
         }
@@ -123,30 +126,30 @@ pub fn generate_click_events(
     // Resources
     mouse_inputs: Res<Input<MouseButton>>,
     // Queries
-    mut interactable_query: Query<(&mut InteractableMesh, &PickableMesh)>,
+    mut interactable_query: Query<&mut InteractableMesh>,
 ) {
-    for (mut interactable, pickable) in interactable_query.iter_mut() {
-        for group in &pickable.groups {
-            let hover = matches!(interactable.hover(&group), Ok(true));
-            let new_event = interactable
-                .watched_mouse_inputs
-                .iter()
-                .map(|button| {
-                    (
-                        *button,
-                        if !hover {
-                            MouseDownEvents::None
-                        } else if mouse_inputs.just_released(*button) {
-                            MouseDownEvents::MouseJustReleased
-                        } else if mouse_inputs.just_pressed(*button) {
-                            MouseDownEvents::MouseJustPressed
-                        } else {
-                            MouseDownEvents::None
-                        },
-                    )
-                })
-                .collect();
-            interactable.mouse_down_events.insert(*group, new_event);
-        }
-    }
+    interactable_query.iter_mut().for_each(|mut interactable| {
+        let events: Vec<(MouseButton, MouseDownEvents)> = interactable
+            .watched_mouse_inputs
+            .iter()
+            .map(|button| {
+                (
+                    *button,
+                    if !interactable.hover() {
+                        MouseDownEvents::None
+                    } else if mouse_inputs.just_released(*button) {
+                        MouseDownEvents::MouseJustReleased
+                    } else if mouse_inputs.just_pressed(*button) {
+                        MouseDownEvents::MouseJustPressed
+                    } else {
+                        MouseDownEvents::None
+                    },
+                )
+            })
+            .collect();
+
+        events.iter().for_each(|(button, event)| {
+            interactable.mouse_down_events.insert(*button, *event);
+        });
+    });
 }
