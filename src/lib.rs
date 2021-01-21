@@ -75,9 +75,8 @@ impl Deref for PickingCamera {
 }
 impl Default for PickingCamera {
     fn default() -> Self {
-        PickingCamera(RayCastSource::<PickingRaycastSet>::new(RayCastMethod::CameraCursor(
-            UpdateOn::EveryFrame(Vec2::zero()),
-            EventReader::default(),
-        )))
-    }  
+        PickingCamera(RayCastSource::<PickingRaycastSet>::new(
+            RayCastMethod::CameraCursor(UpdateOn::EveryFrame(Vec2::zero()), EventReader::default()),
+        ))
+    }
 }
