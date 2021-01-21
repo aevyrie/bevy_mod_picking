@@ -1,6 +1,5 @@
 use super::{highlight::*, select::*, *};
-use bevy::prelude::*;
-use std::collections::HashSet;
+use bevy::{prelude::*, utils::HashMap};
 
 pub struct InteractablePickingPlugin;
 impl Plugin for InteractablePickingPlugin {
@@ -17,6 +16,12 @@ pub enum HoverEvents {
     None,
     JustEntered,
     JustExited,
+}
+
+impl Default for HoverEvents {
+    fn default() -> Self {
+        HoverEvents::None
+    }
 }
 
 impl HoverEvents {
@@ -38,124 +43,33 @@ impl MouseDownEvents {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct InteractableMesh {
-    hover_events: HashMap<Group, HoverEvents>,
-    mouse_down_events: HashMap<Group, HashMap<MouseButton, MouseDownEvents>>,
-    hovering: HashMap<Group, bool>,
-    mouse_down: HashMap<Group, Vec<MouseButton>>,
+    hover_events: HoverEvents,
+    mouse_down_events: HashMap<MouseButton, MouseDownEvents>,
+    hovering: bool,
+    mouse_down: Vec<MouseButton>,
     watched_mouse_inputs: Vec<MouseButton>,
 }
 
-impl Default for InteractableMesh {
-    fn default() -> Self {
-        let mut hover_events = HashMap::new();
-        let mut mouse_down_events = HashMap::new();
-        let mut hovering = HashMap::new();
-        let mut mouse_down = HashMap::new();
-        let mut mouse_down_eventmap: HashMap<MouseButton, MouseDownEvents> = HashMap::new();
-        let watched_mouse_inputs =
-            Vec::from([MouseButton::Left, MouseButton::Right, MouseButton::Middle]);
-        for button in &watched_mouse_inputs {
-            mouse_down_eventmap.insert(*button, MouseDownEvents::None);
-        }
-        hover_events.insert(Group::default(), HoverEvents::None);
-        mouse_down_events.insert(Group::default(), mouse_down_eventmap);
-        hovering.insert(Group::default(), false);
-        mouse_down.insert(Group::default(), Vec::new());
-        InteractableMesh {
-            hover_events,
-            mouse_down_events,
-            hovering,
-            mouse_down,
-            watched_mouse_inputs,
-        }
-    }
-}
-
 impl InteractableMesh {
-    pub fn new(groups: Vec<Group>) -> Self {
-        let mut hover_events = HashMap::new();
-        let mut mouse_down_events = HashMap::new();
-        let mut hovering = HashMap::new();
-        let mut mouse_down = HashMap::new();
-        let mut mouse_down_eventmap: HashMap<MouseButton, MouseDownEvents> = HashMap::new();
-        let watched_mouse_inputs =
-            Vec::from([MouseButton::Left, MouseButton::Right, MouseButton::Middle]);
-        for button in &watched_mouse_inputs {
-            mouse_down_eventmap.insert(*button, MouseDownEvents::None);
-        }
-        for group in &groups {
-            hover_events.insert(*group, HoverEvents::None);
-            mouse_down_events.insert(*group, mouse_down_eventmap.clone());
-            hovering.insert(*group, false);
-            mouse_down.insert(*group, Vec::new());
-        }
-        InteractableMesh {
-            hover_events,
-            mouse_down_events,
-            hovering,
-            mouse_down,
-            watched_mouse_inputs,
-        }
-    }
-
     /// Returns the current hover event state of the InteractableMesh in the provided group.
-    pub fn hover_event(&self, group: &Group) -> Result<&HoverEvents, String> {
-        self.hover_events.get(group).ok_or(format!(
-            "InteractableMesh does not belong to group {}",
-            **group
-        ))
+    pub fn hover_event(&self) -> HoverEvents {
+        self.hover_events
     }
-
     /// Returns true iff the InteractableMesh is the topost entity in the specified group.
-    pub fn hover(&self, group: &Group) -> Result<&bool, String> {
-        self.hovering.get(group).ok_or(format!(
-            "InteractableMesh does not belong to group {}",
-            **group
-        ))
+    pub fn hover(&self) -> bool {
+        self.hovering
     }
-
     /// Returns the current mousedown event state of the InteractableMesh in the provided group.
-    pub fn mouse_down_event_list(
-        &self,
-        group: &Group,
-    ) -> Result<&HashMap<MouseButton, MouseDownEvents>, String> {
-        self.mouse_down_events.get(group).ok_or(format!(
-            "InteractableMesh does not belong to group {}",
-            **group
-        ))
+    pub fn mouse_down_event_list(&self) -> HashMap<MouseButton, MouseDownEvents> {
+        self.mouse_down_events
     }
-
-    pub fn mouse_down_event(
-        &self,
-        group: &Group,
-        button: MouseButton,
-    ) -> Result<&MouseDownEvents, String> {
-        match self.mouse_down_events.get(group).ok_or(format!(
-            "InteractableMesh does not belong to group {}",
-            **group
-        )) {
-            Ok(event_map) => event_map.get(&button).ok_or(format!(
+    pub fn mouse_down_event(&self, button: MouseButton) -> Result<MouseDownEvents, String> {
+        self.mouse_down_events.get(&button).map(|x| *x).ok_or(format!(
                 "MouseButton {:?} not found in this InteractableMesh",
                 button
-            )),
-            Err(e) => Err(e),
-        }
-    }
-
-    /// Returns a HashSet of Groups in which the current InteractableMesh is just pressed
-    pub fn groups_just_pressed(&self, button: MouseButton) -> HashSet<Group> {
-        self.mouse_down_events
-            .iter()
-            .filter(|(_group, event_map)| {
-                matches!(
-                    event_map.get(&button),
-                    Some(MouseDownEvents::MouseJustPressed)
-                )
-            })
-            .map(|(group, _event_map)| *group)
-            .collect()
+        ))
     }
 }
 

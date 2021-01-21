@@ -37,24 +37,12 @@ impl Default for PickHighlightParams {
 pub struct HighlightablePickMesh {
     // Stores the initial color of the mesh material prior to selecting/hovering
     initial_color: Option<Color>,
-    // The pick group to use for determining highlight state
-    group: Group,
-}
-
-impl HighlightablePickMesh {
-    pub fn new(group: Group) -> Self {
-        HighlightablePickMesh {
-            group,
-            ..Default::default()
-        }
-    }
 }
 
 impl Default for HighlightablePickMesh {
     fn default() -> Self {
         HighlightablePickMesh {
             initial_color: None,
-            group: Group::default(),
         }
     }
 }
