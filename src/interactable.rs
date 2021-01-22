@@ -1,6 +1,9 @@
-use bevy::{prelude::*, utils::{HashMap, HashSet}};
-use bevy_mod_raycast::RayCastSource;
 use crate::PickingRaycastSet;
+use bevy::{
+    prelude::*,
+    utils::{HashMap, HashSet},
+};
+use bevy_mod_raycast::RayCastSource;
 use std::iter::FromIterator;
 
 #[derive(Debug, Copy, Clone)]
@@ -51,7 +54,11 @@ impl Default for InteractableMesh {
             mouse_down_events: HashMap::default(),
             hovering: false,
             mouse_down: Vec::default(),
-            watched_mouse_inputs: HashSet::from_iter([MouseButton::Left,MouseButton::Right,MouseButton::Middle].iter().cloned()),
+            watched_mouse_inputs: HashSet::from_iter(
+                [MouseButton::Left, MouseButton::Right, MouseButton::Middle]
+                    .iter()
+                    .cloned(),
+            ),
         }
     }
 }
@@ -60,11 +67,10 @@ impl InteractableMesh {
     pub fn with_mouse_button(self, button: MouseButton) -> Self {
         let mut new_buttons = self.watched_mouse_inputs;
         new_buttons.insert(button);
-        InteractableMesh{
+        InteractableMesh {
             watched_mouse_inputs: new_buttons,
-            .. self
+            ..self
         }
-        
     }
     /// Returns the current hover event state of the InteractableMesh in the provided group.
     pub fn hover_event(&self) -> HoverEvents {

@@ -10,14 +10,17 @@ pub use crate::{
     },
     select::{select_mesh, SelectablePickMesh},
 };
-
 use bevy::prelude::*;
-pub use bevy_mod_raycast::*;
+use bevy_mod_raycast::*;
+pub use bevy_mod_raycast::BoundVol;
 
 pub mod pick_stage {
     pub const PICKING: &str = "picking";
     pub const POST_PICKING: &str = "post_picking";
 }
+
+pub type PickableMesh = RayCastMesh<PickingRaycastSet>;
+pub type PickingCamera = RayCastSource<PickingRaycastSet>;
 
 pub struct PickingRaycastSet;
 
@@ -35,7 +38,8 @@ impl Plugin for PickingPlugin {
                 pick_stage::POST_PICKING,
                 SystemStage::parallel(),
             )
-            .add_system_to_stage(stage::POST_UPDATE, build_bound_sphere.system())
+            .add_system_to_stage(stage::POST_UPDATE, build_new_bound_sphere.system())
+            .add_system_to_stage(stage::POST_UPDATE, update_bound_sphere_changed_mesh.system())
             .add_system_to_stage(
                 pick_stage::PICKING,
                 update_raycast::<PickingRaycastSet>.system(),
@@ -46,10 +50,10 @@ impl Plugin for PickingPlugin {
 pub struct InteractablePickingPlugin;
 impl Plugin for InteractablePickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(generate_hover_events.system())
-            .add_system(generate_click_events.system())
-            .add_system(select_mesh.system())
-            .add_system(pick_highlighting.system());
+        app.add_system_to_stage(pick_stage::POST_PICKING, generate_hover_events.system())
+            .add_system_to_stage(pick_stage::POST_PICKING, generate_click_events.system())
+            .add_system_to_stage(pick_stage::POST_PICKING, select_mesh.system())
+            .add_system_to_stage(pick_stage::POST_PICKING, pick_highlighting.system());
     }
 }
 
@@ -57,17 +61,14 @@ pub struct DebugPickingPlugin;
 impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_to_stage(
-            stage::POST_UPDATE,
-            setup_debug_cursor::<PickingRaycastSet>.system(),
-        )
-        .add_system_to_stage(
             pick_stage::POST_PICKING,
             update_debug_cursor::<PickingRaycastSet>.system(),
         );
     }
 }
+
 #[derive(Bundle)]
-pub struct PickingCameraBundle{
+pub struct PickingCameraBundle {
     pub source: PickingCamera,
 }
 
@@ -84,7 +85,7 @@ impl Default for PickingCameraBundle {
 
 #[derive(Bundle)]
 pub struct PickableBundle {
-    pub mesh: RayCastMesh<PickingRaycastSet>,
+    pub mesh: PickableMesh,
     pub interact: InteractableMesh,
     pub highlight: HighlightablePickMesh,
     pub select: SelectablePickMesh,
@@ -100,6 +101,3 @@ impl Default for PickableBundle {
         }
     }
 }
-
-pub type PickableMesh = RayCastMesh<PickingRaycastSet>;
-pub type PickingCamera = RayCastSource<PickingRaycastSet>;

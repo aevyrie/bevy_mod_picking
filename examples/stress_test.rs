@@ -1,7 +1,6 @@
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, PrintDiagnosticsPlugin},
     prelude::*,
-    window::WindowMode,
 };
 use bevy_mod_picking::*;
 
@@ -17,6 +16,7 @@ fn main() {
         //.add_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
+        .add_plugin(InteractablePickingPlugin)
         .add_plugin(DebugPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(PrintDiagnosticsPlugin::default())
@@ -51,7 +51,7 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with(PickSource::default());
+        .with_bundle(PickingCameraBundle::default());
 
     let _scenes: Vec<HandleUntyped> = asset_server.load_folder("models/monkey").unwrap();
     let monkey_handle = asset_server.get_handle("models/monkey/Monkey.gltf#Mesh0/Primitive0");
@@ -69,7 +69,9 @@ fn setup(
                 )) * Transform::from_scale(Vec3::from([0.3, 0.3, 0.3])),
                 ..Default::default()
             })
-            .with(PickableMesh::default().with_bounding_sphere(monkey_handle.clone()));
+            //.with(PickableMesh::default())
+            .with_bundle(PickableBundle::default())
+            .with(BoundVol::default());
     }
 
     commands.spawn(LightBundle {

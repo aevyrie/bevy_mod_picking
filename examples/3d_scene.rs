@@ -13,15 +13,13 @@ fn main() {
         .add_plugin(InteractablePickingPlugin)
         .add_plugin(DebugPickingPlugin)
         .add_startup_system(setup.system())
-        .add_system_to_stage(pick_stage::POST_PICKING, print_events.system())
+        .add_system_to_stage(POST_PICKING, print_events.system())
         .run();
 }
 
 fn print_events(query: Query<(&PickableMesh, &InteractableMesh, Entity)>) {
     for (pickable, interactable, entity) in &mut query.iter() {
-        let mouse_down_event = interactable
-            .mouse_down_event(MouseButton::Left)
-            .unwrap();
+        let mouse_down_event = interactable.mouse_down_event(MouseButton::Left).unwrap();
         let hover_event = interactable.hover_event();
         // Only print updates if at least one event has occured.
         if hover_event.is_none() && mouse_down_event.is_none() {
