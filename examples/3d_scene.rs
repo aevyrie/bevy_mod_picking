@@ -13,7 +13,7 @@ fn main() {
         .add_plugin(InteractablePickingPlugin)
         .add_plugin(DebugPickingPlugin)
         .add_startup_system(setup.system())
-        .add_system_to_stage(POST_PICKING, print_events.system())
+        .add_system_to_stage(pick_stage::POST_PICKING, print_events.system())
         .run();
 }
 
