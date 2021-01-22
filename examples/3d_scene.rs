@@ -10,9 +10,33 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
+        .add_plugin(InteractablePickingPlugin)
         .add_plugin(DebugPickingPlugin)
         .add_startup_system(setup.system())
+        .add_system_to_stage(pick_stage::POST_PICKING, print_events.system())
         .run();
+}
+
+fn print_events(query: Query<(&PickableMesh, &InteractableMesh, Entity)>) {
+    for (pickable, interactable, entity) in &mut query.iter() {
+        let mouse_down_event = interactable
+            .mouse_down_event(MouseButton::Left)
+            .unwrap();
+        let hover_event = interactable.hover_event();
+        // Only print updates if at least one event has occured.
+        if hover_event.is_none() && mouse_down_event.is_none() {
+            continue;
+        }
+        let distance = if let Some(intersection) = pickable.intersection() {
+            intersection.distance().to_string()
+        } else {
+            String::from("None")
+        };
+        println!(
+            "ENTITY: {:?}, DIST: {:.4}, EVENT: {:?}, LMB: {:?}",
+            entity, distance, hover_event, mouse_down_event
+        );
+    }
 }
 
 /// set up a simple 3D scene
@@ -32,14 +56,14 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with(picking_camera())
+        .with_bundle(PickingCameraBundle::default())
         //plane
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 10.0 })),
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
-        .with(PickableBundle::default())
+        .with_bundle(PickableBundle::default())
         // cube
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -47,7 +71,7 @@ fn setup(
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
-        .with(PickableBundle::default())
+        .with_bundle(PickableBundle::default())
         // sphere
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Icosphere {
@@ -58,7 +82,7 @@ fn setup(
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
-        .with(PickableBundle::default())
+        .with_bundle(PickableBundle::default())
         // light
         .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),

@@ -55,7 +55,7 @@ fn setup(
 
 fn event_example(query: Query<(&InteractableMesh, Entity)>) {
     for (interactable, entity) in &mut query.iter() {
-        let is_hovered = interactable.hover(&Group::default()).unwrap();
+        let is_hovered = interactable.hovering(&Group::default()).unwrap();
         let hover_event = interactable.hover_event(&Group::default()).unwrap();
         let mouse_down_event = interactable
             .mouse_down_event(&Group::default(), MouseButton::Left)

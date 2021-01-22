@@ -92,7 +92,7 @@ pub fn pick_highlighting(
                 // This is needed when the user clicks elsewhere and the selection state changes.
                 // Otherwise, the color would only change after a JustEntered or JustExited.
                 // In a more complex example, this might be handled only if
-                if interactable.hover() {
+                if interactable.hovering() {
                     continue;
                 } else {
                     unhighlight_color
