@@ -1,22 +1,21 @@
+mod focus;
 mod highlight;
-mod interactable;
-mod select;
+mod selection;
 
 pub use crate::{
-    highlight::{pick_highlighting, HighlightablePickMesh, PickHighlightParams},
-    interactable::{
-        generate_click_events, generate_hover_events, HoverEvents, InteractableMesh,
-        MouseButtonEvents,
+    focus::mesh_focus,
+    highlight::{
+        get_initial_mesh_button_matl, mesh_highlighting, MeshButtonMaterials, PickableButton,
     },
-    select::{select_mesh, SelectablePickMesh},
+    selection::{mesh_selection, Selection},
 };
-use bevy::prelude::*;
-use bevy_mod_raycast::*;
+use bevy::{prelude::*, ui::FocusPolicy};
 pub use bevy_mod_raycast::BoundVol;
+use bevy_mod_raycast::*;
+use focus::mesh_focus_debug_system;
 
 pub mod pick_stage {
     pub const PICKING: &str = "picking";
-    pub const POST_PICKING: &str = "post_picking";
 }
 
 pub type PickableMesh = RayCastMesh<PickingRaycastSet>;
@@ -27,21 +26,13 @@ pub struct PickingRaycastSet;
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<PickHighlightParams>()
-            .add_stage_after(
-                stage::POST_UPDATE,
-                pick_stage::PICKING,
-                SystemStage::parallel(),
-            )
-            .add_stage_after(
-                pick_stage::PICKING,
-                pick_stage::POST_PICKING,
-                SystemStage::parallel(),
-            )
-            .add_system_to_stage(stage::POST_UPDATE, build_new_bound_sphere.system())
-            .add_system_to_stage(stage::POST_UPDATE, update_bound_sphere_changed_mesh.system())
+        app.add_system_to_stage(stage::POST_UPDATE, build_new_bound_sphere.system())
             .add_system_to_stage(
-                pick_stage::PICKING,
+                stage::POST_UPDATE,
+                update_bound_sphere_changed_mesh.system(),
+            )
+            .add_system_to_stage(
+                stage::POST_UPDATE,
                 update_raycast::<PickingRaycastSet>.system(),
             );
     }
@@ -50,10 +41,11 @@ impl Plugin for PickingPlugin {
 pub struct InteractablePickingPlugin;
 impl Plugin for InteractablePickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system_to_stage(pick_stage::POST_PICKING, generate_hover_events.system())
-            .add_system_to_stage(pick_stage::POST_PICKING, generate_click_events.system())
-            .add_system_to_stage(pick_stage::POST_PICKING, select_mesh.system())
-            .add_system_to_stage(pick_stage::POST_PICKING, pick_highlighting.system());
+        app.init_resource::<MeshButtonMaterials>()
+            .add_system_to_stage(stage::POST_UPDATE, mesh_focus.system())
+            .add_system_to_stage(stage::POST_UPDATE, mesh_selection.system())
+            .add_system_to_stage(stage::POST_UPDATE, get_initial_mesh_button_matl.system())
+            .add_system_to_stage(stage::POST_UPDATE, mesh_highlighting.system());
     }
 }
 
@@ -61,9 +53,10 @@ pub struct DebugPickingPlugin;
 impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_to_stage(
-            pick_stage::POST_PICKING,
+            stage::POST_UPDATE,
             update_debug_cursor::<PickingRaycastSet>.system(),
-        );
+        )
+        .add_system_to_stage(stage::POST_UPDATE, mesh_focus_debug_system.system());
     }
 }
 
@@ -83,21 +76,11 @@ impl Default for PickingCameraBundle {
     }
 }
 
-#[derive(Bundle)]
+#[derive(Bundle, Default)]
 pub struct PickableBundle {
-    pub mesh: PickableMesh,
-    pub interact: InteractableMesh,
-    pub highlight: HighlightablePickMesh,
-    pub select: SelectablePickMesh,
-}
-
-impl Default for PickableBundle {
-    fn default() -> Self {
-        PickableBundle {
-            mesh: PickableMesh::default(),
-            interact: InteractableMesh::default(),
-            highlight: HighlightablePickMesh::default(),
-            select: SelectablePickMesh::default(),
-        }
-    }
+    pub pickable_mesh: PickableMesh,
+    pub interaction: Interaction,
+    pub focus_policy: FocusPolicy,
+    pub pickable_button: PickableButton,
+    pub selection: Selection,
 }

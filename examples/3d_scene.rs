@@ -1,40 +1,25 @@
 use bevy::prelude::*;
-use bevy_mod_picking::*;
+use bevy_mod_picking::*; // Import all the picking goodies!
 
 fn main() {
     App::build()
         .add_resource(Msaa { samples: 4 })
         .add_resource(WindowDescriptor {
-            vsync: false,
+            vsync: false, // Disabled for this demo to remove vsync as a source of input latency
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        // PickingPlugin provides core picking systems and must be registered first
         .add_plugin(PickingPlugin)
+        // InteractablePickingPlugin adds mouse event, highlighting, and selection systems
         .add_plugin(InteractablePickingPlugin)
+        // DebugPickingPlugin systems to build and update debug cursors
         .add_plugin(DebugPickingPlugin)
         .add_startup_system(setup.system())
-        .add_system_to_stage(pick_stage::POST_PICKING, print_events.system())
+        .init_resource::<ButtonMaterials>()
+        .add_startup_system(setup_ui.system())
+        //.add_system(button_system.system())
         .run();
-}
-
-fn print_events(query: Query<(&PickableMesh, &InteractableMesh, Entity)>) {
-    for (pickable, interactable, entity) in &mut query.iter() {
-        let mouse_down_event = interactable.mouse_down_event(MouseButton::Left).unwrap();
-        let hover_event = interactable.hover_event();
-        // Only print updates if at least one event has occured.
-        if hover_event.is_none() && mouse_down_event.is_none() {
-            continue;
-        }
-        let distance = if let Some(intersection) = pickable.intersection() {
-            intersection.distance().to_string()
-        } else {
-            String::from("None")
-        };
-        println!(
-            "ENTITY: {:?}, DIST: {:.4}, EVENT: {:?}, LMB: {:?}",
-            entity, distance, hover_event, mouse_down_event
-        );
-    }
 }
 
 /// set up a simple 3D scene
@@ -85,5 +70,87 @@ fn setup(
         .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
             ..Default::default()
+        });
+}
+
+struct ButtonMaterials {
+    normal: Handle<ColorMaterial>,
+    hovered: Handle<ColorMaterial>,
+    pressed: Handle<ColorMaterial>,
+}
+
+impl FromResources for ButtonMaterials {
+    fn from_resources(resources: &Resources) -> Self {
+        let mut materials = resources.get_mut::<Assets<ColorMaterial>>().unwrap();
+        ButtonMaterials {
+            normal: materials.add(Color::rgb(0.15, 0.15, 0.15).into()),
+            hovered: materials.add(Color::rgb(0.25, 0.25, 0.25).into()),
+            pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
+        }
+    }
+}
+
+fn button_system(
+    button_materials: Res<ButtonMaterials>,
+    mut interaction_query: Query<
+        (&Interaction, &mut Handle<ColorMaterial>, &Children),
+        (Mutated<Interaction>, With<Button>),
+    >,
+    mut text_query: Query<&mut Text>,
+) {
+    for (interaction, mut material, children) in interaction_query.iter_mut() {
+        let mut text = text_query.get_mut(children[0]).unwrap();
+        match *interaction {
+            Interaction::Clicked => {
+                text.value = "Press".to_string();
+                *material = button_materials.pressed.clone();
+            }
+            Interaction::Hovered => {
+                text.value = "Hover".to_string();
+                *material = button_materials.hovered.clone();
+            }
+            Interaction::None => {
+                text.value = "Button".to_string();
+                *material = button_materials.normal.clone();
+            }
+        }
+    }
+}
+
+fn setup_ui(
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    button_materials: Res<ButtonMaterials>,
+) {
+    commands
+        // ui camera
+        .spawn(CameraUiBundle::default())
+        .spawn(ButtonBundle {
+            style: Style {
+                size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                // center button
+                margin: Rect::all(Val::Auto),
+                // horizontally center child text
+                justify_content: JustifyContent::Center,
+                // vertically center child text
+                align_items: AlignItems::Center,
+                ..Default::default()
+            },
+            material: button_materials.normal.clone(),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn(TextBundle {
+                text: Text {
+                    value: "Button".to_string(),
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    style: TextStyle {
+                        font_size: 40.0,
+                        color: Color::rgb(0.9, 0.9, 0.9),
+                        ..Default::default()
+                    },
+                },
+                ..Default::default()
+            });
         });
 }
