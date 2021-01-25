@@ -26,11 +26,7 @@ pub struct PickingRaycastSet;
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system_to_stage(stage::POST_UPDATE, build_new_bound_sphere.system())
-            .add_system_to_stage(
-                stage::POST_UPDATE,
-                update_bound_sphere_changed_mesh.system(),
-            )
+        app.add_system_to_stage(stage::POST_UPDATE, update_bound_sphere.system())
             .add_system_to_stage(
                 stage::POST_UPDATE,
                 update_raycast::<PickingRaycastSet>.system(),
