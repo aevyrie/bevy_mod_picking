@@ -10,14 +10,16 @@ fn main() {
         .add_plugins(DefaultPlugins)
         // PickingPlugin provides core picking systems and must be registered first
         .add_plugin(PickingPlugin)
-        // InteractablePickingPlugin adds mouse event, highlighting, and selection systems
+        // InteractablePickingPlugin adds mouse events and selection
         .add_plugin(InteractablePickingPlugin)
+        // HighlightablePickingPlugin adds hover, click, and selection highlighting
+        .add_plugin(HighlightablePickingPlugin)
         // DebugPickingPlugin systems to build and update debug cursors
         .add_plugin(DebugPickingPlugin)
         .add_startup_system(setup.system())
-        //.init_resource::<ButtonMaterials>()
-        //.add_startup_system(setup_ui.system())
-        //.add_system(button_system.system())
+        .init_resource::<ButtonMaterials>()
+        .add_startup_system(setup_ui.system())
+        .add_system(button_system.system())
         .run();
 }
 

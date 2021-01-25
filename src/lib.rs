@@ -37,9 +37,15 @@ impl Plugin for PickingPlugin {
 pub struct InteractablePickingPlugin;
 impl Plugin for InteractablePickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
+        app.add_system_to_stage(stage::POST_UPDATE, mesh_focus.system())
+            .add_system_to_stage(stage::POST_UPDATE, mesh_selection.system());
+    }
+}
+
+pub struct HighlightablePickingPlugin;
+impl Plugin for HighlightablePickingPlugin {
+    fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<MeshButtonMaterials>()
-            .add_system_to_stage(stage::POST_UPDATE, mesh_focus.system())
-            .add_system_to_stage(stage::POST_UPDATE, mesh_selection.system())
             .add_system_to_stage(stage::POST_UPDATE, get_initial_mesh_button_matl.system())
             .add_system_to_stage(stage::POST_UPDATE, mesh_highlighting.system());
     }
