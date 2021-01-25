@@ -37,7 +37,7 @@ pub fn mesh_selection(
         // Unselect everything else
         // TODO multi select would check if ctrl or shift is being held before clearing
         for (mut selection, interaction) in &mut query_all.iter_mut() {
-            if selection.selected == true && *interaction != Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
+            if selection.selected && *interaction != Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
                 selection.selected = false;
             }
             if *interaction == Interaction::Clicked {
@@ -58,7 +58,9 @@ pub fn mesh_selection(
         // If the user clicked, but not on the ui, deslect everything
         if user_click && !ui_click {
             for (mut selection, _interaction) in &mut query_all.iter_mut() {
-                selection.selected = false;
+                if selection.selected {
+                    selection.selected = false;
+                }
             }
         }
     }
