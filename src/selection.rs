@@ -21,6 +21,7 @@ impl Default for Selection {
 pub fn mesh_selection(
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
+    keyboard_input: Res<Input<KeyCode>>,
     query_changed: Query<&Interaction, Changed<Interaction>>,
     mut query_all: Query<(&mut Selection, &Interaction)>,
     node_query: Query<&Interaction, With<Node>>,
@@ -36,7 +37,7 @@ pub fn mesh_selection(
         // Unselect everything else
         // TODO multi select would check if ctrl or shift is being held before clearing
         for (mut selection, interaction) in &mut query_all.iter_mut() {
-            if selection.selected == true && *interaction != Interaction::Clicked {
+            if selection.selected == true && *interaction != Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
                 selection.selected = false;
             }
             if *interaction == Interaction::Clicked {
@@ -52,7 +53,7 @@ pub fn mesh_selection(
             }
         }
         let user_click =
-            mouse_button_input.just_released(MouseButton::Left) || touches_input.just_released(0);
+            mouse_button_input.just_pressed(MouseButton::Left) || touches_input.just_released(0);
 
         // If the user clicked, but not on the ui, deslect everything
         if user_click && !ui_click {

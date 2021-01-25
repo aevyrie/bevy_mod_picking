@@ -3,7 +3,6 @@ use bevy_mod_picking::*; // Import all the picking goodies!
 
 fn main() {
     App::build()
-        .add_resource(Msaa { samples: 4 })
         .add_resource(WindowDescriptor {
             vsync: false, // Disabled for this demo to remove vsync as a source of input latency
             ..Default::default()
@@ -16,8 +15,8 @@ fn main() {
         // DebugPickingPlugin systems to build and update debug cursors
         .add_plugin(DebugPickingPlugin)
         .add_startup_system(setup.system())
-        .init_resource::<ButtonMaterials>()
-        .add_startup_system(setup_ui.system())
+        //.init_resource::<ButtonMaterials>()
+        //.add_startup_system(setup_ui.system())
         //.add_system(button_system.system())
         .run();
 }

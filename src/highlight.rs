@@ -16,8 +16,8 @@ impl FromResources for MeshButtonMaterials {
     fn from_resources(resources: &Resources) -> Self {
         let mut materials = resources.get_mut::<Assets<StandardMaterial>>().unwrap();
         MeshButtonMaterials {
-            hovered: materials.add(Color::rgb(0.25, 0.25, 0.25).into()),
-            pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
+            hovered: materials.add(Color::rgb(0.35, 0.35, 0.35).into()),
+            pressed: materials.add(Color::rgb(0.35, 0.35, 0.75).into()),
             selected: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
         }
     }

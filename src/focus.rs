@@ -14,13 +14,25 @@ pub fn mesh_focus(
     for interaction in node_query.iter() {
         if *interaction == Interaction::Hovered || *interaction == Interaction::Clicked {
             for (mut interaction, _, _) in &mut interactable_query.iter_mut() {
-                if *interaction != Interaction::None {
+                if *interaction == Interaction::Hovered {
                     *interaction = Interaction::None;
                 }
             }
-            return;
+            break;
         }
     }
+
+    if mouse_button_input.just_released(MouseButton::Left) || touches_input.just_released(0) {
+        for (mut interaction, _, _) in &mut interactable_query.iter_mut() {
+            if *interaction == Interaction::Clicked {
+                *interaction = Interaction::None;
+            }
+        }
+    }
+
+    let mouse_clicked =
+        mouse_button_input.just_pressed(MouseButton::Left) || touches_input.just_released(0);
+
     for pick_source in pick_source_query.iter() {
         // There is at least one entity under the cursor
         if let Some(picks) = pick_source.intersect_list() {
@@ -28,14 +40,12 @@ pub fn mesh_focus(
                 if let Ok((mut interaction, focus_policy, _entity)) =
                     interactable_query.get_mut(*topmost_entity)
                 {
-                    if mouse_button_input.just_released(MouseButton::Left)
-                        || touches_input.just_released(0)
-                    {
-                        *interaction = Interaction::Clicked
-                    } else {
-                        if *interaction != Interaction::Hovered {
-                            *interaction = Interaction::Hovered
+                    if mouse_clicked {
+                        if *interaction != Interaction::Clicked {
+                            *interaction = Interaction::Clicked;
                         }
+                    } else if *interaction == Interaction::None {
+                        *interaction = Interaction::Hovered;
                     }
 
                     hovered_entity = Some(*topmost_entity);
@@ -51,7 +61,7 @@ pub fn mesh_focus(
         }
 
         for (mut interaction, _, entity) in &mut interactable_query.iter_mut() {
-            if Some(entity) != hovered_entity && *interaction != Interaction::None {
+            if Some(entity) != hovered_entity && *interaction == Interaction::Hovered {
                 *interaction = Interaction::None;
             }
         }
