@@ -1,29 +1,39 @@
-use crate::{PickableMesh, PickingCamera, Selection};
+use crate::{PickableMesh, PickingCamera, PickingPluginState, RayCastPluginState, Selection};
 use bevy::{prelude::*, ui::FocusPolicy};
 
 pub fn mesh_focus(
+    mut state: ResMut<PickingPluginState>,
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
     pick_source_query: Query<&PickingCamera>,
-    mut interactable_query: Query<(&mut Interaction, Option<&FocusPolicy>, Entity)>,
-    node_query: Query<&Interaction, With<Node>>,
+    mut interaction_set: QuerySet<(
+        Query<(&mut Interaction, Option<&FocusPolicy>, Entity), With<PickableMesh>>, //q0
+        Query<&Interaction, With<Node>>,                                             //q1
+    )>,
 ) {
+    if !state.enabled {
+        return;
+    }
+
     let mut hovered_entity = None;
 
     // If anyting in the UI is being interacted with, set all pick interactions to none and exit
-    for interaction in node_query.iter() {
-        if *interaction == Interaction::Hovered || *interaction == Interaction::Clicked {
-            for (mut interaction, _, _) in &mut interactable_query.iter_mut() {
-                if *interaction == Interaction::Hovered {
+    for ui_interaction in interaction_set.q1().iter() {
+        if *ui_interaction != Interaction::None {
+            for (mut interaction, _, _) in &mut interaction_set.q0_mut().iter_mut() {
+                if *interaction != Interaction::None {
                     *interaction = Interaction::None;
                 }
             }
-            break;
+            state.paused_for_ui = true;
+            return;
+        } else {
+            state.paused_for_ui = false;
         }
     }
 
     if mouse_button_input.just_released(MouseButton::Left) || touches_input.just_released(0) {
-        for (mut interaction, _, _) in &mut interactable_query.iter_mut() {
+        for (mut interaction, _, _) in &mut interaction_set.q0_mut().iter_mut() {
             if *interaction == Interaction::Clicked {
                 *interaction = Interaction::None;
             }
@@ -38,7 +48,7 @@ pub fn mesh_focus(
         if let Some(picks) = pick_source.intersect_list() {
             for (topmost_entity, _intersection) in picks.iter() {
                 if let Ok((mut interaction, focus_policy, _entity)) =
-                    interactable_query.get_mut(*topmost_entity)
+                    interaction_set.q0_mut().get_mut(*topmost_entity)
                 {
                     if mouse_clicked {
                         if *interaction != Interaction::Clicked {
@@ -60,7 +70,7 @@ pub fn mesh_focus(
             }
         }
 
-        for (mut interaction, _, entity) in &mut interactable_query.iter_mut() {
+        for (mut interaction, _, entity) in &mut interaction_set.q0_mut().iter_mut() {
             if Some(entity) != hovered_entity && *interaction == Interaction::Hovered {
                 *interaction = Interaction::None;
             }
@@ -69,6 +79,7 @@ pub fn mesh_focus(
 }
 
 pub fn mesh_focus_debug_system(
+    state: Res<RayCastPluginState>,
     query: Query<
         (&Interaction, &Selection, Entity),
         (
@@ -77,6 +88,9 @@ pub fn mesh_focus_debug_system(
         ),
     >,
 ) {
+    if !state.enabled {
+        return;
+    }
     for (interaction, selection, entity) in query.iter() {
         println!(
             "ENTITY:{:?} INTERACTION:{:?} SELECTION:{:?}",

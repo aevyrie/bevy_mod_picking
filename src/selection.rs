@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::PickingPluginState;
+
 /// Meshes with `SelectableMesh` will have selection state managed
 #[derive(Debug, Copy, Clone)]
 pub struct Selection {
@@ -19,6 +21,7 @@ impl Default for Selection {
 }
 
 pub fn mesh_selection(
+    state: Res<PickingPluginState>,
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
     keyboard_input: Res<Input<KeyCode>>,
@@ -26,6 +29,10 @@ pub fn mesh_selection(
     mut query_all: Query<(&mut Selection, &Interaction)>,
     node_query: Query<&Interaction, With<Node>>,
 ) {
+    if state.paused_for_ui || !state.enabled {
+        return;
+    }
+
     let mut new_selection = false;
     for interaction in query_changed.iter() {
         if *interaction == Interaction::Clicked {
@@ -37,7 +44,10 @@ pub fn mesh_selection(
         // Unselect everything else
         // TODO multi select would check if ctrl or shift is being held before clearing
         for (mut selection, interaction) in &mut query_all.iter_mut() {
-            if selection.selected && *interaction != Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
+            if selection.selected
+                && *interaction != Interaction::Clicked
+                && !keyboard_input.pressed(KeyCode::LControl)
+            {
                 selection.selected = false;
             }
             if *interaction == Interaction::Clicked {

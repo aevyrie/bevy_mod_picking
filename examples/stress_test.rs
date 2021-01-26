@@ -17,6 +17,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
+        .add_plugin(HighlightablePickingPlugin)
         //.add_plugin(DebugPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(PrintDiagnosticsPlugin::default())
@@ -54,7 +55,7 @@ fn setup(
         .with_bundle(PickingCameraBundle::default());
 
     let _scenes: Vec<HandleUntyped> = asset_server.load_folder("models").unwrap();
-    let mesh_handle = asset_server.get_handle("models/bevybird.gltf#Mesh0/Primitive0");
+    let mesh_handle = asset_server.get_handle("models/monkey/Monkey.gltf#Mesh0/Primitive0");
     for i in 0..edge_length.pow(3) {
         let f_edge_length = edge_length as f32;
         commands

@@ -20,13 +20,46 @@ pub mod pick_stage {
 
 pub type PickableMesh = RayCastMesh<PickingRaycastSet>;
 pub type PickingCamera = RayCastSource<PickingRaycastSet>;
+pub type RayCastPluginState = PluginState<PickingRaycastSet>;
 
+/// This unit struct is used to tag the generic ray casting types `RayCastMesh` and `RayCastSource`.
+/// This means that all Picking ray casts are of the same type. Consequently, any meshes or ray
+/// sources that are being used by the picking plugin can be used by other ray casting systems,
+/// because they will have distint types, e.g.: `RayCastMesh<PickingRaycastSet>` vs.
+/// `RayCastMesh<MySuperCoolRaycastingType>`.
 pub struct PickingRaycastSet;
+
+pub struct PickingPluginState {
+    pub enabled: bool,
+    paused_for_ui: bool,
+}
+impl Default for PickingPluginState {
+    fn default() -> Self {
+        PickingPluginState {
+            enabled: true,
+            paused_for_ui: false,
+        }
+    }
+}
+impl PickingPluginState {}
+
+fn update_state(
+    mut raycast_state: ResMut<RayCastPluginState>,
+    picking_state: Res<PickingPluginState>,
+) {
+    raycast_state.enabled = picking_state.enabled;
+}
 
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system_to_stage(stage::POST_UPDATE, update_bound_sphere.system())
+        app.init_resource::<RayCastPluginState>()
+            .init_resource::<PickingPluginState>()
+            .add_system_to_stage(stage::POST_UPDATE, update_state.system())
+            .add_system_to_stage(
+                stage::POST_UPDATE,
+                update_bound_sphere::<PickingRaycastSet>.system(),
+            )
             .add_system_to_stage(
                 stage::POST_UPDATE,
                 update_raycast::<PickingRaycastSet>.system(),
