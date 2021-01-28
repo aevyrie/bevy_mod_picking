@@ -27,6 +27,7 @@ pub type RayCastPluginState = PluginState<PickingRaycastSet>;
 /// sources that are being used by the picking plugin can be used by other ray casting systems,
 /// because they will have distint types, e.g.: `RayCastMesh<PickingRaycastSet>` vs.
 /// `RayCastMesh<MySuperCoolRaycastingType>`.
+#[derive(Default)]
 pub struct PickingRaycastSet;
 
 pub struct PickingPluginState {
