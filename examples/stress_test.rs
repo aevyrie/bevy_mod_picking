@@ -1,7 +1,6 @@
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, PrintDiagnosticsPlugin},
     prelude::*,
-    window::WindowMode,
 };
 use bevy_mod_picking::*;
 
@@ -17,7 +16,9 @@ fn main() {
         //.add_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
-        .add_plugin(DebugPickingPlugin)
+        .add_plugin(InteractablePickingPlugin)
+        .add_plugin(HighlightablePickingPlugin)
+        //.add_plugin(DebugPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(PrintDiagnosticsPlugin::default())
         .add_startup_system(setup.system())
@@ -51,25 +52,27 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with(PickSource::default());
+        .with_bundle(PickingCameraBundle::default());
 
-    let _scenes: Vec<HandleUntyped> = asset_server.load_folder("models/monkey").unwrap();
-    let monkey_handle = asset_server.get_handle("models/monkey/Monkey.gltf#Mesh0/Primitive0");
+    let _scenes: Vec<HandleUntyped> = asset_server.load_folder("models").unwrap();
+    let mesh_handle = asset_server.get_handle("models/monkey/Monkey.gltf#Mesh0/Primitive0");
     for i in 0..edge_length.pow(3) {
         let f_edge_length = edge_length as f32;
         commands
             .spawn(PbrBundle {
-                mesh: monkey_handle.clone(),
+                mesh: mesh_handle.clone(),
                 material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
                 transform: Transform::from_translation(Vec3::new(
                     i as f32 % f_edge_length - f_edge_length / 2.0,
                     (i as f32 / f_edge_length).round() % f_edge_length - f_edge_length / 2.0,
                     (i as f32 / (f_edge_length * f_edge_length)).round() % f_edge_length
                         - f_edge_length / 2.0,
-                )) * Transform::from_scale(Vec3::from([0.3, 0.3, 0.3])),
+                )) * Transform::from_scale(Vec3::from([0.25, 0.25, 0.25])),
                 ..Default::default()
             })
-            .with(PickableMesh::default().with_bounding_sphere(monkey_handle.clone()));
+            //.with(PickableMesh::default())
+            .with_bundle(PickableBundle::default())
+            .with(BoundVol::default());
     }
 
     commands.spawn(LightBundle {

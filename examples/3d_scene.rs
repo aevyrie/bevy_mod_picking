@@ -1,20 +1,25 @@
-use bevy::{prelude::*, render::camera::Camera};
-use bevy_mod_picking::*;
+use bevy::prelude::*;
+use bevy_mod_picking::*; // Import all the picking goodies!
 
 fn main() {
     App::build()
-        //.add_resource(Msaa { samples: 4 })
         .add_resource(WindowDescriptor {
-            vsync: false,
+            vsync: false, // Disabled for this demo to remove vsync as a source of input latency
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        // PickingPlugin provides core picking systems and must be registered first
         .add_plugin(PickingPlugin)
-        .add_plugin(DebugPickingPlugin)
+        // InteractablePickingPlugin adds mouse events and selection
         .add_plugin(InteractablePickingPlugin)
+        // HighlightablePickingPlugin adds hover, click, and selection highlighting
+        .add_plugin(HighlightablePickingPlugin)
+        // DebugPickingPlugin systems to build and update debug cursors
+        .add_plugin(DebugPickingPlugin)
         .add_startup_system(setup.system())
-        .add_startup_system(set_highlight_params.system())
-        .add_system(oscillation_system.system())
+        .init_resource::<ButtonMaterials>()
+        .add_startup_system(setup_ui.system())
+        .add_system(button_system.system())
         .run();
 }
 
@@ -35,42 +40,33 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with(PickSource::default())
+        .with_bundle(PickingCameraBundle::default())
         //plane
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 10.0 })),
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
-        .with(PickableMesh::default())
-        .with(InteractableMesh::default())
-        .with(HighlightablePickMesh::default())
-        .with(SelectablePickMesh::default())
+        .with_bundle(PickableBundle::default())
         // cube
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
-        .with(PickableMesh::default())
-        .with(InteractableMesh::default())
-        .with(HighlightablePickMesh::default())
-        .with(SelectablePickMesh::default())
+        .with_bundle(PickableBundle::default())
         // sphere
         .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Icosphere {
                 subdivisions: 20,
                 radius: 0.5,
             })),
-            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             transform: Transform::from_translation(Vec3::new(1.5, 1.5, 1.5)),
+            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
-        .with(PickableMesh::default())
-        .with(InteractableMesh::default())
-        .with(HighlightablePickMesh::default())
-        .with(SelectablePickMesh::default())
+        .with_bundle(PickableBundle::default())
         // light
         .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
@@ -78,17 +74,84 @@ fn setup(
         });
 }
 
-fn set_highlight_params(mut highlight_params: ResMut<PickHighlightParams>) {
-    highlight_params.set_hover_color(Color::rgb(1.0, 0.0, 0.0));
-    highlight_params.set_selection_color(Color::rgb(1.0, 0.0, 1.0));
+struct ButtonMaterials {
+    normal: Handle<ColorMaterial>,
+    hovered: Handle<ColorMaterial>,
+    pressed: Handle<ColorMaterial>,
 }
 
-fn oscillation_system(time: Res<Time>, window: Res<Windows>, mut query: Query<&mut Camera>) {
-    for mut camera in query.iter_mut() {
-        let aspect_ratio =
-            window.get_primary().unwrap().width() / window.get_primary().unwrap().height();
-        let oscillator =
-            3.14 / 6.0 + (((time.seconds_since_startup() * 0.5).sin() + 1.0) * 3.14 / 4.0) as f32;
-        camera.projection_matrix = Mat4::perspective_rh(oscillator, aspect_ratio, 1.0, 1000.0);
+impl FromResources for ButtonMaterials {
+    fn from_resources(resources: &Resources) -> Self {
+        let mut materials = resources.get_mut::<Assets<ColorMaterial>>().unwrap();
+        ButtonMaterials {
+            normal: materials.add(Color::rgb(0.15, 0.15, 0.15).into()),
+            hovered: materials.add(Color::rgb(0.25, 0.25, 0.25).into()),
+            pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
+        }
     }
+}
+
+fn button_system(
+    button_materials: Res<ButtonMaterials>,
+    mut interaction_query: Query<
+        (&Interaction, &mut Handle<ColorMaterial>, &Children),
+        (Mutated<Interaction>, With<Button>),
+    >,
+    mut text_query: Query<&mut Text>,
+) {
+    for (interaction, mut material, children) in interaction_query.iter_mut() {
+        let mut text = text_query.get_mut(children[0]).unwrap();
+        match *interaction {
+            Interaction::Clicked => {
+                text.value = "Press".to_string();
+                *material = button_materials.pressed.clone();
+            }
+            Interaction::Hovered => {
+                text.value = "Hover".to_string();
+                *material = button_materials.hovered.clone();
+            }
+            Interaction::None => {
+                text.value = "Button".to_string();
+                *material = button_materials.normal.clone();
+            }
+        }
+    }
+}
+
+fn setup_ui(
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    button_materials: Res<ButtonMaterials>,
+) {
+    commands
+        // ui camera
+        .spawn(CameraUiBundle::default())
+        .spawn(ButtonBundle {
+            style: Style {
+                size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                // center button
+                margin: Rect::all(Val::Auto),
+                // horizontally center child text
+                justify_content: JustifyContent::Center,
+                // vertically center child text
+                align_items: AlignItems::Center,
+                ..Default::default()
+            },
+            material: button_materials.normal.clone(),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn(TextBundle {
+                text: Text {
+                    value: "Button".to_string(),
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    style: TextStyle {
+                        font_size: 40.0,
+                        color: Color::rgb(0.9, 0.9, 0.9),
+                        ..Default::default()
+                    },
+                },
+                ..Default::default()
+            });
+        });
 }

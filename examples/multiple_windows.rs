@@ -179,7 +179,7 @@ fn setup(
         .with(PickableMesh::new([Group(0), Group(1)].into()))
         .with(InteractableMesh::new([Group(0), Group(1)].into()))
         .with(HighlightablePickMesh::default())
-        .with(SelectablePickMesh::default())
+        .with(Selection::default())
         // light
         .spawn(LightBundle {
             transform: Transform::from_translation(Vec3::new(4.0, 5.0, 4.0)),
@@ -196,7 +196,10 @@ fn setup(
         })
         .with(PickSource::new(
             [Group(0)].into(),
-            PickMethod::CameraCursor(WindowId::primary(), UpdatePicks::Always(Vec2::default())),
+            PickMethod::CameraCursor(
+                WindowId::primary(),
+                UpdatePicks::EveryFrame(Vec2::default()),
+            ),
         ))
         // second window camera
         .spawn(Camera3dBundle {
@@ -214,6 +217,6 @@ fn setup(
         })
         .with(PickSource::new(
             [Group(1)].into(),
-            PickMethod::CameraCursor(window_id, UpdatePicks::Always(Vec2::default())),
+            PickMethod::CameraCursor(window_id, UpdatePicks::EveryFrame(Vec2::default())),
         ));
 }

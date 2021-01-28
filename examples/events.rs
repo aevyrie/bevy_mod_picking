@@ -8,8 +8,28 @@ fn main() {
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
         .add_startup_system(setup.system())
-        .add_system(event_example.system())
+        .add_system_to_stage(pick_stage::PICKING, print_events.system())
         .run();
+}
+
+fn print_events(query: Query<(&PickableMesh, &InteractableMesh, Entity)>) {
+    for (pickable, interactable, entity) in &mut query.iter() {
+        let mouse_down_event = interactable.mouse_down_event(MouseButton::Left).unwrap();
+        let hover_event = interactable.hover_event();
+        // Only print updates if at least one event has occured.
+        if hover_event.is_none() && mouse_down_event.is_none() {
+            continue;
+        }
+        let distance = if let Some(intersection) = pickable.intersection() {
+            intersection.distance().to_string()
+        } else {
+            String::from("None")
+        };
+        println!(
+            "ENTITY: {:?}, DIST: {:.4}, EVENT: {:?}, LMB: {:?}",
+            entity, distance, hover_event, mouse_down_event
+        );
+    }
 }
 
 fn setup(
@@ -51,22 +71,4 @@ fn setup(
             transform: Transform::from_translation(Vec3::new(4.0, 8.0, 4.0)),
             ..Default::default()
         });
-}
-
-fn event_example(query: Query<(&InteractableMesh, Entity)>) {
-    for (interactable, entity) in &mut query.iter() {
-        let is_hovered = interactable.hover(&Group::default()).unwrap();
-        let hover_event = interactable.hover_event(&Group::default()).unwrap();
-        let mouse_down_event = interactable
-            .mouse_down_event(&Group::default(), MouseButton::Left)
-            .unwrap();
-        // Only print updates if at least one event has occured.
-        if hover_event.is_none() && mouse_down_event.is_none() {
-            continue;
-        }
-        println!(
-            "ENTITY: {:?}, HOVER: {}, HOVER EVENT: {:?}, CLICK_EVENT: {:?}",
-            entity, is_hovered, hover_event, mouse_down_event
-        );
-    }
 }
