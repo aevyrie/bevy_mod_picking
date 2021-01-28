@@ -103,10 +103,7 @@ pub struct PickingCameraBundle {
 impl Default for PickingCameraBundle {
     fn default() -> Self {
         PickingCameraBundle {
-            source: PickingCamera::new(RayCastMethod::CameraCursor(
-                UpdateOn::EveryFrame(Vec2::zero()),
-                EventReader::default(),
-            )),
+            source: PickingCamera::new(RayCastMethod::Screenspace(Vec2::zero())),
         }
     }
 }
