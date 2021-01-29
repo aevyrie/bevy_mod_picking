@@ -40,17 +40,25 @@ pub fn mesh_selection(
         }
     }
 
-    if new_selection {
+    if keyboard_input.pressed(KeyCode::LControl) && keyboard_input.pressed(KeyCode::A) {
+        for (mut selection, _interaction) in &mut query_all.iter_mut() {
+            if !selection.selected {
+                selection.selected = true;
+            }
+        }
+    } else if new_selection {
         // Unselect everything else
-        // TODO multi select would check if ctrl or shift is being held before clearing
         for (mut selection, interaction) in &mut query_all.iter_mut() {
             if selection.selected
                 && *interaction != Interaction::Clicked
                 && !keyboard_input.pressed(KeyCode::LControl)
             {
                 selection.selected = false;
-            }
-            if *interaction == Interaction::Clicked {
+            } else if *interaction == Interaction::Clicked
+                && keyboard_input.pressed(KeyCode::LControl)
+            {
+                selection.selected = !selection.selected
+            } else if !selection.selected && *interaction == Interaction::Clicked {
                 selection.selected = true;
             }
         }
@@ -58,7 +66,7 @@ pub fn mesh_selection(
         let mut ui_click = false;
         // If anyting in the UI is being interacted with, set all pick interactions to none and exit
         for interaction in node_query.iter() {
-            if *interaction == Interaction::Clicked {
+            if *interaction == Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
                 ui_click = true;
             }
         }
