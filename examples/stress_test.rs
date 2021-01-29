@@ -13,7 +13,6 @@ fn main() {
             vsync: false,
             ..Default::default()
         })
-        //.add_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
