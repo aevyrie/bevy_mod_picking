@@ -1,5 +1,6 @@
 mod focus;
 mod highlight;
+mod mouse;
 mod selection;
 
 pub use crate::{
@@ -7,6 +8,7 @@ pub use crate::{
     highlight::{
         get_initial_mesh_button_matl, mesh_highlighting, MeshButtonMaterials, PickableButton,
     },
+    mouse::update_pick_source_positions,
     selection::{mesh_selection, Selection},
 };
 use bevy::{prelude::*, ui::FocusPolicy};
@@ -24,9 +26,9 @@ pub type RayCastPluginState = PluginState<PickingRaycastSet>;
 
 /// This unit struct is used to tag the generic ray casting types `RayCastMesh` and `RayCastSource`.
 /// This means that all Picking ray casts are of the same type. Consequently, any meshes or ray
-/// sources that are being used by the picking plugin can be used by other ray casting systems,
-/// because they will have distint types, e.g.: `RayCastMesh<PickingRaycastSet>` vs.
-/// `RayCastMesh<MySuperCoolRaycastingType>`.
+/// sources that are being used by the picking plugin can be used by other ray casting systems
+/// because they will have distinct types, e.g.: `RayCastMesh<PickingRaycastSet>` vs.
+/// `RayCastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
 #[derive(Default)]
 pub struct PickingRaycastSet;
 
@@ -42,7 +44,17 @@ impl Default for PickingPluginState {
         }
     }
 }
-impl PickingPluginState {}
+
+#[derive(Debug, Clone, Copy)]
+pub enum UpdatePicks {
+    EveryFrame(Vec2),
+    OnMouseEvent,
+}
+impl Default for UpdatePicks {
+    fn default() -> Self {
+        UpdatePicks::EveryFrame(Vec2::zero())
+    }
+}
 
 fn update_state(
     mut raycast_state: ResMut<RayCastPluginState>,
@@ -61,6 +73,7 @@ impl Plugin for PickingPlugin {
                 stage::POST_UPDATE,
                 update_bound_sphere::<PickingRaycastSet>.system(),
             )
+            .add_system_to_stage(stage::POST_UPDATE, update_pick_source_positions.system())
             .add_system_to_stage(
                 stage::POST_UPDATE,
                 update_raycast::<PickingRaycastSet>.system(),
@@ -99,12 +112,14 @@ impl Plugin for DebugPickingPlugin {
 #[derive(Bundle)]
 pub struct PickingCameraBundle {
     pub source: PickingCamera,
+    pub update: UpdatePicks,
 }
 
 impl Default for PickingCameraBundle {
     fn default() -> Self {
         PickingCameraBundle {
             source: PickingCamera::new(RayCastMethod::Screenspace(Vec2::zero())),
+            update: UpdatePicks::default(),
         }
     }
 }
