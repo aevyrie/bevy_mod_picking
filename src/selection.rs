@@ -33,6 +33,7 @@ pub fn mesh_selection(
         return;
     }
 
+    // Check if something has been clicked on
     let mut new_selection = false;
     for interaction in query_changed.iter() {
         if *interaction == Interaction::Clicked {
@@ -41,13 +42,14 @@ pub fn mesh_selection(
     }
 
     if keyboard_input.pressed(KeyCode::LControl) && keyboard_input.pressed(KeyCode::A) {
+        // The user has hit ctrl+a, select all the things!
         for (mut selection, _interaction) in &mut query_all.iter_mut() {
             if !selection.selected {
                 selection.selected = true;
             }
         }
     } else if new_selection {
-        // Unselect everything else
+        // Some pickable mesh has been clicked on - figure out what to select or deselect
         for (mut selection, interaction) in &mut query_all.iter_mut() {
             if selection.selected
                 && *interaction != Interaction::Clicked
@@ -63,17 +65,16 @@ pub fn mesh_selection(
             }
         }
     } else {
+        // This branch deselects everything if the user clicks, but not on a pickable mesh or UI
         let mut ui_click = false;
-        // If anyting in the UI is being interacted with, set all pick interactions to none and exit
         for interaction in node_query.iter() {
+            // Check if anyting in the UI is being interacted with
             if *interaction == Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
                 ui_click = true;
             }
         }
         let user_click =
             mouse_button_input.just_pressed(MouseButton::Left) || touches_input.just_released(0);
-
-        // If the user clicked, but not on the ui, deslect everything
         if user_click && !ui_click {
             for (mut selection, _interaction) in &mut query_all.iter_mut() {
                 if selection.selected {

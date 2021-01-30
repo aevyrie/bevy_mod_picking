@@ -29,7 +29,6 @@ pub type RayCastPluginState = PluginState<PickingRaycastSet>;
 /// sources that are being used by the picking plugin can be used by other ray casting systems
 /// because they will have distinct types, e.g.: `RayCastMesh<PickingRaycastSet>` vs.
 /// `RayCastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
-#[derive(Default)]
 pub struct PickingRaycastSet;
 
 pub struct PickingPluginState {
@@ -118,7 +117,7 @@ pub struct PickingCameraBundle {
 impl Default for PickingCameraBundle {
     fn default() -> Self {
         PickingCameraBundle {
-            source: PickingCamera::new(RayCastMethod::Screenspace(Vec2::zero())),
+            source: PickingCamera::new(),
             update: UpdatePicks::default(),
         }
     }
