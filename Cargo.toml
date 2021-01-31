@@ -17,20 +17,20 @@ bevy = { git = "https://github.com/bevyengine/bevy", branch = "master", default-
 bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "master" }
 
 [features]
-example_deps = [ "bevy/bevy_wgpu", "bevy/bevy_winit", "bevy/bevy_gltf", "bevy/x11" ]
+ex = [ "bevy/bevy_wgpu", "bevy/bevy_winit", "bevy/bevy_gltf", "bevy/x11" ]
 
 [[example]]
 name = "3d_scene"
-required-features = [ "example_deps" ]
+required-features = [ "ex" ]
 
 [[example]]
 name = "events"
-required-features = [ "example_deps" ]
+required-features = [ "ex" ]
 
 [[example]]
 name = "multiple_windows"
-required-features = [ "example_deps" ]
+required-features = [ "ex" ]
 
 [[example]]
 name = "stress_test"
-required-features = [ "example_deps" ]
+required-features = [ "ex" ]
