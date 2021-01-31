@@ -59,6 +59,6 @@ pub fn event_debug_system(state: Res<RayCastPluginState>, mut events: EventReade
         return;
     }
     for event in events.iter() {
-        trace!("{:?}", event);
+        info!("{:?}", event);
     }
 }
