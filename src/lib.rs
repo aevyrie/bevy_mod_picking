@@ -5,7 +5,7 @@ mod mouse;
 mod selection;
 
 pub use crate::{
-    events::{event_debug_system, mesh_events_system, HoverEvent, SelectionEvent},
+    events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
     focus::{mesh_focus, Hover},
     highlight::{
         get_initial_mesh_button_matl, mesh_highlighting, MeshButtonMaterials, PickableButton,
@@ -88,8 +88,7 @@ impl Plugin for PickingPlugin {
 pub struct InteractablePickingPlugin;
 impl Plugin for InteractablePickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_event::<HoverEvent>()
-            .add_event::<SelectionEvent>()
+        app.add_event::<PickingEvent>()
             .add_system_to_stage(stage::POST_UPDATE, mesh_focus.system())
             .add_system_to_stage(stage::POST_UPDATE, mesh_selection.system())
             .add_system_to_stage(stage::POST_UPDATE, mesh_events_system.system());

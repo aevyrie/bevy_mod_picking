@@ -56,7 +56,7 @@ pub fn mesh_focus(
                     *interaction = Interaction::None;
                 }
                 if let Some(mut hover) = hover {
-                    if hover.hovered != false {
+                    if hover.hovered {
                         hover.hovered = false;
                     }
                 }
@@ -112,12 +112,12 @@ pub fn mesh_focus(
             }
             if Some(entity) == hovered_entity {
                 if let Some(mut hover) = hover {
-                    if hover.hovered != true {
+                    if !hover.hovered {
                         hover.hovered = true;
                     }
                 }
             } else if let Some(mut hover) = hover {
-                if hover.hovered != false {
+                if hover.hovered {
                     hover.hovered = false;
                 }
             }

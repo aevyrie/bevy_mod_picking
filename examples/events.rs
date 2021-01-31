@@ -15,14 +15,8 @@ fn main() {
         .run();
 }
 
-pub fn print_events(
-    mut hover_reader: EventReader<HoverEvent>,
-    mut selection_reader: EventReader<SelectionEvent>,
-) {
-    for event in hover_reader.iter() {
-        println!("{:?}", event);
-    }
-    for event in selection_reader.iter() {
+pub fn print_events(mut events: EventReader<PickingEvent>) {
+    for event in events.iter() {
         println!("{:?}", event);
     }
 }
