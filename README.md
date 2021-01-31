@@ -8,7 +8,7 @@ A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking and ray
 
 **Expect breaking changes in `master` branch - contributions are welcome!**
 
-![Picking demo](https://raw.githubusercontent.com/aevyrie/bevy_mod_picking/master/docs/picking_demo.webp)
+![Picking demo](https://raw.githubusercontent.com/aevyrie/bevy_mod_picking/master/docs/demo.webp)
 
 ## Features
 * Raycast into a scene and compute intersections:
