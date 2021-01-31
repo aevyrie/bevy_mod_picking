@@ -1,8 +1,12 @@
+use crate::PickingPluginState;
 use bevy::prelude::*;
 
-use crate::PickingPluginState;
-
-/// Meshes with `SelectableMesh` will have selection state managed
+/// Tracks the current selection state to be used with change tracking in the events system. Meshes
+/// with [Selection] will have selection state managed.
+///
+/// # Requirements
+///
+/// An entity with the [Selection] component must also have an [Interaction] component.
 #[derive(Debug, Copy, Clone)]
 pub struct Selection {
     selected: bool,

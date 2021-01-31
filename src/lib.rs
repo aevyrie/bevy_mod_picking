@@ -1,20 +1,22 @@
+mod events;
 mod focus;
 mod highlight;
 mod mouse;
 mod selection;
 
 pub use crate::{
-    focus::mesh_focus,
+    events::{event_debug_system, mesh_events_system, HoverEvent, SelectionEvent},
+    focus::{mesh_focus, Hover},
     highlight::{
         get_initial_mesh_button_matl, mesh_highlighting, MeshButtonMaterials, PickableButton,
     },
     mouse::update_pick_source_positions,
     selection::{mesh_selection, Selection},
 };
-use bevy::{prelude::*, ui::FocusPolicy};
 pub use bevy_mod_raycast::BoundVol;
+
+use bevy::{prelude::*, ui::FocusPolicy};
 use bevy_mod_raycast::*;
-use focus::mesh_focus_debug_system;
 
 pub mod pick_stage {
     pub const PICKING: &str = "picking";
@@ -86,8 +88,11 @@ impl Plugin for PickingPlugin {
 pub struct InteractablePickingPlugin;
 impl Plugin for InteractablePickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system_to_stage(stage::POST_UPDATE, mesh_focus.system())
-            .add_system_to_stage(stage::POST_UPDATE, mesh_selection.system());
+        app.add_event::<HoverEvent>()
+            .add_event::<SelectionEvent>()
+            .add_system_to_stage(stage::POST_UPDATE, mesh_focus.system())
+            .add_system_to_stage(stage::POST_UPDATE, mesh_selection.system())
+            .add_system_to_stage(stage::POST_UPDATE, mesh_events_system.system());
     }
 }
 
@@ -100,14 +105,20 @@ impl Plugin for HighlightablePickingPlugin {
     }
 }
 
-pub struct DebugPickingPlugin;
-impl Plugin for DebugPickingPlugin {
+pub struct DebugCursorPickingPlugin;
+impl Plugin for DebugCursorPickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_to_stage(
             stage::POST_UPDATE,
             update_debug_cursor::<PickingRaycastSet>.system(),
-        )
-        .add_system_to_stage(stage::POST_UPDATE, mesh_focus_debug_system.system());
+        );
+    }
+}
+
+pub struct DebugEventsPickingPlugin;
+impl Plugin for DebugEventsPickingPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_system_to_stage(stage::POST_UPDATE, event_debug_system.system());
     }
 }
 
@@ -133,4 +144,5 @@ pub struct PickableBundle {
     pub focus_policy: FocusPolicy,
     pub pickable_button: PickableButton,
     pub selection: Selection,
+    pub hover: Hover,
 }

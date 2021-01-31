@@ -6,7 +6,7 @@ use bevy_mod_picking::*;
 
 fn main() {
     App::build()
-        .add_resource(WindowDescriptor {
+        .insert_resource(WindowDescriptor {
             title: "bevy_mod_picking stress test".to_string(),
             width: 800.,
             height: 600.,
@@ -18,6 +18,7 @@ fn main() {
         .add_plugin(InteractablePickingPlugin)
         .add_plugin(HighlightablePickingPlugin)
         //.add_plugin(DebugPickingPlugin)
+        //.add_plugin(DebugEventsPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_startup_system(setup.system())
@@ -35,7 +36,7 @@ fn setup(
 
     // camera
     commands
-        .spawn(Camera3dBundle {
+        .spawn(PerspectiveCameraBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(
                     f32::from(edge_length) * -0.55,

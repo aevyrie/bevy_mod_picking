@@ -34,7 +34,7 @@ fn main() {
         // HighlightablePickingPlugin adds hover, click, and selection highlighting
         .add_plugin(HighlightablePickingPlugin)
         // DebugPickingPlugin systems to build and update debug cursors
-        .add_plugin(DebugPickingPlugin)
+        .add_plugin(DebugCursorPickingPlugin)
         .run();
 }
 

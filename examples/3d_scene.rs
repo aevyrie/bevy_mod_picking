@@ -16,7 +16,9 @@ fn main() {
         // HighlightablePickingPlugin adds hover, click, and selection highlighting
         .add_plugin(HighlightablePickingPlugin)
         // DebugPickingPlugin systems to build and update debug cursors
-        .add_plugin(DebugPickingPlugin)
+        .add_plugin(DebugCursorPickingPlugin)
+        // Debug output for interaction events
+        .add_plugin(DebugEventsPickingPlugin)
         .add_startup_system(setup.system())
         .init_resource::<ButtonMaterials>()
         .add_startup_system(setup_ui.system())
