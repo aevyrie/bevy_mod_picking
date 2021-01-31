@@ -11,27 +11,46 @@ use bevy::{
     },
     window::{CreateWindow, WindowDescriptor, WindowId},
 };
-use bevy_mod_picking::*;
+use bevy_mod_picking::*; // Import all the picking goodies!
 
 /// This example creates a second window and draws a mesh from two different cameras.
 fn main() {
     App::build()
+        .insert_resource(Msaa { samples: 4 })
+        .insert_resource(State::new(AppState::CreateWindow))
         .add_plugins(DefaultPlugins)
+        .add_stage_after(
+            stage::UPDATE,
+            STATE_STAGE,
+            StateStage::<AppState>::default(),
+        )
+        .on_state_update(STATE_STAGE, AppState::CreateWindow, setup_window.system())
+        .on_state_enter(STATE_STAGE, AppState::Setup, setup_pipeline.system())
+        // Picking specific stuff:
+        // PickingPlugin provides core picking systems and must be registered first
         .add_plugin(PickingPlugin)
-        .add_plugin(DebugPickingPlugin)
+        // InteractablePickingPlugin adds mouse events and selection
         .add_plugin(InteractablePickingPlugin)
-        .add_startup_system(setup.system())
+        // HighlightablePickingPlugin adds hover, click, and selection highlighting
+        .add_plugin(HighlightablePickingPlugin)
+        // DebugPickingPlugin systems to build and update debug cursors
+        .add_plugin(DebugPickingPlugin)
         .run();
 }
 
-fn setup(
-    commands: &mut Commands,
+const STATE_STAGE: &str = "state";
+
+// NOTE: this "state based" approach to multiple windows is a short term workaround.
+// Future Bevy releases shouldn't require such a strict order of operations.
+#[derive(Clone)]
+enum AppState {
+    CreateWindow,
+    Setup,
+}
+
+fn setup_window(
+    mut app_state: ResMut<State<AppState>>,
     mut create_window_events: ResMut<Events<CreateWindow>>,
-    mut active_cameras: ResMut<ActiveCameras>,
-    mut render_graph: ResMut<RenderGraph>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    msaa: Res<Msaa>,
-    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let window_id = WindowId::new();
 
@@ -39,13 +58,33 @@ fn setup(
     create_window_events.send(CreateWindow {
         id: window_id,
         descriptor: WindowDescriptor {
-            width: 800.0,
-            height: 600.0,
+            width: 800.,
+            height: 600.,
             vsync: false,
             title: "second window".to_string(),
             ..Default::default()
         },
     });
+
+    app_state.set_next(AppState::Setup).unwrap();
+}
+
+fn setup_pipeline(
+    commands: &mut Commands,
+    windows: Res<Windows>,
+    mut active_cameras: ResMut<ActiveCameras>,
+    mut render_graph: ResMut<RenderGraph>,
+    asset_server: Res<AssetServer>,
+    msaa: Res<Msaa>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    // get the non-default window id
+    let window_id = windows
+        .iter()
+        .find(|w| w.id() != WindowId::default())
+        .map(|w| w.id())
+        .unwrap();
 
     // here we setup our render graph to draw our second camera to the new window's swap chain
 
@@ -78,7 +117,7 @@ fn setup(
             TextureAttachment::Input("color_attachment".to_string()),
             TextureAttachment::Input("color_resolve_target".to_string()),
             Operations {
-                load: LoadOp::Clear(Color::rgb(0.1, 0.1, 0.3)),
+                load: LoadOp::Clear(Color::rgb(0.5, 0.5, 0.8)),
                 store: true,
             },
         )],
@@ -138,7 +177,7 @@ fn setup(
                     mip_level_count: 1,
                     sample_count: msaa.samples,
                     dimension: TextureDimension::D2,
-                    format: TextureFormat::Bgra8UnormSrgb,
+                    format: TextureFormat::default(),
                     usage: TextureUsage::OUTPUT_ATTACHMENT,
                 },
             ),
@@ -156,67 +195,40 @@ fn setup(
 
     // SETUP SCENE
 
-    // load the mesh
-    let mesh_handle = meshes.add(Mesh::from(shape::Icosphere {
-        subdivisions: 4,
-        radius: 1.0,
-    }));
-
-    // create a material for the mesh
-    let material_handle = materials.add(StandardMaterial {
-        albedo: Color::rgb(0.5, 0.4, 0.3),
-        ..Default::default()
-    });
-
     // add entities to the world
     commands
-        // mesh
         .spawn(PbrBundle {
-            mesh: mesh_handle,
-            material: material_handle,
+            mesh: meshes.add(Mesh::from(shape::Icosphere {
+                subdivisions: 20,
+                radius: 0.5,
+            })),
+            transform: Transform::from_translation(Vec3::zero()),
+            material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
-        .with(PickableMesh::new([Group(0), Group(1)].into()))
-        .with(InteractableMesh::new([Group(0), Group(1)].into()))
-        .with(HighlightablePickMesh::default())
-        .with(Selection::default())
+        .with_bundle(PickableBundle::default())
         // light
         .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(4.0, 5.0, 4.0)),
+            transform: Transform::from_xyz(4.0, 5.0, 4.0),
             ..Default::default()
         })
         // main camera
-        .spawn(Camera3dBundle {
-            transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::new(0.0, 0.0, 6.0),
-                Vec3::new(0.0, 0.0, 0.0),
-                Vec3::new(0.0, 1.0, 0.0),
-            )),
+        .spawn(PerspectiveCameraBundle {
+            transform: Transform::from_xyz(0.0, 0.0, 6.0)
+                .looking_at(Vec3::default(), Vec3::unit_y()),
             ..Default::default()
         })
-        .with(PickSource::new(
-            [Group(0)].into(),
-            PickMethod::CameraCursor(
-                WindowId::primary(),
-                UpdatePicks::EveryFrame(Vec2::default()),
-            ),
-        ))
+        .with_bundle(PickingCameraBundle::default())
         // second window camera
-        .spawn(Camera3dBundle {
+        .spawn(PerspectiveCameraBundle {
             camera: Camera {
                 name: Some("Secondary".to_string()),
                 window: window_id,
                 ..Default::default()
             },
-            transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::new(6.0, 0.0, 0.0),
-                Vec3::new(0.0, 0.0, 0.0),
-                Vec3::new(0.0, 1.0, 0.0),
-            )),
+            transform: Transform::from_xyz(6.0, 0.0, 0.0)
+                .looking_at(Vec3::default(), Vec3::unit_y()),
             ..Default::default()
         })
-        .with(PickSource::new(
-            [Group(1)].into(),
-            PickMethod::CameraCursor(window_id, UpdatePicks::EveryFrame(Vec2::default())),
-        ));
+        .with_bundle(PickingCameraBundle::default());
 }

@@ -4,7 +4,7 @@ use bevy_mod_picking::*; // Import all the picking goodies!
 
 fn main() {
     App::build()
-        .add_resource(WindowDescriptor {
+        .insert_resource(WindowDescriptor {
             vsync: false, // Disabled for this demo to remove vsync as a source of input latency
             ..Default::default()
         })
@@ -34,7 +34,7 @@ fn setup(
     // add entities to the world
     // camera
     commands
-        .spawn(Camera3dBundle {
+        .spawn(PerspectiveCameraBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(-3.0, 5.0, 8.0),
                 Vec3::new(0.0, 0.0, 0.0),
@@ -127,7 +127,7 @@ fn setup_ui(
 ) {
     commands
         // ui camera
-        .spawn(CameraUiBundle::default())
+        .spawn(UiCameraBundle::default())
         .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(150.0), Val::Px(65.0)),
