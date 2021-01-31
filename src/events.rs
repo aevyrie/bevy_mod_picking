@@ -42,6 +42,7 @@ pub fn mesh_events_system(
     }
 }
 
+/// Listens for [HoverEvent] and [SelectionEvent] events and prints them
 pub fn event_debug_system(
     state: Res<RayCastPluginState>,
     mut hover_reader: EventReader<HoverEvent>,
