@@ -1,6 +1,7 @@
 use crate::{PickableMesh, PickingCamera, PickingPluginState, RayCastPluginState, Selection};
 use bevy::{prelude::*, ui::FocusPolicy};
 
+#[allow(clippy::type_complexity)]
 pub fn mesh_focus(
     mut state: ResMut<PickingPluginState>,
     mouse_button_input: Res<Input<MouseButton>>,
@@ -78,6 +79,7 @@ pub fn mesh_focus(
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn mesh_focus_debug_system(
     state: Res<RayCastPluginState>,
     query: Query<

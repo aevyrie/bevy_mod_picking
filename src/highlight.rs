@@ -31,6 +31,7 @@ pub fn get_initial_mesh_button_matl(
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn mesh_highlighting(
     button_materials: Res<MeshButtonMaterials>,
     mut interaction_query: Query<
