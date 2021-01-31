@@ -30,7 +30,7 @@ pub fn update_pick_source_positions(
             }
             None => None,
         };
-        match update_picks.clone() {
+        match *update_picks {
             UpdatePicks::EveryFrame(cached_cursor_pos) => {
                 match cursor_latest {
                     Some(cursor_moved) => {
