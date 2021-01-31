@@ -116,11 +116,9 @@ pub fn mesh_focus(
                         hover.hovered = true;
                     }
                 }
-            } else {
-                if let Some(mut hover) = hover {
-                    if hover.hovered != false {
-                        hover.hovered = false;
-                    }
+            } else if let Some(mut hover) = hover {
+                if hover.hovered != false {
+                    hover.hovered = false;
                 }
             }
         }
