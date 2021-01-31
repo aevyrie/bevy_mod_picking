@@ -20,15 +20,18 @@ pub mod pick_stage {
     pub const PICKING: &str = "picking";
 }
 
+/// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
 pub type PickableMesh = RayCastMesh<PickingRaycastSet>;
+/// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
 pub type PickingCamera = RayCastSource<PickingRaycastSet>;
+/// A type alias for the concrete [PluginState](bevy_mod_raycast::PluginState) type used for Picking.
 pub type RayCastPluginState = PluginState<PickingRaycastSet>;
 
-/// This unit struct is used to tag the generic ray casting types `RayCastMesh` and `RayCastSource`.
-/// This means that all Picking ray casts are of the same type. Consequently, any meshes or ray
-/// sources that are being used by the picking plugin can be used by other ray casting systems
-/// because they will have distinct types, e.g.: `RayCastMesh<PickingRaycastSet>` vs.
-/// `RayCastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
+/// This unit struct is used to tag the generic ray casting types `RayCastMesh` and
+/// `RayCastSource`. This means that all Picking ray casts are of the same type. Consequently, any
+/// meshes or ray sources that are being used by the picking plugin can be used by other ray
+/// casting systems because they will have distinct types, e.g.: `RayCastMesh<PickingRaycastSet>`
+/// vs. `RayCastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
 pub struct PickingRaycastSet;
 
 pub struct PickingPluginState {
