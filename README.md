@@ -11,14 +11,9 @@ A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking and ray
 ![Picking demo](https://raw.githubusercontent.com/aevyrie/bevy_mod_picking/master/docs/demo.webp)
 
 ## Features
-* Raycast into a scene and compute intersections:
-    * Mouse: use your mouse to pick 3d meshes
-    * Screen space coordinates: cast a ray from a point on screen (e.g. first person shooter)
-    * Transform: manually define a ray in space (e.g. third person shooter)
 * [Pick Data](#getting-pick-data): intersection surface normal and coordinates in world space
-* [Mesh Interaction](#interacting-with-meshes): mouseover and mouseclick events, highlighting, selection state management
+* [Mesh Interaction](#interacting-with-meshes): mouseover and mouseclick, highlighting, selection state
 * [Debug cursor](#debug): debug pick intersections and surface normals with a 3d cursor
-* [Picking Groups](#pick-groups): associate raycasting sources with groups of meshes
 
 ## Demo
 
