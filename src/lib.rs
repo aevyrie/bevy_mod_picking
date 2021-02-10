@@ -8,7 +8,7 @@ pub use crate::{
     events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
     focus::{mesh_focus, Hover},
     highlight::{
-        get_initial_mesh_button_matl, mesh_highlighting, MeshButtonMaterials, PickableButton,
+        get_initial_mesh_button_material, mesh_highlighting, MeshButtonMaterials, PickableButton,
     },
     mouse::update_pick_source_positions,
     selection::{mesh_selection, Selection},
@@ -99,7 +99,10 @@ pub struct HighlightablePickingPlugin;
 impl Plugin for HighlightablePickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<MeshButtonMaterials>()
-            .add_system_to_stage(stage::POST_UPDATE, get_initial_mesh_button_matl.system())
+            .add_system_to_stage(
+                stage::POST_UPDATE,
+                get_initial_mesh_button_material.system(),
+            )
             .add_system_to_stage(stage::POST_UPDATE, mesh_highlighting.system());
     }
 }

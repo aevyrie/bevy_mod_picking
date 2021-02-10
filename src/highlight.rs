@@ -23,7 +23,7 @@ impl FromResources for MeshButtonMaterials {
     }
 }
 
-pub fn get_initial_mesh_button_matl(
+pub fn get_initial_mesh_button_material(
     mut query: Query<(&mut PickableButton, &Handle<StandardMaterial>), Added<PickableButton>>,
 ) {
     for (mut button, material) in query.iter_mut() {
