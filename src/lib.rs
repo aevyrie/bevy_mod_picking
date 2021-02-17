@@ -121,7 +121,6 @@ impl Plugin for InteractablePickingPlugin {
                 mesh_events_system
                     .system()
                     .label(pick_labels::MESH_EVENTS)
-                    .before(pick_labels::MESH_HIGHLIGHTING),
             );
     }
 }
@@ -140,7 +139,8 @@ impl Plugin for HighlightablePickingPlugin {
                 stage::POST_UPDATE,
                 mesh_highlighting
                     .system()
-                    .label(pick_labels::MESH_HIGHLIGHTING),
+                    .label(pick_labels::MESH_HIGHLIGHTING)
+                    .after(pick_labels::MESH_EVENTS),
             );
     }
 }
