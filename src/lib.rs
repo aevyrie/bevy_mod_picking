@@ -118,9 +118,7 @@ impl Plugin for InteractablePickingPlugin {
             )
             .add_system_to_stage(
                 stage::POST_UPDATE,
-                mesh_events_system
-                    .system()
-                    .label(pick_labels::MESH_EVENTS)
+                mesh_events_system.system().label(pick_labels::MESH_EVENTS),
             );
     }
 }
