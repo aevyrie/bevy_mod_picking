@@ -11,7 +11,7 @@ fn main() {
         // HighlightablePickingPlugin adds hover, click, and selection highlighting
         .add_plugin(HighlightablePickingPlugin)
         .add_startup_system(setup.system())
-        .add_system_to_stage(stage::POST_UPDATE, print_events.system())
+        .add_system_to_stage(CoreStage::PostUpdate, print_events.system())
         .run();
 }
 

@@ -20,7 +20,7 @@ fn main() {
         .insert_resource(State::new(AppState::CreateWindow))
         .add_plugins(DefaultPlugins)
         .add_stage_after(
-            stage::UPDATE,
+            CoreStage::Update,
             STATE_STAGE,
             StateStage::<AppState>::default(),
         )
