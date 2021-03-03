@@ -38,7 +38,7 @@ cargo run --example 3d_scene --features="example_deps"
 
 Note that by default this plugin only depends on bevy's `render` feature to minimize both dependency count and compile time, as well as allow for wasm support. This is why the feature flag is needed to run examples, which need the winit and wgpu features to run.
 
-# Getting Started
+# Quickstart
 
 It only takes a few lines to get mouse picking working in your Bevy application using this plugin. The following sections will walk you through what is needed to get the plugin working, and how everything fits together.
 
