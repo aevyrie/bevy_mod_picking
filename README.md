@@ -42,41 +42,29 @@ Note that by default this plugin only depends on bevy's `render` feature to mini
 
 It only takes a few lines to get mouse picking working in your Bevy application using this plugin. The following sections will walk you through what is needed to get the plugin working, and how everything fits together.
 
-## Setup
-
-Add the plugin to your dependencies in Cargo.toml
-
+1. Add the plugin to your dependencies in Cargo.toml
 ```toml
 bevy_mod_picking = "0.4"
 ```
 
-Import the plugin:
-
+2. Import the plugin and add it to your Bevy app:
 ```rust
 use bevy_mod_picking::*;
-```
-
-Add it to the plugins of your Bevy app:
-
-```rust
+// Bevy app stuff here...
 .add_plugin(PickingPlugin)
 ```
 
-## Marking Entities for Picking
-
-For simple use cases, you will probably be using the mouse to pick items in a 3d scene. You can mark your camera with a `PickingCameraBundle`:
-
+3. Mark your camera with a `PickingCameraBundle`; this tells the plugin what camera you are using to render to the screen:
 ```rust
 .with_bundle(PickingCameraBundle::default())
 ```
 
-Now all you have to do is add the `PickableBundle` to your meshes to make them "pickable":
-
+4. Now all you have to do is add the `PickableBundle` to your meshes to make them "pickable":
 ```rust
 .with_bundle(PickableBundle::default())
 ```
 
-And that's all you need to get started! To learn how to retreive picking intersections, you can jump to the [Getting Pick Data](#getting-pick-data) section. If you also need interaction features, e.g. mouseclick & mousehover events, highlighting, and selection state, continue reading.
+And that's it! To learn how to retreive picking intersections, you can jump to the [Getting Pick Data](#getting-pick-data) section. If you also need interaction features, e.g. mouseclick & mousehover events, highlighting, and selection state, continue reading.
 
 # Interacting with Meshes
 
