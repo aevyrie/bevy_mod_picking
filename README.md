@@ -6,7 +6,7 @@
 [![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 
 A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking, making it easy to
-interact with 3D geometry in Bevy using your mouse. The plugin provides a number of built-in mouse
+interact with 3D geometry in Bevy using your mouse. The plugin provides mouse intersection coordinates, a number of built-in mouse
 events, highlighting, selection state, and a 3D debug cursor. This plugin is build on top of [`bevy_mod_raycast`](https://github.com/aevyrie/bevy_mod_raycast).
 
 **Expect breaking changes in `master` branch - contributions are welcome!**
