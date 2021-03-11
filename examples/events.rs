@@ -22,7 +22,7 @@ pub fn print_events(mut events: EventReader<PickingEvent>) {
 }
 
 fn setup(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {

@@ -50,7 +50,7 @@ enum AppState {
 
 fn setup_window(
     mut app_state: ResMut<State<AppState>>,
-    mut create_window_events: ResMut<Events<CreateWindow>>,
+    mut create_window_events: EventWriter<CreateWindow>,
 ) {
     let window_id = WindowId::new();
 
@@ -70,7 +70,7 @@ fn setup_window(
 }
 
 fn setup_pipeline(
-    commands: &mut Commands,
+    mut commands: Commands,
     windows: Res<Windows>,
     mut active_cameras: ResMut<ActiveCameras>,
     mut render_graph: ResMut<RenderGraph>,
