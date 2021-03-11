@@ -16,7 +16,6 @@ pub use crate::{
 pub use bevy_mod_raycast::BoundVol;
 
 use bevy::{prelude::*, ui::FocusPolicy};
-use bevy_mod_raycast::*;
 
 pub mod pick_stage {
     pub const PICKING: &str = "picking";
@@ -30,11 +29,11 @@ pub mod pick_labels {
 }
 
 /// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
-pub type PickableMesh = RayCastMesh<PickingRaycastSet>;
+pub type PickableMesh = bevy_mod_raycast::RayCastMesh<PickingRaycastSet>;
 /// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
-pub type PickingCamera = RayCastSource<PickingRaycastSet>;
+pub type PickingCamera = bevy_mod_raycast::RayCastSource<PickingRaycastSet>;
 /// A type alias for the concrete [PluginState](bevy_mod_raycast::PluginState) type used for Picking.
-pub type RayCastPluginState = PluginState<PickingRaycastSet>;
+pub type RayCastPluginState = bevy_mod_raycast::PluginState<PickingRaycastSet>;
 
 /// This unit struct is used to tag the generic ray casting types `RayCastMesh` and
 /// `RayCastSource`. This means that all Picking ray casts are of the same type. Consequently, any
@@ -63,7 +62,7 @@ pub enum UpdatePicks {
 }
 impl Default for UpdatePicks {
     fn default() -> Self {
-        UpdatePicks::EveryFrame(Vec2::zero())
+        UpdatePicks::EveryFrame(Vec2::ZERO)
     }
 }
 
@@ -82,7 +81,7 @@ impl Plugin for PickingPlugin {
             .add_system_to_stage(CoreStage::PostUpdate, update_state.system())
             .add_system_to_stage(
                 CoreStage::PostUpdate,
-                update_bound_sphere::<PickingRaycastSet>
+                bevy_mod_raycast::update_bound_sphere::<PickingRaycastSet>
                     .system()
                     .before(pick_labels::UPDATE_RAYCAST),
             )
@@ -94,7 +93,7 @@ impl Plugin for PickingPlugin {
             )
             .add_system_to_stage(
                 CoreStage::PostUpdate,
-                update_raycast::<PickingRaycastSet>
+                bevy_mod_raycast::update_raycast::<PickingRaycastSet>
                     .system()
                     .label(pick_labels::UPDATE_RAYCAST),
             );
@@ -148,7 +147,7 @@ impl Plugin for DebugCursorPickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_to_stage(
             CoreStage::PostUpdate,
-            update_debug_cursor::<PickingRaycastSet>.system(),
+            bevy_mod_raycast::update_debug_cursor::<PickingRaycastSet>.system(),
         );
     }
 }

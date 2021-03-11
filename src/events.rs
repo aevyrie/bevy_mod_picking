@@ -26,7 +26,7 @@ pub enum PickingEvent {
 #[allow(clippy::type_complexity)]
 pub fn mesh_events_system(
     state: Res<RayCastPluginState>,
-    mut picking_events: ResMut<Events<PickingEvent>>,
+    mut picking_events: EventWriter<PickingEvent>,
     hover_query: Query<(Entity, &Hover), (Changed<Hover>, With<PickableMesh>)>,
     selection_query: Query<(Entity, &Selection), (Changed<Selection>, With<PickableMesh>)>,
 ) {

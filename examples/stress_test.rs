@@ -17,7 +17,7 @@ fn main() {
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
         .add_plugin(HighlightablePickingPlugin)
-        //.add_plugin(DebugCursorPickingPlugin)
+        .add_plugin(DebugCursorPickingPlugin)
         //.add_plugin(DebugEventsPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
@@ -27,7 +27,7 @@ fn main() {
 
 /// set up a simple 3D scene
 fn setup(
-    commands: &mut Commands,
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
@@ -70,7 +70,6 @@ fn setup(
                 )) * Transform::from_scale(Vec3::from([0.25, 0.25, 0.25])),
                 ..Default::default()
             })
-            //.with(PickableMesh::default())
             .with_bundle(PickableBundle::default())
             .with(BoundVol::default());
     }

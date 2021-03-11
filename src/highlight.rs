@@ -12,9 +12,11 @@ pub struct MeshButtonMaterials {
     selected: Handle<StandardMaterial>,
 }
 
-impl FromResources for MeshButtonMaterials {
-    fn from_resources(resources: &Resources) -> Self {
-        let mut materials = resources.get_mut::<Assets<StandardMaterial>>().unwrap();
+impl FromWorld for MeshButtonMaterials {
+    fn from_world(world: &mut World) -> Self {
+        let mut materials = world
+            .get_resource_mut::<Assets<StandardMaterial>>()
+            .unwrap();
         MeshButtonMaterials {
             hovered: materials.add(Color::rgb(0.35, 0.35, 0.35).into()),
             pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
