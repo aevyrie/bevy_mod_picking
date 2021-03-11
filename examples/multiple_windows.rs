@@ -74,7 +74,6 @@ fn setup_pipeline(
     windows: Res<Windows>,
     mut active_cameras: ResMut<ActiveCameras>,
     mut render_graph: ResMut<RenderGraph>,
-    asset_server: Res<AssetServer>,
     msaa: Res<Msaa>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -202,7 +201,7 @@ fn setup_pipeline(
                 subdivisions: 20,
                 radius: 0.5,
             })),
-            transform: Transform::from_translation(Vec3::zero()),
+            transform: Transform::from_translation(Vec3::ZERO),
             material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
             ..Default::default()
         })
@@ -214,8 +213,7 @@ fn setup_pipeline(
         })
         // main camera
         .spawn(PerspectiveCameraBundle {
-            transform: Transform::from_xyz(0.0, 0.0, 6.0)
-                .looking_at(Vec3::default(), Vec3::unit_y()),
+            transform: Transform::from_xyz(0.0, 0.0, 6.0).looking_at(Vec3::default(), Vec3::Y),
             ..Default::default()
         })
         .with_bundle(PickingCameraBundle::default())
@@ -226,8 +224,7 @@ fn setup_pipeline(
                 window: window_id,
                 ..Default::default()
             },
-            transform: Transform::from_xyz(6.0, 0.0, 0.0)
-                .looking_at(Vec3::default(), Vec3::unit_y()),
+            transform: Transform::from_xyz(6.0, 0.0, 0.0).looking_at(Vec3::default(), Vec3::Y),
             ..Default::default()
         })
         .with_bundle(PickingCameraBundle::default());
