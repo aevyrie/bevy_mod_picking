@@ -21,11 +21,12 @@ pub mod pick_stage {
     pub const PICKING: &str = "picking";
 }
 
-pub mod pick_labels {
-    pub const UPDATE_RAYCAST: &str = "update_raycast";
-    pub const MESH_HIGHLIGHTING: &str = "mesh_highlighting";
-    pub const MESH_FOCUS: &str = "mesh_focus";
-    pub const MESH_EVENTS: &str = "mesh_events";
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+pub enum PickingSystem {
+    UpdateRaycast,
+    Highlighting,
+    Focus,
+    Events,
 }
 
 /// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
@@ -83,19 +84,19 @@ impl Plugin for PickingPlugin {
                 CoreStage::PostUpdate,
                 bevy_mod_raycast::update_bound_sphere::<PickingRaycastSet>
                     .system()
-                    .before(pick_labels::UPDATE_RAYCAST),
+                    .before(PickingSystem::UpdateRaycast),
             )
             .add_system_to_stage(
                 CoreStage::PostUpdate,
                 update_pick_source_positions
                     .system()
-                    .before(pick_labels::UPDATE_RAYCAST),
+                    .before(PickingSystem::UpdateRaycast),
             )
             .add_system_to_stage(
                 CoreStage::PostUpdate,
                 bevy_mod_raycast::update_raycast::<PickingRaycastSet>
                     .system()
-                    .label(pick_labels::UPDATE_RAYCAST),
+                    .label(PickingSystem::UpdateRaycast),
             );
     }
 }
@@ -106,18 +107,18 @@ impl Plugin for InteractablePickingPlugin {
         app.add_event::<PickingEvent>()
             .add_system_to_stage(
                 CoreStage::PostUpdate,
-                mesh_focus.system().label(pick_labels::MESH_FOCUS),
+                mesh_focus.system().label(PickingSystem::Focus),
             )
             .add_system_to_stage(
                 CoreStage::PostUpdate,
                 mesh_selection
                     .system()
-                    .before(pick_labels::MESH_EVENTS)
-                    .after(pick_labels::MESH_FOCUS),
+                    .before(PickingSystem::Events)
+                    .after(PickingSystem::Focus),
             )
             .add_system_to_stage(
                 CoreStage::PostUpdate,
-                mesh_events_system.system().label(pick_labels::MESH_EVENTS),
+                mesh_events_system.system().label(PickingSystem::Events),
             );
     }
 }
@@ -130,14 +131,14 @@ impl Plugin for HighlightablePickingPlugin {
                 CoreStage::PostUpdate,
                 get_initial_mesh_button_material
                     .system()
-                    .before(pick_labels::MESH_HIGHLIGHTING),
+                    .before(PickingSystem::Highlighting),
             )
             .add_system_to_stage(
                 CoreStage::PostUpdate,
                 mesh_highlighting
                     .system()
-                    .label(pick_labels::MESH_HIGHLIGHTING)
-                    .after(pick_labels::MESH_EVENTS),
+                    .label(PickingSystem::Highlighting)
+                    .after(PickingSystem::Events),
             );
     }
 }

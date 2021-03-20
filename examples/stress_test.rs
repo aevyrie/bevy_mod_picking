@@ -76,9 +76,9 @@ fn setup(
 
     commands.spawn(LightBundle {
         transform: Transform::from_translation(Vec3::new(
-            0.0,
-            f32::from(edge_length),
-            f32::from(edge_length),
+            f32::from(edge_length) * -0.55,
+            f32::from(edge_length) * 0.55,
+            f32::from(edge_length) * 0.45,
         )),
         ..Default::default()
     });

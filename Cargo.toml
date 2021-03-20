@@ -28,9 +28,5 @@ name = "events"
 required-features = ["ex"]
 
 [[example]]
-name = "multiple_windows"
-required-features = ["ex"]
-
-[[example]]
 name = "stress_test"
 required-features = ["ex"]

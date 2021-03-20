@@ -43,7 +43,7 @@ pub fn mesh_highlighting(
             Option<&Selection>,
             &PickableButton,
         ),
-        Or<(Mutated<Interaction>, Mutated<Selection>)>,
+        Or<(Changed<Interaction>, Changed<Selection>)>,
     >,
 ) {
     for (interaction, mut material, selection, button) in interaction_query.iter_mut() {
