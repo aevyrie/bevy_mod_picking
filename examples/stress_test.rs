@@ -61,7 +61,13 @@ fn setup(
         commands
             .spawn(PbrBundle {
                 mesh: mesh_handle.clone(),
-                material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
+                material: materials.add(StandardMaterial {
+                    base_color: Color::rgb(1.0, 1.0, 1.0),
+                    roughness: 0.4,
+                    metallic: 0.7,
+                    reflectance: 0.9,
+                    ..Default::default()
+                }),
                 transform: Transform::from_translation(Vec3::new(
                     i as f32 % f_edge_length - f_edge_length / 2.0,
                     (i as f32 / f_edge_length).round() % f_edge_length - f_edge_length / 2.0,
@@ -75,11 +81,26 @@ fn setup(
     }
 
     commands.spawn(LightBundle {
-        transform: Transform::from_translation(Vec3::new(
-            f32::from(edge_length) * -0.55,
-            f32::from(edge_length) * 0.55,
-            f32::from(edge_length) * 0.45,
+        transform: Transform::from_matrix(Mat4::face_toward(
+            Vec3::new(
+                f32::from(edge_length) * -3.,
+                f32::from(edge_length) * 3.,
+                f32::from(edge_length) * 3.,
+            ),
+            Vec3::new(
+                f32::from(edge_length) * 0.1,
+                0.0,
+                -f32::from(edge_length) * 0.1,
+            ),
+            Vec3::new(0.0, 1.0, 0.0),
         )),
+        light: Light {
+            intensity: 80000.0,
+            fov: f32::to_radians(60.0),
+            depth: 0.1..50.0,
+            range: 100000.0,
+            ..Default::default()
+        },
         ..Default::default()
     });
 }
