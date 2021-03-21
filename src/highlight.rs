@@ -7,9 +7,9 @@ pub struct PickableButton {
 }
 
 pub struct MeshButtonMaterials {
-    hovered: Handle<StandardMaterial>,
-    pressed: Handle<StandardMaterial>,
-    selected: Handle<StandardMaterial>,
+    pub hovered: Handle<StandardMaterial>,
+    pub pressed: Handle<StandardMaterial>,
+    pub selected: Handle<StandardMaterial>,
 }
 
 impl FromWorld for MeshButtonMaterials {
