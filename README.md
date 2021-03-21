@@ -12,7 +12,7 @@ events, highlighting, selection state, and a 3D debug cursor. This plugin is bui
 **Expect breaking changes in `master` branch - contributions are welcome!**
 
 
-![Picking demo](https://user-images.githubusercontent.com/2632925/111893584-00337d80-89c1-11eb-8412-5db710a7fc32.mp4)
+![Picking demo](https://user-images.githubusercontent.com/2632925/111893615-3a9d1a80-89c1-11eb-980f-9c546df990f5.png)
 
 ## Features
 * [Pick Data](#getting-pick-data): intersection surface normal and coordinates in world space
