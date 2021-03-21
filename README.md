@@ -11,7 +11,7 @@ events, highlighting, selection state, and a 3D debug cursor. This plugin is bui
 
 **Expect breaking changes in `master` branch - contributions are welcome!**
 
-![Picking demo](https://raw.githubusercontent.com/aevyrie/bevy_mod_picking/master/docs/demo.webp)
+![Picking demo](docs/demo_vid.webp)
 
 ## Features
 * [Pick Data](#getting-pick-data): intersection surface normal and coordinates in world space

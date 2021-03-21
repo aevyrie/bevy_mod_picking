@@ -63,9 +63,9 @@ fn setup(
                 mesh: mesh_handle.clone(),
                 material: materials.add(StandardMaterial {
                     base_color: Color::rgb(1.0, 1.0, 1.0),
-                    roughness: 0.4,
-                    metallic: 0.7,
-                    reflectance: 0.9,
+                    metallic: 0.95,
+                    reflectance: 1.0,
+                    roughness: 0.5,
                     ..Default::default()
                 }),
                 transform: Transform::from_translation(Vec3::new(
@@ -83,9 +83,9 @@ fn setup(
     commands.spawn(LightBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
             Vec3::new(
-                f32::from(edge_length) * -3.,
-                f32::from(edge_length) * 3.,
-                f32::from(edge_length) * 3.,
+                f32::from(edge_length) * -0.8,
+                f32::from(edge_length) * 0.8,
+                f32::from(edge_length) * 0.8,
             ),
             Vec3::new(
                 f32::from(edge_length) * 0.1,
@@ -95,10 +95,8 @@ fn setup(
             Vec3::new(0.0, 1.0, 0.0),
         )),
         light: Light {
-            intensity: 80000.0,
-            fov: f32::to_radians(60.0),
-            depth: 0.1..50.0,
-            range: 100000.0,
+            intensity: 1000.0,
+            range: 200.0,
             ..Default::default()
         },
         ..Default::default()
