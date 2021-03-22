@@ -48,7 +48,7 @@ pub fn mesh_focus(
 
     let mut hovered_entity = None;
 
-    // If anyting in the UI is being interacted with, set all pick interactions to none and exit
+    // If anything in the UI is being interacted with, set all pick interactions to none and exit
     for ui_interaction in interaction_set.q1().iter() {
         if *ui_interaction != Interaction::None {
             for (mut interaction, hover, _, _) in &mut interaction_set.q0_mut().iter_mut() {
