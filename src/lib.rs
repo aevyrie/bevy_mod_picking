@@ -25,6 +25,7 @@ pub mod pick_stage {
 pub enum PickingSystem {
     UpdateRaycast,
     Highlighting,
+    Selection,
     Focus,
     Events,
 }
@@ -113,6 +114,7 @@ impl Plugin for InteractablePickingPlugin {
                 CoreStage::PostUpdate,
                 mesh_selection
                     .system()
+                    .label(PickingSystem::Selection)
                     .before(PickingSystem::Events)
                     .after(PickingSystem::Focus),
             )
