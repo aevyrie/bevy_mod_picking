@@ -31,7 +31,7 @@ pub fn mesh_selection(
     keyboard_input: Res<Input<KeyCode>>,
     query_changed: Query<&Interaction, Changed<Interaction>>,
     mut query_all: Query<(&mut Selection, &Interaction)>,
-    node_query: Query<&Interaction, With<Node>>,
+    node_query: Query<&Interaction, Without<Selection>>,
 ) {
     if state.paused_for_ui || !state.enabled {
         return;
@@ -72,7 +72,7 @@ pub fn mesh_selection(
         // This branch deselects everything if the user clicks, but not on a pickable mesh or UI
         let mut ui_click = false;
         for interaction in node_query.iter() {
-            // Check if anyting in the UI is being interacted with
+            // Check if anything in the UI is being interacted with
             if *interaction == Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
                 ui_click = true;
             }
