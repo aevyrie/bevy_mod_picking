@@ -15,6 +15,10 @@ impl Selection {
     pub fn selected(&self) -> bool {
         self.selected
     }
+    /// Set the selection state.
+    pub fn set_selected(&mut self, selected: bool) {
+        self.selected = selected;
+    }
 }
 impl Default for Selection {
     fn default() -> Self {
