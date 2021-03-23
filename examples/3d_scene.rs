@@ -1,8 +1,7 @@
-use bevy::{prelude::*, ui::FocusPolicy};
+use bevy::prelude::*;
 use bevy_mod_picking::{
     DebugCursorPickingPlugin, DebugEventsPickingPlugin, HighlightablePickingPlugin,
-    InteractablePickingPlugin, NoDeselect, PickableBundle, PickableButton, PickableMesh,
-    PickingCameraBundle, PickingPlugin,
+    InteractablePickingPlugin, PickableBundle, PickingCameraBundle, PickingPlugin,
 };
 
 fn main() {
@@ -11,16 +10,11 @@ fn main() {
             vsync: false, // Disabled for this demo to remove vsync as a source of input latency
             ..Default::default()
         })
-        .add_plugins(DefaultPlugins)
-        // PickingPlugin provides core picking systems and must be registered first
-        .add_plugin(PickingPlugin)
-        // InteractablePickingPlugin adds mouse events and selection
-        .add_plugin(InteractablePickingPlugin)
-        // HighlightablePickingPlugin adds hover, click, and selection highlighting
-        .add_plugin(HighlightablePickingPlugin)
-        // DebugPickingPlugin systems to build and update debug cursors
-        .add_plugin(DebugCursorPickingPlugin)
-        // Debug output for interaction events
+        .add_plugins(DefaultPlugins) // PickingPlugin provides core picking systems and must be registered first
+        .add_plugin(PickingPlugin) // InteractablePickingPlugin adds mouse events and selection
+        .add_plugin(InteractablePickingPlugin) // HighlightablePickingPlugin adds hover, click, and selection highlighting
+        .add_plugin(HighlightablePickingPlugin) // DebugPickingPlugin systems to build and update debug cursors
+        .add_plugin(DebugCursorPickingPlugin) // Debug output for interaction events
         .add_plugin(DebugEventsPickingPlugin)
         .add_startup_system(setup.system())
         .run();
