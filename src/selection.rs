@@ -26,6 +26,7 @@ impl Default for Selection {
 #[derive(Debug, Copy, Clone)]
 pub struct NoDeselect;
 
+#[allow(clippy::too_many_arguments)]
 pub fn mesh_selection(
     state: Res<PickingPluginState>,
     mouse_button_input: Res<Input<MouseButton>>,
