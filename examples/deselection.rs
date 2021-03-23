@@ -29,44 +29,47 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // add entities to the world
+    // plane
     commands
-        // plane
-        .spawn(PbrBundle {
+        .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
         })
-        .with_bundle(PickableBundle::default())
-        // cube
-        .spawn(PbrBundle {
+        .insert_bundle(PickableBundle::default());
+
+    // cube
+    commands
+        .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         })
-        .with_bundle(PickableBundle::default())
-        // cube with NoDeselect
-        .spawn(PbrBundle {
+        .insert_bundle(PickableBundle::default());
+    // cube with NoDeselect
+    commands
+        .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
             transform: Transform::from_xyz(1.5, 0.5, 0.0),
             ..Default::default()
         })
-        .with(PickableMesh::default())
-        .with(Interaction::default())
-        .with(PickableButton::default())
-        .with(FocusPolicy::default())
-        .with(NoDeselect)
-        // light
-        .spawn(LightBundle {
-            transform: Transform::from_xyz(4.0, 8.0, 4.0),
-            ..Default::default()
-        })
-        // camera
-        .spawn(PerspectiveCameraBundle {
+        .insert(PickableMesh::default())
+        .insert(Interaction::default())
+        .insert(PickableButton::default())
+        .insert(FocusPolicy::default())
+        .insert(NoDeselect);
+    // light
+    commands.spawn_bundle(LightBundle {
+        transform: Transform::from_xyz(4.0, 8.0, 4.0),
+        ..Default::default()
+    });
+    // camera
+    commands
+        .spawn_bundle(PerspectiveCameraBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         })
-        .with_bundle(PickingCameraBundle::default());
+        .insert_bundle(PickingCameraBundle::default());
 }

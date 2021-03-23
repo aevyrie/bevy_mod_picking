@@ -1,6 +1,9 @@
-use bevy::render::camera::PerspectiveProjection;
-use bevy::{prelude::*, render::camera::Camera};
-use bevy_mod_picking; // Import all the picking goodies!
+use bevy::{prelude::*, ui::FocusPolicy};
+use bevy_mod_picking::{
+    DebugCursorPickingPlugin, DebugEventsPickingPlugin, HighlightablePickingPlugin,
+    InteractablePickingPlugin, NoDeselect, PickableBundle, PickableButton, PickableMesh,
+    PickingCameraBundle, PickingPlugin,
+};
 
 fn main() {
     App::build()
@@ -29,32 +32,34 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // add entities to the world
+    // plane
     commands
-        // plane
-        .spawn(PbrBundle {
+        .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
         })
-        .with_bundle(PickableBundle::default())
-        // cube
-        .spawn(PbrBundle {
+        .insert_bundle(PickableBundle::default());
+
+    // cube
+    commands
+        .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         })
-        .with_bundle(PickableBundle::default())
-        // light
-        .spawn(LightBundle {
-            transform: Transform::from_xyz(4.0, 8.0, 4.0),
-            ..Default::default()
-        })
-        // camera
-        .spawn(PerspectiveCameraBundle {
+        .insert_bundle(PickableBundle::default());
+    // light
+    commands.spawn_bundle(LightBundle {
+        transform: Transform::from_xyz(4.0, 8.0, 4.0),
+        ..Default::default()
+    });
+    // camera
+    commands
+        .spawn_bundle(PerspectiveCameraBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         })
-        .with_bundle(PickingCameraBundle::default());
+        .insert_bundle(PickingCameraBundle::default());
 }

@@ -36,7 +36,7 @@ fn setup(
 
     // camera
     commands
-        .spawn(PerspectiveCameraBundle {
+        .spawn_bundle(PerspectiveCameraBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
                 Vec3::new(
                     f32::from(edge_length) * -0.55,
@@ -52,14 +52,14 @@ fn setup(
             )),
             ..Default::default()
         })
-        .with_bundle(PickingCameraBundle::default());
+        .insert_bundle(PickingCameraBundle::default());
 
     let _scenes: Vec<HandleUntyped> = asset_server.load_folder("models").unwrap();
     let mesh_handle = asset_server.get_handle("models/monkey/Monkey.gltf#Mesh0/Primitive0");
     for i in 0..edge_length.pow(3) {
         let f_edge_length = edge_length as f32;
         commands
-            .spawn(PbrBundle {
+            .spawn_bundle(PbrBundle {
                 mesh: mesh_handle.clone(),
                 material: materials.add(StandardMaterial {
                     base_color: Color::rgb(1.0, 1.0, 1.0),
@@ -76,11 +76,11 @@ fn setup(
                 )) * Transform::from_scale(Vec3::from([0.25, 0.25, 0.25])),
                 ..Default::default()
             })
-            .with_bundle(PickableBundle::default())
-            .with(BoundVol::default());
+            .insert_bundle(PickableBundle::default())
+            .insert(BoundVol::default());
     }
 
-    commands.spawn(LightBundle {
+    commands.spawn_bundle(LightBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
             Vec3::new(
                 f32::from(edge_length) * -0.8,
