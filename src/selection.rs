@@ -87,7 +87,6 @@ pub fn mesh_selection(
         for interaction in no_deselect_query.iter() {
             if *interaction == Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
                 no_deselect_not_clicked = false;
-                println!("nodeselect clicked");
             }
         }
         let mouse_clicked =
