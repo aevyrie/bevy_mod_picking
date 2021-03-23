@@ -11,7 +11,7 @@ pub use crate::{
         get_initial_mesh_button_material, mesh_highlighting, MeshButtonMaterials, PickableButton,
     },
     mouse::update_pick_source_positions,
-    selection::{mesh_selection, Selection},
+    selection::{mesh_selection, NoDeselect, Selection},
 };
 pub use bevy_mod_raycast::BoundVol;
 

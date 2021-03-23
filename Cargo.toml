@@ -9,8 +9,6 @@ repository = "https://github.com/aevyrie/bevy_mod_picking/"
 keywords = ["gamedev", "graphics", "picking", "bevy", "3d", "raycast"]
 categories = ["game-engines", "rendering"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 #bevy = { version = "0.4", default-features = false, features = ["render"] }
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = ["render"] }
@@ -21,6 +19,10 @@ ex = ["bevy/bevy_wgpu", "bevy/bevy_winit", "bevy/bevy_gltf", "bevy/x11"]
 
 [[example]]
 name = "3d_scene"
+required-features = ["ex"]
+
+[[example]]
+name = "deselection"
 required-features = ["ex"]
 
 [[example]]

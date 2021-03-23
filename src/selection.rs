@@ -11,27 +11,30 @@ use bevy::prelude::*;
 pub struct Selection {
     selected: bool,
 }
-
 impl Selection {
     pub fn selected(&self) -> bool {
         self.selected
     }
 }
-
 impl Default for Selection {
     fn default() -> Self {
         Selection { selected: false }
     }
 }
 
+/// Marker struct used to mark pickable entities you don't want to trigger a deselection event when pickedy. This is useful for gizmos or other pickable UI entities.
+#[derive(Debug, Copy, Clone)]
+pub struct NoDeselect;
+
 pub fn mesh_selection(
     state: Res<PickingPluginState>,
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
     keyboard_input: Res<Input<KeyCode>>,
-    query_changed: Query<&Interaction, Changed<Interaction>>,
+    query_changed: Query<&Interaction, (Changed<Interaction>, Without<NoDeselect>)>,
     mut query_all: Query<(&mut Selection, &Interaction)>,
-    node_query: Query<&Interaction, Without<Selection>>,
+    node_query: Query<&Interaction, With<Node>>,
+    no_deselect_query: Query<&Interaction, With<NoDeselect>>,
 ) {
     if state.paused_for_ui || !state.enabled {
         return;
@@ -59,6 +62,8 @@ pub fn mesh_selection(
                 && *interaction != Interaction::Clicked
                 && !keyboard_input.pressed(KeyCode::LControl)
             {
+                // In this case, the entity is currently marked as selected, but it was not clicked
+                // on (interaction), and lctrl was not being held, so it should be deselected.
                 selection.selected = false;
             } else if *interaction == Interaction::Clicked
                 && keyboard_input.pressed(KeyCode::LControl)
@@ -69,17 +74,25 @@ pub fn mesh_selection(
             }
         }
     } else {
-        // This branch deselects everything if the user clicks, but not on a pickable mesh or UI
-        let mut ui_click = false;
+        // This branch deselects everything if the user clicks, in empty space. Deselection is not
+        // run if the UI or an item tagged with `NoDeselect` was clicked on.
+        let mut ui_not_clicked = true;
         for interaction in node_query.iter() {
             // Check if anything in the UI is being interacted with
             if *interaction == Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
-                ui_click = true;
+                ui_not_clicked = false;
             }
         }
-        let user_click =
+        let mut no_deselect_not_clicked = true;
+        for interaction in no_deselect_query.iter() {
+            if *interaction == Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
+                no_deselect_not_clicked = false;
+                println!("nodeselect clicked");
+            }
+        }
+        let mouse_clicked =
             mouse_button_input.just_pressed(MouseButton::Left) || touches_input.just_released(0);
-        if user_click && !ui_click {
+        if mouse_clicked && ui_not_clicked && no_deselect_not_clicked {
             for (mut selection, _interaction) in &mut query_all.iter_mut() {
                 if selection.selected {
                     selection.selected = false;

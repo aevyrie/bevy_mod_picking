@@ -1,23 +1,23 @@
-use bevy::render::camera::PerspectiveProjection;
-use bevy::{prelude::*, render::camera::Camera};
-use bevy_mod_picking; // Import all the picking goodies!
+use bevy::{prelude::*, ui::FocusPolicy};
+use bevy_mod_picking::{
+    DebugCursorPickingPlugin, DebugEventsPickingPlugin, HighlightablePickingPlugin,
+    InteractablePickingPlugin, NoDeselect, PickableBundle, PickableButton, PickableMesh,
+    PickingCameraBundle, PickingPlugin,
+};
 
+/// This example is identical to the 3d_scene example, except a cube has been added, that when
+/// clicked on, won't deselect everything else you have selected.
 fn main() {
     App::build()
         .insert_resource(WindowDescriptor {
-            vsync: false, // Disabled for this demo to remove vsync as a source of input latency
+            vsync: false,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        // PickingPlugin provides core picking systems and must be registered first
         .add_plugin(PickingPlugin)
-        // InteractablePickingPlugin adds mouse events and selection
         .add_plugin(InteractablePickingPlugin)
-        // HighlightablePickingPlugin adds hover, click, and selection highlighting
         .add_plugin(HighlightablePickingPlugin)
-        // DebugPickingPlugin systems to build and update debug cursors
         .add_plugin(DebugCursorPickingPlugin)
-        // Debug output for interaction events
         .add_plugin(DebugEventsPickingPlugin)
         .add_startup_system(setup.system())
         .run();
@@ -46,6 +46,18 @@ fn setup(
             ..Default::default()
         })
         .with_bundle(PickableBundle::default())
+        // cube with NoDeselect
+        .spawn(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            transform: Transform::from_xyz(1.5, 0.5, 0.0),
+            ..Default::default()
+        })
+        .with(PickableMesh::default())
+        .with(Interaction::default())
+        .with(PickableButton::default())
+        .with(FocusPolicy::default())
+        .with(NoDeselect)
         // light
         .spawn(LightBundle {
             transform: Transform::from_xyz(4.0, 8.0, 4.0),
