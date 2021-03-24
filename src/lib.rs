@@ -13,7 +13,7 @@ pub use crate::{
     mouse::update_pick_source_positions,
     selection::{mesh_selection, NoDeselect, Selection},
 };
-pub use bevy_mod_raycast::{BoundVol, RayCastSource};
+pub use bevy_mod_raycast::{BoundVol, Primitive3d, RayCastSource};
 
 use bevy::{prelude::*, ui::FocusPolicy};
 
