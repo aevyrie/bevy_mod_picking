@@ -23,6 +23,7 @@ pub mod pick_stage {
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickingSystem {
+    BuildRays,
     UpdateRaycast,
     Highlighting,
     Selection,
@@ -91,6 +92,13 @@ impl Plugin for PickingPlugin {
                 CoreStage::PostUpdate,
                 update_pick_source_positions
                     .system()
+                    .before(PickingSystem::BuildRays),
+            )
+            .add_system_to_stage(
+                CoreStage::PostUpdate,
+                bevy_mod_raycast::build_rays::<PickingRaycastSet>
+                    .system()
+                    .label(PickingSystem::BuildRays)
                     .before(PickingSystem::UpdateRaycast),
             )
             .add_system_to_stage(
