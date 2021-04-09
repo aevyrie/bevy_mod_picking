@@ -1,12 +1,12 @@
 [package]
 name = "bevy_mod_picking"
-version = "0.3.8-alpha.0"
+version = "0.5.0"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 edition = "2018"
 license = "MIT"
 description = "A 3D mouse picking and raycasting plugin for Bevy."
 repository = "https://github.com/aevyrie/bevy_mod_picking/"
-keywords = ["gamedev", "graphics", "picking", "bevy", "3d", "raycast"]
+keywords = ["gamedev", "picking", "bevy", "raycast"]
 categories = ["game-engines", "rendering"]
 
 [dependencies]
