@@ -43,29 +43,29 @@ Note that by default this plugin only depends on bevy's `render` feature to mini
 
 It only takes a few lines to get mouse picking working in your Bevy application using this plugin. The following sections will walk you through what is needed to get the plugin working, and how everything fits together.
 
-### 1. Add the crate to your dependencies in Cargo.toml
+1. Add the crate to your dependencies in Cargo.toml
 ```toml
 bevy_mod_picking = "0.4"
 ```
 
-### 2. Import the plugin and add it to your Bevy app:
+2. Import the plugin and add it to your Bevy app:
 ```rust
 use bevy_mod_picking::*;
 // Bevy app stuff here...
 .add_plugin(PickingPlugin)
 ```
 
-### 3. Mark your camera by adding:
+3. Mark your camera by adding:
 ```rust
 .insert_bundle(PickingCameraBundle::default())
 ```
 
-### 4. Add this bundle to any mesh to make it pickable:
+4. Add this bundle to any mesh to make it pickable:
 ```rust
 .insert_bundle(PickableBundle::default())
 ```
 
-### 5. (Optional) If you also want highlighting and selection, add these plugins to your app :
+5. (Optional) If you also want highlighting and selection, add these plugins to your app :
 ```rust
 .add_plugin(InteractablePickingPlugin)
 .add_plugin(HighlightablePickingPlugin)
