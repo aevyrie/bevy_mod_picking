@@ -12,7 +12,8 @@ is build on top of [`bevy_mod_raycast`](https://github.com/aevyrie/bevy_mod_rayc
 
 **Expect breaking changes in `master` branch - contributions are welcome!**
 
-![Picking demo](docs/demo_vid.webp) 
+![picking_demo](https://user-images.githubusercontent.com/2632925/114128723-d8de1b00-98b1-11eb-9b25-812fcf6664e2.gif)
+
 
 ## Features
 * [Pick Data](#getting-pick-data): intersection surface normal and coordinates in world space
