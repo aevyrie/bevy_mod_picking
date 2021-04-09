@@ -61,13 +61,7 @@ fn setup(
         commands
             .spawn_bundle(PbrBundle {
                 mesh: mesh_handle.clone(),
-                material: materials.add(StandardMaterial {
-                    base_color: Color::rgb(1.0, 1.0, 1.0),
-                    metallic: 0.95,
-                    reflectance: 1.0,
-                    roughness: 0.5,
-                    ..Default::default()
-                }),
+                material: materials.add(StandardMaterial::default()),
                 transform: Transform::from_translation(Vec3::new(
                     i as f32 % f_edge_length - f_edge_length / 2.0,
                     (i as f32 / f_edge_length).round() % f_edge_length - f_edge_length / 2.0,
@@ -83,9 +77,9 @@ fn setup(
     commands.spawn_bundle(LightBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
             Vec3::new(
-                f32::from(edge_length) * -0.8,
-                f32::from(edge_length) * 0.8,
-                f32::from(edge_length) * 0.8,
+                f32::from(edge_length) * -0.55,
+                f32::from(edge_length) * 0.55,
+                f32::from(edge_length) * 0.45,
             ),
             Vec3::new(
                 f32::from(edge_length) * 0.1,
@@ -95,7 +89,7 @@ fn setup(
             Vec3::new(0.0, 1.0, 0.0),
         )),
         light: Light {
-            intensity: 1000.0,
+            intensity: 100.0,
             range: 200.0,
             ..Default::default()
         },
