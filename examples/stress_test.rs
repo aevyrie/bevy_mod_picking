@@ -74,7 +74,7 @@ fn setup(
             .insert(BoundVol::default());
     }
 
-    commands.spawn_bundle(LightBundle {
+    commands.spawn_bundle(PointLightBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
             Vec3::new(
                 f32::from(edge_length) * -0.55,
@@ -88,7 +88,7 @@ fn setup(
             ),
             Vec3::new(0.0, 1.0, 0.0),
         )),
-        light: Light {
+        point_light: PointLight {
             intensity: 100.0,
             range: 200.0,
             ..Default::default()

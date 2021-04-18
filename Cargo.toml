@@ -10,10 +10,8 @@ keywords = ["gamedev", "picking", "bevy", "raycast"]
 categories = ["game-engines", "rendering"]
 
 [dependencies]
-bevy = { version = "0.5", default-features = false, features = ["render"] }
-#bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = ["render"] }
-bevy_mod_raycast = "0.2"
-#bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "master" }
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", version = "0.5", default-features = false, features = ["render"] }
+bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "master", version = "0.2" }
 
 [features]
 ex = ["bevy/bevy_wgpu", "bevy/bevy_winit", "bevy/bevy_gltf", "bevy/x11"]

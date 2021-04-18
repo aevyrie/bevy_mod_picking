@@ -26,10 +26,12 @@ impl FromWorld for MeshButtonMaterials {
 }
 
 pub fn get_initial_mesh_button_material(
-    mut query: Query<(&mut PickableButton, &Handle<StandardMaterial>), Added<PickableButton>>,
+    mut query: Query<(&mut PickableButton, &Handle<StandardMaterial>)>,
 ) {
     for (mut button, material) in query.iter_mut() {
-        button.initial_material = material.clone();
+        if button.is_added() {
+            button.initial_material = material.clone();
+        }
     }
 }
 
