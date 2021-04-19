@@ -2,9 +2,8 @@
 
 [![crates.io](https://img.shields.io/crates/v/bevy_mod_picking)](https://crates.io/crates/bevy_mod_picking)
 [![docs.rs](https://docs.rs/bevy_mod_picking/badge.svg)](https://docs.rs/bevy_mod_picking)
-[![Downloads](https://img.shields.io/crates/d/bevy_mod_picking.svg)](https://crates.io/crates/bevy_mod_picking)
-[![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 [![CI](https://github.com/aevyrie/bevy_mod_picking/workflows/CI/badge.svg?branch=master)](https://github.com/aevyrie/bevy_mod_picking/actions?query=workflow%3A%22CI%22+branch%3Amaster)
+[![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 
 A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking, making it easy to interact
 with 3D geometry in Bevy using your mouse. It provides mouse intersection coordinates, a
