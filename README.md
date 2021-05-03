@@ -35,7 +35,7 @@ I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
 To run a minimal demo of picking features, clone this repository and run:
 
 ```console
-cargo run --features ex --example 3d_scene 
+cargo run --example 3d_scene 
 ```
 
 Note that by default this plugin only depends on bevy's `render` feature to minimize both dependency count and compile time, as well as allow for WASM support. This is why the feature flag is needed to run examples, which need the `winit` and `wgpu` features to run.

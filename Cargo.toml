@@ -13,21 +13,11 @@ categories = ["game-engines", "rendering"]
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", version = "0.5", default-features = false, features = ["render"] }
 bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "master", version = "0.2" }
 
-[features]
-ex = ["bevy/bevy_wgpu", "bevy/bevy_winit", "bevy/bevy_gltf", "bevy/x11"]
-
-[[example]]
-name = "3d_scene"
-required-features = ["ex"]
-
-[[example]]
-name = "deselection"
-required-features = ["ex"]
-
-[[example]]
-name = "events"
-required-features = ["ex"]
-
-[[example]]
-name = "stress_test"
-required-features = ["ex"]
+[dev-dependencies]
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", version = "0.5", default-features = false, features = [
+    "render",
+    "bevy_wgpu",
+    "bevy_winit",
+    "bevy_gltf",
+    "x11",
+] }
