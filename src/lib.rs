@@ -152,7 +152,7 @@ impl Plugin for HighlightablePickingPlugin {
                 mesh_highlighting
                     .system()
                     .label(PickingSystem::Highlighting)
-                    .after(PickingSystem::Events),
+                    .before(PickingSystem::Events),
             );
     }
 }
