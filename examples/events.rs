@@ -20,7 +20,7 @@ fn main() {
 
 pub fn print_events(mut events: EventReader<PickingEvent>) {
     for event in events.iter() {
-        info!("{:?}", event);
+        println!("This event happened! {:?}", event);
     }
 }
 

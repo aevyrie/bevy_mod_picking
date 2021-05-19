@@ -18,7 +18,6 @@ fn main() {
         .add_plugin(InteractablePickingPlugin)
         .add_plugin(HighlightablePickingPlugin)
         .add_plugin(DebugCursorPickingPlugin)
-        //.add_plugin(DebugEventsPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_startup_system(setup.system())

@@ -1,8 +1,7 @@
 use bevy::{prelude::*, ui::FocusPolicy};
 use bevy_mod_picking::{
-    DebugCursorPickingPlugin, DebugEventsPickingPlugin, HighlightablePickingPlugin,
-    InteractablePickingPlugin, NoDeselect, PickableBundle, PickableButton, PickableMesh,
-    PickingCameraBundle, PickingPlugin,
+    DefaultPickingPlugins, NoDeselect, PickableBundle, PickableButton, PickableMesh,
+    PickingCameraBundle,
 };
 
 /// This example is identical to the 3d_scene example, except a cube has been added, that when
@@ -14,11 +13,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(PickingPlugin)
-        .add_plugin(InteractablePickingPlugin)
-        .add_plugin(HighlightablePickingPlugin)
-        .add_plugin(DebugCursorPickingPlugin)
-        .add_plugin(DebugEventsPickingPlugin)
+        .add_plugin(DefaultPickingPlugins)
         .add_startup_system(setup.system())
         .run();
 }

@@ -76,6 +76,17 @@ fn update_state(
     raycast_state.enabled = picking_state.enabled;
 }
 
+pub struct DefaultPickingPlugins;
+impl Plugin for DefaultPickingPlugins {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_plugin(PickingPlugin)
+            .add_plugin(InteractablePickingPlugin)
+            .add_plugin(HighlightablePickingPlugin)
+            .add_plugin(DebugCursorPickingPlugin)
+            .add_plugin(DebugEventsPickingPlugin);
+    }
+}
+
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
