@@ -3,7 +3,7 @@ use bevy::{prelude::*, render::color::Color};
 
 #[derive(Clone, Debug, Default)]
 pub struct PickableButton {
-    initial_material: Handle<StandardMaterial>,
+    initial_material: Option<Handle<StandardMaterial>>,
 }
 
 pub struct MeshButtonMaterials {
@@ -29,8 +29,8 @@ pub fn get_initial_mesh_button_material(
     mut query: Query<(&mut PickableButton, &Handle<StandardMaterial>)>,
 ) {
     for (mut button, material) in query.iter_mut() {
-        if button.is_added() {
-            button.initial_material = material.clone();
+        if let None = button.initial_material {
+            button.initial_material = Some(material.clone());
         }
     }
 }
@@ -49,20 +49,34 @@ pub fn mesh_highlighting(
     >,
 ) {
     for (interaction, mut material, selection, button) in interaction_query.iter_mut() {
-        *material = match *interaction {
-            Interaction::Clicked => button_materials.pressed.clone(),
-            Interaction::Hovered => button_materials.hovered.clone(),
+        let try_material = match *interaction {
+            Interaction::Clicked => Some(button_materials.pressed.clone()),
+            Interaction::Hovered => Some(button_materials.hovered.clone()),
             Interaction::None => {
                 if let Some(selection) = selection {
                     if selection.selected() {
-                        button_materials.selected.clone()
+                        Some(button_materials.selected.clone())
                     } else {
-                        button.initial_material.clone()
+                        if let Some(material) = &button.initial_material {
+                            Some(material.clone())
+                        } else {
+                            warn!("Selectable entity missing its initial material");
+                            None
+                        }
                     }
                 } else {
-                    button.initial_material.clone()
+                    if let Some(material) = &button.initial_material {
+                        Some(material.clone())
+                    } else {
+                        warn!("Selectable entity missing its initial material");
+                        None
+                    }
                 }
             }
+        };
+
+        if let Some(m) = try_material {
+            *material = m;
         }
     }
 }
