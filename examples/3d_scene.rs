@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle, PickingCameraBundle};
+use bevy_mod_picking::{
+    DebugCursorPickingPlugin, DebugEventsPickingPlugin, DefaultPickingPlugins, PickableBundle,
+    PickingCameraBundle,
+};
 
 fn main() {
     App::build()
@@ -9,6 +12,8 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(DefaultPickingPlugins)
+        .add_plugin(DebugCursorPickingPlugin)
+        .add_plugin(DebugEventsPickingPlugin)
         .add_startup_system(setup.system())
         .run();
 }

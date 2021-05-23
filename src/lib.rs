@@ -81,9 +81,7 @@ impl Plugin for DefaultPickingPlugins {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugin(PickingPlugin)
             .add_plugin(InteractablePickingPlugin)
-            .add_plugin(HighlightablePickingPlugin)
-            .add_plugin(DebugCursorPickingPlugin)
-            .add_plugin(DebugEventsPickingPlugin);
+            .add_plugin(HighlightablePickingPlugin);
     }
 }
 
