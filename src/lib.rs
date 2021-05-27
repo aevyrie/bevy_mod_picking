@@ -90,28 +90,28 @@ impl Plugin for PickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<RayCastPluginState>()
             .init_resource::<PickingPluginState>()
-            .add_system_to_stage(CoreStage::PostUpdate, update_state.system())
+            .add_system_to_stage(CoreStage::PreUpdate, update_state.system())
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                CoreStage::PreUpdate,
                 bevy_mod_raycast::update_bound_sphere::<PickingRaycastSet>
                     .system()
                     .before(PickingSystem::UpdateRaycast),
             )
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                CoreStage::PreUpdate,
                 update_pick_source_positions
                     .system()
                     .before(PickingSystem::BuildRays),
             )
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                CoreStage::PreUpdate,
                 bevy_mod_raycast::build_rays::<PickingRaycastSet>
                     .system()
                     .label(PickingSystem::BuildRays)
                     .before(PickingSystem::UpdateRaycast),
             )
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                CoreStage::PreUpdate,
                 bevy_mod_raycast::update_raycast::<PickingRaycastSet>
                     .system()
                     .label(PickingSystem::UpdateRaycast),
@@ -124,14 +124,14 @@ impl Plugin for InteractablePickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_event::<PickingEvent>()
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                CoreStage::PreUpdate,
                 mesh_focus
                     .system()
                     .label(PickingSystem::Focus)
                     .after(PickingSystem::UpdateRaycast),
             )
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                CoreStage::PreUpdate,
                 mesh_selection
                     .system()
                     .label(PickingSystem::Selection)
@@ -139,7 +139,7 @@ impl Plugin for InteractablePickingPlugin {
                     .after(PickingSystem::Focus),
             )
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                CoreStage::PreUpdate,
                 mesh_events_system.system().label(PickingSystem::Events),
             );
     }
@@ -150,14 +150,14 @@ impl Plugin for HighlightablePickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<MeshButtonMaterials>()
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                CoreStage::PreUpdate,
                 get_initial_mesh_button_material
                     .system()
                     .after(PickingSystem::UpdateRaycast)
                     .before(PickingSystem::Highlighting),
             )
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                CoreStage::PreUpdate,
                 mesh_highlighting
                     .system()
                     .label(PickingSystem::Highlighting)
@@ -170,7 +170,7 @@ pub struct DebugCursorPickingPlugin;
 impl Plugin for DebugCursorPickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_to_stage(
-            CoreStage::PostUpdate,
+            CoreStage::PreUpdate,
             bevy_mod_raycast::update_debug_cursor::<PickingRaycastSet>
                 .system()
                 .after(PickingSystem::UpdateRaycast),
@@ -182,7 +182,7 @@ pub struct DebugEventsPickingPlugin;
 impl Plugin for DebugEventsPickingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_to_stage(
-            CoreStage::PostUpdate,
+            CoreStage::PreUpdate,
             event_debug_system.system().after(PickingSystem::Events),
         );
     }

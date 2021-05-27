@@ -20,4 +20,6 @@ bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", version = 
     "bevy_winit",
     "bevy_gltf",
     "x11",
+    "jpeg",
 ] }
+bevy_transform_gizmo = { git = "https://github.com/ForesightMiningSoftwareCorporation/bevy_transform_gizmo", branch = "main" }
