@@ -25,7 +25,6 @@ fn main() {
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(DefaultPickingPlugins)
-        .add_plugin(bevy_transform_gizmo::TransformGizmoPlugin)
         .insert_resource(SceneInstance::default())
         .add_startup_system(setup.system())
         .add_system(scene_update.system())
@@ -46,8 +45,8 @@ fn setup(
     commands
         .spawn_bundle(PerspectiveCameraBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::new(5.0, 5.0, 0.0),
-                Vec3::new(0.0, 4.0, 0.0),
+                Vec3::new(3.0, 2.5, 0.0),
+                Vec3::new(0.0, 3.0, 0.0),
                 Vec3::Y,
             )),
             ..Default::default()
@@ -75,8 +74,7 @@ fn scene_update(
                 entity_iter.for_each(|entity| {
                     commands
                         .entity(entity)
-                        .insert_bundle(PickableBundle::default())
-                        .insert(bevy_transform_gizmo::GizmoTransformable);
+                        .insert_bundle(PickableBundle::default());
                 });
                 *done = true;
             }
