@@ -3,10 +3,10 @@ use bevy::{prelude::*, render::color::Color};
 
 #[derive(Clone, Debug, Default)]
 pub struct PickableButton {
-    initial: Option<Handle<StandardMaterial>>,
-    hovered: Option<Handle<StandardMaterial>>,
-    pressed: Option<Handle<StandardMaterial>>,
-    selected: Option<Handle<StandardMaterial>>,
+    pub initial: Option<Handle<StandardMaterial>>,
+    pub hovered: Option<Handle<StandardMaterial>>,
+    pub pressed: Option<Handle<StandardMaterial>>,
+    pub selected: Option<Handle<StandardMaterial>>,
 }
 
 pub struct MeshButtonMaterials {
