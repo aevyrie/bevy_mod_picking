@@ -94,8 +94,8 @@ pub fn mesh_selection(
                 no_deselect_not_clicked = false;
             }
         }
-        let mouse_clicked =
-            mouse_button_input.just_pressed(MouseButton::Left) || touches_input.just_released(0);
+        let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left)
+            || touches_input.iter_just_pressed().next().is_some();
         if mouse_clicked && ui_not_clicked && no_deselect_not_clicked {
             for (mut selection, _interaction) in &mut query_all.iter_mut() {
                 if selection.selected {

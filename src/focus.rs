@@ -68,7 +68,9 @@ pub fn mesh_focus(
         }
     }
 
-    if mouse_button_input.just_released(MouseButton::Left) || touches_input.just_released(0) {
+    if mouse_button_input.just_released(MouseButton::Left)
+        || touches_input.iter_just_released().next().is_some()
+    {
         for (mut interaction, _, _, _) in &mut interaction_set.q0_mut().iter_mut() {
             if *interaction == Interaction::Clicked {
                 *interaction = Interaction::None;
@@ -76,9 +78,8 @@ pub fn mesh_focus(
         }
     }
 
-    let mouse_clicked =
-        mouse_button_input.just_pressed(MouseButton::Left) || touches_input.just_released(0);
-
+    let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left)
+        || touches_input.iter_just_pressed().next().is_some();
     for pick_source in pick_source_query.iter() {
         // There is at least one entity under the cursor
         if let Some(picks) = pick_source.intersect_list() {
