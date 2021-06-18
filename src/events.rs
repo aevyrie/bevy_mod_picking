@@ -20,12 +20,15 @@ pub enum HoverEvent {
 pub enum PickingEvent {
     Selection(SelectionEvent),
     Hover(HoverEvent),
+    Clicked(Entity),
 }
 
 /// Looks for changes in selection or hover state, and sends the appropriate events
 #[allow(clippy::type_complexity)]
 pub fn mesh_events_system(
     state: Res<RayCastPluginState>,
+    mouse_button_input: Res<Input<MouseButton>>,
+    touches_input: Res<Touches>,
     mut picking_events: EventWriter<PickingEvent>,
     hover_query: Query<
         (Entity, &Hover, ChangeTrackers<Hover>),
@@ -35,6 +38,7 @@ pub fn mesh_events_system(
         (Entity, &Selection, ChangeTrackers<Selection>),
         (Changed<Selection>, With<PickableMesh>),
     >,
+    click_query: Query<(Entity, &Hover)>,
 ) {
     if !state.enabled {
         return;
@@ -61,6 +65,15 @@ pub fn mesh_events_system(
             picking_events.send(PickingEvent::Selection(SelectionEvent::JustDeselected(
                 entity,
             )));
+        }
+    }
+    if mouse_button_input.just_pressed(MouseButton::Left)
+        || touches_input.iter_just_pressed().next().is_some()
+    {
+        for (entity, hover) in click_query.iter() {
+            if hover.hovered() {
+                picking_events.send(PickingEvent::Clicked(entity));
+            }
         }
     }
 }
