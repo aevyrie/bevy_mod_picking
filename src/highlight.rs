@@ -32,7 +32,7 @@ pub fn get_initial_mesh_button_material(
     mut query: Query<(&mut PickableButton, &Handle<StandardMaterial>)>,
 ) {
     for (mut button, material) in query.iter_mut() {
-        if let None = button.initial {
+        if button.initial.is_none() {
             button.initial = Some(material.clone());
         }
     }

@@ -30,17 +30,15 @@ pub fn update_pick_source_positions(
                     None
                 }
             }
-            None => match touches_input.iter().last() {
-                Some(touch) => Some(Vec2::new(
+            None => touches_input.iter().last().map(|touch| {
+                Vec2::new(
                     touch.position().x,
                     windows
                         .get(camera.window)
                         .expect("PickingCamera window does not exist")
-                        .height()
-                        - touch.position().y,
-                )),
-                None => None,
-            },
+                        .height(),
+                )
+            }),
         };
         match *update_picks {
             UpdatePicks::EveryFrame(cached_cursor_pos) => {
