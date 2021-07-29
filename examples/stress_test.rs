@@ -5,7 +5,7 @@ use bevy::{
 use bevy_mod_picking::*;
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(WindowDescriptor {
             title: "bevy_mod_picking stress test".to_string(),
             width: 800.,
@@ -20,7 +20,7 @@ fn main() {
         .add_plugin(DebugCursorPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
-        .add_startup_system(setup.system())
+        .add_startup_system(setup)
         .run();
 }
 

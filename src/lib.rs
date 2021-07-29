@@ -78,7 +78,7 @@ fn update_state(
 
 pub struct DefaultPickingPlugins;
 impl Plugin for DefaultPickingPlugins {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_plugin(PickingPlugin)
             .add_plugin(InteractablePickingPlugin)
             .add_plugin(HighlightablePickingPlugin);
@@ -87,7 +87,7 @@ impl Plugin for DefaultPickingPlugins {
 
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<RayCastPluginState>()
             .init_resource::<PickingPluginState>()
             .add_system_to_stage(CoreStage::PreUpdate, update_state.system())
@@ -121,7 +121,7 @@ impl Plugin for PickingPlugin {
 
 pub struct InteractablePickingPlugin;
 impl Plugin for InteractablePickingPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_event::<PickingEvent>()
             .add_system_to_stage(
                 CoreStage::PreUpdate,
@@ -147,7 +147,7 @@ impl Plugin for InteractablePickingPlugin {
 
 pub struct HighlightablePickingPlugin;
 impl Plugin for HighlightablePickingPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.init_resource::<MeshButtonMaterials>()
             .add_system_to_stage(
                 CoreStage::PreUpdate,
@@ -168,7 +168,7 @@ impl Plugin for HighlightablePickingPlugin {
 
 pub struct DebugCursorPickingPlugin;
 impl Plugin for DebugCursorPickingPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_system_to_stage(
             CoreStage::PreUpdate,
             bevy_mod_raycast::update_debug_cursor::<PickingRaycastSet>
@@ -180,7 +180,7 @@ impl Plugin for DebugCursorPickingPlugin {
 
 pub struct DebugEventsPickingPlugin;
 impl Plugin for DebugEventsPickingPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_system_to_stage(
             CoreStage::PreUpdate,
             event_debug_system.system().after(PickingSystem::Events),

@@ -7,14 +7,14 @@ use bevy_mod_picking::{
 /// This example is identical to the 3d_scene example, except a cube has been added, that when
 /// clicked on, won't deselect everything else you have selected.
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(WindowDescriptor {
             vsync: false,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(DefaultPickingPlugins)
-        .add_startup_system(setup.system())
+        .add_startup_system(setup)
         .run();
 }
 

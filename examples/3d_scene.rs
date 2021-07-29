@@ -5,7 +5,7 @@ use bevy_mod_picking::{
 };
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(WindowDescriptor {
             vsync: false, // Disabled for this demo to remove vsync as a source of input latency
             ..Default::default()
@@ -14,7 +14,7 @@ fn main() {
         .add_plugin(DefaultPickingPlugins)
         .add_plugin(DebugCursorPickingPlugin)
         .add_plugin(DebugEventsPickingPlugin)
-        .add_startup_system(setup.system())
+        .add_startup_system(setup)
         .run();
 }
 
