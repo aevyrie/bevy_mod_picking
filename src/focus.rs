@@ -30,7 +30,7 @@ pub fn mesh_focus(
     touches_input: Res<Touches>,
     pick_source_query: Query<&PickingCamera>,
     mut interaction_set: QuerySet<(
-        Query<
+        QueryState<
             (
                 &mut Interaction,
                 Option<&mut Hover>,
@@ -39,7 +39,7 @@ pub fn mesh_focus(
             ),
             With<PickableMesh>,
         >, //q0
-        Query<&Interaction, With<Node>>, //q1
+        QueryState<&Interaction, With<Node>>, //q1
     )>,
 ) {
     if !state.enabled {
@@ -51,7 +51,7 @@ pub fn mesh_focus(
     // If anything in the UI is being interacted with, set all pick interactions to none and exit
     for ui_interaction in interaction_set.q1().iter() {
         if *ui_interaction != Interaction::None {
-            for (mut interaction, hover, _, _) in &mut interaction_set.q0_mut().iter_mut() {
+            for (mut interaction, hover, _, _) in &mut interaction_set.q0().iter_mut() {
                 if *interaction != Interaction::None {
                     *interaction = Interaction::None;
                 }
@@ -71,7 +71,7 @@ pub fn mesh_focus(
     if mouse_button_input.just_released(MouseButton::Left)
         || touches_input.iter_just_released().next().is_some()
     {
-        for (mut interaction, _, _, _) in &mut interaction_set.q0_mut().iter_mut() {
+        for (mut interaction, _, _, _) in &mut interaction_set.q0().iter_mut() {
             if *interaction == Interaction::Clicked {
                 *interaction = Interaction::None;
             }
@@ -85,7 +85,7 @@ pub fn mesh_focus(
         if let Some(picks) = pick_source.intersect_list() {
             for (topmost_entity, _intersection) in picks.iter() {
                 if let Ok((mut interaction, _hover, focus_policy, _entity)) =
-                    interaction_set.q0_mut().get_mut(*topmost_entity)
+                    interaction_set.q0().get_mut(*topmost_entity)
                 {
                     if mouse_clicked {
                         if *interaction != Interaction::Clicked {
@@ -107,7 +107,7 @@ pub fn mesh_focus(
             }
         }
 
-        for (mut interaction, hover, _, entity) in &mut interaction_set.q0_mut().iter_mut() {
+        for (mut interaction, hover, _, entity) in &mut interaction_set.q0().iter_mut() {
             if Some(entity) != hovered_entity && *interaction == Interaction::Hovered {
                 *interaction = Interaction::None;
             }
