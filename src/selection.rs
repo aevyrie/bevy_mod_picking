@@ -7,7 +7,7 @@ use bevy::prelude::*;
 /// # Requirements
 ///
 /// An entity with the [Selection] component must also have an [Interaction] component.
-#[derive(Debug, Copy, Clone)]
+#[derive(Component, Debug, Copy, Clone)]
 pub struct Selection {
     selected: bool,
 }
@@ -27,7 +27,7 @@ impl Default for Selection {
 }
 
 /// Marker struct used to mark pickable entities you don't want to trigger a deselection event when pickedy. This is useful for gizmos or other pickable UI entities.
-#[derive(Debug, Copy, Clone)]
+#[derive(Component, Debug, Copy, Clone)]
 pub struct NoDeselect;
 
 #[allow(clippy::too_many_arguments)]

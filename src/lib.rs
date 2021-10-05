@@ -58,7 +58,7 @@ impl Default for PickingPluginState {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Component, Debug, Clone, Copy)]
 pub enum UpdatePicks {
     EveryFrame(Vec2),
     OnMouseEvent,

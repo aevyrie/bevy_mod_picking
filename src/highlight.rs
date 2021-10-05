@@ -1,7 +1,7 @@
 use super::selection::*;
 use bevy::{prelude::*, render::color::Color};
 
-#[derive(Clone, Debug, Default)]
+#[derive(Component, Clone, Debug, Default)]
 pub struct PickableButton {
     pub initial: Option<Handle<StandardMaterial>>,
     pub hovered: Option<Handle<StandardMaterial>>,
