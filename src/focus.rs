@@ -1,4 +1,4 @@
-use crate::{PickableMesh, PickingCamera, PickingPluginState};
+use crate::{PickableMesh, PickingCamera, PickingPluginPausedForUi};
 use bevy::{prelude::*, ui::FocusPolicy};
 
 /// Tracks the current hover state to be used with change tracking in the events system.
@@ -24,12 +24,9 @@ impl Default for Hover {
 }
 
 #[allow(clippy::type_complexity)]
-pub fn mesh_focus(
-    mut state: ResMut<PickingPluginState>,
-    mouse_button_input: Res<Input<MouseButton>>,
-    touches_input: Res<Touches>,
-    pick_source_query: Query<&PickingCamera>,
-    mut interaction_set: QuerySet<(
+pub fn pause_for_ui(
+    mut paused: ResMut<PickingPluginPausedForUi>,
+    mut interactions: QuerySet<(
         QueryState<
             (
                 &mut Interaction,
@@ -38,20 +35,13 @@ pub fn mesh_focus(
                 Entity,
             ),
             With<PickableMesh>,
-        >, //q0
-        QueryState<&Interaction, With<Node>>, //q1
+        >,
+        QueryState<&Interaction, With<Node>>,
     )>,
 ) {
-    if !state.enabled {
-        return;
-    }
-
-    let mut hovered_entity = None;
-
-    // If anything in the UI is being interacted with, set all pick interactions to none and exit
-    for ui_interaction in interaction_set.q1().iter() {
+    for ui_interaction in interactions.q1().iter() {
         if *ui_interaction != Interaction::None {
-            for (mut interaction, hover, _, _) in &mut interaction_set.q0().iter_mut() {
+            for (mut interaction, hover, _, _) in &mut interactions.q0().iter_mut() {
                 if *interaction != Interaction::None {
                     *interaction = Interaction::None;
                 }
@@ -61,17 +51,42 @@ pub fn mesh_focus(
                     }
                 }
             }
-            state.paused_for_ui = true;
+            paused.0 = true;
             return;
         } else {
-            state.paused_for_ui = false;
+            paused.0 = false;
         }
     }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn mesh_focus(
+    paused: Option<Res<PickingPluginPausedForUi>>,
+    mouse_button_input: Res<Input<MouseButton>>,
+    touches_input: Res<Touches>,
+    pick_source_query: Query<&PickingCamera>,
+    mut interactions: Query<
+        (
+            &mut Interaction,
+            Option<&mut Hover>,
+            Option<&FocusPolicy>,
+            Entity,
+        ),
+        With<PickableMesh>,
+    >,
+) {
+    if let Some(paused) = paused {
+        if paused.0 {
+            return;
+        }
+    }
+
+    let mut hovered_entity = None;
 
     if mouse_button_input.just_released(MouseButton::Left)
         || touches_input.iter_just_released().next().is_some()
     {
-        for (mut interaction, _, _, _) in &mut interaction_set.q0().iter_mut() {
+        for (mut interaction, _, _, _) in &mut interactions.iter_mut() {
             if *interaction == Interaction::Clicked {
                 *interaction = Interaction::None;
             }
@@ -85,7 +100,7 @@ pub fn mesh_focus(
         if let Some(picks) = pick_source.intersect_list() {
             for (topmost_entity, _intersection) in picks.iter() {
                 if let Ok((mut interaction, _hover, focus_policy, _entity)) =
-                    interaction_set.q0().get_mut(*topmost_entity)
+                    interactions.get_mut(*topmost_entity)
                 {
                     if mouse_clicked {
                         if *interaction != Interaction::Clicked {
@@ -107,7 +122,7 @@ pub fn mesh_focus(
             }
         }
 
-        for (mut interaction, hover, _, entity) in &mut interaction_set.q0().iter_mut() {
+        for (mut interaction, hover, _, entity) in &mut interactions.iter_mut() {
             if Some(entity) != hovered_entity && *interaction == Interaction::Hovered {
                 *interaction = Interaction::None;
             }

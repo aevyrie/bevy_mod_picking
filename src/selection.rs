@@ -1,4 +1,4 @@
-use crate::PickingPluginState;
+use crate::PickingPluginPausedForUi;
 use bevy::prelude::*;
 
 /// Tracks the current selection state to be used with change tracking in the events system. Meshes
@@ -32,7 +32,7 @@ pub struct NoDeselect;
 
 #[allow(clippy::too_many_arguments)]
 pub fn mesh_selection(
-    state: Res<PickingPluginState>,
+    paused: Option<Res<PickingPluginPausedForUi>>,
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
     keyboard_input: Res<Input<KeyCode>>,
@@ -41,8 +41,10 @@ pub fn mesh_selection(
     node_query: Query<&Interaction, With<Node>>,
     no_deselect_query: Query<&Interaction, With<NoDeselect>>,
 ) {
-    if state.paused_for_ui || !state.enabled {
-        return;
+    if let Some(paused) = paused {
+        if paused.0 {
+            return;
+        }
     }
 
     // Check if something has been clicked on

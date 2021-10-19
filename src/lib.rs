@@ -6,7 +6,7 @@ mod selection;
 
 pub use crate::{
     events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
-    focus::{mesh_focus, Hover},
+    focus::{mesh_focus, pause_for_ui, Hover},
     highlight::{
         get_initial_mesh_button_material, mesh_highlighting, MeshButtonMaterials, PickableButton,
     },
@@ -15,11 +15,8 @@ pub use crate::{
 };
 pub use bevy_mod_raycast::{BoundVol, Primitive3d, RayCastSource};
 
+use bevy::ecs::schedule::ShouldRun;
 use bevy::{prelude::*, ui::FocusPolicy};
-
-pub mod pick_stage {
-    pub const PICKING: &str = "picking";
-}
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickingSystem {
@@ -27,6 +24,7 @@ pub enum PickingSystem {
     UpdateRaycast,
     Highlighting,
     Selection,
+    PauseForUi,
     Focus,
     Events,
 }
@@ -35,8 +33,6 @@ pub enum PickingSystem {
 pub type PickableMesh = bevy_mod_raycast::RayCastMesh<PickingRaycastSet>;
 /// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
 pub type PickingCamera = bevy_mod_raycast::RayCastSource<PickingRaycastSet>;
-/// A type alias for the concrete [PluginState](bevy_mod_raycast::PluginState) type used for Picking.
-pub type RayCastPluginState = bevy_mod_raycast::PluginState<PickingRaycastSet>;
 
 /// This unit struct is used to tag the generic ray casting types `RayCastMesh` and
 /// `RayCastSource`. This means that all Picking ray casts are of the same type. Consequently, any
@@ -45,16 +41,22 @@ pub type RayCastPluginState = bevy_mod_raycast::PluginState<PickingRaycastSet>;
 /// vs. `RayCastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
 pub struct PickingRaycastSet;
 
-pub struct PickingPluginState {
-    pub enabled: bool,
-    paused_for_ui: bool,
-}
-impl Default for PickingPluginState {
+#[derive(Clone, Hash, PartialEq, Eq, Debug, RunCriteriaLabel)]
+pub struct PickingPluginEnabledCriteria;
+
+pub struct PickingPluginEnabled(pub bool);
+
+impl Default for PickingPluginEnabled {
     fn default() -> Self {
-        PickingPluginState {
-            enabled: true,
-            paused_for_ui: false,
-        }
+        Self(true)
+    }
+}
+
+pub struct PickingPluginPausedForUi(pub(crate) bool);
+
+impl Default for PickingPluginPausedForUi {
+    fn default() -> Self {
+        Self(false)
     }
 }
 
@@ -69,13 +71,6 @@ impl Default for UpdatePicks {
     }
 }
 
-fn update_state(
-    mut raycast_state: ResMut<RayCastPluginState>,
-    picking_state: Res<PickingPluginState>,
-) {
-    raycast_state.enabled = picking_state.enabled;
-}
-
 pub struct DefaultPickingPlugins;
 impl Plugin for DefaultPickingPlugins {
     fn build(&self, app: &mut App) {
@@ -85,31 +80,36 @@ impl Plugin for DefaultPickingPlugins {
     }
 }
 
+fn plugin_enabled(enabled: Res<PickingPluginEnabled>) -> ShouldRun {
+    if enabled.0 {
+        ShouldRun::Yes
+    } else {
+        ShouldRun::No
+    }
+}
+
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<RayCastPluginState>()
-            .init_resource::<PickingPluginState>()
-            .add_system_to_stage(CoreStage::PreUpdate, update_state)
-            .add_system_to_stage(
+        app.init_resource::<PickingPluginEnabled>()
+            .add_system_set_to_stage(
                 CoreStage::PreUpdate,
-                bevy_mod_raycast::update_bound_sphere::<PickingRaycastSet>
-                    .before(PickingSystem::UpdateRaycast),
-            )
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
-                update_pick_source_positions.before(PickingSystem::BuildRays),
-            )
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
-                bevy_mod_raycast::build_rays::<PickingRaycastSet>
-                    .label(PickingSystem::BuildRays)
-                    .before(PickingSystem::UpdateRaycast),
-            )
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
-                bevy_mod_raycast::update_raycast::<PickingRaycastSet>
-                    .label(PickingSystem::UpdateRaycast),
+                SystemSet::new()
+                    .with_run_criteria(plugin_enabled.label(PickingPluginEnabledCriteria))
+                    .with_system(
+                        bevy_mod_raycast::update_bound_sphere::<PickingRaycastSet>
+                            .before(PickingSystem::UpdateRaycast),
+                    )
+                    .with_system(update_pick_source_positions.before(PickingSystem::BuildRays))
+                    .with_system(
+                        bevy_mod_raycast::build_rays::<PickingRaycastSet>
+                            .label(PickingSystem::BuildRays)
+                            .before(PickingSystem::UpdateRaycast),
+                    )
+                    .with_system(
+                        bevy_mod_raycast::update_raycast::<PickingRaycastSet>
+                            .label(PickingSystem::UpdateRaycast),
+                    ),
             );
     }
 }
@@ -117,23 +117,29 @@ impl Plugin for PickingPlugin {
 pub struct InteractablePickingPlugin;
 impl Plugin for InteractablePickingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PickingEvent>()
-            .add_system_to_stage(
+        app.init_resource::<PickingPluginPausedForUi>()
+            .add_event::<PickingEvent>()
+            .add_system_set_to_stage(
                 CoreStage::PreUpdate,
-                mesh_focus
-                    .label(PickingSystem::Focus)
-                    .after(PickingSystem::UpdateRaycast),
-            )
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
-                mesh_selection
-                    .label(PickingSystem::Selection)
-                    .before(PickingSystem::Events)
-                    .after(PickingSystem::Focus),
-            )
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
-                mesh_events_system.label(PickingSystem::Events),
+                SystemSet::new()
+                    .with_run_criteria(PickingPluginEnabledCriteria)
+                    .with_system(
+                        pause_for_ui
+                            .label(PickingSystem::PauseForUi)
+                            .after(PickingSystem::UpdateRaycast),
+                    )
+                    .with_system(
+                        mesh_focus
+                            .label(PickingSystem::Focus)
+                            .after(PickingSystem::PauseForUi),
+                    )
+                    .with_system(
+                        mesh_selection
+                            .label(PickingSystem::Selection)
+                            .before(PickingSystem::Events)
+                            .after(PickingSystem::Focus),
+                    )
+                    .with_system(mesh_events_system.label(PickingSystem::Events)),
             );
     }
 }
@@ -142,17 +148,20 @@ pub struct HighlightablePickingPlugin;
 impl Plugin for HighlightablePickingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MeshButtonMaterials>()
-            .add_system_to_stage(
+            .add_system_set_to_stage(
                 CoreStage::PreUpdate,
-                get_initial_mesh_button_material
-                    .after(PickingSystem::UpdateRaycast)
-                    .before(PickingSystem::Highlighting),
-            )
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
-                mesh_highlighting
-                    .label(PickingSystem::Highlighting)
-                    .before(PickingSystem::Events),
+                SystemSet::new()
+                    .with_run_criteria(PickingPluginEnabledCriteria)
+                    .with_system(
+                        get_initial_mesh_button_material
+                            .after(PickingSystem::UpdateRaycast)
+                            .before(PickingSystem::Highlighting),
+                    )
+                    .with_system(
+                        mesh_highlighting
+                            .label(PickingSystem::Highlighting)
+                            .before(PickingSystem::Events),
+                    ),
             );
     }
 }
@@ -173,7 +182,9 @@ impl Plugin for DebugEventsPickingPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(
             CoreStage::PreUpdate,
-            event_debug_system.after(PickingSystem::Events),
+            event_debug_system
+                .with_run_criteria(PickingPluginEnabledCriteria)
+                .after(PickingSystem::Events),
         );
     }
 }
