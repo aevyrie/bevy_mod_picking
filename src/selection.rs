@@ -1,4 +1,4 @@
-use crate::PickingPluginPausedForUi;
+use crate::PausedForBlockers;
 use bevy::prelude::*;
 
 /// Tracks the current selection state to be used with change tracking in the events system. Meshes
@@ -32,7 +32,7 @@ pub struct NoDeselect;
 
 #[allow(clippy::too_many_arguments)]
 pub fn mesh_selection(
-    paused: Option<Res<PickingPluginPausedForUi>>,
+    paused: Option<Res<PausedForBlockers>>,
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
     keyboard_input: Res<Input<KeyCode>>,
