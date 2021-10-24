@@ -1,4 +1,5 @@
 use super::selection::*;
+use crate::PausedForBlockers;
 use bevy::{prelude::*, render::color::Color};
 
 #[derive(Component, Clone, Debug, Default)]
@@ -40,6 +41,7 @@ pub fn get_initial_mesh_button_material(
 
 #[allow(clippy::type_complexity)]
 pub fn mesh_highlighting(
+    paused: Option<Res<PausedForBlockers>>,
     global_button_materials: Res<MeshButtonMaterials>,
     mut interaction_query: Query<
         (
@@ -51,6 +53,32 @@ pub fn mesh_highlighting(
         Or<(Changed<Interaction>, Changed<Selection>)>,
     >,
 ) {
+    // Set non-hovered material when picking is paused (e.g. while hovering a picking blocker).
+    if let Some(paused) = paused {
+        if paused.0 {
+            for (_, mut material, selection, button) in interaction_query.iter_mut() {
+                let try_material = if let Some(selection) = selection {
+                    if selection.selected() {
+                        if let Some(button_material) = &button.selected {
+                            Some(button_material.clone())
+                        } else {
+                            Some(global_button_materials.selected.clone())
+                        }
+                    } else {
+                        button.initial.clone()
+                    }
+                } else {
+                    button.initial.clone()
+                };
+                if let Some(m) = try_material {
+                    *material = m;
+                } else {
+                    warn!("Selectable entity missing its initial material");
+                }
+            }
+            return;
+        }
+    }
     for (interaction, mut material, selection, button) in interaction_query.iter_mut() {
         let try_material = match *interaction {
             Interaction::Clicked => {

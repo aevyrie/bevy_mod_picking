@@ -1,4 +1,4 @@
-use crate::{Hover, PickableMesh, RayCastPluginState, Selection};
+use crate::{Hover, PickableMesh, Selection};
 use bevy::prelude::*;
 
 /// An event that triggers when the hover state of a [Selection] enabled [PickableMesh] changes.
@@ -26,7 +26,6 @@ pub enum PickingEvent {
 /// Looks for changes in selection or hover state, and sends the appropriate events
 #[allow(clippy::type_complexity)]
 pub fn mesh_events_system(
-    state: Res<RayCastPluginState>,
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
     mut picking_events: EventWriter<PickingEvent>,
@@ -40,9 +39,6 @@ pub fn mesh_events_system(
     >,
     click_query: Query<(Entity, &Hover)>,
 ) {
-    if !state.enabled {
-        return;
-    }
     for (entity, hover, hover_change) in hover_query.iter() {
         if hover_change.is_added() {
             continue; // Avoid a false change detection when a component is added.
@@ -79,10 +75,7 @@ pub fn mesh_events_system(
 }
 
 /// Listens for [HoverEvent] and [SelectionEvent] events and prints them
-pub fn event_debug_system(state: Res<RayCastPluginState>, mut events: EventReader<PickingEvent>) {
-    if !state.enabled {
-        return;
-    }
+pub fn event_debug_system(mut events: EventReader<PickingEvent>) {
     for event in events.iter() {
         info!("{:?}", event);
     }
