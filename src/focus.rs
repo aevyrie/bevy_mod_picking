@@ -23,9 +23,9 @@ impl Default for Hover {
     }
 }
 
-/// Marker component for entities that whenever their [Interaction] component is anything
-/// other than `None` will suspend highlighting and selecting pickables.
-/// Bevy UI [Node]s have this behaviour by default.
+/// Marker component for entities that, whenever their [Interaction] component is anything other
+/// than `None`, will suspend highlighting and selecting [PickableMesh]s. Bevy UI [Node]s have this
+/// behavior by default.
 #[derive(Component)]
 pub struct PickingBlocker;
 
@@ -42,7 +42,7 @@ pub fn pause_for_picking_blockers(
             ),
             With<PickableMesh>,
         >,
-        // UI nodes are pciking blockers by default.
+        // UI nodes are picking blockers by default.
         QueryState<&Interaction, Or<(With<Node>, With<PickingBlocker>)>>,
     )>,
 ) {
