@@ -41,19 +41,28 @@ pub type PickingCamera = bevy_mod_raycast::RayCastSource<PickingRaycastSet>;
 /// vs. `RayCastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
 pub struct PickingRaycastSet;
 
-pub struct PickingSystemsEnabled(pub bool);
+pub struct PickingPluginsState {
+    pub enable_picking: bool,
+    pub enable_highlighting: bool,
+    pub enable_interacting: bool,
+    pub update_debug_cursor: bool,
+    pub print_debug_events: bool,
+}
 
-impl Default for PickingSystemsEnabled {
+impl Default for PickingPluginsState {
     fn default() -> Self {
-        Self(true)
+        Self {
+            enable_picking: true,
+            enable_highlighting: true,
+            enable_interacting: true,
+            update_debug_cursor: true,
+            print_debug_events: true,
+        }
     }
 }
 
-#[derive(Clone, Hash, PartialEq, Eq, Debug, RunCriteriaLabel)]
-pub struct PickingSystemsEnabledCriteria;
-
-fn plugin_enabled(enabled: Res<PickingSystemsEnabled>) -> ShouldRun {
-    if enabled.0 {
+fn simple_criteria(flag: bool) -> ShouldRun {
+    if flag {
         ShouldRun::Yes
     } else {
         ShouldRun::No
@@ -91,11 +100,13 @@ impl Plugin for DefaultPickingPlugins {
 pub struct PickingPlugin;
 impl Plugin for PickingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<PickingSystemsEnabled>()
+        app.init_resource::<PickingPluginsState>()
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .with_run_criteria(plugin_enabled.label(PickingSystemsEnabledCriteria))
+                    .with_run_criteria(|state: Res<PickingPluginsState>| {
+                        simple_criteria(state.enable_picking)
+                    })
                     .with_system(
                         bevy_mod_raycast::update_bound_sphere::<PickingRaycastSet>
                             .before(PickingSystem::UpdateRaycast),
@@ -122,7 +133,9 @@ impl Plugin for InteractablePickingPlugin {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .with_run_criteria(PickingSystemsEnabledCriteria)
+                    .with_run_criteria(|state: Res<PickingPluginsState>| {
+                        simple_criteria(state.enable_interacting)
+                    })
                     .with_system(
                         pause_for_picking_blockers
                             .label(PickingSystem::PauseForBlockers)
@@ -151,7 +164,9 @@ impl Plugin for HighlightablePickingPlugin {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .with_run_criteria(PickingSystemsEnabledCriteria)
+                    .with_run_criteria(|state: Res<PickingPluginsState>| {
+                        simple_criteria(state.enable_highlighting)
+                    })
                     .with_system(
                         get_initial_mesh_button_material
                             .after(PickingSystem::UpdateRaycast)
@@ -172,6 +187,9 @@ impl Plugin for DebugCursorPickingPlugin {
         app.add_system_to_stage(
             CoreStage::PreUpdate,
             bevy_mod_raycast::update_debug_cursor::<PickingRaycastSet>
+                .with_run_criteria(|state: Res<PickingPluginsState>| {
+                    simple_criteria(state.update_debug_cursor)
+                })
                 .after(PickingSystem::UpdateRaycast),
         );
     }
@@ -183,7 +201,9 @@ impl Plugin for DebugEventsPickingPlugin {
         app.add_system_to_stage(
             CoreStage::PreUpdate,
             event_debug_system
-                .with_run_criteria(PickingSystemsEnabledCriteria)
+                .with_run_criteria(|state: Res<PickingPluginsState>| {
+                    simple_criteria(state.print_debug_events)
+                })
                 .after(PickingSystem::Events),
         );
     }
