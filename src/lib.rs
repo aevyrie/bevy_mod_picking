@@ -70,6 +70,11 @@ fn simple_criteria(flag: bool) -> ShouldRun {
 }
 
 pub struct PausedForBlockers(pub(crate) bool);
+impl PausedForBlockers {
+    pub fn is_blocked(&self) -> bool {
+        self.0
+    }
+}
 
 impl Default for PausedForBlockers {
     fn default() -> Self {
