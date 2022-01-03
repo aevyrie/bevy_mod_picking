@@ -6,7 +6,7 @@ use bevy::{prelude::*, ui::FocusPolicy};
 /// # Requirements
 ///
 /// An entity with the `Hover` component must also have an [Interaction] component.
-#[derive(Component, Debug, Copy, Clone)]
+#[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Hover {
     hovered: bool,
 }
@@ -14,12 +14,6 @@ pub struct Hover {
 impl Hover {
     pub fn hovered(&self) -> bool {
         self.hovered
-    }
-}
-
-impl Default for Hover {
-    fn default() -> Self {
-        Hover { hovered: false }
     }
 }
 

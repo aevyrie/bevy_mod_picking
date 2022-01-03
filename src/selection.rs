@@ -7,7 +7,7 @@ use bevy::prelude::*;
 /// # Requirements
 ///
 /// An entity with the [Selection] component must also have an [Interaction] component.
-#[derive(Component, Debug, Copy, Clone)]
+#[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Selection {
     selected: bool,
 }
@@ -18,11 +18,6 @@ impl Selection {
     /// Set the selection state.
     pub fn set_selected(&mut self, selected: bool) {
         self.selected = selected;
-    }
-}
-impl Default for Selection {
-    fn default() -> Self {
-        Selection { selected: false }
     }
 }
 
