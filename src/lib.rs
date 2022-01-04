@@ -10,7 +10,7 @@ pub use crate::{
     events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
     focus::{mesh_focus, pause_for_picking_blockers, Hover, PickingBlocker},
     highlight::{
-        get_initial_mesh_button_material, mesh_highlighting, MeshButtonMaterials, PickableButton, PickingColors
+        get_initial_mesh_button_material, mesh_highlighting, MeshButtonMaterials, PickableButton,
     },
     mouse::update_pick_source_positions,
     selection::{mesh_selection, NoDeselect, Selection},
@@ -162,7 +162,11 @@ impl Plugin for InteractablePickingPlugin {
 #[derive(Default)]
 pub struct HighlightablePickingPlugin<T>(PhantomData<T>);
 
-impl<T: Asset + PickingColors> Plugin for HighlightablePickingPlugin<T> {
+impl<T> Plugin for HighlightablePickingPlugin<T>
+where
+    T: Asset,
+    MeshButtonMaterials<T>: FromWorld,
+{
     fn build(&self, app: &mut App) {
         app.init_resource::<MeshButtonMaterials<T>>()
             .add_system_set_to_stage(

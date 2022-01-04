@@ -20,35 +20,15 @@ pub struct MeshButtonMaterials<T: Asset> {
     pub selected: Handle<T>,
 }
 
-pub trait PickingColors {
-    fn hovered() -> Self;
-    fn pressed() -> Self;
-    fn selected() -> Self;
-}
-
-impl PickingColors for StandardMaterial {
-    fn hovered() -> Self {
-        Color::rgb(0.35, 0.35, 0.35).into()
-    }
-
-    fn pressed() -> Self {
-        Color::rgb(0.35, 0.75, 0.35).into()
-    }
-
-    fn selected() -> Self {
-        Color::rgb(0.35, 0.35, 0.75).into()
-    }
-}
-
-impl<T: Asset + PickingColors> FromWorld for MeshButtonMaterials<T> {
+impl FromWorld for MeshButtonMaterials<StandardMaterial> {
     fn from_world(world: &mut World) -> Self {
         let mut materials = world
-            .get_resource_mut::<Assets<T>>()
+            .get_resource_mut::<Assets<StandardMaterial>>()
             .expect("Failed to get resource");
         MeshButtonMaterials {
-            hovered: materials.add(T::hovered()),
-            pressed: materials.add(T::pressed()),
-            selected: materials.add(T::selected()),
+            hovered: materials.add(Color::rgb(0.35, 0.35, 0.35).into()),
+            pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
+            selected: materials.add(Color::rgb(0.35, 0.35, 0.75).into()),
         }
     }
 }
