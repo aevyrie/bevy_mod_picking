@@ -10,8 +10,8 @@ pub use crate::{
     events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
     focus::{mesh_focus, pause_for_picking_blockers, Hover, PickingBlocker},
     highlight::{
-        get_initial_mesh_button_material, mesh_highlighting, MeshButtonMaterials, PickableButton,
-        StandardMaterialPickingColors,
+        get_initial_mesh_button_material, mesh_highlighting, FromWorldHelper, MeshButtonMaterials,
+        PickableButton, StandardMaterialPickingColors,
     },
     mouse::update_pick_source_positions,
     selection::{mesh_selection, NoDeselect, Selection},
@@ -20,7 +20,6 @@ pub use bevy_mod_raycast::{BoundVol, Primitive3d, RayCastSource};
 
 use bevy::{asset::Asset, ecs::schedule::ShouldRun};
 use bevy::{prelude::*, ui::FocusPolicy};
-use highlight::FromWorldHelper;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickingSystem {
