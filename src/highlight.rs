@@ -1,8 +1,6 @@
 use super::selection::*;
 use crate::PausedForBlockers;
-use bevy::{
-    asset::Asset, ecs::system::Resource, prelude::*, reflect::TypeUuid, render::color::Color,
-};
+use bevy::{asset::Asset, prelude::*, render::color::Color};
 
 /// A default highlightable button material implementation of the [`IsPickableButton`] trait that
 /// uses bevy's [`StandardMaterial`] for highlighting meshes. You may want to implement your own
@@ -20,19 +18,6 @@ pub struct MeshButtonMaterials<T: Asset> {
     pub hovered: Handle<T>,
     pub pressed: Handle<T>,
     pub selected: Handle<T>,
-}
-impl<T: Asset> MeshButtonMaterials<T> {
-    fn hovered(&self) -> &Handle<T> {
-        &self.hovered
-    }
-
-    fn pressed(&self) -> &Handle<T> {
-        &self.pressed
-    }
-
-    fn selected(&self) -> &Handle<T> {
-        &self.selected
-    }
 }
 
 pub trait PickingColors {
