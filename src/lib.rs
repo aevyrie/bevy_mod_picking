@@ -96,10 +96,7 @@ impl Plugin for DefaultPickingPlugins {
     fn build(&self, app: &mut App) {
         app.add_plugin(PickingPlugin)
             .add_plugin(InteractablePickingPlugin)
-            .add_plugin(HighlightablePickingPlugin::<
-                StandardMaterial,
-                StandardMaterialPickingColors,
-            >::default());
+            .add_plugin(HighlightablePickingPlugin);
     }
 }
 
@@ -163,10 +160,21 @@ impl Plugin for InteractablePickingPlugin {
     }
 }
 
-#[derive(Default)]
-pub struct HighlightablePickingPlugin<T, U>(PhantomData<(T, U)>);
+pub struct HighlightablePickingPlugin;
+impl Plugin for HighlightablePickingPlugin {
+    fn build(&self, app: &mut App) {
+        let plugin = CustomHighlightablePickingPlugin(PhantomData::<(
+            StandardMaterial,
+            StandardMaterialPickingColors,
+        )>::default());
+        plugin.build(app)
+    }
+}
 
-impl<T, U> Plugin for HighlightablePickingPlugin<T, U>
+#[derive(Default)]
+pub struct CustomHighlightablePickingPlugin<T, U>(PhantomData<(T, U)>);
+
+impl<T, U> Plugin for CustomHighlightablePickingPlugin<T, U>
 where
     T: Asset + Default,
     U: 'static + FromWorldHelper<T> + Sync + Send,

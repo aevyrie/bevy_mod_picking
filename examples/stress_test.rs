@@ -16,7 +16,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
-        .add_plugin(HighlightablePickingPlugin::<StandardMaterial>::default())
+        .add_plugin(HighlightablePickingPlugin)
         .add_plugin(DebugCursorPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
