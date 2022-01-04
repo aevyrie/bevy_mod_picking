@@ -4,6 +4,8 @@ mod highlight;
 mod mouse;
 mod selection;
 
+use std::marker::PhantomData;
+
 pub use crate::{
     events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
     focus::{mesh_focus, pause_for_picking_blockers, Hover, PickingBlocker},
@@ -14,6 +16,8 @@ pub use crate::{
     selection::{mesh_selection, NoDeselect, Selection},
 };
 pub use bevy_mod_raycast::{BoundVol, Primitive3d, RayCastSource};
+use highlight::DefaultButtonMatl;
+pub use highlight::IsPickableButton;
 
 use bevy::ecs::schedule::ShouldRun;
 use bevy::{prelude::*, ui::FocusPolicy};
@@ -158,6 +162,7 @@ impl Plugin for InteractablePickingPlugin {
 }
 
 pub struct HighlightablePickingPlugin;
+
 impl Plugin for HighlightablePickingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MeshButtonMaterials>()
@@ -168,12 +173,44 @@ impl Plugin for HighlightablePickingPlugin {
                         simple_criteria(state.enable_highlighting)
                     })
                     .with_system(
-                        get_initial_mesh_button_material
+                        get_initial_mesh_button_material::<PickableButton>
                             .after(PickingSystem::UpdateRaycast)
                             .before(PickingSystem::Highlighting),
                     )
                     .with_system(
-                        mesh_highlighting
+                        mesh_highlighting::<PickableButton, MeshButtonMaterials>
+                            .label(PickingSystem::Highlighting)
+                            .before(PickingSystem::Events),
+                    ),
+            );
+    }
+}
+
+pub struct GenHighlightablePickingPlugin<T, U>(PhantomData<(T, U)>)
+where
+    T: IsPickableButton,
+    U: DefaultButtonMatl<T::HighlightComponent>;
+
+impl<T, U> Plugin for GenHighlightablePickingPlugin<T, U>
+where
+    T: IsPickableButton,
+    U: DefaultButtonMatl<T::HighlightComponent>,
+{
+    fn build(&self, app: &mut App) {
+        app.init_resource::<MeshButtonMaterials>()
+            .add_system_set_to_stage(
+                CoreStage::PreUpdate,
+                SystemSet::new()
+                    .with_run_criteria(|state: Res<PickingPluginsState>| {
+                        simple_criteria(state.enable_highlighting)
+                    })
+                    .with_system(
+                        get_initial_mesh_button_material::<T>
+                            .after(PickingSystem::UpdateRaycast)
+                            .before(PickingSystem::Highlighting),
+                    )
+                    .with_system(
+                        mesh_highlighting::<T, U>
                             .label(PickingSystem::Highlighting)
                             .before(PickingSystem::Events),
                     ),
