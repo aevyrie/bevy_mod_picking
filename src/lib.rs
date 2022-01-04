@@ -4,6 +4,8 @@ mod highlight;
 mod mouse;
 mod selection;
 
+use std::marker::PhantomData;
+
 pub use crate::{
     events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
     focus::{mesh_focus, pause_for_picking_blockers, Hover, PickingBlocker},
@@ -15,8 +17,9 @@ pub use crate::{
 };
 pub use bevy_mod_raycast::{BoundVol, Primitive3d, RayCastSource};
 
-use bevy::ecs::schedule::ShouldRun;
+use bevy::{asset::Asset, ecs::schedule::ShouldRun};
 use bevy::{prelude::*, ui::FocusPolicy};
+use highlight::PickingColors;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickingSystem {
@@ -93,7 +96,7 @@ impl Plugin for DefaultPickingPlugins {
     fn build(&self, app: &mut App) {
         app.add_plugin(PickingPlugin)
             .add_plugin(InteractablePickingPlugin)
-            .add_plugin(HighlightablePickingPlugin);
+            .add_plugin(HighlightablePickingPlugin::<StandardMaterial>::default());
     }
 }
 
@@ -157,10 +160,12 @@ impl Plugin for InteractablePickingPlugin {
     }
 }
 
-pub struct HighlightablePickingPlugin;
-impl Plugin for HighlightablePickingPlugin {
+#[derive(Default)]
+pub struct HighlightablePickingPlugin<T>(PhantomData<T>);
+
+impl<T: Asset + PickingColors> Plugin for HighlightablePickingPlugin<T> {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MeshButtonMaterials>()
+        app.init_resource::<MeshButtonMaterials<T>>()
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
@@ -168,12 +173,12 @@ impl Plugin for HighlightablePickingPlugin {
                         simple_criteria(state.enable_highlighting)
                     })
                     .with_system(
-                        get_initial_mesh_button_material
+                        get_initial_mesh_button_material::<T>
                             .after(PickingSystem::UpdateRaycast)
                             .before(PickingSystem::Highlighting),
                     )
                     .with_system(
-                        mesh_highlighting
+                        mesh_highlighting::<T>
                             .label(PickingSystem::Highlighting)
                             .before(PickingSystem::Events),
                     ),
@@ -229,7 +234,7 @@ pub struct PickableBundle {
     pub pickable_mesh: PickableMesh,
     pub interaction: Interaction,
     pub focus_policy: FocusPolicy,
-    pub pickable_button: PickableButton,
+    pub pickable_button: PickableButton<StandardMaterial>,
     pub selection: Selection,
     pub hover: Hover,
 }

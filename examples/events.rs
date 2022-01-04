@@ -12,7 +12,7 @@ fn main() {
         // InteractablePickingPlugin adds mouse events and selection
         .add_plugin(InteractablePickingPlugin)
         // HighlightablePickingPlugin adds hover, click, and selection highlighting
-        .add_plugin(HighlightablePickingPlugin)
+        .add_plugin(HighlightablePickingPlugin::<StandardMaterial>::default())
         .add_startup_system(setup)
         .add_system_to_stage(CoreStage::PostUpdate, print_events)
         .run();
