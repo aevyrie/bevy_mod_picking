@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use super::selection::*;
 use crate::PausedForBlockers;
 use bevy::{asset::Asset, prelude::*, render::color::Color};
@@ -14,22 +16,36 @@ pub struct PickableButton<T: Asset> {
     pub selected: Option<Handle<T>>,
 }
 
-pub struct MeshButtonMaterials<T: Asset> {
+pub struct MeshButtonMaterials<T: Asset, U: FromWorldHelper<T> + ?Sized> {
+    pub phantom: PhantomData<U>,
     pub hovered: Handle<T>,
     pub pressed: Handle<T>,
     pub selected: Handle<T>,
 }
 
-impl FromWorld for MeshButtonMaterials<StandardMaterial> {
-    fn from_world(world: &mut World) -> Self {
+pub trait FromWorldHelper<T: Asset>: Default {
+    fn from_world_helper(world: &mut World) -> MeshButtonMaterials<T, Self>;
+}
+
+#[derive(Default)]
+pub struct StandardMaterialPickingColors;
+impl FromWorldHelper<StandardMaterial> for StandardMaterialPickingColors {
+    fn from_world_helper(world: &mut World) -> MeshButtonMaterials<StandardMaterial, Self> {
         let mut materials = world
             .get_resource_mut::<Assets<StandardMaterial>>()
             .expect("Failed to get resource");
         MeshButtonMaterials {
+            phantom: PhantomData::default(),
             hovered: materials.add(Color::rgb(0.35, 0.35, 0.35).into()),
             pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
             selected: materials.add(Color::rgb(0.35, 0.35, 0.75).into()),
         }
+    }
+}
+
+impl<T: Asset, U: FromWorldHelper<T>> FromWorld for MeshButtonMaterials<T, U> {
+    fn from_world(world: &mut World) -> Self {
+        U::from_world_helper(world)
     }
 }
 
@@ -44,9 +60,9 @@ pub fn get_initial_mesh_button_material<T: Asset>(
 }
 
 #[allow(clippy::type_complexity)]
-pub fn mesh_highlighting<T: Asset>(
+pub fn mesh_highlighting<T: Asset, U: 'static + FromWorldHelper<T> + Send + Sync>(
     paused: Option<Res<PausedForBlockers>>,
-    global_button_materials: Res<MeshButtonMaterials<T>>,
+    global_button_materials: Res<MeshButtonMaterials<T, U>>,
     mut interaction_query: Query<
         (
             &Interaction,

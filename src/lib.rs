@@ -11,6 +11,7 @@ pub use crate::{
     focus::{mesh_focus, pause_for_picking_blockers, Hover, PickingBlocker},
     highlight::{
         get_initial_mesh_button_material, mesh_highlighting, MeshButtonMaterials, PickableButton,
+        StandardMaterialPickingColors,
     },
     mouse::update_pick_source_positions,
     selection::{mesh_selection, NoDeselect, Selection},
@@ -19,6 +20,7 @@ pub use bevy_mod_raycast::{BoundVol, Primitive3d, RayCastSource};
 
 use bevy::{asset::Asset, ecs::schedule::ShouldRun};
 use bevy::{prelude::*, ui::FocusPolicy};
+use highlight::FromWorldHelper;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickingSystem {
@@ -95,7 +97,10 @@ impl Plugin for DefaultPickingPlugins {
     fn build(&self, app: &mut App) {
         app.add_plugin(PickingPlugin)
             .add_plugin(InteractablePickingPlugin)
-            .add_plugin(HighlightablePickingPlugin::<StandardMaterial>::default());
+            .add_plugin(HighlightablePickingPlugin::<
+                StandardMaterial,
+                StandardMaterialPickingColors,
+            >::default());
     }
 }
 
@@ -160,15 +165,15 @@ impl Plugin for InteractablePickingPlugin {
 }
 
 #[derive(Default)]
-pub struct HighlightablePickingPlugin<T>(PhantomData<T>);
+pub struct HighlightablePickingPlugin<T, U>(PhantomData<(T, U)>);
 
-impl<T> Plugin for HighlightablePickingPlugin<T>
+impl<T, U> Plugin for HighlightablePickingPlugin<T, U>
 where
-    T: Asset,
-    MeshButtonMaterials<T>: FromWorld,
+    T: Asset + Default,
+    U: 'static + FromWorldHelper<T> + Sync + Send,
 {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MeshButtonMaterials<T>>()
+        app.init_resource::<MeshButtonMaterials<T, U>>()
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
@@ -181,7 +186,7 @@ where
                             .before(PickingSystem::Highlighting),
                     )
                     .with_system(
-                        mesh_highlighting::<T>
+                        mesh_highlighting::<T, U>
                             .label(PickingSystem::Highlighting)
                             .before(PickingSystem::Events),
                     ),
