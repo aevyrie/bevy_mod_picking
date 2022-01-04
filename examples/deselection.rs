@@ -52,7 +52,7 @@ fn setup(
         })
         .insert(PickableMesh::default())
         .insert(Interaction::default())
-        .insert(PickableButton::default())
+        .insert(PickableButton::<StandardMaterial>::default())
         .insert(FocusPolicy::default())
         .insert(NoDeselect);
     // light
