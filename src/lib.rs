@@ -16,7 +16,7 @@ pub use crate::{
     mouse::update_pick_source_positions,
     selection::{mesh_selection, NoDeselect, Selection},
 };
-pub use bevy_mod_raycast::{BoundVol, Primitive3d, RayCastSource};
+pub use bevy_mod_raycast::{Primitive3d, RayCastSource};
 
 use bevy::{asset::Asset, ecs::schedule::ShouldRun};
 use bevy::{prelude::*, ui::FocusPolicy};
@@ -110,10 +110,6 @@ impl Plugin for PickingPlugin {
                     .with_run_criteria(|state: Res<PickingPluginsState>| {
                         simple_criteria(state.enable_picking)
                     })
-                    .with_system(
-                        bevy_mod_raycast::update_bound_sphere::<PickingRaycastSet>
-                            .before(PickingSystem::UpdateRaycast),
-                    )
                     .with_system(update_pick_source_positions.before(PickingSystem::BuildRays))
                     .with_system(
                         bevy_mod_raycast::build_rays::<PickingRaycastSet>
