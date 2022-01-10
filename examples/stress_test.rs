@@ -55,12 +55,13 @@ fn setup(
 
     let _scenes: Vec<HandleUntyped> = asset_server.load_folder("models").unwrap();
     let mesh_handle = asset_server.get_handle("models/monkey/Monkey.gltf#Mesh0/Primitive0");
+    let matl_handle = materials.add(StandardMaterial::default());
     for i in 0..edge_length.pow(3) {
         let f_edge_length = edge_length as f32;
         commands
             .spawn_bundle(PbrBundle {
                 mesh: mesh_handle.clone(),
-                material: materials.add(StandardMaterial::default()),
+                material: matl_handle.clone(),
                 transform: Transform::from_translation(Vec3::new(
                     i as f32 % f_edge_length - f_edge_length / 2.0,
                     (i as f32 / f_edge_length).round() % f_edge_length - f_edge_length / 2.0,
@@ -69,8 +70,7 @@ fn setup(
                 )) * Transform::from_scale(Vec3::from([0.25, 0.25, 0.25])),
                 ..Default::default()
             })
-            .insert_bundle(PickableBundle::default())
-            .insert(BoundVol::default());
+            .insert_bundle(PickableBundle::default());
     }
 
     commands.spawn_bundle(PointLightBundle {
