@@ -49,6 +49,7 @@ impl<T: Asset, U: FromWorldHelper<T>> FromWorld for MeshButtonMaterials<T, U> {
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn get_initial_mesh_button_material<T: Asset>(
     mut query: Query<
         (&mut PickableButton<T>, &Handle<T>),
