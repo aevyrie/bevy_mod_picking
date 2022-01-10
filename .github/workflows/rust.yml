@@ -7,94 +7,41 @@ on:
 name: CI
 
 jobs:
-  check:
-    name: Check
+  ci:
+    name: CI
     runs-on: ubuntu-latest
     steps:
-      - name: Install alsa
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
-        if: ${{ runner.os == 'Linux' }}
-        
-      - name: Install udev
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
-        if: ${{ runner.os == 'Linux' }}
-
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
 
-  test:
-    name: Test Suite
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install alsa
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
-        if: ${{ runner.os == 'Linux' }}
-        
-      - name: Install udev
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
-        if: ${{ runner.os == 'Linux' }}
+      - name: Update Packages
+        run: sudo apt-get update -yq
+      - name: Install dependencies
+        run: sudo apt-get install -yq --no-install-recommends libudev-dev libasound2-dev libxcb-composite0-dev
 
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-
-  fmt:
-    name: Rustfmt
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install alsa
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
-        if: ${{ runner.os == 'Linux' }}
+      - name: Install fmt
+        run: rustup component add rustfmt
       
-      - name: Install udev
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
-        if: ${{ runner.os == 'Linux' }}
-
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@v1
+      - name: fmt
+        uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
 
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install alsa
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev
-        if: ${{ runner.os == 'Linux' }}
-      
-      - name: Install udev
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
-        if: ${{ runner.os == 'Linux' }}
+      - name: check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
 
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Install clippy  
+        run: rustup component add clippy
+      
+      - name: run clippy
+        uses: actions-rs/cargo@v1
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: rustup component add clippy
-      - uses: actions-rs/cargo@v1
+         command: clippy
+         args: -- -D warnings
+     
+      - name: test
+        uses: actions-rs/cargo@v1
         with:
-          command: clippy
-          args: -- -D warnings
+          command: test
