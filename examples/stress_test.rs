@@ -30,8 +30,9 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let edge_length: u16 = 18;
-    println!("Total tris: {}", 3936 * i32::from(edge_length).pow(3));
+    // Spawn 32,768 monkeys
+    let edge_length: u16 = 32;
+    info!("Total tris: {}", 3936 * i32::from(edge_length).pow(3));
 
     // camera
     commands
