@@ -52,11 +52,11 @@ pub fn mesh_selection(
 
     if keyboard_input.pressed(KeyCode::LControl) && keyboard_input.pressed(KeyCode::A) {
         // The user has hit ctrl+a, select all the things!
-        for (mut selection, _interaction) in &mut query_all.iter_mut() {
+        query_all.for_each_mut(|(mut selection, _)| {
             if !selection.selected {
                 selection.selected = true;
             }
-        }
+        });
     } else if new_selection {
         // Some pickable mesh has been clicked on - figure out what to select or deselect
         for (mut selection, interaction) in &mut query_all.iter_mut() {
