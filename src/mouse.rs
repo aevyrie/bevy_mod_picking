@@ -36,7 +36,8 @@ pub fn update_pick_source_positions(
                     windows
                         .get(camera.window)
                         .expect("PickingCamera window does not exist")
-                        .height(),
+                        .height()
+                        - touch.position().y,
                 )
             }),
         };
