@@ -50,7 +50,10 @@ impl<T: Asset, U: FromWorldHelper<T>> FromWorld for MeshButtonMaterials<T, U> {
 }
 
 pub fn get_initial_mesh_button_material<T: Asset>(
-    mut query: Query<(&mut PickableButton<T>, &Handle<T>)>,
+    mut query: Query<
+        (&mut PickableButton<T>, &Handle<T>),
+        Or<(Added<PickableButton<T>>, Changed<Handle<T>>)>,
+    >,
 ) {
     for (mut button, material) in query.iter_mut() {
         if button.initial.is_none() {
