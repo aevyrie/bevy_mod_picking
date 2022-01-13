@@ -32,7 +32,7 @@ fn setup(
             ..Default::default()
         })
         .insert_bundle(PickableBundle::default()); // <- Makes the mesh pickable.
-    // cube
+                                                   // cube
     commands
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -41,7 +41,7 @@ fn setup(
             ..Default::default()
         })
         .insert_bundle(PickableBundle::default()); // <- Makes the mesh pickable.
-    // light
+                                                   // light
     commands.spawn_bundle(PointLightBundle {
         point_light: PointLight {
             intensity: 1500.0,
