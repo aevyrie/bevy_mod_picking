@@ -24,4 +24,5 @@ bevy = { version = "0.6", default-features = false, features = [
     "bevy_gltf",
     "x11",
     "jpeg",
+    "png",
 ] }
