@@ -2,6 +2,7 @@
 Cargo.lock
 .cargo/config
 .vscode
+.idea
 .cargo/credentials.toml
 .cargo/config_fast_compile
 **/trace-*.json
