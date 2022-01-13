@@ -7,15 +7,15 @@ use bevy_mod_picking::*;
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
-            vsync: false, // Disabled for this demo to remove vsync as a source of input latency
+            vsync: false, // Disabled for this demo to reduce input latency
             ..Default::default()
         })
         .insert_resource(bevy::pbr::AmbientLight {
             color: Color::WHITE,
-            brightness: 1.0 / 5.0f32,
+            brightness: 1.0 / 4.0f32,
         })
         .insert_resource(WindowDescriptor {
-            title: "bevy_mod_picking stress test".to_string(),
+            title: "bevy_mod_picking sponza test".to_string(),
             width: 800.,
             height: 600.,
             vsync: false,

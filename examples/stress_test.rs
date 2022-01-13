@@ -17,7 +17,7 @@ fn main() {
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
         .add_plugin(HighlightablePickingPlugin)
-        .add_plugin(DebugCursorPickingPlugin)
+        //.add_plugin(DebugCursorPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_startup_system(setup)
@@ -29,68 +29,69 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     // Spawn 32,768 monkeys
-    let edge_length: u16 = 32;
-    info!("Total tris: {}", 3936 * i32::from(edge_length).pow(3));
+    let half_width: isize = 4;
+    let subdivisions: usize = 45;
+
+    // Suzanne has 3936 tris.
+    let tris_sphere = 20 * subdivisions.pow(2);
+    let tris_total = tris_sphere * (half_width as usize * 2).pow(3);
+
+    info!("Total tris: {}, Tris per mesh: {}", tris_total, tris_sphere);
+
+    let mesh_handle = meshes.add(
+        shape::Icosphere {
+            radius: 0.2,
+            subdivisions,
+        }
+        .into(),
+    );
+    //let mesh_handle = asset_server.get_handle("models/monkey/Monkey.gltf#Mesh0/Primitive0");
+
+    let matl_handle = materials.add(StandardMaterial {
+        perceptual_roughness: 0.5,
+        metallic: 0.6,
+        base_color: Color::hsla(0.0, 0.0, 0.3, 1.0),
+        ..Default::default()
+    });
 
     // camera
     commands
         .spawn_bundle(PerspectiveCameraBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::new(
-                    f32::from(edge_length) * -0.55,
-                    f32::from(edge_length) * 0.55,
-                    f32::from(edge_length) * 0.45,
-                ),
-                Vec3::new(
-                    f32::from(edge_length) * 0.1,
-                    0.0,
-                    -f32::from(edge_length) * 0.1,
-                ),
-                Vec3::new(0.0, 1.0, 0.0),
+                Vec3::splat(half_width as f32 * 1.1),
+                Vec3::ZERO,
+                Vec3::Y,
             )),
             ..Default::default()
         })
         .insert_bundle(PickingCameraBundle::default());
 
     let _scenes: Vec<HandleUntyped> = asset_server.load_folder("models").unwrap();
-    let mesh_handle = asset_server.get_handle("models/monkey/Monkey.gltf#Mesh0/Primitive0");
-    let matl_handle = materials.add(StandardMaterial {
-        perceptual_roughness: 0.5,
-        metallic: 0.6,
-        ..Default::default()
-    });
-    for i in 0..edge_length.pow(3) {
-        let f_edge_length = edge_length as f32;
-        commands
-            .spawn_bundle(PbrBundle {
-                mesh: mesh_handle.clone(),
-                material: matl_handle.clone(),
-                transform: Transform::from_translation(Vec3::new(
-                    i as f32 % f_edge_length - f_edge_length / 2.0,
-                    (i as f32 / f_edge_length).round() % f_edge_length - f_edge_length / 2.0,
-                    (i as f32 / (f_edge_length * f_edge_length)).round() % f_edge_length
-                        - f_edge_length / 2.0,
-                )) * Transform::from_scale(Vec3::from([0.25, 0.25, 0.25])),
-                ..Default::default()
-            })
-            .insert_bundle(PickableBundle::default());
+    for x in -half_width..half_width {
+        for y in -half_width..half_width {
+            for z in -half_width..half_width {
+                commands
+                    .spawn_bundle(PbrBundle {
+                        mesh: mesh_handle.clone(),
+                        material: matl_handle.clone(),
+                        transform: Transform::from_translation(Vec3::new(
+                            x as f32, y as f32, z as f32,
+                        )),
+                        ..Default::default()
+                    })
+                    .insert_bundle(PickableBundle::default());
+            }
+        }
     }
 
     commands.spawn_bundle(PointLightBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
-            Vec3::new(
-                f32::from(edge_length) * -0.55,
-                f32::from(edge_length) * 0.55,
-                f32::from(edge_length) * 0.45,
-            ),
-            Vec3::new(
-                f32::from(edge_length) * 0.1,
-                0.0,
-                -f32::from(edge_length) * 0.1,
-            ),
-            Vec3::new(0.0, 1.0, 0.0),
+            Vec3::splat(half_width as f32 * 1.1),
+            Vec3::ZERO,
+            Vec3::Y,
         )),
         point_light: PointLight {
             intensity: 2000.0,

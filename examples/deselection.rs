@@ -13,7 +13,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(DefaultPickingPlugins)
+        .add_plugin(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
         .add_startup_system(setup)
         .run();
 }
