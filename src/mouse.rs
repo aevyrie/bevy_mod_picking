@@ -14,32 +14,15 @@ pub fn update_pick_source_positions(
     )>,
 ) {
     for (mut pick_source, option_update_picks, option_camera) in &mut pick_source_query.iter_mut() {
-        let camera = match option_camera {
-            Some(camera) => camera,
-            None => panic!("The PickingCamera entity has no associated Camera component"),
-        };
-        let mut update_picks = match option_update_picks {
-            Some(update_picks) => update_picks,
-            None => panic!("The PickingCamera entity has no associated UpdatePicks component"),
-        };
-        let cursor_latest = match cursor.iter().last() {
-            Some(cursor_moved) => {
-                if cursor_moved.id == camera.window {
-                    Some(cursor_moved.position)
-                } else {
-                    None
-                }
-            }
-            None => touches_input.iter().last().map(|touch| {
-                Vec2::new(
-                    touch.position().x,
-                    windows
-                        .get(camera.window)
-                        .expect("PickingCamera window does not exist")
-                        .height()
-                        - touch.position().y,
-                )
-            }),
+        let (mut update_picks, cursor_latest) = match get_inputs(
+            &windows,
+            option_camera,
+            option_update_picks,
+            &mut cursor,
+            &touches_input,
+        ) {
+            Some(value) => value,
+            None => return,
         };
         match *update_picks {
             UpdatePicks::EveryFrame(cached_cursor_pos) => {
@@ -59,4 +42,32 @@ pub fn update_pick_source_positions(
             },
         };
     }
+}
+
+fn get_inputs<'a>(
+    windows: &Res<Windows>,
+    option_camera: Option<&Camera>,
+    option_update_picks: Option<Mut<'a, UpdatePicks>>,
+    cursor: &mut EventReader<CursorMoved>,
+    touches_input: &Res<Touches>,
+) -> Option<(Mut<'a, UpdatePicks>, Option<Vec2>)> {
+    let camera = option_camera?;
+    let update_picks = option_update_picks?;
+    let height = windows.get(camera.window)?.height();
+    let cursor_latest = match cursor.iter().last() {
+        Some(cursor_moved) => {
+            if cursor_moved.id == camera.window {
+                Some(cursor_moved.position)
+            } else {
+                None
+            }
+        }
+        None => touches_input.iter().last().map(|touch| {
+            Vec2::new(
+                touch.position().x as f32,
+                height - touch.position().y as f32,
+            )
+        }),
+    };
+    Some((update_picks, cursor_latest))
 }
