@@ -1,7 +1,7 @@
 use crate::{Hover, PickableMesh, Selection};
 use bevy::prelude::*;
 
-/// An event that triggers when the hover state of a [Selection] enabled [PickableMesh] changes.
+/// An event that triggers when the selection state of a [Selection] enabled [PickableMesh] changes.
 #[derive(Debug)]
 pub enum SelectionEvent {
     JustSelected(Entity),

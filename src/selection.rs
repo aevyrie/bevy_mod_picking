@@ -21,7 +21,7 @@ impl Selection {
     }
 }
 
-/// Marker struct used to mark pickable entities you don't want to trigger a deselection event when pickedy. This is useful for gizmos or other pickable UI entities.
+/// Marker struct used to mark pickable entities for which you don't want to trigger a deselection event when picked. This is useful for gizmos or other pickable UI entities.
 #[derive(Component, Debug, Copy, Clone)]
 pub struct NoDeselect;
 
