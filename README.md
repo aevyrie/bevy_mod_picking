@@ -8,6 +8,10 @@
 A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking, making it easy to interact
 with geometry in Bevy using a mouse or touch. This plugin is built with [`bevy_mod_raycast`](https://github.com/aevyrie/bevy_mod_raycast).
 
+<br/><p align="center">
+<img src="https://user-images.githubusercontent.com/2632925/114128723-d8de1b00-98b1-11eb-9b25-812fcf6664e2.gif">
+</p><br/>
+
 ## Features
 * Mouse intersection coordinates in world space
 * Mouseover and mouseclick events
@@ -16,8 +20,6 @@ with geometry in Bevy using a mouse or touch. This plugin is built with [`bevy_m
 * 3D debug cursor
 * Touch support
 * Common keybindings (Ctrl+A, Ctrl+Click multi-select)
-
-![picking_demo](https://user-images.githubusercontent.com/2632925/114128723-d8de1b00-98b1-11eb-9b25-812fcf6664e2.gif)
 
 # Quickstart
 
