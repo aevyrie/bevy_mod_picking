@@ -17,7 +17,6 @@ fn main() {
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
         .add_plugin(HighlightablePickingPlugin)
-        //.add_plugin(DebugCursorPickingPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_startup_system(setup)
@@ -27,7 +26,6 @@ fn main() {
 /// set up a simple 3D scene
 fn setup(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
@@ -44,7 +42,6 @@ fn setup(
         }
         .into(),
     );
-    //let mesh_handle = asset_server.get_handle("models/monkey/Monkey.gltf#Mesh0/Primitive0");
 
     let matl_handle = materials.add(StandardMaterial {
         perceptual_roughness: 0.5,
@@ -53,7 +50,7 @@ fn setup(
         ..Default::default()
     });
 
-    // camera
+    // Camera
     commands
         .spawn_bundle(PerspectiveCameraBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
@@ -65,7 +62,7 @@ fn setup(
         })
         .insert_bundle(PickingCameraBundle::default());
 
-    let _scenes: Vec<HandleUntyped> = asset_server.load_folder("models").unwrap();
+    // Spawn a huge cube of spheres.
     for x in -half_width..half_width {
         for y in -half_width..half_width {
             for z in -half_width..half_width {
@@ -85,6 +82,7 @@ fn setup(
         }
     }
 
+    // Light
     commands.spawn_bundle(PointLightBundle {
         transform: Transform::from_matrix(Mat4::face_toward(
             Vec3::splat(half_width as f32 * 1.1),
