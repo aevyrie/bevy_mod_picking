@@ -31,14 +31,10 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    // Spawn 32,768 monkeys
-    let half_width: isize = 4;
-    let subdivisions: usize = 45;
-
-    // Suzanne has 3936 tris.
+    let half_width: isize = 5;
+    let subdivisions: usize = 50;
     let tris_sphere = 20 * subdivisions.pow(2);
     let tris_total = tris_sphere * (half_width as usize * 2).pow(3);
-
     info!("Total tris: {}, Tris per mesh: {}", tris_total, tris_sphere);
 
     let mesh_handle = meshes.add(
@@ -61,7 +57,7 @@ fn setup(
     commands
         .spawn_bundle(PerspectiveCameraBundle {
             transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::splat(half_width as f32 * 1.1),
+                Vec3::splat(half_width as f32),
                 Vec3::ZERO,
                 Vec3::Y,
             )),
@@ -78,7 +74,9 @@ fn setup(
                         mesh: mesh_handle.clone(),
                         material: matl_handle.clone(),
                         transform: Transform::from_translation(Vec3::new(
-                            x as f32, y as f32, z as f32,
+                            x as f32 + 0.35,
+                            y as f32 - 1.0,
+                            z as f32,
                         )),
                         ..Default::default()
                     })
@@ -94,7 +92,7 @@ fn setup(
             Vec3::Y,
         )),
         point_light: PointLight {
-            intensity: 2000.0,
+            intensity: 2500.0,
             ..Default::default()
         },
         ..Default::default()
