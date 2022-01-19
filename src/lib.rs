@@ -92,11 +92,12 @@ impl Default for UpdatePicks {
 }
 
 pub struct DefaultPickingPlugins;
-impl Plugin for DefaultPickingPlugins {
-    fn build(&self, app: &mut App) {
-        app.add_plugin(PickingPlugin)
-            .add_plugin(InteractablePickingPlugin)
-            .add_plugin(HighlightablePickingPlugin);
+
+impl PluginGroup for DefaultPickingPlugins {
+    fn build(&mut self, group: &mut PluginGroupBuilder) {
+        group.add(PickingPlugin);
+        group.add(InteractablePickingPlugin);
+        group.add(HighlightablePickingPlugin);
     }
 }
 

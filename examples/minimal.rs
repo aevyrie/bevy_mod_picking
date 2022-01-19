@@ -11,7 +11,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
+        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
         .add_plugin(DebugCursorPickingPlugin) // <- Adds the green debug cursor.
         .add_plugin(DebugEventsPickingPlugin) // <- Adds debug event logging.
         .add_startup_system(setup)

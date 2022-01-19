@@ -4,7 +4,7 @@ use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle, PickingCameraBundl
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
+        .add_plugins(DefaultPickingPlugins)// <- Adds Picking, Interaction, and Highlighting plugins.
         .add_startup_system(setup)
         .add_system_to_stage(CoreStage::PostUpdate, print_events)
         .run();

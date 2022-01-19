@@ -37,7 +37,7 @@ use bevy_mod_picking::*;
 
 3. Add the plugin to your app:
 ```rs
-.add_plugin(DefaultPickingPlugins);
+.add_plugins(DefaultPickingPlugins);
 ```
 
 4. Mark your camera as the picking source with the `PickingCameraBundle` component:
