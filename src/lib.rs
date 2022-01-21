@@ -18,7 +18,7 @@ pub use crate::{
 };
 pub use bevy_mod_raycast::{Primitive3d, RayCastSource};
 
-use bevy::{asset::Asset, ecs::schedule::ShouldRun};
+use bevy::{app::PluginGroupBuilder, asset::Asset, ecs::schedule::ShouldRun};
 use bevy::{prelude::*, ui::FocusPolicy};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
