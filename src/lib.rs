@@ -18,8 +18,9 @@ pub use crate::{
 };
 pub use bevy_mod_raycast::{Primitive3d, RayCastSource};
 
-use bevy::{app::PluginGroupBuilder, asset::Asset, ecs::schedule::ShouldRun};
-use bevy::{prelude::*, ui::FocusPolicy};
+use bevy::{
+    app::PluginGroupBuilder, asset::Asset, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy,
+};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickingSystem {
