@@ -18,8 +18,9 @@ pub use crate::{
 };
 pub use bevy_mod_raycast::{Primitive3d, RayCastSource};
 
-use bevy::{asset::Asset, ecs::schedule::ShouldRun};
-use bevy::{prelude::*, ui::FocusPolicy};
+use bevy::{
+    app::PluginGroupBuilder, asset::Asset, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy,
+};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickingSystem {
@@ -92,11 +93,12 @@ impl Default for UpdatePicks {
 }
 
 pub struct DefaultPickingPlugins;
-impl Plugin for DefaultPickingPlugins {
-    fn build(&self, app: &mut App) {
-        app.add_plugin(PickingPlugin)
-            .add_plugin(InteractablePickingPlugin)
-            .add_plugin(HighlightablePickingPlugin);
+
+impl PluginGroup for DefaultPickingPlugins {
+    fn build(&mut self, group: &mut PluginGroupBuilder) {
+        group.add(PickingPlugin);
+        group.add(InteractablePickingPlugin);
+        group.add(HighlightablePickingPlugin);
     }
 }
 
