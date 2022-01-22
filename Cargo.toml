@@ -22,8 +22,5 @@ bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
     #bevy = { version = "0.6", default-features = false, features = [
     "bevy_winit",
-    "bevy_gltf",
     "x11",
-    "jpeg",
-    "png",
 ] }
