@@ -1,6 +1,6 @@
 [package]
 name = "bevy_mod_picking"
-version = "0.5.2"
+version = "0.5.3"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 edition = "2021"
 license = "MIT"
@@ -11,16 +11,16 @@ categories = ["game-engines", "rendering"]
 resolver = "2"
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
-    "render",
-] }
-#bevy = { version = "0.6", default-features = false, features = ["render"] }
-bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "master" }
-#bevy_mod_raycast = "0.3.6"
+#bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
+#    "render",
+#] }
+bevy = { version = "0.6", default-features = false, features = ["render"] }
+#bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "master" }
+bevy_mod_raycast = "0.3.7"
 
 [dev-dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
-    #bevy = { version = "0.6", default-features = false, features = [
+#bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
+bevy = { version = "0.6", default-features = false, features = [
     "bevy_winit",
     "x11",
 ] }
