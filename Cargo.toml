@@ -16,7 +16,7 @@ resolver = "2"
 #]}
 bevy = { version = "0.6", default-features = false, features = ["render"] }
 #bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "master" }
-bevy_mod_raycast = "0.3.7"
+bevy_mod_raycast = "0.3.8"
 
 [dev-dependencies]
 #bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
