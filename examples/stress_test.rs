@@ -10,7 +10,7 @@ fn main() {
             title: "bevy_mod_picking stress test".to_string(),
             width: 800.,
             height: 600.,
-            vsync: false,
+            present_mode: PresentMode::Immediate,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)

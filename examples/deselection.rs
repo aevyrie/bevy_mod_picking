@@ -9,7 +9,7 @@ use bevy_mod_picking::{
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
-            vsync: false,
+            present_mode: PresentMode::Immediate,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
