@@ -1,6 +1,7 @@
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    prelude::*, window::PresentMode,
+    prelude::*,
+    window::PresentMode,
 };
 use bevy_mod_picking::*;
 
