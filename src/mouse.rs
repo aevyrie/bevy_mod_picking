@@ -1,5 +1,8 @@
 use crate::{PickingCamera, UpdatePicks};
-use bevy::{prelude::*, render::camera::Camera};
+use bevy::{
+    prelude::*,
+    render::camera::{Camera, RenderTarget},
+};
 use bevy_mod_raycast::RayCastMethod;
 
 /// Update Screenspace ray cast sources with the current mouse position
@@ -52,11 +55,15 @@ fn get_inputs<'a>(
     touches_input: &Res<Touches>,
 ) -> Option<(Mut<'a, UpdatePicks>, Option<Vec2>)> {
     let camera = option_camera?;
+    let window_id = match camera.target {
+        RenderTarget::Window(window_id) => Some(window_id),
+        _ => None,
+    }?;
     let update_picks = option_update_picks?;
-    let height = windows.get(camera.window)?.height();
+    let height = windows.get(window_id)?.height();
     let cursor_latest = match cursor.iter().last() {
         Some(cursor_moved) => {
-            if cursor_moved.id == camera.window {
+            if cursor_moved.id == window_id {
                 Some(cursor_moved.position)
             } else {
                 None
