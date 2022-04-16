@@ -27,7 +27,7 @@ It only takes a few lines to get mouse picking working in your Bevy application 
 
 1. Add the crate to your dependencies in `Cargo.toml`:
 ```toml
-bevy_mod_picking = "0.5"
+bevy_mod_picking = "0.6"
 ```
 
 2. Import the plugin:
@@ -67,6 +67,7 @@ I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
 
 |bevy|bevy_mod_picking|
 |---|---|
+|0.7|0.6|
 |0.6|0.5|
 |0.5|0.4|
 |0.4|0.3|
