@@ -26,8 +26,8 @@ pub struct PickingBlocker;
 #[allow(clippy::type_complexity)]
 pub fn pause_for_picking_blockers(
     mut paused: ResMut<PausedForBlockers>,
-    mut interactions: QuerySet<(
-        QueryState<
+    mut interactions: ParamSet<(
+        Query<
             (
                 &mut Interaction,
                 Option<&mut Hover>,
@@ -37,12 +37,12 @@ pub fn pause_for_picking_blockers(
             With<PickableMesh>,
         >,
         // UI nodes are picking blockers by default.
-        QueryState<&Interaction, Or<(With<Node>, With<PickingBlocker>)>>,
+        Query<&Interaction, Or<(With<Node>, With<PickingBlocker>)>>,
     )>,
 ) {
-    for ui_interaction in interactions.q1().iter() {
+    for ui_interaction in interactions.p1().iter() {
         if *ui_interaction != Interaction::None {
-            for (mut interaction, hover, _, _) in &mut interactions.q0().iter_mut() {
+            for (mut interaction, hover, _, _) in &mut interactions.p0().iter_mut() {
                 if *interaction != Interaction::None {
                     *interaction = Interaction::None;
                 }

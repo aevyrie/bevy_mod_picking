@@ -1,4 +1,4 @@
-use bevy::{prelude::*, ui::FocusPolicy};
+use bevy::{prelude::*, ui::FocusPolicy, window::PresentMode};
 use bevy_mod_picking::{
     DefaultPickingPlugins, NoDeselect, PickableBundle, PickableButton, PickableMesh,
     PickingCameraBundle,
@@ -9,7 +9,7 @@ use bevy_mod_picking::{
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
-            vsync: false,
+            present_mode: PresentMode::Immediate,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)

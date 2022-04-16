@@ -1,6 +1,7 @@
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
+    window::PresentMode,
 };
 use bevy_mod_picking::*;
 
@@ -10,7 +11,7 @@ fn main() {
             title: "bevy_mod_picking stress test".to_string(),
             width: 800.,
             height: 600.,
-            vsync: false,
+            present_mode: PresentMode::Immediate,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
@@ -53,7 +54,7 @@ fn setup(
     // Camera
     commands
         .spawn_bundle(PerspectiveCameraBundle {
-            transform: Transform::from_matrix(Mat4::face_toward(
+            transform: Transform::from_matrix(Mat4::look_at_rh(
                 Vec3::splat(half_width as f32),
                 Vec3::ZERO,
                 Vec3::Y,
@@ -84,7 +85,7 @@ fn setup(
 
     // Light
     commands.spawn_bundle(PointLightBundle {
-        transform: Transform::from_matrix(Mat4::face_toward(
+        transform: Transform::from_matrix(Mat4::look_at_rh(
             Vec3::splat(half_width as f32 * 1.1),
             Vec3::ZERO,
             Vec3::Y,

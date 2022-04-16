@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PresentMode};
 use bevy_mod_picking::{
     DebugCursorPickingPlugin, DebugEventsPickingPlugin, DefaultPickingPlugins, PickableBundle,
     PickingCameraBundle,
@@ -7,7 +7,7 @@ use bevy_mod_picking::{
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
-            vsync: false, // Disabled for this demo to reduce input latency
+            present_mode: PresentMode::Immediate, // Disabled for this demo to reduce input latency
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
