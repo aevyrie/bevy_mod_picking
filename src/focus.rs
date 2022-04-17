@@ -1,5 +1,5 @@
 use crate::{PausedForBlockers, PickableMesh, PickingCamera};
-use bevy::{prelude::*, ui::FocusPolicy};
+use bevy::{prelude::*, ui::FocusPolicy, utils::HashSet};
 
 /// Tracks the current hover state to be used with change tracking in the events system.
 ///
@@ -70,6 +70,8 @@ pub fn mesh_focus(
             &mut Interaction,
             Option<&mut Hover>,
             Option<&FocusPolicy>,
+            Option<&Parent>,
+            Option<&Children>,
             Entity,
         ),
         With<PickableMesh>,
@@ -86,7 +88,7 @@ pub fn mesh_focus(
     if mouse_button_input.just_released(MouseButton::Left)
         || touches_input.iter_just_released().next().is_some()
     {
-        for (mut interaction, _, _, _) in &mut interactions.iter_mut() {
+        for (mut interaction, _, _, _, _, _) in &mut interactions.iter_mut() {
             if *interaction == Interaction::Clicked {
                 *interaction = Interaction::None;
             }
@@ -99,7 +101,7 @@ pub fn mesh_focus(
         // There is at least one entity under the cursor
         if let Some(picks) = pick_source.intersect_list() {
             for (topmost_entity, _intersection) in picks.iter() {
-                if let Ok((mut interaction, _hover, focus_policy, _entity)) =
+                if let Ok((mut interaction, _hover, focus_policy, _parent, _children, _entity)) =
                     interactions.get_mut(*topmost_entity)
                 {
                     if mouse_clicked {
@@ -122,15 +124,54 @@ pub fn mesh_focus(
             }
         }
 
-        for (mut interaction, hover, _, entity) in &mut interactions.iter_mut() {
-            if Some(entity) != hovered_entity && *interaction == Interaction::Hovered {
+        let mut family: HashSet<Entity> = HashSet::default();
+        let mut family_interaction = None;
+        if let Some(entity) = hovered_entity {
+            let mut visit = vec![entity];
+
+            if let Ok((interaction, _, _, _, _, _)) = interactions.get(entity) {
+                family_interaction = Some(interaction);
+            }
+
+            // Visit "family members" by popping them off of a queue
+            while let Some(parent) = visit.pop() {
+                // Fetch the parents, children, and self identity of this visit
+                if let Ok((_, _, _, p, cs, e)) = interactions.get(parent) {
+                    // Only add entities we visit to the family set
+                    family.insert(e);
+
+                    // If this entity has a parent, add it to the visit queue
+                    if let Some(parent) = p {
+                        // Only add this parent to the visit set if it hasn't been visited
+                        if !family.contains(&parent.0) {
+                            visit.push(parent.0);
+                        }
+                    }
+
+                    // Repeat for all children of this entity
+                    if let Some(children) = cs {
+                        for child in children.iter() {
+                            if !family.contains(&child) {
+                                visit.push(*child);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (mut interaction, hover, _, _, _, entity) in &mut interactions.iter_mut() {
+            if !family.contains(&entity) && *interaction == Interaction::Hovered {
                 *interaction = Interaction::None;
             }
-            if Some(entity) == hovered_entity {
+            if family.contains(&entity) {
                 if let Some(mut hover) = hover {
                     if !hover.hovered {
                         hover.hovered = true;
                     }
+                }
+                if let Some(shared_interaction) = family_interaction {
+                    *interaction = *shared_interaction;
                 }
             } else if let Some(mut hover) = hover {
                 if hover.hovered {
