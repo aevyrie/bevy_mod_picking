@@ -19,3 +19,10 @@ bevy = { version = "0.7", default-features = false, features = [
     "bevy_winit",
     "x11",
 ] }
+
+[features]
+family = []
+
+[[examples]]
+name = "family"
+required-features = ["family"]

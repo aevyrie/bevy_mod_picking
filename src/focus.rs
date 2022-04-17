@@ -124,13 +124,16 @@ pub fn mesh_focus(
             }
         }
 
+        #[cfg(feature = "family")]
         let mut family: HashSet<Entity> = HashSet::default();
-        let mut family_interaction = None;
+        #[cfg(feature = "family")]
+        let mut family_interaction: Option<Interaction> = None;
+        #[cfg(feature = "family")]
         if let Some(entity) = hovered_entity {
             let mut visit = vec![entity];
 
             if let Ok((interaction, _, _, _, _, _)) = interactions.get(entity) {
-                family_interaction = Some(interaction);
+                family_interaction = Some(*interaction);
             }
 
             // Visit "family members" by popping them off of a queue
@@ -161,17 +164,23 @@ pub fn mesh_focus(
         }
 
         for (mut interaction, hover, _, _, _, entity) in &mut interactions.iter_mut() {
-            if !family.contains(&entity) && *interaction == Interaction::Hovered {
+            #[cfg(feature = "family")]
+            let relevant = family.contains(&entity);
+            #[cfg(not(feature = "family"))]
+            let relevant = Some(entity) == hovered_entity;
+
+            if !relevant && *interaction == Interaction::Hovered {
                 *interaction = Interaction::None;
             }
-            if family.contains(&entity) {
+            if relevant {
                 if let Some(mut hover) = hover {
                     if !hover.hovered {
                         hover.hovered = true;
                     }
                 }
+                #[cfg(feature = "family")]
                 if let Some(shared_interaction) = family_interaction {
-                    *interaction = *shared_interaction;
+                    *interaction = shared_interaction;
                 }
             } else if let Some(mut hover) = hover {
                 if hover.hovered {
