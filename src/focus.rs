@@ -1,4 +1,4 @@
-use crate::{PausedForBlockers, PickableMesh, PickingCamera};
+use crate::{PausedForBlockers, PickableMesh, PickingCamera, FamilyPickingState};
 use bevy::{prelude::*, ui::FocusPolicy, utils::HashSet};
 
 /// Tracks the current hover state to be used with change tracking in the events system.
@@ -64,6 +64,7 @@ pub fn mesh_focus(
     paused: Option<Res<PausedForBlockers>>,
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
+    family_picking_state: Option<Res<FamilyPickingState>>,
     pick_source_query: Query<&PickingCamera>,
     mut interactions: Query<
         (
@@ -124,38 +125,43 @@ pub fn mesh_focus(
             }
         }
 
-        #[cfg(feature = "family")]
+        let family_picking = if let Some(inner) = &family_picking_state {
+            inner.0
+        } else {
+            false
+        };
+
         let mut family: HashSet<Entity> = HashSet::default();
-        #[cfg(feature = "family")]
         let mut family_interaction: Option<Interaction> = None;
-        #[cfg(feature = "family")]
-        if let Some(entity) = hovered_entity {
-            let mut visit = vec![entity];
+        if family_picking {
+            if let Some(entity) = hovered_entity {
+                let mut visit = vec![entity];
 
-            if let Ok((interaction, _, _, _, _, _)) = interactions.get(entity) {
-                family_interaction = Some(*interaction);
-            }
+                if let Ok((interaction, _, _, _, _, _)) = interactions.get(entity) {
+                    family_interaction = Some(*interaction);
+                }
 
-            // Visit "family members" by popping them off of a queue
-            while let Some(parent) = visit.pop() {
-                // Fetch the parents, children, and self identity of this visit
-                if let Ok((_, _, _, p, cs, e)) = interactions.get(parent) {
-                    // Only add entities we visit to the family set
-                    family.insert(e);
+                // Visit "family members" by popping them off of a queue
+                while let Some(parent) = visit.pop() {
+                    // Fetch the parents, children, and self identity of this visit
+                    if let Ok((_, _, _, p, cs, e)) = interactions.get(parent) {
+                        // Only add entities we visit to the family set
+                        family.insert(e);
 
-                    // If this entity has a parent, add it to the visit queue
-                    if let Some(parent) = p {
-                        // Only add this parent to the visit set if it hasn't been visited
-                        if !family.contains(&parent.0) {
-                            visit.push(parent.0);
+                        // If this entity has a parent, add it to the visit queue
+                        if let Some(parent) = p {
+                            // Only add this parent to the visit set if it hasn't been visited
+                            if !family.contains(&parent.0) {
+                                visit.push(parent.0);
+                            }
                         }
-                    }
 
-                    // Repeat for all children of this entity
-                    if let Some(children) = cs {
-                        for child in children.iter() {
-                            if !family.contains(&child) {
-                                visit.push(*child);
+                        // Repeat for all children of this entity
+                        if let Some(children) = cs {
+                            for child in children.iter() {
+                                if !family.contains(&child) {
+                                    visit.push(*child);
+                                }
                             }
                         }
                     }
@@ -164,10 +170,11 @@ pub fn mesh_focus(
         }
 
         for (mut interaction, hover, _, _, _, entity) in &mut interactions.iter_mut() {
-            #[cfg(feature = "family")]
-            let relevant = family.contains(&entity);
-            #[cfg(not(feature = "family"))]
-            let relevant = Some(entity) == hovered_entity;
+            let relevant = if family_picking {
+                family.contains(&entity)
+            } else { 
+                Some(entity) == hovered_entity
+            };
 
             if !relevant && *interaction == Interaction::Hovered {
                 *interaction = Interaction::None;
@@ -178,9 +185,10 @@ pub fn mesh_focus(
                         hover.hovered = true;
                     }
                 }
-                #[cfg(feature = "family")]
-                if let Some(shared_interaction) = family_interaction {
-                    *interaction = shared_interaction;
+                if family_picking {
+                    if let Some(shared_interaction) = family_interaction {
+                        *interaction = shared_interaction;
+                    }
                 }
             } else if let Some(mut hover) = hover {
                 if hover.hovered {

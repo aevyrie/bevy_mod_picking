@@ -87,6 +87,14 @@ impl Default for UpdatePicks {
     }
 }
 
+/// Enable/disable treating family trees as one pickable entity
+pub struct FamilyPickingState(pub(crate) bool);
+impl Default for FamilyPickingState {
+    fn default() -> Self {
+        FamilyPickingState(true)
+    }
+}
+
 pub struct DefaultPickingPlugins;
 
 impl PluginGroup for DefaultPickingPlugins {
@@ -170,6 +178,14 @@ impl PluginGroup for HighlightablePickingPlugins {
     fn build(&mut self, group: &mut PluginGroupBuilder) {
         group.add(CustomHighlightPlugin(StandardMaterialHighlight));
         group.add(CustomHighlightPlugin(ColorMaterialHighlight));
+    }
+}
+
+/// Enables treating family trees as one pickable entity
+pub struct FamilyPickingPlugin;
+impl Plugin for FamilyPickingPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<FamilyPickingState>();
     }
 }
 
