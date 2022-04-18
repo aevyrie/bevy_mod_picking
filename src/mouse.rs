@@ -1,11 +1,15 @@
 use crate::{PickingCamera, UpdatePicks};
-use bevy::{prelude::*, render::camera::Camera};
+use bevy::{
+    prelude::*,
+    render::camera::{Camera, RenderTarget},
+};
 use bevy_mod_raycast::RayCastMethod;
 
 /// Update Screenspace ray cast sources with the current mouse position
 pub fn update_pick_source_positions(
     touches_input: Res<Touches>,
     windows: Res<Windows>,
+    images: Res<Assets<Image>>,
     mut cursor: EventReader<CursorMoved>,
     mut pick_source_query: Query<(
         &mut PickingCamera,
@@ -16,6 +20,7 @@ pub fn update_pick_source_positions(
     for (mut pick_source, option_update_picks, option_camera) in &mut pick_source_query.iter_mut() {
         let (mut update_picks, cursor_latest) = match get_inputs(
             &windows,
+            &images,
             option_camera,
             option_update_picks,
             &mut cursor,
@@ -46,6 +51,7 @@ pub fn update_pick_source_positions(
 
 fn get_inputs<'a>(
     windows: &Res<Windows>,
+    images: &Res<Assets<Image>>,
     option_camera: Option<&Camera>,
     option_update_picks: Option<Mut<'a, UpdatePicks>>,
     cursor: &mut EventReader<CursorMoved>,
@@ -53,11 +59,15 @@ fn get_inputs<'a>(
 ) -> Option<(Mut<'a, UpdatePicks>, Option<Vec2>)> {
     let camera = option_camera?;
     let update_picks = option_update_picks?;
-    let height = windows.get(camera.window)?.height();
+    let height = camera.target.get_logical_size(windows, images)?.y;
     let cursor_latest = match cursor.iter().last() {
         Some(cursor_moved) => {
-            if cursor_moved.id == camera.window {
-                Some(cursor_moved.position)
+            if let RenderTarget::Window(window) = camera.target {
+                if cursor_moved.id == window {
+                    Some(cursor_moved.position)
+                } else {
+                    None
+                }
             } else {
                 None
             }
