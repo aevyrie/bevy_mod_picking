@@ -15,9 +15,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(PickingPlugin)
-        .add_plugin(InteractablePickingPlugin)
-        .add_plugin(HighlightablePickingPlugin)
+        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_startup_system(setup)
@@ -36,13 +34,10 @@ fn setup(
     let tris_total = tris_sphere * (half_width as usize * 2).pow(3);
     info!("Total tris: {}, Tris per mesh: {}", tris_total, tris_sphere);
 
-    let mesh_handle = meshes.add(
-        shape::Icosphere {
-            radius: 0.2,
-            subdivisions,
-        }
-        .into(),
-    );
+    let mesh_handle = meshes.add(Mesh::from(shape::Icosphere {
+        radius: 0.2,
+        subdivisions,
+    }));
 
     let matl_handle = materials.add(StandardMaterial {
         perceptual_roughness: 0.5,
@@ -54,16 +49,13 @@ fn setup(
     // Camera
     commands
         .spawn_bundle(PerspectiveCameraBundle {
-            transform: Transform::from_matrix(Mat4::face_toward(
-                Vec3::splat(half_width as f32),
-                Vec3::ZERO,
-                Vec3::Y,
-            )),
+            transform: Transform::from_xyz(half_width as f32, half_width as f32, half_width as f32)
+                .looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         })
         .insert_bundle(PickingCameraBundle::default());
 
-    // Spawn a huge cube of spheres.
+    // Spawn a cube of spheres.
     for x in -half_width..half_width {
         for y in -half_width..half_width {
             for z in -half_width..half_width {
@@ -85,11 +77,7 @@ fn setup(
 
     // Light
     commands.spawn_bundle(PointLightBundle {
-        transform: Transform::from_matrix(Mat4::face_toward(
-            Vec3::splat(half_width as f32 * 1.1),
-            Vec3::ZERO,
-            Vec3::Y,
-        )),
+        transform: Transform::from_xyz(half_width as f32, half_width as f32, half_width as f32),
         point_light: PointLight {
             intensity: 2500.0,
             ..Default::default()
