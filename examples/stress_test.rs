@@ -11,7 +11,7 @@ fn main() {
             title: "bevy_mod_picking stress test".to_string(),
             width: 800.,
             height: 600.,
-            present_mode: PresentMode::Immediate,
+            present_mode: PresentMode::Mailbox, // Reduce input latency
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)

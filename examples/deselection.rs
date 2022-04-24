@@ -9,7 +9,7 @@ use bevy_mod_picking::{
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
-            present_mode: PresentMode::Immediate,
+            present_mode: PresentMode::Mailbox, // Reduce input latency
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
@@ -58,6 +58,11 @@ fn setup(
     // light
     commands.spawn_bundle(PointLightBundle {
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
+        point_light: PointLight {
+            intensity: 1500.0,
+            shadows_enabled: true,
+            ..Default::default()
+        },
         ..Default::default()
     });
     // camera
