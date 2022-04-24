@@ -7,7 +7,7 @@ use bevy_mod_picking::{
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
-            present_mode: PresentMode::Immediate, // Disabled for this demo to reduce input latency
+            present_mode: PresentMode::Mailbox, // Reduce input latency
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
