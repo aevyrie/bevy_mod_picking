@@ -116,13 +116,13 @@ impl Plugin for PickingPlugin {
                             .before(PickingSystem::UpdateIntersections),
                     )
                     .with_system(
-                        bevy_mod_raycast::update_intersections::<PickingRaycastSet>
-                            .label(PickingSystem::UpdateIntersections)
-                            .before(PickingSystem::UpdateRaycast),
+                        bevy_mod_raycast::update_raycast::<PickingRaycastSet>
+                            .label(PickingSystem::UpdateRaycast)
+                            .before(PickingSystem::UpdateIntersections),
                     )
                     .with_system(
-                        bevy_mod_raycast::update_raycast::<PickingRaycastSet>
-                            .label(PickingSystem::UpdateRaycast),
+                        bevy_mod_raycast::update_intersections::<PickingRaycastSet>
+                            .label(PickingSystem::UpdateIntersections),
                     ),
             );
     }
@@ -142,7 +142,7 @@ impl Plugin for InteractablePickingPlugin {
                     .with_system(
                         pause_for_picking_blockers
                             .label(PickingSystem::PauseForBlockers)
-                            .after(PickingSystem::UpdateRaycast),
+                            .after(PickingSystem::UpdateIntersections),
                     )
                     .with_system(
                         mesh_focus
@@ -189,7 +189,7 @@ where
                     })
                     .with_system(
                         get_initial_mesh_button_material::<T>
-                            .after(PickingSystem::UpdateRaycast)
+                            .after(PickingSystem::UpdateIntersections)
                             .before(PickingSystem::Highlighting),
                     )
                     .with_system(
@@ -207,7 +207,7 @@ impl Plugin for DebugCursorPickingPlugin {
         app.add_system_to_stage(
             CoreStage::First,
             bevy_mod_raycast::update_debug_cursor::<PickingRaycastSet>
-                .after(PickingSystem::UpdateRaycast),
+                .after(PickingSystem::UpdateIntersections),
         );
     }
 }
