@@ -152,10 +152,13 @@ impl Plugin for InteractablePickingPlugin {
                     .with_system(
                         mesh_selection
                             .label(PickingSystem::Selection)
-                            .before(PickingSystem::Events)
                             .after(PickingSystem::Focus),
                     )
-                    .with_system(mesh_events_system.label(PickingSystem::Events)),
+                    .with_system(
+                        mesh_events_system
+                            .label(PickingSystem::Events)
+                            .after(PickingSystem::Selection),
+                    ),
             );
     }
 }
