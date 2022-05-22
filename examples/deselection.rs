@@ -1,8 +1,5 @@
-use bevy::{prelude::*, ui::FocusPolicy, window::PresentMode};
-use bevy_mod_picking::{
-    DefaultPickingPlugins, NoDeselect, PickableBundle, PickableButton, PickableMesh,
-    PickingCameraBundle,
-};
+use bevy::{prelude::*, window::PresentMode};
+use bevy_mod_picking::{DefaultPickingPlugins, NoDeselect, PickableBundle, PickingCameraBundle};
 
 /// This example is identical to the 3d_scene example, except a cube has been added, that when
 /// clicked on, won't deselect everything else you have selected.
@@ -50,10 +47,7 @@ fn setup(
             transform: Transform::from_xyz(1.5, 0.5, 0.0),
             ..Default::default()
         })
-        .insert(PickableMesh::default())
-        .insert(Interaction::default())
-        .insert(PickableButton::<StandardMaterial>::default())
-        .insert(FocusPolicy::default())
+        .insert_bundle(PickableBundle::default())
         .insert(NoDeselect);
     // light
     commands.spawn_bundle(PointLightBundle {
