@@ -1,8 +1,8 @@
 use crate::PausedForBlockers;
 use bevy::prelude::*;
 
-/// Tracks the current selection state to be used with change tracking in the events system. Meshes
-/// with [Selection] will have selection state managed.
+/// Tracks the current selection state to be used with change tracking in the events system.
+/// Entities with [Selection] will have selection state managed.
 ///
 /// # Requirements
 ///

@@ -4,23 +4,20 @@ mod highlight;
 mod mouse;
 mod selection;
 
-use std::marker::PhantomData;
-
 pub use crate::{
     events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
     focus::{mesh_focus, pause_for_picking_blockers, Hover, PickingBlocker},
     highlight::{
-        get_initial_mesh_button_material, mesh_highlighting, FromWorldHelper, MeshButtonMaterials,
-        PickableButton, StandardMaterialPickingColors,
+        mesh_highlighting, DefaultHighlighting, Highlightable, Highlighting,
+        StandardMaterialHighlight,
     },
     mouse::update_pick_source_positions,
     selection::{mesh_selection, NoDeselect, Selection},
 };
 pub use bevy_mod_raycast::{Primitive3d, RayCastSource};
 
-use bevy::{
-    app::PluginGroupBuilder, asset::Asset, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy,
-};
+use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
+use highlight::{get_initial_mesh_highlight_asset, ColorMaterialHighlight, Highlight};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickingSystem {
@@ -95,7 +92,7 @@ impl PluginGroup for DefaultPickingPlugins {
     fn build(&mut self, group: &mut PluginGroupBuilder) {
         group.add(PickingPlugin);
         group.add(InteractablePickingPlugin);
-        group.add(HighlightablePickingPlugin);
+        HighlightablePickingPlugins.build(group);
     }
 }
 
@@ -113,7 +110,7 @@ impl Plugin for PickingPlugin {
                     .with_system(
                         bevy_mod_raycast::build_rays::<PickingRaycastSet>
                             .label(PickingSystem::BuildRays)
-                            .before(PickingSystem::UpdateIntersections),
+                            .before(PickingSystem::UpdateRaycast),
                     )
                     .with_system(
                         bevy_mod_raycast::update_raycast::<PickingRaycastSet>
@@ -163,27 +160,25 @@ impl Plugin for InteractablePickingPlugin {
     }
 }
 
-pub struct HighlightablePickingPlugin;
-impl Plugin for HighlightablePickingPlugin {
-    fn build(&self, app: &mut App) {
-        let plugin = CustomHighlightablePickingPlugin(PhantomData::<(
-            StandardMaterial,
-            StandardMaterialPickingColors,
-        )>::default());
-        plugin.build(app)
+pub struct HighlightablePickingPlugins;
+impl PluginGroup for HighlightablePickingPlugins {
+    fn build(&mut self, group: &mut PluginGroupBuilder) {
+        group.add(CustomHighlightPlugin(StandardMaterialHighlight));
+        group.add(CustomHighlightPlugin(ColorMaterialHighlight));
     }
 }
 
+/// A highlighting plugin, generic over any asset that might be used for rendering the different
+/// highlighting states.
 #[derive(Default)]
-pub struct CustomHighlightablePickingPlugin<T, U>(PhantomData<(T, U)>);
+pub struct CustomHighlightPlugin<T: 'static + Highlightable + Sync + Send>(T);
 
-impl<T, U> Plugin for CustomHighlightablePickingPlugin<T, U>
+impl<T> Plugin for CustomHighlightPlugin<T>
 where
-    T: Asset + Default,
-    U: 'static + FromWorldHelper<T> + Sync + Send,
+    T: 'static + Highlightable + Sync + Send,
 {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MeshButtonMaterials<T, U>>()
+        app.init_resource::<DefaultHighlighting<T>>()
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
@@ -191,12 +186,12 @@ where
                         simple_criteria(state.enable_highlighting)
                     })
                     .with_system(
-                        get_initial_mesh_button_material::<T>
+                        get_initial_mesh_highlight_asset::<T::HighlightAsset>
                             .after(PickingSystem::UpdateIntersections)
                             .before(PickingSystem::Highlighting),
                     )
                     .with_system(
-                        mesh_highlighting::<T, U>
+                        mesh_highlighting::<T>
                             .label(PickingSystem::Highlighting)
                             .before(PickingSystem::Events),
                     ),
@@ -245,7 +240,7 @@ pub struct PickableBundle {
     pub pickable_mesh: PickableMesh,
     pub interaction: Interaction,
     pub focus_policy: FocusPolicy,
-    pub pickable_button: PickableButton<StandardMaterial>,
+    pub highlight: Highlight,
     pub selection: Selection,
     pub hover: Hover,
 }
