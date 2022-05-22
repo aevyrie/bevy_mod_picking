@@ -40,6 +40,7 @@ pub fn pause_for_picking_blockers(
         Query<&Interaction, Or<(With<Node>, With<PickingBlocker>)>>,
     )>,
 ) {
+    paused.0 = false;
     for ui_interaction in interactions.p1().iter() {
         if *ui_interaction != Interaction::None {
             for (mut interaction, hover, _, _) in &mut interactions.p0().iter_mut() {
@@ -54,8 +55,6 @@ pub fn pause_for_picking_blockers(
             }
             paused.0 = true;
             return;
-        } else {
-            paused.0 = false;
         }
     }
 }
