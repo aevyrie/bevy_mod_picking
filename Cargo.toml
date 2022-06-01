@@ -14,7 +14,9 @@ resolver = "2"
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
     "render",
 ] }
-bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "main" }
+bevy_picking_core = { path = "./crates/bevy_picking_core" }
+bevy_picking_raycast = { optional = true, path = "./crates/bevy_picking_raycast" }
+bevy_picking_rapier = { optional = true, path = "./crates/bevy_picking_rapier" }
 
 [dev-dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [

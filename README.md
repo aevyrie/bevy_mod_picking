@@ -40,9 +40,9 @@ use bevy_mod_picking::*;
 .add_plugins(DefaultPickingPlugins);
 ```
 
-4. Mark your camera as the picking source with the `PickingCameraBundle` component:
+4. Mark your camera as the picking source with the `PickingSourceBundle` component:
 ```rs
-.insert_bundle(PickingCameraBundle::default());
+.insert_bundle(PickingSourceBundle::default());
 ```
 
 
@@ -65,13 +65,13 @@ cargo run --example minimal
 
 I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
 
-|bevy|bevy_mod_picking|
-|---|---|
-|0.7|0.6|
-|0.6|0.5|
-|0.5|0.4|
-|0.4|0.3|
-|0.3|0.2|
+| bevy | bevy_mod_picking |
+| ---- | ---------------- |
+| 0.7  | 0.6              |
+| 0.6  | 0.5              |
+| 0.5  | 0.4              |
+| 0.4  | 0.3              |
+| 0.3  | 0.2              |
 
 # License
 

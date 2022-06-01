@@ -26,7 +26,7 @@ pub struct DefaultHighlighting<T: Highlightable + ?Sized> {
 
 /// This trait makes it possible for highlighting to be generic over any type of asset.
 pub trait Highlightable: Default + Asset {
-    /// The asset used to highlight the picked object. For a 3D mesh, this would probably be [`StandardMaterial`].
+    /// The asset used to highlight the picked object. For a 3D mesh, this might be [`StandardMaterial`].
     fn highlight_defaults(materials: Mut<Assets<Self>>) -> DefaultHighlighting<Self>;
     fn materials(world: &mut World) -> Mut<Assets<Self>> {
         world
@@ -62,7 +62,7 @@ impl<T: Highlightable> FromWorld for DefaultHighlighting<T> {
 }
 
 #[allow(clippy::type_complexity)]
-pub fn get_initial_mesh_highlight_asset<T: Asset>(
+pub fn get_initial_highlight_asset<T: Asset>(
     mut commands: Commands,
     entity_asset_query: Query<(Entity, &Handle<T>), Added<Highlight>>,
     mut highlighting_query: Query<Option<&mut Highlighting<T>>>,
@@ -84,7 +84,7 @@ pub fn get_initial_mesh_highlight_asset<T: Asset>(
 }
 
 #[allow(clippy::type_complexity)]
-pub fn mesh_highlighting<T: 'static + Highlightable + Send + Sync>(
+pub fn highlight_assets<T: 'static + Highlightable + Send + Sync>(
     paused: Option<Res<PausedForBlockers>>,
     global_default_highlight: Res<DefaultHighlighting<T>>,
     mut interaction_query: Query<
@@ -115,17 +115,17 @@ pub fn mesh_highlighting<T: 'static + Highlightable + Send + Sync>(
             return;
         }
     }
-    for (interaction, mut material, selection, highlight) in interaction_query.iter_mut() {
-        *material = match *interaction {
+    for (interaction, mut active_asset, selection, initial_asset) in interaction_query.iter_mut() {
+        *active_asset = match *interaction {
             Interaction::Clicked => {
-                if let Some(highlight_asset) = &highlight.pressed {
+                if let Some(highlight_asset) = &initial_asset.pressed {
                     highlight_asset
                 } else {
                     &global_default_highlight.pressed
                 }
             }
             Interaction::Hovered => {
-                if let Some(highlight_asset) = &highlight.hovered {
+                if let Some(highlight_asset) = &initial_asset.hovered {
                     highlight_asset
                 } else {
                     &global_default_highlight.hovered
@@ -133,13 +133,13 @@ pub fn mesh_highlighting<T: 'static + Highlightable + Send + Sync>(
             }
             Interaction::None => {
                 if selection.filter(|s| s.selected()).is_some() {
-                    if let Some(highlight_asset) = &highlight.selected {
+                    if let Some(highlight_asset) = &initial_asset.selected {
                         highlight_asset
                     } else {
                         &global_default_highlight.selected
                     }
                 } else {
-                    &highlight.initial
+                    &initial_asset.initial
                 }
             }
         }

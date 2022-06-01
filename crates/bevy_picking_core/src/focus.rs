@@ -1,4 +1,4 @@
-use crate::{PausedForBlockers, PickableMesh, PickingCamera};
+use crate::{PausedForBlockers, PickableTarget};
 use bevy::{prelude::*, ui::FocusPolicy};
 
 /// Tracks the current hover state to be used with change tracking in the events system.
@@ -18,7 +18,7 @@ impl Hover {
 }
 
 /// Marker component for entities that, whenever their [Interaction] component is anything other
-/// than `None`, will suspend highlighting and selecting [PickableMesh]s. Bevy UI [Node]s have this
+/// than `None`, will suspend highlighting and selecting [PickableTarget]s. Bevy UI [Node]s have this
 /// behavior by default.
 #[derive(Component)]
 pub struct PickingBlocker;
@@ -34,7 +34,7 @@ pub fn pause_for_picking_blockers(
                 Option<&FocusPolicy>,
                 Entity,
             ),
-            With<PickableMesh>,
+            With<PickableTarget>,
         >,
         // UI nodes are picking blockers by default.
         Query<&Interaction, Or<(With<Node>, With<PickingBlocker>)>>,
@@ -60,11 +60,11 @@ pub fn pause_for_picking_blockers(
 }
 
 #[allow(clippy::type_complexity)]
-pub fn mesh_focus(
+pub fn update_focus(
     paused: Option<Res<PausedForBlockers>>,
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
-    pick_source_query: Query<&PickingCamera>,
+    pick_source_query: Query<&PickingSource>,
     mut interactions: Query<
         (
             &mut Interaction,
@@ -72,7 +72,7 @@ pub fn mesh_focus(
             Option<&FocusPolicy>,
             Entity,
         ),
-        With<PickableMesh>,
+        With<PickableTarget>,
     >,
 ) {
     if let Some(paused) = paused {

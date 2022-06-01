@@ -1,14 +1,14 @@
-use crate::{Hover, PickableMesh, Selection};
+use crate::{Hover, PickableTarget, Selection};
 use bevy::prelude::*;
 
-/// An event that triggers when the selection state of a [Selection] enabled [PickableMesh] changes.
+/// An event that triggers when the selection state of a [Selection] enabled [PickableTarget] changes.
 #[derive(Debug)]
 pub enum SelectionEvent {
     JustSelected(Entity),
     JustDeselected(Entity),
 }
 
-/// An event that triggers when the hover state of a [Hover] enabled [PickableMesh] changes.
+/// An event that triggers when the hover state of a [Hover] enabled [PickableTarget] changes.
 #[derive(Debug)]
 pub enum HoverEvent {
     JustEntered(Entity),
@@ -25,17 +25,17 @@ pub enum PickingEvent {
 
 /// Looks for changes in selection or hover state, and sends the appropriate events
 #[allow(clippy::type_complexity)]
-pub fn mesh_events_system(
+pub fn picking_events_system(
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
     mut picking_events: EventWriter<PickingEvent>,
     hover_query: Query<
         (Entity, &Hover, ChangeTrackers<Hover>),
-        (Changed<Hover>, With<PickableMesh>),
+        (Changed<Hover>, With<PickableTarget>),
     >,
     selection_query: Query<
         (Entity, &Selection, ChangeTrackers<Selection>),
-        (Changed<Selection>, With<PickableMesh>),
+        (Changed<Selection>, With<PickableTarget>),
     >,
     click_query: Query<(Entity, &Hover)>,
 ) {

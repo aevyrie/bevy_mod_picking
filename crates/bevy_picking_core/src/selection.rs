@@ -26,7 +26,7 @@ impl Selection {
 pub struct NoDeselect;
 
 #[allow(clippy::too_many_arguments)]
-pub fn mesh_selection(
+pub fn update_selection(
     paused: Option<Res<PausedForBlockers>>,
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,

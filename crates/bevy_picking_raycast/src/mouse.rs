@@ -1,4 +1,4 @@
-use crate::{PickingCamera, UpdatePicks};
+use crate::{PickingSource, UpdatePicks};
 use bevy::{
     prelude::*,
     render::camera::{Camera, RenderTarget},
@@ -12,7 +12,7 @@ pub fn update_pick_source_positions(
     images: Res<Assets<Image>>,
     mut cursor: EventReader<CursorMoved>,
     mut pick_source_query: Query<(
-        &mut PickingCamera,
+        &mut PickingSource,
         Option<&mut UpdatePicks>,
         Option<&Camera>,
     )>,

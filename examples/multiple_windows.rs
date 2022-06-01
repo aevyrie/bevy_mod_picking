@@ -113,7 +113,7 @@ fn create_new_window(mut create_window_events: EventWriter<CreateWindow>, mut co
             marker: SecondWindowCamera3d,
             ..PerspectiveCameraBundle::new()
         })
-        .insert_bundle(bevy_mod_picking::PickingCameraBundle::default());
+        .insert_bundle(bevy_mod_picking::PickingSourceBundle::default());
 }
 
 fn setup(
@@ -140,5 +140,5 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.0, 6.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
-        .insert_bundle(bevy_mod_picking::PickingCameraBundle::default());
+        .insert_bundle(bevy_mod_picking::PickingSourceBundle::default());
 }

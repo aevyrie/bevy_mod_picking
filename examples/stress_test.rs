@@ -53,7 +53,7 @@ fn setup(
                 .looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         })
-        .insert_bundle(PickingCameraBundle::default());
+        .insert_bundle(PickingSourceBundle::default());
 
     // Spawn a cube of spheres.
     for x in -half_width..half_width {
