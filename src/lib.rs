@@ -21,6 +21,7 @@ use highlight::{get_initial_mesh_highlight_asset, ColorMaterialHighlight, Highli
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickingSystem {
+    UpdatePickSourcePositions,
     BuildRays,
     UpdateRaycast,
     UpdateIntersections,
@@ -106,7 +107,11 @@ impl Plugin for PickingPlugin {
                     .with_run_criteria(|state: Res<PickingPluginsState>| {
                         simple_criteria(state.enable_picking)
                     })
-                    .with_system(update_pick_source_positions.before(PickingSystem::BuildRays))
+                    .with_system(
+                        update_pick_source_positions
+                            .label(PickingSystem::UpdatePickSourcePositions)
+                            .before(PickingSystem::BuildRays),
+                    )
                     .with_system(
                         bevy_mod_raycast::build_rays::<PickingRaycastSet>
                             .label(PickingSystem::BuildRays)
