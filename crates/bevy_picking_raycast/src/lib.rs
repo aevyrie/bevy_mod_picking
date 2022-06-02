@@ -1,5 +1,7 @@
 use bevy::prelude::*;
+use bevy_picking_core::{simple_criteria, PickingSettings, PickingSystem};
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, SystemLabel)]
 pub enum RaycastSystem {
     UpdatePickSourcePositions,
     BuildRays,
@@ -8,9 +10,9 @@ pub enum RaycastSystem {
 }
 
 /// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
-pub type PickableTarget = bevy_mod_raycast::RayCastMesh<PickingRaycastSet>;
+pub type RaycastTarget = bevy_mod_raycast::RayCastMesh<PickingRaycastSet>;
 /// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
-pub type PickingSource = bevy_mod_raycast::RayCastSource<PickingRaycastSet>;
+pub type RaycastSource = bevy_mod_raycast::RayCastSource<PickingRaycastSet>;
 
 /// This unit struct is used to tag the generic ray casting types `RayCastMesh` and
 /// `RayCastSource`. This means that all Picking ray casts are of the same type. Consequently, any
@@ -25,14 +27,14 @@ impl Plugin for PickingPlugin {
         app.add_system_set_to_stage(
             CoreStage::First,
             SystemSet::new()
-                .with_run_criteria(|state: Res<PickingPluginsState>| {
+                .with_run_criteria(|state: Res<PickingSettings>| {
                     simple_criteria(state.enable_picking)
                 })
                 .with_system(
                     bevy_mod_raycast::build_rays::<PickingRaycastSet>
                         .label(RaycastSystem::BuildRays)
                         .after(RaycastSystem::UpdatePickSourcePositions)
-                        .before(PickingSystem::UpdateRaycast),
+                        .before(RaycastSystem::UpdateRaycast),
                 )
                 .with_system(
                     bevy_mod_raycast::update_raycast::<PickingRaycastSet>
@@ -44,10 +46,80 @@ impl Plugin for PickingPlugin {
                         .label(RaycastSystem::UpdateIntersections)
                         .before(PickingSystem::PauseForBlockers)
                         .before(PickingSystem::InitialHighlights),
-                )
-                .with_system(
-                    update_pick_source_positions.label(PickingSystem::UpdatePickSourcePositions),
                 ),
         );
     }
+}
+
+/// Update Screenspace ray cast sources with the current mouse position
+pub fn update_pick_source_positions(
+    touches_input: Res<Touches>,
+    windows: Res<Windows>,
+    images: Res<Assets<Image>>,
+    mut cursor: EventReader<CursorMoved>,
+    mut pick_source_query: Query<(&mut RaycastSource, Option<&Camera>)>,
+) {
+    for (mut pick_source, option_update_picks, option_camera) in &mut pick_source_query.iter_mut() {
+        let (mut update_picks, cursor_latest) = match get_inputs(
+            &windows,
+            &images,
+            option_camera,
+            option_update_picks,
+            &mut cursor,
+            &touches_input,
+        ) {
+            Some(value) => value,
+            None => return,
+        };
+        match *update_picks {
+            UpdatePicks::EveryFrame(cached_cursor_pos) => {
+                match cursor_latest {
+                    Some(cursor_moved) => {
+                        pick_source.cast_method = RayCastMethod::Screenspace(cursor_moved);
+                        *update_picks = UpdatePicks::EveryFrame(cursor_moved);
+                    }
+                    None => pick_source.cast_method = RayCastMethod::Screenspace(cached_cursor_pos),
+                };
+            }
+            UpdatePicks::OnMouseEvent => match cursor_latest {
+                Some(cursor_moved) => {
+                    pick_source.cast_method = RayCastMethod::Screenspace(cursor_moved)
+                }
+                None => continue,
+            },
+        };
+    }
+}
+
+fn get_inputs<'a>(
+    windows: &Res<Windows>,
+    images: &Res<Assets<Image>>,
+    option_camera: Option<&Camera>,
+    option_update_picks: Option<Mut<'a, UpdatePicks>>,
+    cursor: &mut EventReader<CursorMoved>,
+    touches_input: &Res<Touches>,
+) -> Option<(Mut<'a, UpdatePicks>, Option<Vec2>)> {
+    let camera = option_camera?;
+    let update_picks = option_update_picks?;
+    let height = camera.target.get_logical_size(windows, images)?.y;
+    let cursor_latest = match cursor.iter().last() {
+        Some(cursor_moved) => {
+            if let RenderTarget::Window(window) = camera.target {
+                if cursor_moved.id == window {
+                    Some(cursor_moved.position)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+        None => touches_input.iter().last().map(|touch| {
+            Vec2::new(
+                touch.position().x as f32,
+                height - touch.position().y as f32,
+            )
+        }),
+    };
+    Some((update_picks, cursor_latest))
 }

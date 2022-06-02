@@ -6,7 +6,7 @@ mod selection;
 use std::marker::PhantomData;
 
 pub use crate::{
-    events::{event_debug_system, picking_events_system, HoverEvent, PickingEvent, SelectionEvent},
+    events::{event_debug_system, update_events, HoverEvent, PickingEvent, SelectionEvent},
     focus::{pause_for_picking_blockers, update_focus, Hover, PickingBlocker},
     highlight::{highlight_assets, DefaultHighlighting, Highlightable, Highlighting},
     selection::{update_selection, NoDeselect, Selection},
@@ -26,11 +26,31 @@ pub enum PickingSystem {
     Events,
 }
 
-/// Resource used to track the entity currently under the cursor. This is the primary input the the
-/// picking plugin.
+/// Marks an entity that can be picked with this plugin.
+#[derive(Debug, Clone, Default, Component)]
+pub struct PickableTarget;
+
+/// Inputs to the picking plugin. These values are updated by backend integrations such as
+/// `bevy_mod_raycast` or `rapier`.
 #[derive(Debug, Default, Clone)]
-pub struct PickingTarget {
-    pub entity: Option<Entity>,
+pub struct PickingInput {
+    /// The entities currently under the cursor, if any, sorted from closest to farthest. For most
+    /// cases, there will either be zero or one. For contexts like UI, it is often useful for picks
+    /// to pass through to items below another item, so multiple entities may be picked at a given
+    /// time.
+    pub hovered_entities: Vec<Entity>,
+    /// Is picking in multi select mode, e.g. is the `ctrl` button being held down?
+    pub multi_select: bool,
+    /// When true, this tells the picking plugin that a picking event has just occurred, probably
+    /// corresponding to a mouse-down (or up) event. This is decoupled from bevy input systems to
+    /// allow you to assign picking to another button, use an input manager plugin, or mock inputs
+    /// for testing.
+    pub(crate) pick_event: bool,
+}
+impl PickingInput {
+    pub fn send_pick_event(&mut self) {
+        self.pick_event = true;
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -50,7 +70,7 @@ impl Default for PickingSettings {
     }
 }
 
-fn simple_criteria(flag: bool) -> ShouldRun {
+pub fn simple_criteria(flag: bool) -> ShouldRun {
     if flag {
         ShouldRun::Yes
     } else {
@@ -63,17 +83,6 @@ pub struct PausedForBlockers(pub(crate) bool);
 impl PausedForBlockers {
     pub fn is_paused(&self) -> bool {
         self.0
-    }
-}
-
-#[derive(Component, Debug, Clone, Copy)]
-pub enum UpdatePicks {
-    EveryFrame(Vec2),
-    OnMouseEvent,
-}
-impl Default for UpdatePicks {
-    fn default() -> Self {
-        UpdatePicks::EveryFrame(Vec2::ZERO)
     }
 }
 
@@ -109,7 +118,7 @@ impl Plugin for InteractablePickingPlugin {
                             .after(PickingSystem::Focus),
                     )
                     .with_system(
-                        picking_events_system
+                        update_events
                             .label(PickingSystem::Events)
                             .after(PickingSystem::Selection),
                     ),
@@ -163,21 +172,6 @@ impl Plugin for DebugEventsPickingPlugin {
             CoreStage::First,
             event_debug_system.after(PickingSystem::Events),
         );
-    }
-}
-
-#[derive(Bundle)]
-pub struct PickingSourceBundle {
-    pub source: PickingSource,
-    pub update: UpdatePicks,
-}
-
-impl Default for PickingSourceBundle {
-    fn default() -> Self {
-        PickingSourceBundle {
-            source: PickingSource::new(),
-            update: UpdatePicks::default(),
-        }
     }
 }
 

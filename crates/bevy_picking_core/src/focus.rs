@@ -1,4 +1,4 @@
-use crate::{PausedForBlockers, PickableTarget};
+use crate::{PausedForBlockers, PickableTarget, PickingInput};
 use bevy::{prelude::*, ui::FocusPolicy};
 
 /// Tracks the current hover state to be used with change tracking in the events system.
@@ -61,10 +61,8 @@ pub fn pause_for_picking_blockers(
 
 #[allow(clippy::type_complexity)]
 pub fn update_focus(
+    inputs: Res<PickingInput>,
     paused: Option<Res<PausedForBlockers>>,
-    mouse_button_input: Res<Input<MouseButton>>,
-    touches_input: Res<Touches>,
-    pick_source_query: Query<&PickingSource>,
     mut interactions: Query<
         (
             &mut Interaction,
@@ -81,11 +79,12 @@ pub fn update_focus(
         }
     }
 
-    let mut hovered_entity = None;
+    //
+    // if mouse_button_input.just_released(MouseButton::Left)
+    // || touches_input.iter_just_released().next().is_some()
 
-    if mouse_button_input.just_released(MouseButton::Left)
-        || touches_input.iter_just_released().next().is_some()
-    {
+    // Reset all click interactions
+    if inputs.pick_event {
         for (mut interaction, _, _, _) in &mut interactions.iter_mut() {
             if *interaction == Interaction::Clicked {
                 *interaction = Interaction::None;
@@ -93,49 +92,42 @@ pub fn update_focus(
         }
     }
 
-    let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left)
-        || touches_input.iter_just_pressed().next().is_some();
-    for pick_source in pick_source_query.iter() {
-        // There is at least one entity under the cursor
-        if let Some(picks) = pick_source.intersect_list() {
-            for (topmost_entity, _intersection) in picks.iter() {
-                if let Ok((mut interaction, _hover, focus_policy, _entity)) =
-                    interactions.get_mut(*topmost_entity)
-                {
-                    if mouse_clicked {
-                        if *interaction != Interaction::Clicked {
-                            *interaction = Interaction::Clicked;
-                        }
-                    } else if *interaction == Interaction::None {
-                        *interaction = Interaction::Hovered;
-                    }
+    // let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left)
+    //     || touches_input.iter_just_pressed().next().is_some();
 
-                    hovered_entity = Some(*topmost_entity);
-
-                    match focus_policy.cloned().unwrap_or(FocusPolicy::Block) {
-                        FocusPolicy::Block => {
-                            break;
-                        }
-                        FocusPolicy::Pass => { /* allow the next node to be hovered/clicked */ }
-                    }
+    for entity in &inputs.hovered_entities {
+        if let Ok((mut interaction, _, focus_policy, _)) = interactions.get_mut(*entity) {
+            if inputs.pick_event {
+                if *interaction != Interaction::Clicked {
+                    *interaction = Interaction::Clicked;
                 }
+            } else if *interaction == Interaction::None {
+                *interaction = Interaction::Hovered;
+            }
+
+            match focus_policy.cloned().unwrap_or(FocusPolicy::Block) {
+                FocusPolicy::Block => {
+                    break; // Prevents selecting anything further away
+                }
+                // Allows the next furthest entity to be clicked
+                FocusPolicy::Pass => (),
             }
         }
+    }
 
-        for (mut interaction, hover, _, entity) in &mut interactions.iter_mut() {
-            if Some(entity) != hovered_entity && *interaction == Interaction::Hovered {
-                *interaction = Interaction::None;
+    for (mut interaction, hover, _, entity) in &mut interactions.iter_mut() {
+        if inputs.hovered_entities.contains(&entity) {
+            if let Some(mut hover) = hover {
+                if !hover.hovered {
+                    hover.hovered = true;
+                }
             }
-            if Some(entity) == hovered_entity {
-                if let Some(mut hover) = hover {
-                    if !hover.hovered {
-                        hover.hovered = true;
-                    }
-                }
-            } else if let Some(mut hover) = hover {
-                if hover.hovered {
-                    hover.hovered = false;
-                }
+        // The following if statements are true only when the entity is not hovered
+        } else if *interaction == Interaction::Hovered {
+            *interaction = Interaction::None;
+        } else if let Some(mut hover) = hover {
+            if hover.hovered {
+                hover.hovered = false;
             }
         }
     }

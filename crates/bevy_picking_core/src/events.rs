@@ -25,7 +25,7 @@ pub enum PickingEvent {
 
 /// Looks for changes in selection or hover state, and sends the appropriate events
 #[allow(clippy::type_complexity)]
-pub fn picking_events_system(
+pub fn update_events(
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
     mut picking_events: EventWriter<PickingEvent>,
