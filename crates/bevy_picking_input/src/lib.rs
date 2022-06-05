@@ -1,36 +1,61 @@
 use bevy::{
-    ecs::schedule::ShouldRun, input::keyboard::KeyboardInput, prelude::*,
-    render::camera::RenderTarget, window::WindowId,
+    ecs::schedule::ShouldRun, prelude::*, render::camera::RenderTarget, utils::HashMap,
+    window::WindowId,
 };
+use bevy_picking_core::picking::{
+    cursor::{Cursor, CursorId, MultiSelect},
+    CursorBundle,
+};
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, SystemLabel)]
+enum Set {
+    Input,
+    Touch,
+    Mouse,
+}
 
 pub struct InputPlugin;
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<Cursor>()
-            .add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(run_if_touch)
-                    .with_system(touch_pick_events),
-            )
-            .add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(run_if_cursor)
-                    .with_system(mouse_pick_events),
-            );
+        app.add_system_set_to_stage(
+            CoreStage::First,
+            SystemSet::new()
+                .label(Set::Input)
+                .with_run_criteria(run_if_default_inputs)
+                .with_system(default_picking_inputs),
+        )
+        .add_system_set_to_stage(
+            CoreStage::First,
+            SystemSet::new()
+                .label(Set::Touch)
+                .with_run_criteria(run_if_touch)
+                .with_system(touch_pick_events)
+                .after(Set::Input),
+        )
+        .add_system_set_to_stage(
+            CoreStage::First,
+            SystemSet::new()
+                .label(Set::Mouse)
+                .with_run_criteria(run_if_mouse)
+                .with_system(mouse_pick_events)
+                .after(Set::Input),
+        );
     }
 }
 
 pub struct InputPluginSettings {
-    update: UpdatePicks,
-    use_cursor: bool,
+    mode: UpdateMode,
+    use_mouse: bool,
     use_touch: bool,
+    use_default_buttons: bool,
 }
 impl Default for InputPluginSettings {
     fn default() -> Self {
         Self {
-            update: Default::default(),
-            use_cursor: true,
+            mode: Default::default(),
+            use_mouse: true,
             use_touch: true,
+            use_default_buttons: true,
         }
     }
 }
@@ -43,8 +68,16 @@ fn run_if_touch(settings: Res<InputPluginSettings>) -> ShouldRun {
     }
 }
 
-fn run_if_cursor(settings: Res<InputPluginSettings>) -> ShouldRun {
-    if settings.use_cursor {
+fn run_if_mouse(settings: Res<InputPluginSettings>) -> ShouldRun {
+    if settings.use_mouse {
+        ShouldRun::Yes
+    } else {
+        ShouldRun::No
+    }
+}
+
+fn run_if_default_inputs(settings: Res<InputPluginSettings>) -> ShouldRun {
+    if settings.use_default_buttons {
         ShouldRun::Yes
     } else {
         ShouldRun::No
@@ -52,117 +85,121 @@ fn run_if_cursor(settings: Res<InputPluginSettings>) -> ShouldRun {
 }
 
 #[derive(Debug, Clone)]
-pub enum UpdatePicks {
+pub enum UpdateMode {
     EveryFrame,
     OnEvent,
 }
-impl Default for UpdatePicks {
+impl Default for UpdateMode {
     fn default() -> Self {
-        UpdatePicks::EveryFrame
+        UpdateMode::EveryFrame
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Cursor {
-    target: RenderTarget,
-    position: Vec2,
-    clicked: bool,
-    multiselect: bool,
-}
-
-pub struct InputState {
-    multiselect: bool,
-    clicked: bool,
-}
-
-pub fn default_picking_input(
-    input: Res<InputState>,
+/// Unsurprising default picking inputs
+pub fn default_picking_inputs(
+    mut multiselect: ResMut<MultiSelect>,
     mouse: Res<Input<MouseButton>>,
     keyboard: Res<Input<KeyCode>>,
+    mut cursor_query: Query<(&CursorId, &mut Cursor)>,
+    touches: Res<Touches>,
 ) {
-    input.multiselect = keyboard.any_pressed([
+    multiselect.active = keyboard.any_pressed([
         KeyCode::LControl,
         KeyCode::RControl,
         KeyCode::LShift,
         KeyCode::RShift,
     ]);
-    input.clicked = mouse.pressed(MouseButton::Left)
+
+    for (&id, mut cursor) in cursor_query.iter_mut() {
+        match id {
+            CursorId::Touch(id) => {
+                if touches.get_pressed(id).is_some() {
+                    cursor.clicked = true;
+                }
+            }
+            CursorId::Mouse => {
+                if mouse.pressed(MouseButton::Left) {
+                    cursor.clicked = true;
+                }
+            }
+            _ => (),
+        }
+    }
 }
 
 /// Sends touch positions to be processed by the picking backend
 pub fn touch_pick_events(
-    input: Res<InputState>,
-    settings: Res<InputPluginSettings>,
+    mut commands: Commands,
     touches: Res<Touches>,
-    mut touch_events: EventReader<TouchInput>,
-    mut pick_pos: EventWriter<Cursor>,
+    mut cursor_query: Query<(&CursorId, &mut Cursor)>,
 ) {
-    let mut cursor_positions = Vec::new();
+    let mut new_cursor_map = HashMap::new();
+    for touch in touches.iter() {
+        let id = CursorId::Touch(touch.id());
+        new_cursor_map.insert(
+            id,
+            Cursor {
+                enabled: true,
+                clicked: false,
+                target: RenderTarget::Window(WindowId::primary()),
+                position: touch.position(),
+            },
+        );
+    }
 
-    match settings.update {
-        UpdatePicks::EveryFrame => {
-            for touch in touches.iter() {
-                cursor_positions.push(Cursor {
-                    target: RenderTarget::Window(WindowId::primary()),
-                    position: touch.position(),
-                    clicked: true,
-                    multiselect: input.multiselect,
-                });
-            }
-        }
-        UpdatePicks::OnEvent => {
-            for event in touch_events.iter() {
-                cursor_positions.push(Cursor {
-                    target: RenderTarget::Window(WindowId::primary()),
-                    position: event.position,
-                    clicked: true,
-                    multiselect: input.multiselect,
-                })
-            }
+    // Update existing cursors
+    for (id, mut cursor) in cursor_query.iter_mut() {
+        match new_cursor_map.remove(&id) {
+            Some(new_cursor) => *cursor = new_cursor,
+            None => cursor.enabled = false,
         }
     }
 
-    pick_pos.send_batch(cursor_positions.into_iter());
+    // Spawn  new cursors if needed
+    for (id, cursor) in new_cursor_map.drain() {
+        commands.spawn_bundle(CursorBundle::new(id, cursor));
+    }
 }
 
 /// Sends cursor positions to be processed by the picking backend
 pub fn mouse_pick_events(
-    input: Res<InputState>,
+    mut commands: Commands,
     settings: Res<InputPluginSettings>,
     windows: Res<Windows>,
-    mut cursor_events: EventReader<CursorMoved>,
-    mut pick_pos: EventWriter<Cursor>,
-    mut click_events: EventReader<Click>,
+    cursor_move: EventReader<CursorMoved>,
+    cursor_leave: EventReader<CursorLeft>,
+    mut cursor_query: Query<(&CursorId, &mut Cursor)>,
 ) {
-    let mut cursor_positions = Vec::new();
-    match settings.update {
-        UpdatePicks::EveryFrame => {
-            for window in windows.iter() {
-                if let Some(position) = window.cursor_position() {
-                    let InputState {
-                        clicked,
-                        multiselect,
-                    };
-                    cursor_positions.push(Cursor {
-                        target: RenderTarget::Window(window.id()),
-                        position,
-                        clicked,
-                        multiselect,
-                    });
-                }
-            }
+    let mut try_cursor = None;
+
+    for window in windows.iter() {
+        if let Some(position) = window.cursor_position() {
+            try_cursor = Some(Cursor {
+                enabled: true,
+                clicked: false,
+                target: RenderTarget::Window(window.id()),
+                position,
+            });
         }
-        UpdatePicks::OnEvent => {
-            for event in cursor_events.iter() {
-                cursor_positions.push(Cursor {
-                    target: RenderTarget::Window(event.id),
-                    position: event.position,
-                    clicked: todo!(),
-                    multiselect: todo!(),
-                })
+    }
+
+    if let UpdateMode::OnEvent = settings.mode {
+        if cursor_move.is_empty() && cursor_leave.is_empty() {
+            return;
+        }
+    }
+
+    // Update existing cursors
+    if let Some(new_cursor) = try_cursor.take() {
+        for (&id, mut cursor) in cursor_query.iter_mut() {
+            if id == CursorId::Mouse {
+                *cursor = new_cursor.clone();
             }
         }
     }
 
-    pick_pos.send_batch(cursor_positions.into_iter());
+    // Spawn  new cursors if needed
+    if let Some(cursor) = try_cursor {
+        commands.spawn_bundle(CursorBundle::new(CursorId::Mouse, cursor));
+    }
 }

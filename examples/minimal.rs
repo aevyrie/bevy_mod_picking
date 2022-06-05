@@ -1,8 +1,5 @@
 use bevy::{prelude::*, window::PresentMode};
-use bevy_mod_picking::{
-    DebugCursorPickingPlugin, DebugEventsPickingPlugin, DefaultPickingPlugins, PickableBundle,
-    PickingSourceBundle,
-};
+use bevy_mod_picking::{DebugEventsPickingPlugin, DefaultPickingPlugins, PickableBundle};
 
 fn main() {
     App::new()
@@ -12,7 +9,6 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
-        .add_plugin(DebugCursorPickingPlugin) // <- Adds the green debug cursor.
         .add_plugin(DebugEventsPickingPlugin) // <- Adds debug event logging.
         .add_startup_system(setup)
         .run();
@@ -53,9 +49,9 @@ fn setup(
     });
     // camera
     commands
-        .spawn_bundle(PerspectiveCameraBundle {
+        .spawn_bundle(Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         })
-        .insert_bundle(PickingSourceBundle::default()); // <- Sets the camera to use for picking.
+        .insert_bundle(PickableBundle::default()); // <- Sets the camera to use for picking.
 }

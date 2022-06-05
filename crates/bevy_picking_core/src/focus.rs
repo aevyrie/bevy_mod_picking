@@ -1,4 +1,4 @@
-use crate::{picking, PausedForBlockers, PickableTarget};
+use crate::{PausedForBlockers, PickableTarget};
 use bevy::{prelude::*, ui::FocusPolicy};
 
 /// Tracks the current hover state to be used with change tracking in the events system.
