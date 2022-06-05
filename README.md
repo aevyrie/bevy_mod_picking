@@ -1,16 +1,18 @@
-# 3D Mouse Picking for Bevy
+<div align="center">
+  
+# Mouse Picking for Bevy
 
 [![crates.io](https://img.shields.io/crates/v/bevy_mod_picking)](https://crates.io/crates/bevy_mod_picking)
 [![docs.rs](https://docs.rs/bevy_mod_picking/badge.svg)](https://docs.rs/bevy_mod_picking)
 [![CI](https://github.com/aevyrie/bevy_mod_picking/workflows/CI/badge.svg?branch=master)](https://github.com/aevyrie/bevy_mod_picking/actions?query=workflow%3A%22CI%22+branch%3Amaster)
 [![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 
-A [Bevy](https://github.com/bevyengine/bevy) plugin for 3D mouse picking, making it easy to interact
-with geometry in Bevy using a mouse or touch. This plugin is built with [`bevy_mod_raycast`](https://github.com/aevyrie/bevy_mod_raycast).
+![picking_demo](https://user-images.githubusercontent.com/2632925/114128723-d8de1b00-98b1-11eb-9b25-812fcf6664e2.gif)
 
-<br/><p align="center">
-<img src="https://user-images.githubusercontent.com/2632925/114128723-d8de1b00-98b1-11eb-9b25-812fcf6664e2.gif">
-</p><br/>
+</div>
+
+A [Bevy](https://github.com/bevyengine/bevy) plugin for picking, making it easy to interact
+with meshes in Bevy. Built with [`bevy_mod_raycast`](https://github.com/aevyrie/bevy_mod_raycast).
 
 ## Features
 * Mouse intersection coordinates in world space
