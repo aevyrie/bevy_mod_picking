@@ -9,10 +9,10 @@
 
 ![picking_demo](https://user-images.githubusercontent.com/2632925/114128723-d8de1b00-98b1-11eb-9b25-812fcf6664e2.gif)
 
-</div>
-
 A [Bevy](https://github.com/bevyengine/bevy) plugin for picking, making it easy to interact
 with meshes in Bevy. Built with [`bevy_mod_raycast`](https://github.com/aevyrie/bevy_mod_raycast).
+
+</div>
 
 ## Features
 * Mouse intersection coordinates in world space
