@@ -30,26 +30,44 @@ pub enum PickingSystem {
 #[derive(Debug, Clone, Default, Component)]
 pub struct PickableTarget;
 
-/// Inputs to the picking plugin. These values are updated by backend integrations such as
-/// `bevy_mod_raycast` or `rapier`.
-#[derive(Debug, Default, Clone)]
-pub struct PickingInput {
-    /// The entities currently under the cursor, if any, sorted from closest to farthest. For most
-    /// cases, there will either be zero or one. For contexts like UI, it is often useful for picks
-    /// to pass through to items below another item, so multiple entities may be picked at a given
-    /// time.
-    pub hovered_entities: Vec<Entity>,
-    /// Is picking in multi select mode, e.g. is the `ctrl` button being held down?
-    pub multi_select: bool,
-    /// When true, this tells the picking plugin that a picking event has just occurred, probably
-    /// corresponding to a mouse-down (or up) event. This is decoupled from bevy input systems to
-    /// allow you to assign picking to another button, use an input manager plugin, or mock inputs
-    /// for testing.
-    pub(crate) pick_event: bool,
-}
-impl PickingInput {
-    pub fn send_pick_event(&mut self) {
-        self.pick_event = true;
+/// Typestates that represent the modular picking pipeline.
+///
+/// input systems -> `Inputs` -> picking backend -> `Hits` -> focus system
+pub mod picking {
+    use bevy::prelude::*;
+
+    /// Inputs to the picking backend, used to find [`Hits`].
+    #[derive(Debug, Default, Clone)]
+    pub struct Inputs {
+        /// Is picking in multi select mode, e.g. is the `ctrl` button being held down?
+        multi_select: bool,
+        /// When true, this tells the picking plugin that a picking event has just occurred, probably
+        /// corresponding to a mouse-down (or up) event. This is decoupled from bevy input systems to
+        /// allow you to assign picking to another button, use an input manager plugin, or mock inputs
+        /// for testing.
+        pub(crate) pick_event: bool,
+    }
+    impl Inputs {
+        pub fn send_pick_event(&mut self) {
+            self.pick_event = true;
+        }
+
+        pub fn multi_select(&self) -> bool {
+            self.multi_select
+        }
+
+        pub fn set_multi_select(&mut self, multi_select: bool) {
+            self.multi_select = multi_select;
+        }
+    }
+
+    
+    pub struct Hits {
+        /// The entities currently under the cursor, if any, sorted from closest to farthest. For most
+        /// cases, there will either be zero or one. For contexts like UI, it is often useful for picks
+        /// to pass through to items below another item, so multiple entities may be picked at a given
+        /// time.
+        pub hit_entities: Vec<Entity>,
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{PausedForBlockers, PickableTarget, PickingInput};
+use crate::{picking, PausedForBlockers, PickableTarget};
 use bevy::{prelude::*, ui::FocusPolicy};
 
 /// Tracks the current hover state to be used with change tracking in the events system.
@@ -60,75 +60,74 @@ pub fn pause_for_picking_blockers(
 }
 
 #[allow(clippy::type_complexity)]
-pub fn update_focus(
-    inputs: Res<PickingInput>,
-    paused: Option<Res<PausedForBlockers>>,
-    mut interactions: Query<
-        (
-            &mut Interaction,
-            Option<&mut Hover>,
-            Option<&FocusPolicy>,
-            Entity,
-        ),
-        With<PickableTarget>,
-    >,
+pub fn update_focus(//     inputs: Res<picking::Inputs>,
+//     paused: Option<Res<PausedForBlockers>>,
+//     mut interactions: Query<
+//         (
+//             &mut Interaction,
+//             Option<&mut Hover>,
+//             Option<&FocusPolicy>,
+//             Entity,
+//         ),
+//         With<PickableTarget>,
+//     >,
 ) {
-    if let Some(paused) = paused {
-        if paused.0 {
-            return;
-        }
-    }
+    //     if let Some(paused) = paused {
+    //         if paused.0 {
+    //             return;
+    //         }
+    //     }
 
-    //
-    // if mouse_button_input.just_released(MouseButton::Left)
-    // || touches_input.iter_just_released().next().is_some()
+    //     //
+    //     // if mouse_button_input.just_released(MouseButton::Left)
+    //     // || touches_input.iter_just_released().next().is_some()
 
-    // Reset all click interactions
-    if inputs.pick_event {
-        for (mut interaction, _, _, _) in &mut interactions.iter_mut() {
-            if *interaction == Interaction::Clicked {
-                *interaction = Interaction::None;
-            }
-        }
-    }
+    //     // Reset all click interactions
+    //     if inputs.pick_event {
+    //         for (mut interaction, _, _, _) in &mut interactions.iter_mut() {
+    //             if *interaction == Interaction::Clicked {
+    //                 *interaction = Interaction::None;
+    //             }
+    //         }
+    //     }
 
-    // let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left)
-    //     || touches_input.iter_just_pressed().next().is_some();
+    //     // let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left)
+    //     //     || touches_input.iter_just_pressed().next().is_some();
 
-    for entity in &inputs.hovered_entities {
-        if let Ok((mut interaction, _, focus_policy, _)) = interactions.get_mut(*entity) {
-            if inputs.pick_event {
-                if *interaction != Interaction::Clicked {
-                    *interaction = Interaction::Clicked;
-                }
-            } else if *interaction == Interaction::None {
-                *interaction = Interaction::Hovered;
-            }
+    //     for entity in &inputs.hovered_entities {
+    //         if let Ok((mut interaction, _, focus_policy, _)) = interactions.get_mut(*entity) {
+    //             if inputs.pick_event {
+    //                 if *interaction != Interaction::Clicked {
+    //                     *interaction = Interaction::Clicked;
+    //                 }
+    //             } else if *interaction == Interaction::None {
+    //                 *interaction = Interaction::Hovered;
+    //             }
 
-            match focus_policy.cloned().unwrap_or(FocusPolicy::Block) {
-                FocusPolicy::Block => {
-                    break; // Prevents selecting anything further away
-                }
-                // Allows the next furthest entity to be clicked
-                FocusPolicy::Pass => (),
-            }
-        }
-    }
+    //             match focus_policy.cloned().unwrap_or(FocusPolicy::Block) {
+    //                 FocusPolicy::Block => {
+    //                     break; // Prevents selecting anything further away
+    //                 }
+    //                 // Allows the next furthest entity to be clicked
+    //                 FocusPolicy::Pass => (),
+    //             }
+    //         }
+    //     }
 
-    for (mut interaction, hover, _, entity) in &mut interactions.iter_mut() {
-        if inputs.hovered_entities.contains(&entity) {
-            if let Some(mut hover) = hover {
-                if !hover.hovered {
-                    hover.hovered = true;
-                }
-            }
-        // The following if statements are true only when the entity is not hovered
-        } else if *interaction == Interaction::Hovered {
-            *interaction = Interaction::None;
-        } else if let Some(mut hover) = hover {
-            if hover.hovered {
-                hover.hovered = false;
-            }
-        }
-    }
+    //     for (mut interaction, hover, _, entity) in &mut interactions.iter_mut() {
+    //         if inputs.hovered_entities.contains(&entity) {
+    //             if let Some(mut hover) = hover {
+    //                 if !hover.hovered {
+    //                     hover.hovered = true;
+    //                 }
+    //             }
+    //         // The following if statements are true only when the entity is not hovered
+    //         } else if *interaction == Interaction::Hovered {
+    //             *interaction = Interaction::None;
+    //         } else if let Some(mut hover) = hover {
+    //             if hover.hovered {
+    //                 hover.hovered = false;
+    //             }
+    //         }
+    //     }
 }
