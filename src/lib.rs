@@ -176,7 +176,7 @@ impl PluginGroup for HighlightablePickingPlugins {
 /// A highlighting plugin, generic over any asset that might be used for rendering the different
 /// highlighting states.
 #[derive(Default)]
-pub struct CustomHighlightPlugin<T: 'static + Highlightable + Sync + Send>(T);
+pub struct CustomHighlightPlugin<T: 'static + Highlightable + Sync + Send>(pub T);
 
 impl<T> Plugin for CustomHighlightPlugin<T>
 where
