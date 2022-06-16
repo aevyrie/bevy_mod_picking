@@ -53,7 +53,6 @@ fn get_inputs<'a>(
 ) -> Option<(Mut<'a, UpdatePicks>, Option<Vec2>)> {
     let camera = option_camera?;
     let update_picks = option_update_picks?;
-    // let height = camera.target.get_logical_size(windows, images)?.y;
     let height = camera.logical_target_size()?.y;
     let cursor_latest = match cursor.iter().last() {
         Some(cursor_moved) => {
