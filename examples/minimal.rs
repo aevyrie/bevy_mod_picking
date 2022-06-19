@@ -1,5 +1,5 @@
 use bevy::{prelude::*, window::PresentMode};
-use bevy_mod_picking::{DebugEventsPickingPlugin, DefaultPickingPlugins, PickableBundle};
+use bevy_mod_picking::{DebugEventsPlugin, DefaultPickingPlugins, PickableBundle};
 
 fn main() {
     App::new()
@@ -9,7 +9,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
-        .add_plugin(DebugEventsPickingPlugin) // <- Adds debug event logging.
+        .add_plugin(DebugEventsPlugin) // <- Adds debug event logging.
         .add_startup_system(setup)
         .run();
 }

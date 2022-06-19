@@ -1,21 +1,14 @@
-use bevy::{prelude::*, utils::HashMap};
-use bevy_mod_raycast::Ray3d;
+use bevy::prelude::*;
+use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
     picking::{cursor::Cursor, CoreSystem},
     simple_criteria, PickingSettings,
 };
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, SystemLabel)]
-pub enum RaycastSystem {
-    UpdateSourceRays,
-    UpdateRaycast,
-    UpdateIntersections,
-}
-
 /// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
 pub type RaycastTarget = bevy_mod_raycast::RayCastMesh<RaycastPickingSet>;
 /// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
-pub type RaycastSource = bevy_mod_raycast::RayCastSource<RaycastPickingSet>;
+pub type RaycastSource = RayCastSource<RaycastPickingSet>;
 
 /// This unit struct is used to tag the generic ray casting types `RayCastMesh` and
 /// `RayCastSource`. This means that all Picking ray casts are of the same type. Consequently, any
@@ -24,8 +17,8 @@ pub type RaycastSource = bevy_mod_raycast::RayCastSource<RaycastPickingSet>;
 /// vs. `RayCastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
 pub struct RaycastPickingSet;
 
-pub struct RaycastPickingPlugin;
-impl Plugin for RaycastPickingPlugin {
+pub struct RaycastPlugin;
+impl Plugin for RaycastPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
             CoreStage::First,
@@ -53,7 +46,12 @@ impl Plugin for RaycastPickingPlugin {
     }
 }
 
-pub struct CursorMap(HashMap<u64, Entity>);
+#[derive(Debug, Clone, Hash, PartialEq, Eq, SystemLabel)]
+pub enum RaycastSystem {
+    UpdateSourceRays,
+    UpdateRaycast,
+    UpdateIntersections,
+}
 
 /// Update Screenspace ray cast sources with the current cursor positions
 pub fn build_rays_from_cursors(
@@ -63,18 +61,52 @@ pub fn build_rays_from_cursors(
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
     for (entity, cursor) in cursors.iter() {
-        for (camera, transform) in cameras.iter() {
-            //TODO: check if cursor is outside of viewport and return early
-            if camera.target == cursor.target {
-                let ray = Ray3d::from_screenspace(cursor.position, camera, transform);
-                if let Ok(mut source) = sources.get_mut(entity) {
-                    source.ray = ray;
-                } else {
-                    let mut source = RaycastSource::default();
-                    source.ray = ray;
-                    commands.entity(entity).insert(source);
-                }
-            }
-        }
+        cameras
+            .iter()
+            .filter(|(camera, _)| is_same_render_target(camera, cursor))
+            .for_each(|(camera, transform)| {
+                let ray = is_cursor_in_viewport(camera, cursor)
+                    .then(|| Ray3d::from_screenspace(cursor.position, camera, transform))
+                    .flatten();
+                update_raycast_source(&mut sources, entity, ray, &mut commands);
+            });
     }
+}
+
+#[inline]
+fn update_raycast_source(
+    sources: &mut Query<&mut RaycastSource>,
+    entity: Entity,
+    ray: Option<Ray3d>,
+    commands: &mut Commands,
+) {
+    if let Ok(mut source) = sources.get_mut(entity) {
+        if source.ray != ray {
+            source.ray = ray;
+            info!("Cursor updated.");
+        }
+    } else {
+        let mut source = RaycastSource::default();
+        if source.ray != ray {
+            source.ray = ray;
+            info!("Cursor created.");
+        }
+        commands.entity(entity).insert(source);
+    }
+}
+
+#[inline]
+fn is_cursor_in_viewport(camera: &Camera, cursor: &Cursor) -> bool {
+    camera
+        .logical_viewport_rect()
+        .map(|(min, max)| {
+            (cursor.position - min).min_element() >= 0.0
+                && (cursor.position - max).max_element() <= 0.0
+        })
+        .unwrap_or(false)
+}
+
+#[inline]
+fn is_same_render_target(camera: &Camera, cursor: &Cursor) -> bool {
+    camera.target == cursor.target
 }

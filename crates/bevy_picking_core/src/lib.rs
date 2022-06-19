@@ -27,7 +27,7 @@ pub mod picking {
 
     use self::{
         cursor::{Cursor, CursorId},
-        hit::Hit,
+        hit::CursorHit,
     };
 
     #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
@@ -55,14 +55,14 @@ pub mod picking {
     pub struct CursorBundle {
         pub id: CursorId,
         pub cursor: Cursor,
-        pub hit: Hit,
+        pub hit: CursorHit,
     }
     impl CursorBundle {
         pub fn new(id: CursorId, cursor: Cursor) -> Self {
             CursorBundle {
                 id,
                 cursor,
-                hit: Hit::default(),
+                hit: CursorHit::default(),
             }
         }
     }
@@ -71,7 +71,8 @@ pub mod picking {
     pub mod cursor {
         use bevy::{prelude::*, reflect::Uuid, render::camera::RenderTarget};
 
-        #[derive(Debug, Clone, Component)]
+        /// Represents an input cursor used for picking.
+        #[derive(Debug, Clone, Component, PartialEq)]
         pub struct Cursor {
             pub enabled: bool,
             pub clicked: bool,
@@ -86,7 +87,7 @@ pub mod picking {
             Other(Uuid),
         }
 
-        #[derive(Debug, Clone, Eq, PartialEq)]
+        #[derive(Debug, Clone, Eq, PartialEq, Default)]
         pub struct MultiSelect {
             pub active: bool,
         }
@@ -98,11 +99,13 @@ pub mod picking {
         use bevy::prelude::*;
 
         /// The entities currently under this entity's [`Cursor`](super::cursor::Cursor), if any,
-        /// sorted from closest to farthest. For most cases, there will either be zero or one. For
+        /// sorted from closest to farthest.
+        ///
+        /// For most cases, there will either be zero or one. For
         /// contexts like UI, it is often useful for picks to pass through to items below another
         /// item, so multiple entities may be picked at a given time.
         #[derive(Debug, Clone, Component, Default)]
-        pub struct Hit {
+        pub struct CursorHit {
             pub hit_entities: Vec<Entity>,
         }
     }
@@ -141,23 +144,16 @@ impl PausedForBlockers {
     }
 }
 
-pub struct DefaultPickingPlugins;
-impl PluginGroup for DefaultPickingPlugins {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(InteractablePickingPlugin).add(CorePickingPlugin);
-        HighlightablePickingPlugins.build(group);
-    }
-}
-
 pub struct CorePickingPlugin;
 impl Plugin for CorePickingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<PickingSettings>();
+        app.init_resource::<PickingSettings>()
+            .init_resource::<picking::cursor::MultiSelect>();
     }
 }
 
-pub struct InteractablePickingPlugin;
-impl Plugin for InteractablePickingPlugin {
+pub struct InteractionPlugin;
+impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PausedForBlockers>()
             .add_event::<PickingEvent>()
@@ -187,8 +183,8 @@ impl Plugin for InteractablePickingPlugin {
     }
 }
 
-pub struct HighlightablePickingPlugins;
-impl PluginGroup for HighlightablePickingPlugins {
+pub struct HighlightingPlugins;
+impl PluginGroup for HighlightingPlugins {
     fn build(&mut self, group: &mut PluginGroupBuilder) {
         group.add(CustomHighlightPlugin::<StandardMaterial>::default());
         group.add(CustomHighlightPlugin::<ColorMaterial>::default());
@@ -226,8 +222,8 @@ where
     }
 }
 
-pub struct DebugEventsPickingPlugin;
-impl Plugin for DebugEventsPickingPlugin {
+pub struct DebugEventsPlugin;
+impl Plugin for DebugEventsPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(
             CoreStage::First,
@@ -244,4 +240,17 @@ pub struct PickableBundle {
     pub highlight: Highlight,
     pub selection: Selection,
     pub hover: Hover,
+}
+
+pub trait IntoShouldRun {
+    fn should_run(&self) -> ShouldRun;
+}
+impl IntoShouldRun for bool {
+    fn should_run(&self) -> ShouldRun {
+        if *self {
+            ShouldRun::Yes
+        } else {
+            ShouldRun::No
+        }
+    }
 }

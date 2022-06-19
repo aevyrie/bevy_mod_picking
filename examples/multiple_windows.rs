@@ -11,7 +11,7 @@ use bevy::{
     window::{CreateWindow, WindowId},
 };
 use bevy_mod_picking::{
-    DebugCursorPickingPlugin, DebugEventsPickingPlugin, DefaultPickingPlugins, PickableBundle,
+    DebugCursorPickingPlugin, DebugEventsPlugin, DefaultPickingPlugins, PickableBundle,
 };
 
 /// This example creates a second window and draws a mesh from two different cameras, one in each window
@@ -21,7 +21,7 @@ fn main() {
         .add_plugin(SecondWindowCameraPlugin)
         .add_plugins(DefaultPickingPlugins)
         .add_plugin(DebugCursorPickingPlugin) // <- Adds the green debug cursor.
-        .add_plugin(DebugEventsPickingPlugin) // <- Adds debug event logging.
+        .add_plugin(DebugEventsPlugin) // <- Adds debug event logging.
         .add_startup_system(setup)
         .add_startup_system(create_new_window)
         .run();
