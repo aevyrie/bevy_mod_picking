@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
-    "render",
+  "render",
 ] }

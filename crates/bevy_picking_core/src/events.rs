@@ -1,4 +1,7 @@
-use crate::{Hover, PickableTarget, Selection};
+use crate::{
+    picking::{cursor::Cursor, hit::CursorHit},
+    Hover, PickableTarget, Selection,
+};
 use bevy::prelude::*;
 
 /// An event that triggers when the selection state of a [Selection] enabled [PickableTarget] changes.
@@ -75,8 +78,17 @@ pub fn update_events(
 }
 
 /// Listens for [HoverEvent] and [SelectionEvent] events and prints them
-pub fn event_debug_system(mut events: EventReader<PickingEvent>) {
+pub fn event_debug_system(
+    mut events: EventReader<PickingEvent>,
+    cursors: Query<(&Cursor, &CursorHit), Changed<Cursor>>,
+) {
     for event in events.iter() {
         info!("{:?}", event);
+    }
+    for (cursor, hit) in cursors.iter() {
+        info!(
+            "pos: {:>6.1}, {:>6.1}   hit: {:?}",
+            cursor.position.x, cursor.position.y, hit.hit_entities
+        );
     }
 }

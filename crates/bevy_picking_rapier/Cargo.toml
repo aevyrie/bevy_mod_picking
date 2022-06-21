@@ -9,5 +9,5 @@ edition = "2021"
 bevy_picking_core = { path = "../bevy_picking_core" }
 
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
-    "render",
+  "render",
 ] }

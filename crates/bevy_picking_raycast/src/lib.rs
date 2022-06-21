@@ -1,14 +1,14 @@
 use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
-    picking::{cursor::Cursor, CoreSystem},
+    picking::{cursor::Cursor, hit::CursorHit, CorePickingSystem},
     simple_criteria, PickingSettings,
 };
 
 /// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
-pub type RaycastTarget = bevy_mod_raycast::RayCastMesh<RaycastPickingSet>;
+pub type PickingTarget = bevy_mod_raycast::RayCastMesh<RaycastPickingSet>;
 /// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
-pub type RaycastSource = RayCastSource<RaycastPickingSet>;
+pub type PickingSource = RayCastSource<RaycastPickingSet>;
 
 /// This unit struct is used to tag the generic ray casting types `RayCastMesh` and
 /// `RayCastSource`. This means that all Picking ray casts are of the same type. Consequently, any
@@ -37,10 +37,10 @@ impl Plugin for RaycastPlugin {
                         .before(RaycastSystem::UpdateIntersections),
                 )
                 .with_system(
-                    bevy_mod_raycast::update_intersections::<RaycastPickingSet>
+                    update_hits
                         .label(RaycastSystem::UpdateIntersections)
-                        .before(CoreSystem::PauseForBlockers)
-                        .before(CoreSystem::InitialHighlights),
+                        .before(CorePickingSystem::PauseForBlockers)
+                        .before(CorePickingSystem::InitialHighlights),
                 ),
         );
     }
@@ -56,57 +56,41 @@ pub enum RaycastSystem {
 /// Update Screenspace ray cast sources with the current cursor positions
 pub fn build_rays_from_cursors(
     mut commands: Commands,
-    mut sources: Query<&mut RaycastSource>,
-    cursors: Query<(Entity, &Cursor)>,
+    mut sources: Query<&mut PickingSource>,
+    cursors: Query<(Entity, &Cursor), Changed<Cursor>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
     for (entity, cursor) in cursors.iter() {
         cameras
             .iter()
-            .filter(|(camera, _)| is_same_render_target(camera, cursor))
-            .for_each(|(camera, transform)| {
-                let ray = is_cursor_in_viewport(camera, cursor)
-                    .then(|| Ray3d::from_screenspace(cursor.position, camera, transform))
-                    .flatten();
-                update_raycast_source(&mut sources, entity, ray, &mut commands);
-            });
+            .filter(|(camera, _)| cursor.is_same_target(camera))
+            .filter(|(camera, _)| cursor.is_in_viewport(camera))
+            .map(|(camera, transform)| Ray3d::from_screenspace(cursor.position, camera, transform))
+            .for_each(|ray| update_raycast_source(&mut sources, entity, ray, &mut commands));
     }
 }
 
 #[inline]
 fn update_raycast_source(
-    sources: &mut Query<&mut RaycastSource>,
+    sources: &mut Query<&mut PickingSource>,
     entity: Entity,
     ray: Option<Ray3d>,
     commands: &mut Commands,
 ) {
     if let Ok(mut source) = sources.get_mut(entity) {
-        if source.ray != ray {
-            source.ray = ray;
-            info!("Cursor updated.");
-        }
+        source.ray = ray;
     } else {
-        let mut source = RaycastSource::default();
-        if source.ray != ray {
-            source.ray = ray;
-            info!("Cursor created.");
-        }
+        let mut source = PickingSource::default();
+        source.ray = ray;
         commands.entity(entity).insert(source);
     }
 }
 
-#[inline]
-fn is_cursor_in_viewport(camera: &Camera, cursor: &Cursor) -> bool {
-    camera
-        .logical_viewport_rect()
-        .map(|(min, max)| {
-            (cursor.position - min).min_element() >= 0.0
-                && (cursor.position - max).max_element() <= 0.0
-        })
-        .unwrap_or(false)
-}
-
-#[inline]
-fn is_same_render_target(camera: &Camera, cursor: &Cursor) -> bool {
-    camera.target == cursor.target
+fn update_hits(mut sources: Query<(&PickingSource, &mut CursorHit)>) {
+    for (source, mut cursor_hit) in sources.iter_mut() {
+        match source.intersect_top() {
+            Some((entity, _)) => cursor_hit.hit_entities = vec![entity],
+            None => cursor_hit.hit_entities.clear(),
+        };
+    }
 }

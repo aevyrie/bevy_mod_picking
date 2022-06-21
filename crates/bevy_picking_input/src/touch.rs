@@ -25,12 +25,15 @@ pub fn touch_pick_events(
     }
     // Update existing cursors
     for (id, mut cursor) in cursor_query.iter_mut() {
+        if !id.is_touch() {
+            continue;
+        }
         match new_cursor_map.remove(&id) {
             Some(new_cursor) => *cursor = new_cursor,
             None => cursor.enabled = false,
         }
     }
-    // Spawn  new cursors if needed
+    // Spawn new cursors if needed
     for (id, cursor) in new_cursor_map.drain() {
         commands.spawn_bundle(CursorBundle::new(id, cursor));
     }

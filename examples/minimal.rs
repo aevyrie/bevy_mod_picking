@@ -1,5 +1,7 @@
 use bevy::{prelude::*, window::PresentMode};
-use bevy_mod_picking::{DebugEventsPlugin, DefaultPickingPlugins, PickableBundle};
+use bevy_mod_picking::{
+    DebugEventsPlugin, DefaultPickingPlugins, PickableBundle, PickingSource, PickingTarget,
+};
 
 fn main() {
     App::new()
@@ -27,8 +29,9 @@ fn setup(
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
         })
-        .insert_bundle(PickableBundle::default()); // <- Makes the mesh pickable.
-                                                   // cube
+        .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
+        .insert(PickingTarget::default());
+    // cube
     commands
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -36,8 +39,9 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         })
-        .insert_bundle(PickableBundle::default()); // <- Makes the mesh pickable.
-                                                   // light
+        .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
+        .insert(PickingTarget::default());
+    // light
     commands.spawn_bundle(PointLightBundle {
         point_light: PointLight {
             intensity: 1500.0,
@@ -53,5 +57,5 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         })
-        .insert_bundle(PickableBundle::default()); // <- Sets the camera to use for picking.
+        .insert(PickingSource::default()); // <- Sets the camera to use for picking.
 }

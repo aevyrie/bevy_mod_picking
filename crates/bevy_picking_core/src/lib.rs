@@ -5,7 +5,7 @@ mod selection;
 
 use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
 use highlight::{get_initial_highlight_asset, Highlight};
-use picking::CoreSystem;
+use picking::CorePickingSystem;
 use std::marker::PhantomData;
 
 pub use crate::{
@@ -41,7 +41,7 @@ pub mod picking {
     }
 
     #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-    pub enum CoreSystem {
+    pub enum CorePickingSystem {
         UpdatePickSourcePositions,
         InitialHighlights,
         Highlighting,
@@ -79,12 +79,40 @@ pub mod picking {
             pub target: RenderTarget,
             pub position: Vec2,
         }
+        impl Cursor {
+            #[inline]
+            pub fn is_in_viewport(&self, camera: &Camera) -> bool {
+                camera
+                    .logical_viewport_rect()
+                    .map(|(min, max)| {
+                        (self.position - min).min_element() >= 0.0
+                            && (self.position - max).max_element() <= 0.0
+                    })
+                    .unwrap_or(false)
+            }
+
+            #[inline]
+            pub fn is_same_target(&self, camera: &Camera) -> bool {
+                camera.target == self.target
+            }
+        }
 
         #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component)]
         pub enum CursorId {
             Touch(u64),
             Mouse,
             Other(Uuid),
+        }
+        impl CursorId {
+            pub fn is_touch(&self) -> bool {
+                matches!(self, CursorId::Touch(_))
+            }
+            pub fn is_mouse(&self) -> bool {
+                matches!(self, CursorId::Mouse)
+            }
+            pub fn is_other(&self) -> bool {
+                matches!(self, CursorId::Other(_))
+            }
         }
 
         #[derive(Debug, Clone, Eq, PartialEq, Default)]
@@ -163,21 +191,23 @@ impl Plugin for InteractionPlugin {
                     .with_run_criteria(|state: Res<PickingSettings>| {
                         simple_criteria(state.enable_interacting)
                     })
-                    .with_system(pause_for_picking_blockers.label(CoreSystem::PauseForBlockers))
+                    .with_system(
+                        pause_for_picking_blockers.label(CorePickingSystem::PauseForBlockers),
+                    )
                     .with_system(
                         update_focus
-                            .label(CoreSystem::Focus)
-                            .after(CoreSystem::PauseForBlockers),
+                            .label(CorePickingSystem::Focus)
+                            .after(CorePickingSystem::PauseForBlockers),
                     )
                     .with_system(
                         update_selection
-                            .label(CoreSystem::Selection)
-                            .after(CoreSystem::Focus),
+                            .label(CorePickingSystem::Selection)
+                            .after(CorePickingSystem::Focus),
                     )
                     .with_system(
                         update_events
-                            .label(CoreSystem::Events)
-                            .after(CoreSystem::Selection),
+                            .label(CorePickingSystem::Events)
+                            .after(CorePickingSystem::Selection),
                     ),
             );
     }
@@ -210,13 +240,13 @@ where
                     })
                     .with_system(
                         get_initial_highlight_asset::<T>
-                            .label(CoreSystem::InitialHighlights)
-                            .before(CoreSystem::Highlighting),
+                            .label(CorePickingSystem::InitialHighlights)
+                            .before(CorePickingSystem::Highlighting),
                     )
                     .with_system(
                         highlight_assets::<T>
-                            .label(CoreSystem::Highlighting)
-                            .before(CoreSystem::Events),
+                            .label(CorePickingSystem::Highlighting)
+                            .before(CorePickingSystem::Events),
                     ),
             );
     }
@@ -226,8 +256,8 @@ pub struct DebugEventsPlugin;
 impl Plugin for DebugEventsPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(
-            CoreStage::First,
-            event_debug_system.after(CoreSystem::Events),
+            CoreStage::Last,
+            event_debug_system.after(CorePickingSystem::Events),
         );
     }
 }
