@@ -1,4 +1,3 @@
-use crate::PausedForBlockers;
 use bevy::prelude::*;
 
 /// Tracks the current selection state to be used with change tracking in the events system.
@@ -27,7 +26,6 @@ pub struct NoDeselect;
 
 #[allow(clippy::too_many_arguments)]
 pub fn update_selection(
-    paused: Option<Res<PausedForBlockers>>,
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
     keyboard_input: Res<Input<KeyCode>>,
@@ -36,12 +34,6 @@ pub fn update_selection(
     node_query: Query<&Interaction, With<Node>>,
     no_deselect_query: Query<&Interaction, With<NoDeselect>>,
 ) {
-    if let Some(paused) = paused {
-        if paused.0 {
-            return;
-        }
-    }
-
     // Check if something has been clicked on
     let mut new_selection = false;
     for interaction in query_changed.iter() {

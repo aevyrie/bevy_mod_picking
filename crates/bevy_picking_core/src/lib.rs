@@ -10,7 +10,7 @@ use std::marker::PhantomData;
 
 pub use crate::{
     events::{event_debug_system, update_events, HoverEvent, PickingEvent, SelectionEvent},
-    focus::{pause_for_picking_blockers, update_focus, Hover, PickingBlocker},
+    focus::{update_focus, Hover},
     highlight::{highlight_assets, DefaultHighlighting, Highlightable, Highlighting},
     selection::{update_selection, NoDeselect, Selection},
 };
@@ -21,22 +21,23 @@ pub struct PickableTarget;
 
 /// Typestates that represent the modular picking pipeline.
 ///
-/// input systems -> produce `Cursor`s -> picking backend -> produce `Hit`s -> focus system
+/// input systems -> produce `Cursor`s -> picking backend -> produce `CursorHit`s -> focus system
 pub mod picking {
     use bevy::prelude::{StageLabel, SystemLabel, *};
 
     use self::{
-        cursor::{Cursor, CursorId},
+        cursor::{CursorId, CursorInput},
         hit::CursorHit,
+        interaction::CursorSelection,
     };
 
     #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
     pub enum Stage {
-        /// Produces [`Cursor`] events.
+        /// Produces [`Cursor`]s.
         Input,
-        /// Consumes [`Cursor`] events and Produces [`Hit`] events.
+        /// Reads [`Cursor`]s and Produces [`CursorHit`]s.
         Backend,
-        /// Consumes [`Hit`] events, and determines focus, selection, and highlighting states.
+        /// Reads [`CursorHit`]s, and determines focus, selection, and highlighting states.
         Picking,
     }
 
@@ -46,7 +47,6 @@ pub mod picking {
         InitialHighlights,
         Highlighting,
         Selection,
-        PauseForBlockers,
         Focus,
         Events,
     }
@@ -54,32 +54,35 @@ pub mod picking {
     #[derive(Bundle)]
     pub struct CursorBundle {
         pub id: CursorId,
-        pub cursor: Cursor,
+        pub cursor: CursorInput,
         pub hit: CursorHit,
+        pub selection: CursorSelection,
     }
     impl CursorBundle {
-        pub fn new(id: CursorId, cursor: Cursor) -> Self {
+        pub fn new(id: CursorId, cursor: CursorInput) -> Self {
             CursorBundle {
                 id,
                 cursor,
                 hit: CursorHit::default(),
+                selection: CursorSelection::default(),
             }
         }
     }
 
-    /// Information passed from  [`bevy_picking_input`] to the backend(s). This identifies all cursor inputs.
+    /// Information passed from  `bevy_picking_input` to the backend(s). This identifies all cursor inputs.
     pub mod cursor {
         use bevy::{prelude::*, reflect::Uuid, render::camera::RenderTarget};
 
         /// Represents an input cursor used for picking.
         #[derive(Debug, Clone, Component, PartialEq)]
-        pub struct Cursor {
+        pub struct CursorInput {
             pub enabled: bool,
-            pub clicked: bool,
             pub target: RenderTarget,
             pub position: Vec2,
+            pub clicked: bool,
+            pub multiselect: bool,
         }
-        impl Cursor {
+        impl CursorInput {
             #[inline]
             pub fn is_in_viewport(&self, camera: &Camera) -> bool {
                 camera
@@ -114,11 +117,6 @@ pub mod picking {
                 matches!(self, CursorId::Other(_))
             }
         }
-
-        #[derive(Debug, Clone, Eq, PartialEq, Default)]
-        pub struct MultiSelect {
-            pub active: bool,
-        }
     }
 
     /// Information passed from the backend(s) to the focus system in [`bevy_picking_core`]. This
@@ -134,7 +132,16 @@ pub mod picking {
         /// item, so multiple entities may be picked at a given time.
         #[derive(Debug, Clone, Component, Default)]
         pub struct CursorHit {
-            pub hit_entities: Vec<Entity>,
+            pub entities: Vec<Entity>,
+        }
+    }
+
+    pub mod interaction {
+        use bevy::prelude::*;
+
+        #[derive(Debug, Clone, Component, Default)]
+        pub struct CursorSelection {
+            pub entities: Vec<Entity>,
         }
     }
 }
@@ -164,52 +171,34 @@ pub fn simple_criteria(flag: bool) -> ShouldRun {
     }
 }
 
-#[derive(Default)]
-pub struct PausedForBlockers(pub(crate) bool);
-impl PausedForBlockers {
-    pub fn is_paused(&self) -> bool {
-        self.0
-    }
-}
-
 pub struct CorePickingPlugin;
 impl Plugin for CorePickingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<PickingSettings>()
-            .init_resource::<picking::cursor::MultiSelect>();
+        app.init_resource::<PickingSettings>();
     }
 }
 
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<PausedForBlockers>()
-            .add_event::<PickingEvent>()
-            .add_system_set_to_stage(
-                CoreStage::First,
-                SystemSet::new()
-                    .with_run_criteria(|state: Res<PickingSettings>| {
-                        simple_criteria(state.enable_interacting)
-                    })
-                    .with_system(
-                        pause_for_picking_blockers.label(CorePickingSystem::PauseForBlockers),
-                    )
-                    .with_system(
-                        update_focus
-                            .label(CorePickingSystem::Focus)
-                            .after(CorePickingSystem::PauseForBlockers),
-                    )
-                    .with_system(
-                        update_selection
-                            .label(CorePickingSystem::Selection)
-                            .after(CorePickingSystem::Focus),
-                    )
-                    .with_system(
-                        update_events
-                            .label(CorePickingSystem::Events)
-                            .after(CorePickingSystem::Selection),
-                    ),
-            );
+        app.add_event::<PickingEvent>().add_system_set_to_stage(
+            CoreStage::First,
+            SystemSet::new()
+                .with_run_criteria(|state: Res<PickingSettings>| {
+                    simple_criteria(state.enable_interacting)
+                })
+                .with_system(update_focus.label(CorePickingSystem::Focus))
+                .with_system(
+                    update_selection
+                        .label(CorePickingSystem::Selection)
+                        .after(CorePickingSystem::Focus),
+                )
+                .with_system(
+                    update_events
+                        .label(CorePickingSystem::Events)
+                        .after(CorePickingSystem::Selection),
+                ),
+        );
     }
 }
 

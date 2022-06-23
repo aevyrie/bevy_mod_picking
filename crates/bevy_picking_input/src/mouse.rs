@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::camera::RenderTarget};
 use bevy_picking_core::picking::{
-    cursor::{Cursor, CursorId},
+    cursor::{CursorId, CursorInput},
     CursorBundle,
 };
 
@@ -13,7 +13,7 @@ pub fn mouse_pick_events(
     windows: Res<Windows>,
     cursor_move: EventReader<CursorMoved>,
     cursor_leave: EventReader<CursorLeft>,
-    mut cursor_query: Query<(&CursorId, &mut Cursor)>,
+    mut cursor_query: Query<(&CursorId, &mut CursorInput)>,
 ) {
     if matches!(settings.mode, UpdateMode::OnEvent)
         && cursor_move.is_empty()
@@ -25,14 +25,15 @@ pub fn mouse_pick_events(
     update_cursor(&mut commands, try_cursor, &mut cursor_query);
 }
 
-fn get_cursor_position(windows: Res<Windows>) -> Option<Cursor> {
+fn get_cursor_position(windows: Res<Windows>) -> Option<CursorInput> {
     for window in windows.iter() {
         if let Some(position) = window.cursor_position() {
-            return Some(Cursor {
+            return Some(CursorInput {
                 enabled: true,
                 clicked: false,
                 target: RenderTarget::Window(window.id()),
                 position,
+                multiselect: false,
             });
         }
     }
@@ -41,8 +42,8 @@ fn get_cursor_position(windows: Res<Windows>) -> Option<Cursor> {
 
 fn update_cursor(
     commands: &mut Commands,
-    try_cursor: Option<Cursor>,
-    cursor_query: &mut Query<(&CursorId, &mut Cursor)>,
+    try_cursor: Option<CursorInput>,
+    cursor_query: &mut Query<(&CursorId, &mut CursorInput)>,
 ) {
     if let Some(new_cursor) = try_cursor {
         for (&id, mut cursor) in cursor_query.iter_mut() {

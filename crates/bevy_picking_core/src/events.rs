@@ -1,6 +1,6 @@
 use crate::{
-    picking::{cursor::Cursor, hit::CursorHit},
-    Hover, PickableTarget, Selection,
+    picking::{cursor::CursorInput, hit::CursorHit},
+    Hover, Selection,
 };
 use bevy::prelude::*;
 
@@ -29,18 +29,10 @@ pub enum PickingEvent {
 /// Looks for changes in selection or hover state, and sends the appropriate events
 #[allow(clippy::type_complexity)]
 pub fn update_events(
-    mouse_button_input: Res<Input<MouseButton>>,
-    touches_input: Res<Touches>,
     mut picking_events: EventWriter<PickingEvent>,
-    hover_query: Query<
-        (Entity, &Hover, ChangeTrackers<Hover>),
-        (Changed<Hover>, With<PickableTarget>),
-    >,
-    selection_query: Query<
-        (Entity, &Selection, ChangeTrackers<Selection>),
-        (Changed<Selection>, With<PickableTarget>),
-    >,
-    click_query: Query<(Entity, &Hover)>,
+    hover_query: Query<(Entity, &Hover, ChangeTrackers<Hover>), Changed<Hover>>,
+    selection_query: Query<(Entity, &Selection, ChangeTrackers<Selection>), Changed<Selection>>,
+    cursors: Query<(&CursorInput, &CursorHit)>,
 ) {
     for (entity, hover, hover_change) in hover_query.iter() {
         if hover_change.is_added() {
@@ -66,12 +58,17 @@ pub fn update_events(
             )));
         }
     }
-    if mouse_button_input.just_pressed(MouseButton::Left)
-        || touches_input.iter_just_pressed().next().is_some()
+
+    for hit in cursors
+        .iter()
+        .filter_map(|(cursor, hit)| (cursor.enabled && cursor.clicked).then(|| hit))
     {
-        for (entity, hover) in click_query.iter() {
-            if hover.hovered() {
-                picking_events.send(PickingEvent::Clicked(entity));
+        for entity in &hit.entities {
+            if hover_query
+                .get_component::<Hover>(*entity)
+                .map_or(false, |h| h.hovered())
+            {
+                picking_events.send(PickingEvent::Clicked(*entity));
             }
         }
     }
@@ -80,7 +77,7 @@ pub fn update_events(
 /// Listens for [HoverEvent] and [SelectionEvent] events and prints them
 pub fn event_debug_system(
     mut events: EventReader<PickingEvent>,
-    cursors: Query<(&Cursor, &CursorHit), Changed<Cursor>>,
+    cursors: Query<(&CursorInput, &CursorHit), Changed<CursorInput>>,
 ) {
     for event in events.iter() {
         info!("{:?}", event);
@@ -88,7 +85,7 @@ pub fn event_debug_system(
     for (cursor, hit) in cursors.iter() {
         info!(
             "pos: {:>6.1}, {:>6.1}   hit: {:?}",
-            cursor.position.x, cursor.position.y, hit.hit_entities
+            cursor.position.x, cursor.position.y, hit.entities
         );
     }
 }

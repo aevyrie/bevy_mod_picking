@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::camera::RenderTarget, utils::HashMap, window::WindowId};
 use bevy_picking_core::picking::{
-    cursor::{Cursor, CursorId},
+    cursor::{CursorId, CursorInput},
     CursorBundle,
 };
 
@@ -8,18 +8,19 @@ use bevy_picking_core::picking::{
 pub fn touch_pick_events(
     mut commands: Commands,
     touches: Res<Touches>,
-    mut cursor_query: Query<(&CursorId, &mut Cursor)>,
+    mut cursor_query: Query<(&CursorId, &mut CursorInput)>,
 ) {
     let mut new_cursor_map = HashMap::new();
     for touch in touches.iter() {
         let id = CursorId::Touch(touch.id());
         new_cursor_map.insert(
             id,
-            Cursor {
+            CursorInput {
                 enabled: true,
                 clicked: false,
                 target: RenderTarget::Window(WindowId::primary()),
                 position: touch.position(),
+                multiselect: false,
             },
         );
     }

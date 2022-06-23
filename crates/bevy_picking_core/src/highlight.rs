@@ -1,5 +1,4 @@
 use super::selection::*;
-use crate::PausedForBlockers;
 use bevy::{asset::Asset, prelude::*, render::color::Color};
 
 /// Marker component to flag an entity as highlightable
@@ -85,7 +84,6 @@ pub fn get_initial_highlight_asset<T: Asset>(
 
 #[allow(clippy::type_complexity)]
 pub fn highlight_assets<T: 'static + Highlightable + Send + Sync>(
-    paused: Option<Res<PausedForBlockers>>,
     global_default_highlight: Res<DefaultHighlighting<T>>,
     mut interaction_query: Query<
         (
@@ -97,24 +95,6 @@ pub fn highlight_assets<T: 'static + Highlightable + Send + Sync>(
         Or<(Changed<Interaction>, Changed<Selection>)>,
     >,
 ) {
-    // Set non-hovered material when picking is paused (e.g. while hovering a picking blocker).
-    if let Some(paused) = paused {
-        if paused.is_paused() {
-            for (_, mut material, selection, highlight) in interaction_query.iter_mut() {
-                *material = if selection.filter(|s| s.selected()).is_some() {
-                    if let Some(highlight_asset) = &highlight.selected {
-                        highlight_asset
-                    } else {
-                        &global_default_highlight.selected
-                    }
-                } else {
-                    &highlight.initial
-                }
-                .to_owned();
-            }
-            return;
-        }
-    }
     for (interaction, mut active_asset, selection, initial_asset) in interaction_query.iter_mut() {
         *active_asset = match *interaction {
             Interaction::Clicked => {

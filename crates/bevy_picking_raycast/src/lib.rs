@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
-    picking::{cursor::Cursor, hit::CursorHit, CorePickingSystem},
+    picking::{cursor::CursorInput, hit::CursorHit, CorePickingSystem},
     simple_criteria, PickingSettings,
 };
 
@@ -39,7 +39,7 @@ impl Plugin for RaycastPlugin {
                 .with_system(
                     update_hits
                         .label(RaycastSystem::UpdateIntersections)
-                        .before(CorePickingSystem::PauseForBlockers)
+                        .before(CorePickingSystem::Focus)
                         .before(CorePickingSystem::InitialHighlights),
                 ),
         );
@@ -57,7 +57,7 @@ pub enum RaycastSystem {
 pub fn build_rays_from_cursors(
     mut commands: Commands,
     mut sources: Query<&mut PickingSource>,
-    cursors: Query<(Entity, &Cursor), Changed<Cursor>>,
+    cursors: Query<(Entity, &CursorInput), Changed<CursorInput>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
     for (entity, cursor) in cursors.iter() {
@@ -86,11 +86,12 @@ fn update_raycast_source(
     }
 }
 
-fn update_hits(mut sources: Query<(&PickingSource, &mut CursorHit)>) {
-    for (source, mut cursor_hit) in sources.iter_mut() {
-        match source.intersect_top() {
-            Some((entity, _)) => cursor_hit.hit_entities = vec![entity],
-            None => cursor_hit.hit_entities.clear(),
+fn update_hits(mut sources: Query<(&PickingSource, &mut CursorHit, &CursorInput)>) {
+    for (source, mut cursor_hit, cursor) in sources.iter_mut() {
+        if !cursor.enabled || source.intersect_top().is_none() {
+            cursor_hit.entities.clear();
+        } else if let Some((entity, _)) = source.intersect_top() {
+            cursor_hit.entities = vec![entity];
         };
     }
 }
