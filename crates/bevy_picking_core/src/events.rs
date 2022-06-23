@@ -1,7 +1,4 @@
-use crate::{
-    picking::{cursor::CursorInput, hit::CursorHit},
-    Hover, Selection,
-};
+use crate::{hit::CursorHit, input::CursorInput, Hover, Selection};
 use bevy::prelude::*;
 
 /// An event that triggers when the selection state of a [Selection] enabled [PickableTarget] changes.

@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::camera::RenderTarget};
-use bevy_picking_core::picking::{
-    cursor::{CursorId, CursorInput},
+use bevy_picking_core::{
+    input::{CursorId, CursorInput},
     CursorBundle,
 };
 

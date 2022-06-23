@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
-    picking::{cursor::CursorInput, hit::CursorHit, CorePickingSystem},
-    simple_criteria, PickingSettings,
+    hit::CursorHit, input::CursorInput, simple_criteria, CorePickingSystem, PickStage,
+    PickingSettings,
 };
 
 /// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
@@ -23,8 +23,10 @@ impl Plugin for RaycastPlugin {
         app.add_system_set_to_stage(
             CoreStage::First,
             SystemSet::new()
+                .after(PickStage::Input)
+                .label(PickStage::Backend)
                 .with_run_criteria(|state: Res<PickingSettings>| {
-                    simple_criteria(state.enable_picking)
+                    simple_criteria(state.enable_backend)
                 })
                 .with_system(
                     build_rays_from_cursors

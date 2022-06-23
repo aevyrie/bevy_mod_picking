@@ -1,7 +1,4 @@
-use crate::{
-    picking::{cursor::CursorInput, hit::CursorHit},
-    PickableTarget,
-};
+use crate::{hit::CursorHit, input::CursorInput, PickableTarget};
 use bevy::{prelude::*, ui::FocusPolicy};
 
 /// Tracks the current hover state to be used with change tracking in the events system.

@@ -1,5 +1,5 @@
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_picking_core::IntoShouldRun;
+use bevy_picking_core::{IntoShouldRun, PickStage};
 
 pub mod inputs;
 pub mod mouse;
@@ -12,31 +12,19 @@ impl Plugin for InputPlugin {
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
-                    .label(Set::Input)
+                    .label(PickStage::Input)
                     .with_run_criteria(run_if_default_inputs)
-                    .with_system(inputs::default_picking_inputs),
-            )
-            .add_system_set_to_stage(
-                CoreStage::First,
-                SystemSet::new()
-                    .label(Set::Touch)
+                    .with_system(inputs::default_picking_inputs.label(Sys::Input))
                     .with_run_criteria(run_if_touch)
-                    .with_system(touch::touch_pick_events)
-                    .after(Set::Input),
-            )
-            .add_system_set_to_stage(
-                CoreStage::First,
-                SystemSet::new()
-                    .label(Set::Mouse)
+                    .with_system(touch::touch_pick_events.label(Sys::Touch).after(Sys::Input))
                     .with_run_criteria(run_if_mouse)
-                    .with_system(mouse::mouse_pick_events)
-                    .after(Set::Input),
+                    .with_system(mouse::mouse_pick_events.label(Sys::Mouse).after(Sys::Input)),
             );
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, SystemLabel)]
-enum Set {
+enum Sys {
     Input,
     Touch,
     Mouse,

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_picking_core::picking::cursor::{CursorId, CursorInput};
+use bevy_picking_core::input::{CursorId, CursorInput};
 
 /// Unsurprising default picking inputs
 pub fn default_picking_inputs(
