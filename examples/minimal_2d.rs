@@ -1,7 +1,5 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
-use bevy_mod_picking::{
-    DebugEventsPlugin, DefaultPickingPlugins, PickableBundle, PickingSourceBundle,
-};
+use bevy_mod_picking::{DebugEventsPlugin, DefaultPickingPlugins, PickableBundle, PickingSource};
 
 fn main() {
     App::new()
@@ -28,6 +26,6 @@ fn setup(
         .insert_bundle(PickableBundle::default()); // <- Makes the mesh pickable.
                                                    // camera
     commands
-        .spawn_bundle(OrthographicCameraBundle::new_2d())
-        .insert_bundle(PickingSourceBundle::default()); // <- Sets the camera to use for picking.
+        .spawn_bundle(Camera2dBundle::default())
+        .insert(PickingSource::default()); // <- Sets the camera to use for picking.
 }

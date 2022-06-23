@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle, PickingEvent, PickingSourceBundle};
+use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle, PickingEvent, PickingSource};
 
 fn main() {
     App::new()
@@ -50,9 +50,9 @@ fn setup(
         ..Default::default()
     });
     commands
-        .spawn_bundle(PerspectiveCameraBundle {
+        .spawn_bundle(Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         })
-        .insert_bundle(PickingSourceBundle::default()); // <- Sets the camera to use for picking.
+        .insert(PickingSource::default()); // <- Sets the camera to use for picking.
 }
