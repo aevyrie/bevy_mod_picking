@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
-    hit::CursorHit, input::CursorInput, simple_criteria, CorePickingSystem, PickStage,
-    PickingSettings,
+    hit::CursorHit, input::CursorInput, simple_criteria, PickStage, PickingSettings,
 };
 
 /// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
@@ -10,11 +9,12 @@ pub type PickingTarget = bevy_mod_raycast::RayCastMesh<RaycastPickingSet>;
 /// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
 pub type PickingSource = RayCastSource<RaycastPickingSet>;
 
-/// This unit struct is used to tag the generic ray casting types `RayCastMesh` and
-/// `RayCastSource`. This means that all Picking ray casts are of the same type. Consequently, any
-/// meshes or ray sources that are being used by the picking plugin can be used by other ray
-/// casting systems because they will have distinct types, e.g.: `RayCastMesh<RaycastPickingSet>`
-/// vs. `RayCastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
+/// This unit struct is used to tag the generic ray casting types
+/// [RayCastMesh](bevy_mod_raycast::RayCastMesh) and [`RayCastSource`]. This means that all Picking
+/// ray casts are of the same type. Consequently, any meshes or ray sources that are being used by
+/// the picking plugin can be used by other ray casting systems because they will have distinct
+/// types, e.g.: `RayCastMesh<RaycastPickingSet>` vs. `RayCastMesh<MySuperCoolRaycastingType>`, and
+/// as such wil not result in collisions.
 pub struct RaycastPickingSet;
 
 pub struct RaycastPlugin;
@@ -23,39 +23,25 @@ impl Plugin for RaycastPlugin {
         app.add_system_set_to_stage(
             CoreStage::First,
             SystemSet::new()
-                .after(PickStage::Input)
                 .label(PickStage::Backend)
+                .after(PickStage::Input)
+                .before(PickStage::Focus)
                 .with_run_criteria(|state: Res<PickingSettings>| {
                     simple_criteria(state.enable_backend)
                 })
-                .with_system(
-                    build_rays_from_cursors
-                        .label(RaycastSystem::UpdateSourceRays)
-                        .before(RaycastSystem::UpdateRaycast),
-                )
+                .with_system(build_rays_from_cursors)
                 .with_system(
                     bevy_mod_raycast::update_raycast::<RaycastPickingSet>
-                        .label(RaycastSystem::UpdateRaycast)
-                        .before(RaycastSystem::UpdateIntersections),
+                        .after(build_rays_from_cursors),
                 )
                 .with_system(
-                    update_hits
-                        .label(RaycastSystem::UpdateIntersections)
-                        .before(CorePickingSystem::Focus)
-                        .before(CorePickingSystem::InitialHighlights),
+                    update_hits.after(bevy_mod_raycast::update_raycast::<RaycastPickingSet>),
                 ),
         );
     }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, SystemLabel)]
-pub enum RaycastSystem {
-    UpdateSourceRays,
-    UpdateRaycast,
-    UpdateIntersections,
-}
-
-/// Update Screenspace ray cast sources with the current cursor positions
+/// Builds rays and updates raycasting [`PickingSource`]s from [`CursorInput`]s.
 pub fn build_rays_from_cursors(
     mut commands: Commands,
     mut sources: Query<&mut PickingSource>,

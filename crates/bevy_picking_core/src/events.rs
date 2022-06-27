@@ -25,11 +25,11 @@ pub enum PickingEvent {
 
 /// Looks for changes in selection or hover state, and sends the appropriate events
 #[allow(clippy::type_complexity)]
-pub fn update_events(
-    mut picking_events: EventWriter<PickingEvent>,
+pub fn write_events(
     hover_query: Query<(Entity, &Hover, ChangeTrackers<Hover>), Changed<Hover>>,
     selection_query: Query<(Entity, &Selection, ChangeTrackers<Selection>), Changed<Selection>>,
     cursors: Query<(&CursorInput, &CursorHit)>,
+    mut picking_events: EventWriter<PickingEvent>,
 ) {
     for (entity, hover, hover_change) in hover_query.iter() {
         if hover_change.is_added() {

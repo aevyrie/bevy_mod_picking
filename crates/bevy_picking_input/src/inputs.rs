@@ -5,8 +5,8 @@ use bevy_picking_core::input::{CursorId, CursorInput};
 pub fn default_picking_inputs(
     mouse: Res<Input<MouseButton>>,
     keyboard: Res<Input<KeyCode>>,
-    mut cursor_query: Query<(&CursorId, &mut CursorInput)>,
     touches: Res<Touches>,
+    mut cursor_query: Query<(&CursorId, &mut CursorInput)>,
 ) {
     let multiselect = keyboard.any_pressed([
         KeyCode::LControl,

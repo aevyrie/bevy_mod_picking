@@ -13,21 +13,21 @@ impl Plugin for InputPlugin {
                 CoreStage::First,
                 SystemSet::new()
                     .label(PickStage::Input)
-                    .with_run_criteria(run_if_default_inputs)
-                    .with_system(inputs::default_picking_inputs.label(Sys::Input))
-                    .with_run_criteria(run_if_touch)
-                    .with_system(touch::touch_pick_events.label(Sys::Touch).after(Sys::Input))
-                    .with_run_criteria(run_if_mouse)
-                    .with_system(mouse::mouse_pick_events.label(Sys::Mouse).after(Sys::Input)),
+                    .with_system(
+                        inputs::default_picking_inputs.with_run_criteria(run_if_default_inputs),
+                    )
+                    .with_system(
+                        touch::touch_pick_events
+                            .with_run_criteria(run_if_touch)
+                            .after(inputs::default_picking_inputs),
+                    )
+                    .with_system(
+                        mouse::mouse_pick_events
+                            .with_run_criteria(run_if_mouse)
+                            .after(inputs::default_picking_inputs),
+                    ),
             );
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, SystemLabel)]
-enum Sys {
-    Input,
-    Touch,
-    Mouse,
 }
 
 pub struct InputPluginSettings {

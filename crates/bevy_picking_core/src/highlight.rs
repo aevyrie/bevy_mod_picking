@@ -1,9 +1,38 @@
+use std::marker::PhantomData;
+
+use crate::{simple_criteria, PickStage, PickingSettings};
+
 use super::selection::*;
 use bevy::{asset::Asset, prelude::*, render::color::Color};
 
 /// Marker component to flag an entity as highlightable
 #[derive(Component, Clone, Debug, Default)]
 pub struct Highlight;
+
+/// A highlighting plugin, generic over any asset that might be used for rendering the different
+/// highlighting states.
+#[derive(Default)]
+pub struct CustomHighlightPlugin<T: 'static + Highlightable + Sync + Send>(PhantomData<T>);
+
+impl<T> Plugin for CustomHighlightPlugin<T>
+where
+    T: 'static + Highlightable + Sync + Send,
+{
+    fn build(&self, app: &mut App) {
+        app.init_resource::<DefaultHighlighting<T>>()
+            .add_system_set_to_stage(
+                CoreStage::First,
+                SystemSet::new()
+                    .label(PickStage::Focus)
+                    .after(PickStage::Backend)
+                    .with_run_criteria(|state: Res<PickingSettings>| {
+                        simple_criteria(state.enable_highlighting)
+                    })
+                    .with_system(get_initial_highlight_asset::<T>.before(highlight_assets::<T>))
+                    .with_system(highlight_assets::<T>.after(PickStage::Focus)),
+            );
+    }
+}
 
 /// Component used to track the initial asset of a highlightable object, as well as for overriding
 /// the default highlight materials.

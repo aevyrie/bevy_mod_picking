@@ -4,11 +4,10 @@ mod highlight;
 mod selection;
 
 use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
-use highlight::{get_initial_highlight_asset, Highlight};
-use std::marker::PhantomData;
+use highlight::Highlight;
 
 pub use crate::{
-    events::{event_debug_system, update_events, HoverEvent, PickingEvent, SelectionEvent},
+    events::{event_debug_system, write_events, HoverEvent, PickingEvent, SelectionEvent},
     focus::{update_focus, Hover},
     highlight::{highlight_assets, DefaultHighlighting, Highlightable, Highlighting},
     selection::{update_selection, NoDeselect, Selection},
@@ -29,22 +28,12 @@ use self::{
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickStage {
-    /// Produces [`Cursor`]s.
+    /// Produces [`CursorInput`]s.
     Input,
-    /// Reads [`Cursor`]s and Produces [`CursorHit`]s.
+    /// Reads [`CursorInput`]s and Produces [`CursorHit`]s.
     Backend,
     /// Reads [`CursorHit`]s, and determines focus, selection, and highlighting states.
     Focus,
-}
-
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-pub enum CorePickingSystem {
-    UpdatePickSourcePositions,
-    InitialHighlights,
-    Highlighting,
-    Selection,
-    Focus,
-    Events,
 }
 
 #[derive(Bundle)]
@@ -184,17 +173,9 @@ impl Plugin for InteractionPlugin {
                 .with_run_criteria(|state: Res<PickingSettings>| {
                     simple_criteria(state.enable_interacting)
                 })
-                .with_system(update_focus.label(CorePickingSystem::Focus))
-                .with_system(
-                    update_selection
-                        .label(CorePickingSystem::Selection)
-                        .after(CorePickingSystem::Focus),
-                )
-                .with_system(
-                    update_events
-                        .label(CorePickingSystem::Events)
-                        .after(CorePickingSystem::Selection),
-                ),
+                .with_system(update_focus)
+                .with_system(update_selection.after(update_focus))
+                .with_system(write_events.after(update_selection)),
         );
     }
 }
@@ -202,51 +183,15 @@ impl Plugin for InteractionPlugin {
 pub struct HighlightingPlugins;
 impl PluginGroup for HighlightingPlugins {
     fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(CustomHighlightPlugin::<StandardMaterial>::default());
-        group.add(CustomHighlightPlugin::<ColorMaterial>::default());
-    }
-}
-
-/// A highlighting plugin, generic over any asset that might be used for rendering the different
-/// highlighting states.
-#[derive(Default)]
-pub struct CustomHighlightPlugin<T: 'static + Highlightable + Sync + Send>(PhantomData<T>);
-
-impl<T> Plugin for CustomHighlightPlugin<T>
-where
-    T: 'static + Highlightable + Sync + Send,
-{
-    fn build(&self, app: &mut App) {
-        app.init_resource::<DefaultHighlighting<T>>()
-            .add_system_set_to_stage(
-                CoreStage::First,
-                SystemSet::new()
-                    .after(PickStage::Backend)
-                    .label(PickStage::Focus)
-                    .with_run_criteria(|state: Res<PickingSettings>| {
-                        simple_criteria(state.enable_highlighting)
-                    })
-                    .with_system(
-                        get_initial_highlight_asset::<T>
-                            .label(CorePickingSystem::InitialHighlights)
-                            .before(CorePickingSystem::Highlighting),
-                    )
-                    .with_system(
-                        highlight_assets::<T>
-                            .label(CorePickingSystem::Highlighting)
-                            .before(CorePickingSystem::Events),
-                    ),
-            );
+        group.add(highlight::CustomHighlightPlugin::<StandardMaterial>::default());
+        group.add(highlight::CustomHighlightPlugin::<ColorMaterial>::default());
     }
 }
 
 pub struct DebugEventsPlugin;
 impl Plugin for DebugEventsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            CoreStage::Last,
-            event_debug_system.after(CorePickingSystem::Events),
-        );
+        app.add_system_to_stage(CoreStage::Last, event_debug_system.after(PickStage::Focus));
     }
 }
 
