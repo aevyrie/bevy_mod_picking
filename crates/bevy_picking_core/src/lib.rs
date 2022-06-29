@@ -5,10 +5,11 @@ mod selection;
 
 use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
 use highlight::Highlight;
+use input::CursorClick;
 
 pub use crate::{
-    events::{event_debug_system, write_events, HoverEvent, PickingEvent, SelectionEvent},
-    focus::{update_focus, Hover},
+    events::{event_debug_system, write_events, HoverEvent, PickingEvent, SelectEvent},
+    focus::update_focus,
     highlight::{highlight_assets, DefaultHighlighting, Highlightable, Highlighting},
     selection::{update_selection, NoDeselect, Selection},
 };
@@ -39,15 +40,17 @@ pub enum PickStage {
 #[derive(Bundle)]
 pub struct CursorBundle {
     pub id: CursorId,
+    pub click: CursorClick,
     pub cursor: CursorInput,
     pub hit: CursorHit,
     pub selection: CursorSelection,
 }
 impl CursorBundle {
-    pub fn new(id: CursorId, cursor: CursorInput) -> Self {
+    pub fn new(id: CursorId, cursor: CursorInput, click: CursorClick) -> Self {
         CursorBundle {
             id,
             cursor,
+            click,
             hit: CursorHit::default(),
             selection: CursorSelection::default(),
         }
@@ -58,13 +61,17 @@ impl CursorBundle {
 pub mod input {
     use bevy::{prelude::*, reflect::Uuid, render::camera::RenderTarget};
 
+    #[derive(Debug, Default, Clone, Component, PartialEq)]
+    pub struct CursorClick {
+        pub clicked: bool,
+    }
+
     /// Represents an input cursor used for picking.
     #[derive(Debug, Clone, Component, PartialEq)]
     pub struct CursorInput {
         pub enabled: bool,
         pub target: RenderTarget,
         pub position: Vec2,
-        pub clicked: bool,
         pub multiselect: bool,
     }
     impl CursorInput {
@@ -202,7 +209,6 @@ pub struct PickableBundle {
     pub focus_policy: FocusPolicy,
     pub highlight: Highlight,
     pub selection: Selection,
-    pub hover: Hover,
 }
 
 pub trait IntoShouldRun {

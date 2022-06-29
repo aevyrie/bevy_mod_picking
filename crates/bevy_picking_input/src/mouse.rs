@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::camera::RenderTarget};
 use bevy_picking_core::{
-    input::{CursorId, CursorInput},
+    input::{CursorClick, CursorId, CursorInput},
     CursorBundle,
 };
 
@@ -56,9 +56,9 @@ fn update_cursor(
                 enabled: true,
                 target,
                 position,
-                clicked: false,
                 multiselect: false,
             },
+            CursorClick { clicked: false },
         ));
     }
 }

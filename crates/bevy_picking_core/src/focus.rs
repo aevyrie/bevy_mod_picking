@@ -1,67 +1,46 @@
-use crate::{hit::CursorHit, input::CursorInput, PickableTarget};
+use crate::{hit::CursorHit, input::CursorClick, HoverEvent, PickableTarget, PickingEvent};
 use bevy::{prelude::*, ui::FocusPolicy};
-
-/// Tracks the current hover state to be used with change tracking in the events system.
-///
-/// # Requirements
-///
-/// An entity with the `Hover` component must also have an [Interaction] component.
-#[derive(Component, Debug, Default, Copy, Clone)]
-pub struct Hover {
-    hovered: bool,
-}
-
-impl Hover {
-    pub fn hovered(&self) -> bool {
-        self.hovered
-    }
-}
 
 #[allow(clippy::type_complexity)]
 pub fn update_focus(
-    cursors: Query<(&CursorInput, &CursorHit)>,
-    mut interactions: Query<
-        (
-            &mut Interaction,
-            Option<&mut Hover>,
-            Option<&FocusPolicy>,
-            Entity,
-        ),
-        With<PickableTarget>,
-    >,
+    cursors: Query<(&CursorClick, ChangeTrackers<CursorClick>, &CursorHit)>,
+    mut interactions: Query<(&mut Interaction, Option<&FocusPolicy>, Entity), With<PickableTarget>>,
+    mut events: EventWriter<PickingEvent>,
 ) {
     let mut updated = Vec::new();
 
-    for (input, hit) in cursors.iter() {
+    for (click, click_track, hit) in cursors.iter() {
         // TODO: handle conflicting cursor interactions. e.g. if two cursors attempt to modify the
-        // interaction state, which one takes precedence?
-
+        // interaction state of a target entity, which one takes precedence?
         for entity in hit.entities.iter() {
-            if let Ok((mut interaction, hover, focus_policy, _)) = interactions.get_mut(*entity) {
+            if let Ok((mut interaction, focus, _)) = interactions.get_mut(*entity) {
                 updated.push(*entity);
-                if input.clicked {
+
+                if *interaction.as_ref() == Interaction::None {
+                    events.send(PickingEvent::Hover(HoverEvent::JustEntered(*entity)));
+                }
+
+                if click.clicked
+                    && click_track.is_changed()
+                    && *interaction.as_ref() != Interaction::Clicked
+                {
                     *interaction = Interaction::Clicked;
-                } else if *interaction == Interaction::None {
+                } else if *interaction.as_ref() == Interaction::None {
                     *interaction = Interaction::Hovered;
                 }
-                hover
-                    .filter(|h| !h.as_ref().hovered)
-                    .map(|mut hover| hover.hovered = true);
-                if let Some(_policy @ FocusPolicy::Block) = focus_policy {
+                if let Some(_policy @ FocusPolicy::Block) = focus {
                     break; // Prevents interacting with anything further away
                 }
             }
         }
     }
 
-    for (mut interaction, hover, _, entity) in &mut interactions.iter_mut() {
+    for (mut interaction, _, entity) in &mut interactions.iter_mut() {
         if !updated.contains(&entity) {
-            if *interaction != Interaction::None {
+            if *interaction.as_ref() != Interaction::None {
                 *interaction = Interaction::None;
+                events.send(PickingEvent::Hover(HoverEvent::JustLeft(entity)));
             }
-            hover
-                .filter(|h| h.as_ref().hovered)
-                .map(|mut hover| hover.hovered = false);
         }
     }
 }
