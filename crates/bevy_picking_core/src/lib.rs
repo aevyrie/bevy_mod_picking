@@ -4,11 +4,12 @@ mod highlight;
 mod selection;
 
 use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
+use focus::CursorInteraction;
 use highlight::Highlight;
 use input::CursorClick;
 
 pub use crate::{
-    events::{event_debug_system, write_events, HoverEvent, PickingEvent, SelectEvent},
+    events::{event_debug_system, CursorEvent},
     focus::update_focus,
     highlight::{highlight_assets, DefaultHighlighting, Highlightable, Highlighting},
     selection::{update_selection, NoDeselect, Selection},
@@ -20,9 +21,9 @@ pub struct PickableTarget;
 
 /// Typestates that represent the modular picking pipeline.
 ///
-/// input systems -> produce `Cursor`s -> picking backend -> produce `CursorHit`s -> focus system
+/// input systems -> produce `Cursor`s -> picking backend -> produce `CursorOver`s -> focus system
 use self::{
-    hit::CursorHit,
+    hit::CursorOver,
     input::{CursorId, CursorInput},
     interaction::CursorSelection,
 };
@@ -31,9 +32,9 @@ use self::{
 pub enum PickStage {
     /// Produces [`CursorInput`]s.
     Input,
-    /// Reads [`CursorInput`]s and Produces [`CursorHit`]s.
+    /// Reads [`CursorInput`]s and Produces [`CursorOver`]s.
     Backend,
-    /// Reads [`CursorHit`]s, and determines focus, selection, and highlighting states.
+    /// Reads [`CursorOver`]s, and determines focus, selection, and highlighting states.
     Focus,
 }
 
@@ -42,7 +43,7 @@ pub struct CursorBundle {
     pub id: CursorId,
     pub click: CursorClick,
     pub cursor: CursorInput,
-    pub hit: CursorHit,
+    pub hit: CursorOver,
     pub selection: CursorSelection,
 }
 impl CursorBundle {
@@ -51,7 +52,7 @@ impl CursorBundle {
             id,
             cursor,
             click,
-            hit: CursorHit::default(),
+            hit: CursorOver::default(),
             selection: CursorSelection::default(),
         }
     }
@@ -63,7 +64,7 @@ pub mod input {
 
     #[derive(Debug, Default, Clone, Component, PartialEq)]
     pub struct CursorClick {
-        pub clicked: bool,
+        pub is_clicked: bool,
     }
 
     /// Represents an input cursor used for picking.
@@ -92,7 +93,7 @@ pub mod input {
         }
     }
 
-    #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component)]
+    #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
     pub enum CursorId {
         Touch(u64),
         Mouse,
@@ -123,8 +124,26 @@ pub mod hit {
     /// contexts like UI, it is often useful for picks to pass through to items below another
     /// item, so multiple entities may be picked at a given time.
     #[derive(Debug, Clone, Component, Default)]
-    pub struct CursorHit {
+    pub struct CursorOver {
         pub entities: Vec<Entity>,
+        pub(crate) unblocked_current: Vec<Entity>,
+        pub(crate) unblocked_prev: Vec<Entity>,
+    }
+    impl CursorOver {
+        pub fn clear(&mut self) {
+            self.entities.clear();
+        }
+
+        pub fn entities(&self) -> &[Entity] {
+            self.entities.as_ref()
+        }
+
+        /// Prepares the unblocked list by moving the current value to the previous slot, and
+        /// clearing the new unblocked_current list.
+        pub fn swap_unblocked(&mut self) {
+            std::mem::swap(&mut self.unblocked_current, &mut self.unblocked_prev);
+            self.unblocked_current.clear();
+        }
     }
 }
 
@@ -172,7 +191,7 @@ impl Plugin for CorePickingPlugin {
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PickingEvent>().add_system_set_to_stage(
+        app.add_event::<CursorEvent>().add_system_set_to_stage(
             CoreStage::First,
             SystemSet::new()
                 .after(PickStage::Backend)
@@ -181,8 +200,7 @@ impl Plugin for InteractionPlugin {
                     simple_criteria(state.enable_interacting)
                 })
                 .with_system(update_focus)
-                .with_system(update_selection.after(update_focus))
-                .with_system(write_events.after(update_selection)),
+                .with_system(update_selection.after(update_focus)),
         );
     }
 }
@@ -205,10 +223,10 @@ impl Plugin for DebugEventsPlugin {
 #[derive(Bundle, Default)]
 pub struct PickableBundle {
     pub pickable_mesh: PickableTarget,
-    pub interaction: Interaction,
     pub focus_policy: FocusPolicy,
-    pub highlight: Highlight,
+    pub interaction: CursorInteraction,
     pub selection: Selection,
+    pub highlight: Highlight,
 }
 
 pub trait IntoShouldRun {

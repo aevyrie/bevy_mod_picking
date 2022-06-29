@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{simple_criteria, PickStage, PickingSettings};
+use crate::{simple_criteria, CursorEvent, PickStage, PickingSettings};
 
 use super::selection::*;
 use bevy::{asset::Asset, prelude::*, render::color::Color};
@@ -39,8 +39,11 @@ where
 #[derive(Component, Clone, Debug)]
 pub struct Highlighting<T: Asset> {
     pub initial: Handle<T>,
+    /// Overrides this asset's global default when hovered
     pub hovered: Option<Handle<T>>,
+    /// Overrides this asset's global default when pressed
     pub pressed: Option<Handle<T>>,
+    /// Overrides this asset's global default when selected
     pub selected: Option<Handle<T>>,
 }
 
@@ -114,44 +117,42 @@ pub fn get_initial_highlight_asset<T: Asset>(
 #[allow(clippy::type_complexity)]
 pub fn highlight_assets<T: 'static + Highlightable + Send + Sync>(
     global_default_highlight: Res<DefaultHighlighting<T>>,
-    mut interaction_query: Query<
-        (
-            &Interaction,
-            &mut Handle<T>,
-            Option<&Selection>,
-            &Highlighting<T>,
-        ),
-        Or<(Changed<Interaction>, Changed<Selection>)>,
-    >,
+    mut interaction_query: Query<(&mut Handle<T>, Option<&Selection>, &Highlighting<T>)>,
+    mut events: EventReader<CursorEvent>,
 ) {
-    for (interaction, mut active_asset, selection, initial_asset) in interaction_query.iter_mut() {
-        *active_asset = match *interaction {
-            Interaction::Clicked => {
-                if let Some(highlight_asset) = &initial_asset.pressed {
-                    highlight_asset
-                } else {
-                    &global_default_highlight.pressed
-                }
-            }
-            Interaction::Hovered => {
-                if let Some(highlight_asset) = &initial_asset.hovered {
-                    highlight_asset
-                } else {
-                    &global_default_highlight.hovered
-                }
-            }
-            Interaction::None => {
-                if selection.filter(|s| s.selected()).is_some() {
-                    if let Some(highlight_asset) = &initial_asset.selected {
+    for event in events.iter() {
+        if let Ok((mut active_asset, selection, highlight)) =
+            interaction_query.get_mut(event.entity)
+        {
+            *active_asset = match event.event {
+                crate::events::Just::Entered | crate::events::Just::Up => {
+                    if let Some(highlight_asset) = &highlight.hovered {
                         highlight_asset
                     } else {
-                        &global_default_highlight.selected
+                        &global_default_highlight.hovered
                     }
-                } else {
-                    &initial_asset.initial
                 }
+                crate::events::Just::Exited => {
+                    if selection.filter(|s| s.selected()).is_some() {
+                        if let Some(highlight_asset) = &highlight.selected {
+                            highlight_asset
+                        } else {
+                            &global_default_highlight.selected
+                        }
+                    } else {
+                        &highlight.initial
+                    }
+                }
+                crate::events::Just::Down => {
+                    if let Some(highlight_asset) = &highlight.pressed {
+                        highlight_asset
+                    } else {
+                        &global_default_highlight.pressed
+                    }
+                }
+                _ => active_asset.as_ref(),
             }
+            .to_owned()
         }
-        .to_owned();
     }
 }

@@ -22,19 +22,19 @@ pub fn default_picking_inputs(
 
         match id {
             CursorId::Touch(touch_id) => {
-                if touches.get_pressed(touch_id).is_some() && !click.as_ref().clicked {
-                    click.clicked = true;
-                } else if click.as_ref().clicked {
-                    click.clicked = false;
+                if touches.get_pressed(touch_id).is_some() && !click.as_ref().is_clicked {
+                    click.is_clicked = true;
+                } else if click.as_ref().is_clicked {
+                    click.is_clicked = false;
                 }
             }
             CursorId::Mouse => {
                 let pressed = mouse.pressed(MouseButton::Left);
-                if pressed && !click.as_ref().clicked {
-                    click.clicked = true;
+                if pressed && !click.as_ref().is_clicked {
+                    click.is_clicked = true;
                 }
-                if !pressed && click.as_ref().clicked {
-                    click.clicked = false;
+                if !pressed && click.as_ref().is_clicked {
+                    click.is_clicked = false;
                 }
             }
             _ => (),

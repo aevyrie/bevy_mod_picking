@@ -22,7 +22,7 @@ pub fn touch_pick_events(
                     position: touch.position(),
                     multiselect: false,
                 },
-                CursorClick { clicked: true },
+                CursorClick { is_clicked: true },
             ),
         );
     }
@@ -41,8 +41,8 @@ pub fn touch_pick_events(
                 if input.as_ref().enabled {
                     input.enabled = false;
                 }
-                if click.as_ref().clicked {
-                    click.clicked = false;
+                if click.as_ref().is_clicked {
+                    click.is_clicked = false;
                 }
             }
         }

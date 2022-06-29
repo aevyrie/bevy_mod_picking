@@ -45,6 +45,7 @@ fn update_cursor(
                 continue;
             }
             if cursor.as_ref().position != position || cursor.as_ref().target != target {
+                cursor.enabled = true;
                 cursor.position = position;
                 cursor.target = target;
             }
@@ -58,7 +59,15 @@ fn update_cursor(
                 position,
                 multiselect: false,
             },
-            CursorClick { clicked: false },
+            CursorClick { is_clicked: false },
         ));
+    } else {
+        for (&id, mut cursor) in cursor_query.iter_mut() {
+            if !id.is_mouse() {
+                continue;
+            }
+            cursor.enabled = false;
+            return;
+        }
     }
 }

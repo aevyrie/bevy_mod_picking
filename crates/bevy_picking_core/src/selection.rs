@@ -1,13 +1,7 @@
 use bevy::prelude::*;
 
-use crate::input::CursorInput;
-
 /// Tracks the current selection state to be used with change tracking in the events system.
 /// Entities with [Selection] will have selection state managed.
-///
-/// # Requirements
-///
-/// An entity with the [Selection] component must also have an [Interaction] component.
 #[derive(Component, Debug, Default, Copy, Clone)]
 pub struct Selection {
     selected: bool,
@@ -27,12 +21,11 @@ impl Selection {
 pub struct NoDeselect;
 
 #[allow(clippy::too_many_arguments)]
-pub fn update_selection(
-    cursors: Query<&CursorInput>,
-    query_changed: Query<&Interaction, (Changed<Interaction>, Without<NoDeselect>)>,
-    node_query: Query<&Interaction, With<Node>>,
-    no_deselect_query: Query<&Interaction, With<NoDeselect>>,
-    mut query_all: Query<(&mut Selection, &Interaction)>,
+pub fn update_selection(// cursors: Query<&CursorInput>,
+    // query_changed: Query<&Interaction, (Changed<Interaction>, Without<NoDeselect>)>,
+    // node_query: Query<&Interaction, With<Node>>,
+    // no_deselect_query: Query<&Interaction, With<NoDeselect>>,
+    // mut query_all: Query<(&mut Selection, &Interaction)>,
 ) {
     // for cursor in cursors.iter() {
     //     // Check if something has been clicked on

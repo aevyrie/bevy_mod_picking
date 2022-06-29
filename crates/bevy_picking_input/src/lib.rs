@@ -49,7 +49,7 @@ pub enum UpdateMode {
 }
 impl Default for UpdateMode {
     fn default() -> Self {
-        UpdateMode::EveryFrame
+        UpdateMode::OnEvent
     }
 }
 

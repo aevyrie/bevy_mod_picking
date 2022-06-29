@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle, PickingEvent, PickingSourceBundle};
+use bevy_mod_picking::{CursorEvent, DefaultPickingPlugins, PickableBundle, PickingSourceBundle};
 
 fn main() {
     App::new()
@@ -10,12 +10,12 @@ fn main() {
         .run();
 }
 
-pub fn print_events(mut events: EventReader<PickingEvent>) {
+pub fn print_events(mut events: EventReader<CursorEvent>) {
     for event in events.iter() {
         match event {
-            PickingEvent::Select(e) => info!("A selection event happened: {:?}", e),
-            PickingEvent::Hover(e) => info!("Egads! A hover event!? {:?}", e),
-            PickingEvent::Click(e) => info!("Gee Willikers, it's a click! {:?}", e),
+            CursorEvent::Select(e) => info!("A selection event happened: {:?}", e),
+            CursorEvent::Hover(e) => info!("Egads! A hover event!? {:?}", e),
+            CursorEvent::Click(e) => info!("Gee Willikers, it's a click! {:?}", e),
         }
     }
 }

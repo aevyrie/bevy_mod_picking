@@ -1,94 +1,61 @@
 use crate::{
-    hit::CursorHit,
-    input::{CursorClick, CursorInput},
-    Selection,
+    hit::CursorOver,
+    input::{CursorClick, CursorId, CursorInput},
 };
-use bevy::{prelude::*, ui::FocusPolicy};
-
-/// An event that triggers when the selection state of a [Selection] enabled [PickableTarget] changes.
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub enum SelectEvent {
-    JustSelected(Entity),
-    JustDeselected(Entity),
-}
-
-/// An event that triggers when the hover state of a [Hover] enabled [PickableTarget] changes.
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub enum HoverEvent {
-    JustEntered(Entity),
-    JustLeft(Entity),
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub enum ClickEvent {
-    JustClicked(Entity),
-    JustReleased(Entity),
-}
+use bevy::prelude::*;
 
 /// An event that wraps selection and hover events
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub enum PickingEvent {
-    Select(SelectEvent),
-    Hover(HoverEvent),
-    Click(ClickEvent),
+pub enum Just {
+    /// Like `mouseover`    
+    Entered,
+    /// Like `mouseout`
+    Exited,
+    /// Like `mousedown`
+    Down,
+    /// Like `mouseup`
+    Up,
+    /// Like `click`
+    Click,
 }
 
-/// Looks for changes in selection or hover state, and sends the appropriate events
-#[allow(clippy::type_complexity)]
-pub fn write_events(
-    cursors: Query<(&CursorClick, ChangeTrackers<CursorClick>, &CursorHit)>,
-    focus: Query<&FocusPolicy>,
-    selection_query: Query<(Entity, &Selection, ChangeTrackers<Selection>), Changed<Selection>>,
-    mut events: EventWriter<PickingEvent>,
-) {
-    for (click, click_track, hit) in cursors.iter() {
-        // TODO: handle conflicting cursor interactions. e.g. if two cursors attempt to modify the
-        // interaction state of a target entity, which one takes precedence?
-        for entity in hit.entities.iter() {
-            if click.clicked && click_track.is_changed() {
-                events.send(PickingEvent::Click(ClickEvent::JustClicked(*entity)));
-            } else if !click.clicked && click_track.is_changed() {
-                events.send(PickingEvent::Click(ClickEvent::JustReleased(*entity)));
-            }
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+pub struct CursorEvent {
+    pub entity: Entity,
+    pub cursor: CursorId,
+    pub event: Just,
+}
 
-            if let Ok(_policy @ FocusPolicy::Block) = focus.get(*entity) {
-                break; // Prevents interacting with anything further away
-            }
-        }
-    }
-
-    for (entity, selection, selection_change) in selection_query.iter() {
-        if selection_change.is_added() {
-            continue; // Avoid a false change detection when a component is added.
-        }
-        if selection.selected() {
-            events.send(PickingEvent::Select(SelectEvent::JustSelected(entity)));
-        } else {
-            events.send(PickingEvent::Select(SelectEvent::JustDeselected(entity)));
+impl CursorEvent {
+    pub fn new(entity: Entity, cursor: CursorId, event: Just) -> Self {
+        Self {
+            entity,
+            cursor,
+            event,
         }
     }
 }
 
 /// Listens for [HoverEvent] and [SelectionEvent] events and prints them
 pub fn event_debug_system(
-    mut events: EventReader<PickingEvent>,
+    mut events: EventReader<CursorEvent>,
     input_cursors: Query<&CursorInput, Changed<CursorInput>>,
-    hit_cursors: Query<&CursorHit, Changed<CursorHit>>,
+    hit_cursors: Query<&CursorOver, Changed<CursorOver>>,
     click_cursors: Query<&CursorClick, Changed<CursorClick>>,
 ) {
-    for event in events.iter() {
-        info!("Event: {:?}", event);
-    }
-    for cursor in input_cursors.iter() {
+    for input in input_cursors.iter() {
         info!(
             "CursorInput: ( {:>6.1}, {:>6.1} )",
-            cursor.position.x, cursor.position.y
+            input.position.x, input.position.y
         );
     }
-    for hit in hit_cursors.iter() {
-        info!("CursorHit: ( {:?} )", hit.entities);
-    }
     for click in click_cursors.iter() {
-        info!("CursorClick: ( {:?} )", click.clicked);
+        info!("CursorClick: ( {:?} )", click.is_clicked);
+    }
+    for hit in hit_cursors.iter() {
+        info!("CursorOver: ( {:?} )", hit.entities);
+    }
+    for event in events.iter() {
+        info!("Event: {:?}", event);
     }
 }
