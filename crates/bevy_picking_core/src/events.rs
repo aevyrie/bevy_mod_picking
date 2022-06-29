@@ -74,15 +74,19 @@ pub fn write_events(
 /// Listens for [HoverEvent] and [SelectionEvent] events and prints them
 pub fn event_debug_system(
     mut events: EventReader<PickingEvent>,
-    cursors: Query<(&CursorInput, &CursorHit), Changed<CursorInput>>,
+    input_cursors: Query<&CursorInput, Changed<CursorInput>>,
+    hit_cursors: Query<&CursorHit, Changed<CursorHit>>,
 ) {
     for event in events.iter() {
         info!("{:?}", event);
     }
-    for (cursor, hit) in cursors.iter() {
+    for cursor in input_cursors.iter() {
         info!(
-            "pos: {:>6.1}, {:>6.1}   hit: {:?}",
-            cursor.position.x, cursor.position.y, hit.entities
+            "CursorInput: ({:>6.1}, {:>6.1}, click: {})",
+            cursor.position.x, cursor.position.y, cursor.clicked
         );
+    }
+    for hit in hit_cursors.iter() {
+        info!("CursorHit: ({:?})", hit.entities);
     }
 }

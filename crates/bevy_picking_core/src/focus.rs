@@ -37,17 +37,16 @@ pub fn update_focus(
         // interaction state, which one takes precedence?
 
         for entity in hit.entities.iter() {
-            if let Ok((mut interaction, mut hover, focus_policy, _)) = interactions.get_mut(*entity)
-            {
+            if let Ok((mut interaction, hover, focus_policy, _)) = interactions.get_mut(*entity) {
                 updated.push(*entity);
                 if input.clicked {
                     *interaction = Interaction::Clicked;
                 } else if *interaction == Interaction::None {
                     *interaction = Interaction::Hovered;
                 }
-                if let Some(hover @ Hover { hovered: false }) = hover.as_deref_mut() {
-                    hover.hovered = true;
-                }
+                hover
+                    .filter(|h| !h.as_ref().hovered)
+                    .map(|mut hover| hover.hovered = true);
                 if let Some(_policy @ FocusPolicy::Block) = focus_policy {
                     break; // Prevents interacting with anything further away
                 }
@@ -55,14 +54,14 @@ pub fn update_focus(
         }
     }
 
-    for (mut interaction, mut hover, _, entity) in &mut interactions.iter_mut() {
+    for (mut interaction, hover, _, entity) in &mut interactions.iter_mut() {
         if !updated.contains(&entity) {
             if *interaction != Interaction::None {
                 *interaction = Interaction::None;
             }
-            if let Some(hover @ Hover { hovered: true }) = hover.as_deref_mut() {
-                hover.hovered = false
-            }
+            hover
+                .filter(|h| h.as_ref().hovered)
+                .map(|mut hover| hover.hovered = false);
         }
     }
 }

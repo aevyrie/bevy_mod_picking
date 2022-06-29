@@ -6,7 +6,7 @@ use bevy_picking_core::{
 
 use crate::{InputPluginSettings, UpdateMode};
 
-/// Updates [`Cursor`]s to be processed by the picking backend
+/// Updates [`CursorInput`]s to be processed by the picking backend
 pub fn mouse_pick_events(
     mut commands: Commands,
     settings: Res<InputPluginSettings>,
@@ -25,16 +25,10 @@ pub fn mouse_pick_events(
     update_cursor(&mut commands, try_cursor, &mut cursor_query);
 }
 
-fn get_cursor_position(windows: Res<Windows>) -> Option<CursorInput> {
+fn get_cursor_position(windows: Res<Windows>) -> Option<(Vec2, RenderTarget)> {
     for window in windows.iter() {
         if let Some(position) = window.cursor_position() {
-            return Some(CursorInput {
-                enabled: true,
-                clicked: false,
-                target: RenderTarget::Window(window.id()),
-                position,
-                multiselect: false,
-            });
+            return Some((position, RenderTarget::Window(window.id())));
         }
     }
     None
@@ -42,18 +36,29 @@ fn get_cursor_position(windows: Res<Windows>) -> Option<CursorInput> {
 
 fn update_cursor(
     commands: &mut Commands,
-    try_cursor: Option<CursorInput>,
+    try_cursor: Option<(Vec2, RenderTarget)>,
     cursor_query: &mut Query<(&CursorId, &mut CursorInput)>,
 ) {
-    if let Some(new_cursor) = try_cursor {
+    if let Some((position, target)) = try_cursor {
         for (&id, mut cursor) in cursor_query.iter_mut() {
-            if id == CursorId::Mouse {
-                if cursor.as_ref() != &new_cursor {
-                    *cursor = new_cursor.to_owned();
-                }
-                return;
+            if !id.is_mouse() {
+                continue;
             }
+            if cursor.as_ref().position != position || cursor.as_ref().target != target {
+                cursor.position = position;
+                cursor.target = target;
+            }
+            return;
         }
-        commands.spawn_bundle(CursorBundle::new(CursorId::Mouse, new_cursor));
+        commands.spawn_bundle(CursorBundle::new(
+            CursorId::Mouse,
+            CursorInput {
+                enabled: true,
+                target,
+                position,
+                clicked: false,
+                multiselect: false,
+            },
+        ));
     }
 }

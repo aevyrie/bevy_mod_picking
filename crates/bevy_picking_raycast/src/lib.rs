@@ -76,10 +76,18 @@ fn update_raycast_source(
 
 fn update_hits(mut sources: Query<(&PickingSource, &mut CursorHit, &CursorInput)>) {
     for (source, mut cursor_hit, cursor) in sources.iter_mut() {
-        if !cursor.enabled || source.intersect_top().is_none() {
+        if !cursor_hit.entities.is_empty() && (!cursor.enabled || source.intersect_top().is_none())
+        {
             cursor_hit.entities.clear();
-        } else if let Some((entity, _)) = source.intersect_top() {
-            cursor_hit.entities = vec![entity];
+        } else if cursor.enabled && source.intersect_top().is_some() {
+            let new_list: Vec<Entity> = source
+                .intersect_list()
+                .iter()
+                .flat_map(|inner| inner.iter().map(|(entity, _)| *entity))
+                .collect();
+            if !new_list.is_empty() && new_list != cursor_hit.as_ref().entities {
+                cursor_hit.entities = new_list;
+            }
         };
     }
 }

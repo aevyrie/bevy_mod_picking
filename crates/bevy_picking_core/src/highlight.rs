@@ -28,8 +28,8 @@ where
                     .with_run_criteria(|state: Res<PickingSettings>| {
                         simple_criteria(state.enable_highlighting)
                     })
-                    .with_system(get_initial_highlight_asset::<T>.before(highlight_assets::<T>))
-                    .with_system(highlight_assets::<T>.after(PickStage::Focus)),
+                    .with_system(get_initial_highlight_asset::<T>)
+                    .with_system(highlight_assets::<T>.after(get_initial_highlight_asset::<T>)),
             );
     }
 }

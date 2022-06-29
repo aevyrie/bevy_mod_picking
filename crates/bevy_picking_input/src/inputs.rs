@@ -15,18 +15,26 @@ pub fn default_picking_inputs(
         KeyCode::RShift,
     ]);
 
-    for (&id, mut cursor) in cursor_query.iter_mut() {
-        cursor.multiselect = multiselect;
+    for (&id, mut input) in cursor_query.iter_mut() {
+        if input.as_ref().multiselect != multiselect {
+            input.multiselect = multiselect;
+        }
 
         match id {
-            CursorId::Touch(id) => {
-                if touches.get_pressed(id).is_some() {
-                    cursor.clicked = true;
+            CursorId::Touch(touch_id) => {
+                if touches.get_pressed(touch_id).is_some() && !input.as_ref().clicked {
+                    input.clicked = true;
+                } else if input.as_ref().clicked {
+                    input.clicked = false;
                 }
             }
             CursorId::Mouse => {
-                if mouse.pressed(MouseButton::Left) {
-                    cursor.clicked = true;
+                let pressed = mouse.pressed(MouseButton::Left);
+                if pressed && !input.as_ref().clicked {
+                    input.clicked = true;
+                }
+                if !pressed && input.as_ref().clicked {
+                    input.clicked = false;
                 }
             }
             _ => (),
