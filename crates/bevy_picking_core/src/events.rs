@@ -1,6 +1,6 @@
 use crate::{
-    hit::CursorOver,
-    input::{CursorClick, CursorId, CursorInput},
+    backend::CursorOver,
+    input::{CursorClick, CursorId, CursorLocation},
 };
 use bevy::prelude::*;
 
@@ -39,15 +39,12 @@ impl CursorEvent {
 /// Listens for [HoverEvent] and [SelectionEvent] events and prints them
 pub fn event_debug_system(
     mut events: EventReader<CursorEvent>,
-    input_cursors: Query<&CursorInput, Changed<CursorInput>>,
+    location_cursors: Query<&CursorLocation, Changed<CursorLocation>>,
     hit_cursors: Query<&CursorOver, Changed<CursorOver>>,
     click_cursors: Query<&CursorClick, Changed<CursorClick>>,
 ) {
-    for input in input_cursors.iter() {
-        info!(
-            "CursorInput: ( {:>6.1}, {:>6.1} )",
-            input.position.x, input.position.y
-        );
+    for location in location_cursors.iter() {
+        info!("CursorLocation: ( {:?} )", location);
     }
     for click in click_cursors.iter() {
         info!("CursorClick: ( {:?} )", click.is_clicked);

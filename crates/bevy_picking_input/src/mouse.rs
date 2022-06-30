@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::camera::RenderTarget};
 use bevy_picking_core::{
-    input::{CursorClick, CursorId, CursorInput},
+    input::{CursorClick, CursorId, CursorLocation, Location},
     CursorBundle,
 };
 
@@ -13,7 +13,7 @@ pub fn mouse_pick_events(
     windows: Res<Windows>,
     cursor_move: EventReader<CursorMoved>,
     cursor_leave: EventReader<CursorLeft>,
-    mut cursor_query: Query<(&CursorId, &mut CursorInput)>,
+    mut cursor_query: Query<(&CursorId, &mut CursorLocation)>,
 ) {
     if matches!(settings.mode, UpdateMode::OnEvent)
         && cursor_move.is_empty()
@@ -25,10 +25,13 @@ pub fn mouse_pick_events(
     update_cursor(&mut commands, try_cursor, &mut cursor_query);
 }
 
-fn get_cursor_position(windows: Res<Windows>) -> Option<(Vec2, RenderTarget)> {
+fn get_cursor_position(windows: Res<Windows>) -> Option<Location> {
     for window in windows.iter() {
         if let Some(position) = window.cursor_position() {
-            return Some((position, RenderTarget::Window(window.id())));
+            return Some(Location {
+                position,
+                target: RenderTarget::Window(window.id()),
+            });
         }
     }
     None
@@ -36,38 +39,24 @@ fn get_cursor_position(windows: Res<Windows>) -> Option<(Vec2, RenderTarget)> {
 
 fn update_cursor(
     commands: &mut Commands,
-    try_cursor: Option<(Vec2, RenderTarget)>,
-    cursor_query: &mut Query<(&CursorId, &mut CursorInput)>,
+    new_location: Option<Location>,
+    cursor_query: &mut Query<(&CursorId, &mut CursorLocation)>,
 ) {
-    if let Some((position, target)) = try_cursor {
-        for (&id, mut cursor) in cursor_query.iter_mut() {
-            if !id.is_mouse() {
-                continue;
-            }
-            if cursor.as_ref().position != position || cursor.as_ref().target != target {
-                cursor.enabled = true;
-                cursor.position = position;
-                cursor.target = target;
-            }
-            return;
+    for (&id, mut old_location) in cursor_query.iter_mut() {
+        if !id.is_mouse() {
+            continue;
         }
-        commands.spawn_bundle(CursorBundle::new(
-            CursorId::Mouse,
-            CursorInput {
-                enabled: true,
-                target,
-                position,
-                multiselect: false,
-            },
-            CursorClick { is_clicked: false },
-        ));
-    } else {
-        for (&id, mut cursor) in cursor_query.iter_mut() {
-            if !id.is_mouse() {
-                continue;
-            }
-            cursor.enabled = false;
+        if old_location.as_ref().location != new_location {
+            old_location.location = new_location;
             return;
         }
     }
+
+    commands.spawn_bundle(CursorBundle::new(
+        CursorId::Mouse,
+        CursorLocation {
+            location: new_location,
+        },
+        CursorClick { is_clicked: false },
+    ));
 }

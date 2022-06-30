@@ -4,9 +4,9 @@ mod highlight;
 mod selection;
 
 use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
-use focus::CursorInteraction;
 use highlight::Highlight;
 use input::CursorClick;
+use interaction::CursorInteraction;
 
 pub use crate::{
     events::{event_debug_system, CursorEvent},
@@ -23,8 +23,8 @@ pub struct PickableTarget;
 ///
 /// input systems -> produce `Cursor`s -> picking backend -> produce `CursorOver`s -> focus system
 use self::{
-    hit::CursorOver,
-    input::{CursorId, CursorInput},
+    backend::CursorOver,
+    input::{CursorId, CursorLocation},
     interaction::CursorSelection,
 };
 
@@ -42,12 +42,12 @@ pub enum PickStage {
 pub struct CursorBundle {
     pub id: CursorId,
     pub click: CursorClick,
-    pub cursor: CursorInput,
+    pub cursor: CursorLocation,
     pub hit: CursorOver,
     pub selection: CursorSelection,
 }
 impl CursorBundle {
-    pub fn new(id: CursorId, cursor: CursorInput, click: CursorClick) -> Self {
+    pub fn new(id: CursorId, cursor: CursorLocation, click: CursorClick) -> Self {
         CursorBundle {
             id,
             cursor,
@@ -61,37 +61,6 @@ impl CursorBundle {
 /// Information passed from  `bevy_picking_input` to the backend(s). This identifies all cursor inputs.
 pub mod input {
     use bevy::{prelude::*, reflect::Uuid, render::camera::RenderTarget};
-
-    #[derive(Debug, Default, Clone, Component, PartialEq)]
-    pub struct CursorClick {
-        pub is_clicked: bool,
-    }
-
-    /// Represents an input cursor used for picking.
-    #[derive(Debug, Clone, Component, PartialEq)]
-    pub struct CursorInput {
-        pub enabled: bool,
-        pub target: RenderTarget,
-        pub position: Vec2,
-        pub multiselect: bool,
-    }
-    impl CursorInput {
-        #[inline]
-        pub fn is_in_viewport(&self, camera: &Camera) -> bool {
-            camera
-                .logical_viewport_rect()
-                .map(|(min, max)| {
-                    (self.position - min).min_element() >= 0.0
-                        && (self.position - max).max_element() <= 0.0
-                })
-                .unwrap_or(false)
-        }
-
-        #[inline]
-        pub fn is_same_target(&self, camera: &Camera) -> bool {
-            camera.target == self.target
-        }
-    }
 
     #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
     pub enum CursorId {
@@ -110,11 +79,57 @@ pub mod input {
             matches!(self, CursorId::Other(_))
         }
     }
+
+    #[derive(Debug, Clone, Component, PartialEq)]
+    pub struct Location {
+        pub target: RenderTarget,
+        pub position: Vec2,
+    }
+
+    /// Represents an input cursor used for picking.
+    #[derive(Debug, Clone, Component, PartialEq)]
+    pub struct CursorLocation {
+        pub location: Option<Location>,
+    }
+    impl CursorLocation {
+        #[inline]
+        pub fn is_in_viewport(&self, camera: &Camera) -> bool {
+            if let Some(loc) = &self.location {
+                camera
+                    .logical_viewport_rect()
+                    .map(|(min, max)| {
+                        (loc.position - min).min_element() >= 0.0
+                            && (loc.position - max).max_element() <= 0.0
+                    })
+                    .unwrap_or(false)
+            } else {
+                false
+            }
+        }
+
+        #[inline]
+        pub fn is_same_target(&self, camera: &Camera) -> bool {
+            self.location
+                .as_ref()
+                .map(|loc| loc.target == camera.target)
+                .unwrap_or(false)
+        }
+    }
+
+    #[derive(Debug, Default, Clone, Component, PartialEq)]
+    pub struct CursorClick {
+        pub is_clicked: bool,
+    }
+
+    #[derive(Debug, Default, Clone, Component, PartialEq)]
+    pub struct CursorMultiSelect {
+        pub is_clicked: bool,
+    }
 }
 
 /// Information passed from the backend(s) to the focus system in [`bevy_picking_core`]. This
 /// tells us what Entities have been hovered over by each cursor.
-pub mod hit {
+pub mod backend {
     use bevy::prelude::*;
 
     /// The entities currently under this entity's [`Cursor`](super::cursor::Cursor), if any,
@@ -126,8 +141,6 @@ pub mod hit {
     #[derive(Debug, Clone, Component, Default)]
     pub struct CursorOver {
         pub entities: Vec<Entity>,
-        pub(crate) unblocked_current: Vec<Entity>,
-        pub(crate) unblocked_prev: Vec<Entity>,
     }
     impl CursorOver {
         pub fn clear(&mut self) {
@@ -137,18 +150,36 @@ pub mod hit {
         pub fn entities(&self) -> &[Entity] {
             self.entities.as_ref()
         }
-
-        /// Prepares the unblocked list by moving the current value to the previous slot, and
-        /// clearing the new unblocked_current list.
-        pub fn swap_unblocked(&mut self) {
-            std::mem::swap(&mut self.unblocked_current, &mut self.unblocked_prev);
-            self.unblocked_current.clear();
-        }
     }
 }
 
 pub mod interaction {
-    use bevy::prelude::*;
+    use bevy::{prelude::*, utils::hashbrown::HashSet};
+
+    use crate::input::CursorId;
+
+    #[derive(Clone, Eq, PartialEq, Debug, Default, Component)]
+    pub struct CursorInteraction {
+        pub(crate) hovered: HashSet<CursorId>,
+        pub(crate) clicked: HashSet<CursorId>,
+    }
+    impl CursorInteraction {
+        pub fn is_hovered(&self, cursor: &CursorId) -> bool {
+            self.hovered.contains(cursor)
+        }
+
+        pub fn is_clicked(&self, cursor: &CursorId) -> bool {
+            self.clicked.contains(cursor)
+        }
+
+        pub fn is_hovered_any(&self) -> bool {
+            !self.hovered.is_empty()
+        }
+
+        pub fn is_clicked_any(&self) -> bool {
+            !self.clicked.is_empty()
+        }
+    }
 
     #[derive(Debug, Clone, Component, Default)]
     pub struct CursorSelection {

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
-    hit::CursorOver, input::CursorInput, simple_criteria, PickStage, PickingSettings,
+    backend::CursorOver, input::CursorLocation, simple_criteria, PickStage, PickingSettings,
 };
 
 /// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
@@ -29,11 +29,11 @@ impl Plugin for RaycastPlugin {
                 .with_run_criteria(|state: Res<PickingSettings>| {
                     simple_criteria(state.enable_backend)
                 })
-                .with_system(build_rays_from_cursors)
                 .with_system(
-                    bevy_mod_raycast::update_raycast::<RaycastPickingSet>
-                        .after(build_rays_from_cursors),
+                    build_rays_from_cursors
+                        .before(bevy_mod_raycast::update_raycast::<RaycastPickingSet>),
                 )
+                .with_system(bevy_mod_raycast::update_raycast::<RaycastPickingSet>)
                 .with_system(
                     update_hits.after(bevy_mod_raycast::update_raycast::<RaycastPickingSet>),
                 ),
@@ -41,23 +41,28 @@ impl Plugin for RaycastPlugin {
     }
 }
 
-/// Builds rays and updates raycasting [`PickingSource`]s from [`CursorInput`]s.
+/// Builds rays and updates raycasting [`PickingSource`]s from [`CursorLocation`]s.
 pub fn build_rays_from_cursors(
     mut commands: Commands,
     mut sources: Query<&mut PickingSource>,
-    cursors: Query<(Entity, &CursorInput), Changed<CursorInput>>,
+    cursors: Query<(Entity, &CursorLocation), Changed<CursorLocation>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
     for (entity, cursor) in cursors.iter() {
-        cameras
-            .iter()
-            .filter(|(camera, _)| cursor.is_same_target(camera))
-            .filter(|(camera, _)| cursor.is_in_viewport(camera))
-            .map(|(camera, transform)| Ray3d::from_screenspace(cursor.position, camera, transform))
-            .for_each(|ray| update_raycast_source(&mut sources, entity, ray, &mut commands));
+        if let Some(loc) = &cursor.location {
+            cameras
+                .iter()
+                .filter(|(camera, _)| cursor.is_same_target(camera))
+                .filter(|(camera, _)| cursor.is_in_viewport(camera))
+                .map(|(camera, transform)| Ray3d::from_screenspace(loc.position, camera, transform))
+                .for_each(|ray| update_raycast_source(&mut sources, entity, ray, &mut commands));
+        } else {
+            update_raycast_source(&mut sources, entity, None, &mut commands);
+        }
     }
 }
 
+/// Raycasting sources are added to cursor entities
 #[inline]
 fn update_raycast_source(
     sources: &mut Query<&mut PickingSource>,
@@ -74,20 +79,22 @@ fn update_raycast_source(
     }
 }
 
-fn update_hits(mut sources: Query<(&PickingSource, &mut CursorOver, &CursorInput)>) {
-    for (source, mut cursor_hit, cursor) in sources.iter_mut() {
-        if !cursor_hit.entities().is_empty()
-            && (!cursor.enabled || source.intersect_top().is_none())
-        {
-            cursor_hit.clear();
-        } else if cursor.enabled && source.intersect_top().is_some() {
+fn update_hits(mut sources: Query<(&PickingSource, &mut CursorOver)>) {
+    for (source, mut cursor_over) in sources.iter_mut() {
+        // because the raycasting plugin doesn't update when the ray is `None`, we need to check for
+        // that case here.
+        if source.ray.is_none() || source.intersect_top().is_none() {
+            if !cursor_over.as_ref().entities().is_empty() {
+                cursor_over.clear();
+            }
+        } else {
             let new_list: Vec<Entity> = source
                 .intersect_list()
                 .iter()
                 .flat_map(|inner| inner.iter().map(|(entity, _)| *entity))
                 .collect();
-            if !new_list.is_empty() && new_list != cursor_hit.entities() {
-                cursor_hit.entities = new_list;
+            if !new_list.is_empty() && new_list != cursor_over.entities() {
+                cursor_over.entities = new_list;
             }
         };
     }
