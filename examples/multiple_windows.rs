@@ -1,94 +1,52 @@
 use bevy::{
-    core_pipeline::{self, AlphaMask3d, Opaque3d, Transparent3d},
     prelude::*,
-    render::{
-        camera::{ActiveCamera, CameraTypePlugin, RenderTarget},
-        render_graph::{self, NodeRunError, RenderGraph, RenderGraphContext, SlotValue},
-        render_phase::RenderPhase,
-        renderer::RenderContext,
-        RenderApp, RenderStage,
-    },
-    window::{CreateWindow, WindowId},
+    render::camera::RenderTarget,
+    window::{CreateWindow, PresentMode, WindowId},
 };
 use bevy_mod_picking::{
-    DebugEventsPlugin, DebugPointerPickingPlugin, DefaultPickingPlugins, PickableBundle,
+    DebugEventsPlugin, DefaultPickingPlugins, PickRaycastSource, PickRaycastTarget, PickableBundle,
 };
 
-/// This example creates a second window and draws a mesh from two different cameras, one in each window
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(SecondWindowCameraPlugin)
-        .add_plugins(DefaultPickingPlugins)
-        .add_plugin(DebugPointerPickingPlugin) // <- Adds the green debug pointer.
+        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
         .add_plugin(DebugEventsPlugin) // <- Adds debug event logging.
         .add_startup_system(setup)
-        .add_startup_system(create_new_window)
+        .add_system(bevy::window::close_on_esc)
         .run();
 }
 
-struct SecondWindowCameraPlugin;
-impl Plugin for SecondWindowCameraPlugin {
-    fn build(&self, app: &mut App) {
-        // adds the `ActiveCamera<SecondWindowCamera3d>` resource and extracts the camera into the render world
-        app.add_plugin(CameraTypePlugin::<SecondWindowCamera3d>::default());
-
-        let render_app = app.sub_app_mut(RenderApp);
-
-        // add `RenderPhase<Opaque3d>`, `RenderPhase<AlphaMask3d>` and `RenderPhase<Transparent3d>` camera phases
-        render_app.add_system_to_stage(RenderStage::Extract, extract_second_camera_phases);
-
-        // add a render graph node that executes the 3d subgraph
-        let mut render_graph = render_app.world.resource_mut::<RenderGraph>();
-        let second_window_node = render_graph.add_node("second_window_cam", SecondWindowDriverNode);
-        render_graph
-            .add_node_edge(
-                core_pipeline::node::MAIN_PASS_DEPENDENCIES,
-                second_window_node,
-            )
-            .unwrap();
-        render_graph
-            .add_node_edge(core_pipeline::node::CLEAR_PASS_DRIVER, second_window_node)
-            .unwrap();
-    }
-}
-
-struct SecondWindowDriverNode;
-impl render_graph::Node for SecondWindowDriverNode {
-    fn run(
-        &self,
-        graph: &mut RenderGraphContext,
-        _: &mut RenderContext,
-        world: &World,
-    ) -> Result<(), NodeRunError> {
-        if let Some(camera) = world.resource::<ActiveCamera<SecondWindowCamera3d>>().get() {
-            graph.run_sub_graph(
-                core_pipeline::draw_3d_graph::NAME,
-                vec![SlotValue::Entity(camera)],
-            )?;
-        }
-
-        Ok(())
-    }
-}
-
-fn extract_second_camera_phases(
+fn setup(
     mut commands: Commands,
-    active: Res<ActiveCamera<SecondWindowCamera3d>>,
+    mut create_window_events: EventWriter<CreateWindow>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    if let Some(entity) = active.get() {
-        commands.get_or_spawn(entity).insert_bundle((
-            RenderPhase::<Opaque3d>::default(),
-            RenderPhase::<AlphaMask3d>::default(),
-            RenderPhase::<Transparent3d>::default(),
-        ));
-    }
-}
+    // add entities to the world
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+            material: materials.add(Color::WHITE.into()),
+            ..Default::default()
+        })
+        .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
+        .insert(PickRaycastTarget::default()); // <- Needed for the raycast backend.
 
-#[derive(Component, Default)]
-struct SecondWindowCamera3d;
+    // light
+    commands.spawn_bundle(PointLightBundle {
+        transform: Transform::from_xyz(4.0, 5.0, 4.0),
+        ..default()
+    });
 
-fn create_new_window(mut create_window_events: EventWriter<CreateWindow>, mut commands: Commands) {
+    // main camera
+    commands
+        .spawn_bundle(Camera3dBundle {
+            transform: Transform::from_xyz(0.0, 0.0, 6.0).looking_at(Vec3::ZERO, Vec3::Y),
+            ..default()
+        })
+        .insert(PickRaycastSource::default()); // <- Sets the camera to use for picking.;
+
     let window_id = WindowId::new();
 
     // sends out a "CreateWindow" event, which will be received by the windowing backend
@@ -97,6 +55,7 @@ fn create_new_window(mut create_window_events: EventWriter<CreateWindow>, mut co
         descriptor: WindowDescriptor {
             width: 800.,
             height: 600.,
+            present_mode: PresentMode::Immediate,
             title: "Second window".to_string(),
             ..default()
         },
@@ -104,41 +63,13 @@ fn create_new_window(mut create_window_events: EventWriter<CreateWindow>, mut co
 
     // second window camera
     commands
-        .spawn_bundle(PerspectiveCameraBundle {
+        .spawn_bundle(Camera3dBundle {
+            transform: Transform::from_xyz(4.0, 4.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
             camera: Camera {
                 target: RenderTarget::Window(window_id),
                 ..default()
             },
-            transform: Transform::from_xyz(6.0, 0.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
-            marker: SecondWindowCamera3d,
-            ..PerspectiveCameraBundle::new()
-        })
-        .insert_bundle(bevy_mod_picking::PickingSourceBundle::default());
-}
-
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    // add entities to the world
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(shape::Cube::new(1.0).into()),
-            material: materials.add(Color::BEIGE.into()),
-            ..Default::default()
-        })
-        .insert_bundle(PickableBundle::default());
-    // light
-    commands.spawn_bundle(PointLightBundle {
-        transform: Transform::from_xyz(4.0, 5.0, 4.0),
-        ..default()
-    });
-    // main camera
-    commands
-        .spawn_bundle(PerspectiveCameraBundle {
-            transform: Transform::from_xyz(0.0, 0.0, 6.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
-        .insert_bundle(bevy_mod_picking::PickingSourceBundle::default());
+        .insert(PickRaycastSource::default()); // <- Sets the camera to use for picking.;
 }
