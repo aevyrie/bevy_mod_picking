@@ -1,7 +1,6 @@
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_picking_core::{IntoShouldRun, PickStage};
+use bevy_picking_core::{input::PointerMultiselect, IntoShouldRun, PickStage};
 
-pub mod inputs;
 pub mod mouse;
 pub mod touch;
 
@@ -15,50 +14,49 @@ impl Plugin for InputPlugin {
                     .label(PickStage::Input)
                     .with_system(touch::touch_pick_events.with_run_criteria(run_if_touch))
                     .with_system(mouse::mouse_pick_events.with_run_criteria(run_if_mouse))
-                    .with_system(
-                        inputs::default_picking_inputs
-                            .with_run_criteria(run_if_default_inputs)
-                            .after(touch::touch_pick_events)
-                            .after(mouse::mouse_pick_events),
-                    ),
+                    .with_system(multiselect_events.with_run_criteria(run_if_multiselect)),
             );
     }
 }
 
 pub struct InputPluginSettings {
-    mode: UpdateMode,
-    use_mouse: bool,
-    use_touch: bool,
-    use_default_buttons: bool,
+    run_mouse: bool,
+    run_touch: bool,
+    run_multiselect: bool,
 }
 impl Default for InputPluginSettings {
     fn default() -> Self {
         Self {
-            mode: Default::default(),
-            use_mouse: true,
-            use_touch: true,
-            use_default_buttons: true,
+            run_mouse: true,
+            run_touch: true,
+            run_multiselect: true,
         }
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum UpdateMode {
-    EveryFrame,
-    OnEvent,
-}
-impl Default for UpdateMode {
-    fn default() -> Self {
-        UpdateMode::OnEvent
+/// Unsurprising default multiselect inputs
+pub fn multiselect_events(
+    keyboard: Res<Input<KeyCode>>,
+    mut pointer_query: Query<&mut PointerMultiselect>,
+) {
+    let is_multiselect_pressed = keyboard.any_pressed([
+        KeyCode::LControl,
+        KeyCode::RControl,
+        KeyCode::LShift,
+        KeyCode::RShift,
+    ]);
+
+    for mut multiselect in pointer_query.iter_mut() {
+        multiselect.is_pressed = is_multiselect_pressed;
     }
 }
 
 fn run_if_touch(settings: Res<InputPluginSettings>) -> ShouldRun {
-    settings.use_touch.should_run()
+    settings.run_touch.should_run()
 }
 fn run_if_mouse(settings: Res<InputPluginSettings>) -> ShouldRun {
-    settings.use_mouse.should_run()
+    settings.run_mouse.should_run()
 }
-fn run_if_default_inputs(settings: Res<InputPluginSettings>) -> ShouldRun {
-    settings.use_default_buttons.should_run()
+fn run_if_multiselect(settings: Res<InputPluginSettings>) -> ShouldRun {
+    settings.run_multiselect.should_run()
 }

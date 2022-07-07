@@ -1,88 +1,92 @@
 use bevy::prelude::*;
 
+use crate::{
+    input::PointerMultiselect,
+    output::{Just, PointerInteractionEvent},
+    PointerId,
+};
+
 /// Tracks the current selection state to be used with change tracking in the events system.
 /// Entities with [Selection] will have selection state managed.
-#[derive(Component, Debug, Default, Copy, Clone)]
-pub struct Selection {
-    selected: bool,
+#[derive(Component, Debug, Default, Clone)]
+pub struct PickSelection {
+    pub is_selected: bool,
 }
-impl Selection {
-    pub fn selected(&self) -> bool {
-        self.selected
-    }
-    /// Set the selection state.
-    pub fn set_selected(&mut self, selected: bool) {
-        self.selected = selected;
+
+#[derive(Component, Debug, Copy, Clone)]
+pub enum PointerSelectionEvent {
+    JustSelected(Entity),
+    JustDeselected(Entity),
+}
+impl PointerSelectionEvent {
+    pub fn receive(
+        mut events: EventReader<PointerSelectionEvent>,
+        mut selectables: Query<&mut PickSelection>,
+    ) {
+        for event in events.iter() {
+            match event {
+                PointerSelectionEvent::JustSelected(entity) => {
+                    if let Ok(mut s) = selectables.get_mut(*entity) {
+                        s.is_selected = true
+                    }
+                }
+                PointerSelectionEvent::JustDeselected(entity) => {
+                    if let Ok(mut s) = selectables.get_mut(*entity) {
+                        s.is_selected = false
+                    }
+                }
+            }
+        }
     }
 }
 
-/// Marker struct used to mark pickable entities for which you don't want to trigger a deselection event when picked. This is useful for gizmos or other pickable UI entities.
+/// Marker struct used to mark pickable entities for which you don't want to trigger a deselection
+/// event when picked. This is useful for gizmos or other pickable UI entities.
 #[derive(Component, Debug, Copy, Clone)]
 pub struct NoDeselect;
 
-#[allow(clippy::too_many_arguments)]
-pub fn update_selection(// cursors: Query<&CursorInput>,
-    // query_changed: Query<&Interaction, (Changed<Interaction>, Without<NoDeselect>)>,
-    // node_query: Query<&Interaction, With<Node>>,
-    // no_deselect_query: Query<&Interaction, With<NoDeselect>>,
-    // mut query_all: Query<(&mut Selection, &Interaction)>,
+pub fn send_selection_events(
+    mut interactions: EventReader<PointerInteractionEvent>,
+    pointers: Query<(&PointerId, &PointerMultiselect)>,
+    no_deselect: Query<&NoDeselect>,
+    selectables: Query<(Entity, &PickSelection)>,
+    mut selection_events: EventWriter<PointerSelectionEvent>,
 ) {
-    // for cursor in cursors.iter() {
-    //     // Check if something has been clicked on
-    //     let mut new_selection = false;
-    //     for interaction in query_changed.iter() {
-    //         if *interaction == Interaction::Clicked {
-    //             new_selection = true;
-    //         }
-    //     }
+    for interaction in interactions.iter() {
+        let multiselect = pointers
+            .iter()
+            .find_map(|(id, ms)| id.eq(&interaction.id).then_some(ms.is_pressed))
+            .unwrap_or(false);
 
-    //     if new_selection {
-    //         // Some pickable mesh has been clicked on - figure out what to select or deselect
-    //         for (mut selection, interaction) in &mut query_all.iter_mut() {
-    //             if selection.selected
-    //                 && *interaction != Interaction::Clicked
-    //                 && !keyboard_input.pressed(KeyCode::LControl)
-    //             {
-    //                 // In this case, the entity is currently marked as selected, but it was not clicked
-    //                 // on (interaction), and lctrl was not being held, so it should be deselected.
-    //                 selection.selected = false;
-    //             } else if *interaction == Interaction::Clicked
-    //                 && keyboard_input.pressed(KeyCode::LControl)
-    //             {
-    //                 selection.selected = !selection.selected
-    //             } else if !selection.selected && *interaction == Interaction::Clicked {
-    //                 selection.selected = true;
-    //             }
-    //         }
-    //     } else {
-    //         // This branch deselects everything if the user clicks, in empty space. Deselection is not
-    //         // run if the UI or an item tagged with `NoDeselect` was clicked on.
-    //         let mut ui_not_clicked = true;
-    //         for interaction in node_query.iter() {
-    //             // Check if anything in the UI is being interacted with
-    //             if *interaction == Interaction::Clicked
-    //                 && !keyboard_input.pressed(KeyCode::LControl)
-    //             {
-    //                 ui_not_clicked = false;
-    //             }
-    //         }
-    //         let mut no_deselect_not_clicked = true;
-    //         for interaction in no_deselect_query.iter() {
-    //             if *interaction == Interaction::Clicked
-    //                 && !keyboard_input.pressed(KeyCode::LControl)
-    //             {
-    //                 no_deselect_not_clicked = false;
-    //             }
-    //         }
-    //         let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left)
-    //             || touches_input.iter_just_pressed().next().is_some();
-    //         if mouse_clicked && ui_not_clicked && no_deselect_not_clicked {
-    //             for (mut selection, _interaction) in &mut query_all.iter_mut() {
-    //                 if selection.selected {
-    //                     selection.selected = false;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+        let entity_can_deselect = no_deselect.get(interaction.pick_entity).is_err();
+
+        match interaction.event {
+            Just::Down => {
+                if !multiselect && entity_can_deselect {
+                    for (entity, selection) in selectables.iter() {
+                        if selection.is_selected {
+                            selection_events.send(PointerSelectionEvent::JustDeselected(entity))
+                        }
+                    }
+                }
+            }
+            Just::Clicked => {
+                if let Ok((entity, selection)) = selectables.get(interaction.pick_entity) {
+                    if multiselect {
+                        match selection.is_selected {
+                            true => {
+                                selection_events.send(PointerSelectionEvent::JustDeselected(entity))
+                            }
+                            false => {
+                                selection_events.send(PointerSelectionEvent::JustSelected(entity))
+                            }
+                        }
+                    } else if !selection.is_selected {
+                        selection_events.send(PointerSelectionEvent::JustSelected(entity))
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
 }

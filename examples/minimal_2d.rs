@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::{
-    DebugEventsPlugin, DefaultPickingPlugins, PickableBundle, PickingSourceBundle,
+    DebugEventsPlugin, DefaultPickingPlugins, PickRaycastSource, PickRaycastTarget, PickableBundle,
 };
 
 fn main() {
@@ -12,12 +12,13 @@ fn main() {
         .run();
 }
 
-/// set up a simple 2D scene
+/// Set up a simple 2D scene
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    // Quad
     commands
         .spawn_bundle(MaterialMesh2dBundle {
             mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
@@ -25,9 +26,11 @@ fn setup(
             material: materials.add(ColorMaterial::from(Color::PURPLE)),
             ..default()
         })
-        .insert_bundle(PickableBundle::default()); // <- Makes the mesh pickable.
-                                                   // camera
+        .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
+        .insert(PickRaycastTarget::default()); // <- Needed for the raycast backend.
+
+    // Camera
     commands
-        .spawn_bundle(OrthographicCameraBundle::new_2d())
-        .insert_bundle(PickingSourceBundle::default()); // <- Sets the camera to use for picking.
+        .spawn_bundle(Camera2dBundle::default())
+        .insert(PickRaycastSource::default()); // <- Sets the camera to use for picking.
 }

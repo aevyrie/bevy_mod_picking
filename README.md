@@ -19,7 +19,7 @@ with meshes in Bevy. Built with [`bevy_mod_raycast`](https://github.com/aevyrie/
 * Mouseover and mouseclick events
 * Configurable highlighting
 * Selection state management
-* 3D debug cursor
+* 3D debug pointer
 * Touch support
 * Common keybindings (Ctrl+A, Ctrl+Click multi-select)
 
@@ -68,13 +68,13 @@ cargo run --example minimal
 I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
 
 
-|bevy|bevy_mod_picking|
-|---|---|
-|0.7|0.6, 0.7|
-|0.6|0.5|
-|0.5|0.4|
-|0.4|0.3|
-|0.3|0.2|
+| bevy | bevy_mod_picking |
+| ---- | ---------------- |
+| 0.7  | 0.6, 0.7         |
+| 0.6  | 0.5              |
+| 0.5  | 0.4              |
+| 0.4  | 0.3              |
+| 0.3  | 0.2              |
 
 # License
 

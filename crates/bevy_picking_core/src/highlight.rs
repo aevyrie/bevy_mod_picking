@@ -1,20 +1,63 @@
 use std::marker::PhantomData;
 
-use crate::{simple_criteria, CursorEvent, PickStage, PickingSettings};
+use crate::{output::Just, PickStage, PickingSettings, PointerInteractionEvent};
 
 use super::selection::*;
-use bevy::{asset::Asset, prelude::*, render::color::Color};
+use bevy::{app::PluginGroupBuilder, asset::Asset, prelude::*, render::color::Color};
 
-/// Marker component to flag an entity as highlightable
+/// Makes an entity highlightable with any [`Highlightable`] [`Asset`]. By default, this plugin
+/// provides an implementation for [`StandardMaterial`] and [`ColorMaterial`]. If this entity has
+/// either of those asset handles, the plugin will automatically update them to match the entity's
+/// interaction state. To use another asset type, all you need to do is implement [`Highlightable`]
+/// for the asset and add the [`CustomHighlightingPlugin::<T>`] plugin to your app, where `T` is
+/// your asset type.
+///
+/// ### Overriding Highlighting Appearance
+///
+/// By default, this plugin will use [`DefaultHighlighting<T>`] for assets of type `T`. You can
+/// override this global default with the optional fields in the [`HighlightOverride`] component.
 #[derive(Component, Clone, Debug, Default)]
-pub struct Highlight;
+pub struct PickHighlight;
+
+/// Overrides the highlighting appearance of an entity. See
+#[derive(Component, Clone, Debug, Default)]
+pub struct HighlightOverride<T: Highlightable> {
+    /// Overrides this asset's global default appearance when hovered
+    pub hovered: Option<Handle<T>>,
+    /// Overrides this asset's global default appearance when pressed
+    pub pressed: Option<Handle<T>>,
+    /// Overrides this asset's global default appearance when selected
+    pub selected: Option<Handle<T>>,
+}
+impl<T: Highlightable> HighlightOverride<T> {
+    pub fn hovered(&self, default: &DefaultHighlighting<T>) -> Handle<T> {
+        self.hovered.as_ref().unwrap_or(&default.hovered).to_owned()
+    }
+    pub fn pressed(&self, default: &DefaultHighlighting<T>) -> Handle<T> {
+        self.pressed.as_ref().unwrap_or(&default.pressed).to_owned()
+    }
+    pub fn selected(&self, default: &DefaultHighlighting<T>) -> Handle<T> {
+        self.selected
+            .as_ref()
+            .unwrap_or(&default.selected)
+            .to_owned()
+    }
+}
+
+pub struct HighlightingPlugins;
+impl PluginGroup for HighlightingPlugins {
+    fn build(&mut self, group: &mut PluginGroupBuilder) {
+        group.add(CustomHighlightingPlugin::<StandardMaterial>::default());
+        group.add(CustomHighlightingPlugin::<ColorMaterial>::default());
+    }
+}
 
 /// A highlighting plugin, generic over any asset that might be used for rendering the different
 /// highlighting states.
 #[derive(Default)]
-pub struct CustomHighlightPlugin<T: 'static + Highlightable + Sync + Send>(PhantomData<T>);
+pub struct CustomHighlightingPlugin<T: 'static + Highlightable + Sync + Send>(PhantomData<T>);
 
-impl<T> Plugin for CustomHighlightPlugin<T>
+impl<T> Plugin for CustomHighlightingPlugin<T>
 where
     T: 'static + Highlightable + Sync + Send,
 {
@@ -23,28 +66,23 @@ where
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
-                    .label(PickStage::Focus)
-                    .after(PickStage::Backend)
-                    .with_run_criteria(|state: Res<PickingSettings>| {
-                        simple_criteria(state.enable_highlighting)
-                    })
+                    .after(PickStage::Output)
+                    .with_run_criteria(|state: Res<PickingSettings>| state.highlighting)
                     .with_system(get_initial_highlight_asset::<T>)
-                    .with_system(highlight_assets::<T>.after(get_initial_highlight_asset::<T>)),
+                    .with_system(
+                        update_highlight_assets::<T>
+                            .after(get_initial_highlight_asset::<T>)
+                            .after(send_selection_events),
+                    ),
             );
     }
 }
 
-/// Component used to track the initial asset of a highlightable object, as well as for overriding
-/// the default highlight materials.
+/// Component used to track the initial asset state of a highlightable object. This is needed to
+/// return the highlighting asset back to its original state after highlighting it.
 #[derive(Component, Clone, Debug)]
-pub struct Highlighting<T: Asset> {
+pub struct InitialHighlight<T: Asset> {
     pub initial: Handle<T>,
-    /// Overrides this asset's global default when hovered
-    pub hovered: Option<Handle<T>>,
-    /// Overrides this asset's global default when pressed
-    pub pressed: Option<Handle<T>>,
-    /// Overrides this asset's global default when selected
-    pub selected: Option<Handle<T>>,
 }
 
 /// Resource that defines the default highlighting assets to use. This can be overridden per-entity
@@ -55,14 +93,13 @@ pub struct DefaultHighlighting<T: Highlightable + ?Sized> {
     pub selected: Handle<T>,
 }
 
-/// This trait makes it possible for highlighting to be generic over any type of asset.
+/// This trait makes it possible for highlighting to be generic over any type of asset. You can
+/// implement this for any [`Asset`] type.
 pub trait Highlightable: Default + Asset {
     /// The asset used to highlight the picked object. For a 3D mesh, this might be [`StandardMaterial`].
     fn highlight_defaults(materials: Mut<Assets<Self>>) -> DefaultHighlighting<Self>;
     fn materials(world: &mut World) -> Mut<Assets<Self>> {
-        world
-            .get_resource_mut::<Assets<Self>>()
-            .expect("Failed to get resource")
+        world.resource_mut::<Assets<Self>>()
     }
 }
 
@@ -92,67 +129,67 @@ impl<T: Highlightable> FromWorld for DefaultHighlighting<T> {
     }
 }
 
-#[allow(clippy::type_complexity)]
-pub fn get_initial_highlight_asset<T: Asset>(
+pub fn get_initial_highlight_asset<T: Highlightable>(
     mut commands: Commands,
-    entity_asset_query: Query<(Entity, &Handle<T>), Added<Highlight>>,
-    mut highlighting_query: Query<Option<&mut Highlighting<T>>>,
+    entity_asset_query: Query<(Entity, &Handle<T>), Added<PickHighlight>>,
+    mut highlighting_query: Query<Option<&mut InitialHighlight<T>>>,
 ) {
     for (entity, material) in entity_asset_query.iter() {
         match highlighting_query.get_mut(entity) {
             Ok(Some(mut highlighting)) => highlighting.initial = material.to_owned(),
             _ => {
-                let init_component = Highlighting {
-                    initial: material.to_owned(),
-                    hovered: None,
-                    pressed: None,
-                    selected: None,
-                };
-                commands.entity(entity).insert(init_component);
+                commands
+                    .entity(entity)
+                    .insert(InitialHighlight {
+                        initial: material.to_owned(),
+                    })
+                    .insert(HighlightOverride::<T> {
+                        hovered: None,
+                        pressed: None,
+                        selected: None,
+                    });
             }
         }
     }
 }
 
-#[allow(clippy::type_complexity)]
-pub fn highlight_assets<T: 'static + Highlightable + Send + Sync>(
-    global_default_highlight: Res<DefaultHighlighting<T>>,
-    mut interaction_query: Query<(&mut Handle<T>, Option<&Selection>, &Highlighting<T>)>,
-    mut events: EventReader<CursorEvent>,
+pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
+    global_defaults: Res<DefaultHighlighting<T>>,
+    mut interaction_query: Query<(
+        &mut Handle<T>,
+        Option<&PickSelection>,
+        &InitialHighlight<T>,
+        &HighlightOverride<T>,
+    )>,
+    mut events: EventReader<PointerInteractionEvent>,
 ) {
-    for event in events.iter() {
-        if let Ok((mut active_asset, selection, highlight)) =
-            interaction_query.get_mut(event.entity)
-        {
-            *active_asset = match event.event {
-                crate::events::Just::Entered | crate::events::Just::Up => {
-                    if let Some(highlight_asset) = &highlight.hovered {
-                        highlight_asset
-                    } else {
-                        &global_default_highlight.hovered
-                    }
+    for interaction in events.iter() {
+        // Reset *all* deselected entities
+        if interaction.event == Just::Up {
+            for (mut active_asset, pick_selection, h_initial, _) in interaction_query.iter_mut() {
+                match pick_selection {
+                    Some(s) if s.is_selected => (),
+                    _ => *active_asset = h_initial.initial.to_owned(),
                 }
-                crate::events::Just::Exited => {
-                    if selection.filter(|s| s.selected()).is_some() {
-                        if let Some(highlight_asset) = &highlight.selected {
-                            highlight_asset
-                        } else {
-                            &global_default_highlight.selected
-                        }
-                    } else {
-                        &highlight.initial
-                    }
-                }
-                crate::events::Just::Down => {
-                    if let Some(highlight_asset) = &highlight.pressed {
-                        highlight_asset
-                    } else {
-                        &global_default_highlight.pressed
-                    }
-                }
-                _ => active_asset.as_ref(),
             }
-            .to_owned()
+        }
+        // Only update the entity picked in the current interaction event:
+        if let Ok((mut active_asset, pick_selection, h_initial, h_override)) =
+            interaction_query.get_mut(interaction.pick_entity)
+        {
+            *active_asset = match interaction.event {
+                Just::Entered => h_override.hovered(&global_defaults),
+                Just::Up | Just::Clicked => match pick_selection {
+                    Some(s) if s.is_selected => h_override.selected(&global_defaults),
+                    _ => h_override.hovered(&global_defaults),
+                },
+                Just::Exited => match pick_selection {
+                    Some(s) if s.is_selected => h_override.selected(&global_defaults),
+                    _ => h_initial.initial.clone(),
+                },
+                Just::Down => h_override.pressed(&global_defaults),
+                _ => continue,
+            };
         }
     }
 }

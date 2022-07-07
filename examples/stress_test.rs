@@ -48,12 +48,12 @@ fn setup(
 
     // Camera
     commands
-        .spawn_bundle(PerspectiveCameraBundle {
+        .spawn_bundle(Camera3dBundle {
             transform: Transform::from_xyz(half_width as f32, half_width as f32, half_width as f32)
                 .looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         })
-        .insert_bundle(PickingSourceBundle::default());
+        .insert(PickRaycastSource::default()); // <- Sets the camera to use for picking.
 
     // Spawn a cube of spheres.
     for x in -half_width..half_width {

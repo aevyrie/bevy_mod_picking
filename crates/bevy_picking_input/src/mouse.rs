@@ -1,28 +1,39 @@
-use bevy::{prelude::*, render::camera::RenderTarget};
+use bevy::{
+    input::{mouse::MouseButtonInput, ButtonState},
+    prelude::*,
+    render::camera::RenderTarget,
+};
 use bevy_picking_core::{
-    input::{CursorClick, CursorId, CursorLocation, Location},
-    CursorBundle,
+    input::{Location, PointerClickEvent, PointerLocationEvent},
+    PointerId,
 };
 
-use crate::{InputPluginSettings, UpdateMode};
-
-/// Updates [`CursorInput`]s to be processed by the picking backend
+/// Sends mouse pointer events to be processed by the picking backend
 pub fn mouse_pick_events(
-    mut commands: Commands,
-    settings: Res<InputPluginSettings>,
     windows: Res<Windows>,
-    cursor_move: EventReader<CursorMoved>,
-    cursor_leave: EventReader<CursorLeft>,
-    mut cursor_query: Query<(&CursorId, &mut CursorLocation)>,
+    mut mouse_inputs: EventReader<MouseButtonInput>,
+    mut pointer_moves: EventWriter<PointerLocationEvent>,
+    mut pointer_clicks: EventWriter<PointerClickEvent>,
 ) {
-    if matches!(settings.mode, UpdateMode::OnEvent)
-        && cursor_move.is_empty()
-        && cursor_leave.is_empty()
-    {
-        return;
+    let id = PointerId::Mouse;
+    let location = match get_cursor_position(windows) {
+        Some(location) => location,
+        None => return,
+    };
+    pointer_moves.send(PointerLocationEvent { id, location });
+
+    for input in mouse_inputs.iter() {
+        if matches!(input.button, MouseButton::Left) {
+            match input.state {
+                ButtonState::Pressed => pointer_clicks.send(PointerClickEvent::Down {
+                    id: PointerId::Mouse,
+                }),
+                ButtonState::Released => pointer_clicks.send(PointerClickEvent::Up {
+                    id: PointerId::Mouse,
+                }),
+            }
+        }
     }
-    let try_cursor = get_cursor_position(windows);
-    update_cursor(&mut commands, try_cursor, &mut cursor_query);
 }
 
 fn get_cursor_position(windows: Res<Windows>) -> Option<Location> {
@@ -35,28 +46,4 @@ fn get_cursor_position(windows: Res<Windows>) -> Option<Location> {
         }
     }
     None
-}
-
-fn update_cursor(
-    commands: &mut Commands,
-    new_location: Option<Location>,
-    cursor_query: &mut Query<(&CursorId, &mut CursorLocation)>,
-) {
-    for (&id, mut old_location) in cursor_query.iter_mut() {
-        if !id.is_mouse() {
-            continue;
-        }
-        if old_location.as_ref().location != new_location {
-            old_location.location = new_location;
-            return;
-        }
-    }
-
-    commands.spawn_bundle(CursorBundle::new(
-        CursorId::Mouse,
-        CursorLocation {
-            location: new_location,
-        },
-        CursorClick { is_clicked: false },
-    ));
 }

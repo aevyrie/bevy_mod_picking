@@ -1,263 +1,184 @@
-mod events;
+#![allow(clippy::type_complexity)]
+#![allow(clippy::too_many_arguments)]
+
+pub mod backend;
 mod focus;
 mod highlight;
+pub mod input;
+pub mod output;
 mod selection;
 
-use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
-use highlight::Highlight;
-use input::CursorClick;
-use interaction::CursorInteraction;
+use backend::PickLayer;
+use bevy::{ecs::schedule::ShouldRun, prelude::*, reflect::Uuid, ui::FocusPolicy};
+use focus::send_click_events;
+use highlight::PickHighlight;
+use input::{PointerClick, PointerLocation, PointerMultiselect};
+use output::{PickInteraction, PointerInteractionEvent};
+use selection::PointerSelectionEvent;
 
 pub use crate::{
-    events::{event_debug_system, CursorEvent},
     focus::update_focus,
-    highlight::{highlight_assets, DefaultHighlighting, Highlightable, Highlighting},
-    selection::{update_selection, NoDeselect, Selection},
+    highlight::{
+        update_highlight_assets, CustomHighlightingPlugin, DefaultHighlighting, Highlightable,
+        HighlightingPlugins, InitialHighlight,
+    },
+    selection::{send_selection_events, NoDeselect, PickSelection},
 };
 
 /// Marks an entity that can be picked with this plugin.
-#[derive(Debug, Clone, Default, Component)]
-pub struct PickableTarget;
-
-/// Typestates that represent the modular picking pipeline.
-///
-/// input systems -> produce `Cursor`s -> picking backend -> produce `CursorOver`s -> focus system
-use self::{
-    backend::CursorOver,
-    input::{CursorId, CursorLocation},
-    interaction::CursorSelection,
-};
-
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-pub enum PickStage {
-    /// Produces [`CursorInput`]s.
-    Input,
-    /// Reads [`CursorInput`]s and Produces [`CursorOver`]s.
-    Backend,
-    /// Reads [`CursorOver`]s, and determines focus, selection, and highlighting states.
-    Focus,
+#[derive(Bundle, Default)]
+pub struct PickableBundle {
+    pub pick_layer: PickLayer,
+    pub interaction: PickInteraction,
+    pub selection: PickSelection,
+    pub highlight: PickHighlight,
+    pub focus_policy: FocusPolicy,
 }
 
 #[derive(Bundle)]
-pub struct CursorBundle {
-    pub id: CursorId,
-    pub click: CursorClick,
-    pub cursor: CursorLocation,
-    pub hit: CursorOver,
-    pub selection: CursorSelection,
+pub struct PointerBundle {
+    pub id: PointerId,
+    pub location: input::PointerLocation,
+    pub click: input::PointerClick,
+    pub multi_select: input::PointerMultiselect,
 }
-impl CursorBundle {
-    pub fn new(id: CursorId, cursor: CursorLocation, click: CursorClick) -> Self {
-        CursorBundle {
+impl PointerBundle {
+    pub fn new(id: PointerId) -> Self {
+        PointerBundle {
             id,
-            cursor,
-            click,
-            hit: CursorOver::default(),
-            selection: CursorSelection::default(),
+            location: PointerLocation::default(),
+            click: PointerClick::default(),
+            multi_select: PointerMultiselect::default(),
         }
     }
 }
 
-/// Information passed from  `bevy_picking_input` to the backend(s). This identifies all cursor inputs.
-pub mod input {
-    use bevy::{prelude::*, reflect::Uuid, render::camera::RenderTarget};
-
-    #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
-    pub enum CursorId {
-        Touch(u64),
-        Mouse,
-        Other(Uuid),
-    }
-    impl CursorId {
-        pub fn is_touch(&self) -> bool {
-            matches!(self, CursorId::Touch(_))
-        }
-        pub fn is_mouse(&self) -> bool {
-            matches!(self, CursorId::Mouse)
-        }
-        pub fn is_other(&self) -> bool {
-            matches!(self, CursorId::Other(_))
-        }
-    }
-
-    #[derive(Debug, Clone, Component, PartialEq)]
-    pub struct Location {
-        pub target: RenderTarget,
-        pub position: Vec2,
-    }
-
-    /// Represents an input cursor used for picking.
-    #[derive(Debug, Clone, Component, PartialEq)]
-    pub struct CursorLocation {
-        pub location: Option<Location>,
-    }
-    impl CursorLocation {
-        #[inline]
-        pub fn is_in_viewport(&self, camera: &Camera) -> bool {
-            if let Some(loc) = &self.location {
-                camera
-                    .logical_viewport_rect()
-                    .map(|(min, max)| {
-                        (loc.position - min).min_element() >= 0.0
-                            && (loc.position - max).max_element() <= 0.0
-                    })
-                    .unwrap_or(false)
-            } else {
-                false
-            }
-        }
-
-        #[inline]
-        pub fn is_same_target(&self, camera: &Camera) -> bool {
-            self.location
-                .as_ref()
-                .map(|loc| loc.target == camera.target)
-                .unwrap_or(false)
-        }
-    }
-
-    #[derive(Debug, Default, Clone, Component, PartialEq)]
-    pub struct CursorClick {
-        pub is_clicked: bool,
-    }
-
-    #[derive(Debug, Default, Clone, Component, PartialEq)]
-    pub struct CursorMultiSelect {
-        pub is_clicked: bool,
-    }
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+pub enum PickStage {
+    /// Produces [`input::PointerClickEvent`]s, [`input::PointerLocationEvent`]s, and updates
+    /// [`PointerMultiselect`].
+    Input,
+    /// Reads inputs and produces [`backend::PointerOverEvent`]s.
+    Backend,
+    /// Reads [`backend::PointerOverEvent`]s, and updates focus, selection, and highlighting states.
+    Output,
 }
 
-/// Information passed from the backend(s) to the focus system in [`bevy_picking_core`]. This
-/// tells us what Entities have been hovered over by each cursor.
-pub mod backend {
-    use bevy::prelude::*;
-
-    /// The entities currently under this entity's [`Cursor`](super::cursor::Cursor), if any,
-    /// sorted from closest to farthest.
-    ///
-    /// For most cases, there will either be zero or one. For
-    /// contexts like UI, it is often useful for picks to pass through to items below another
-    /// item, so multiple entities may be picked at a given time.
-    #[derive(Debug, Clone, Component, Default)]
-    pub struct CursorOver {
-        pub entities: Vec<Entity>,
-    }
-    impl CursorOver {
-        pub fn clear(&mut self) {
-            self.entities.clear();
-        }
-
-        pub fn entities(&self) -> &[Entity] {
-            self.entities.as_ref()
-        }
-    }
-}
-
-pub mod interaction {
-    use bevy::{prelude::*, utils::hashbrown::HashSet};
-
-    use crate::input::CursorId;
-
-    #[derive(Clone, Eq, PartialEq, Debug, Default, Component)]
-    pub struct CursorInteraction {
-        pub(crate) hovered: HashSet<CursorId>,
-        pub(crate) clicked: HashSet<CursorId>,
-    }
-    impl CursorInteraction {
-        pub fn is_hovered(&self, cursor: &CursorId) -> bool {
-            self.hovered.contains(cursor)
-        }
-
-        pub fn is_clicked(&self, cursor: &CursorId) -> bool {
-            self.clicked.contains(cursor)
-        }
-
-        pub fn is_hovered_any(&self) -> bool {
-            !self.hovered.is_empty()
-        }
-
-        pub fn is_clicked_any(&self) -> bool {
-            !self.clicked.is_empty()
-        }
-    }
-
-    #[derive(Debug, Clone, Component, Default)]
-    pub struct CursorSelection {
-        pub entities: Vec<Entity>,
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct PickingSettings {
-    pub enable_backend: bool,
-    pub enable_highlighting: bool,
-    pub enable_interacting: bool,
-}
-
-impl Default for PickingSettings {
-    fn default() -> Self {
-        Self {
-            enable_backend: true,
-            enable_highlighting: true,
-            enable_interacting: true,
-        }
-    }
-}
-
-pub fn simple_criteria(flag: bool) -> ShouldRun {
-    if flag {
-        ShouldRun::Yes
-    } else {
-        ShouldRun::No
-    }
-}
-
-pub struct CorePickingPlugin;
-impl Plugin for CorePickingPlugin {
+pub struct CorePlugin;
+impl Plugin for CorePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<PickingSettings>();
+        app.init_resource::<PickingSettings>()
+            .add_event::<input::PointerClickEvent>()
+            .add_event::<input::PointerLocationEvent>()
+            .add_event::<backend::PointerOverEvent>()
+            .add_system_set_to_stage(
+                CoreStage::First,
+                SystemSet::new()
+                    .after(PickStage::Input)
+                    .before(PickStage::Backend)
+                    .with_system(input::PointerLocationEvent::receive)
+                    .with_system(input::PointerClickEvent::receive),
+            );
     }
 }
 
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<CursorEvent>().add_system_set_to_stage(
-            CoreStage::First,
-            SystemSet::new()
-                .after(PickStage::Backend)
-                .label(PickStage::Focus)
-                .with_run_criteria(|state: Res<PickingSettings>| {
-                    simple_criteria(state.enable_interacting)
-                })
-                .with_system(update_focus)
-                .with_system(update_selection.after(update_focus)),
-        );
-    }
-}
-
-pub struct HighlightingPlugins;
-impl PluginGroup for HighlightingPlugins {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(highlight::CustomHighlightPlugin::<StandardMaterial>::default());
-        group.add(highlight::CustomHighlightPlugin::<ColorMaterial>::default());
+        app.add_event::<PointerInteractionEvent>()
+            .add_event::<PointerSelectionEvent>()
+            .add_system_set_to_stage(
+                CoreStage::First,
+                SystemSet::new()
+                    .after(PickStage::Backend)
+                    .label(PickStage::Output)
+                    .with_run_criteria(|state: Res<PickingSettings>| state.interacting)
+                    .with_system(update_focus)
+                    .with_system(send_click_events.after(update_focus))
+                    .with_system(send_selection_events.after(send_click_events))
+                    .with_system(PointerSelectionEvent::receive.after(send_selection_events)),
+            );
     }
 }
 
 pub struct DebugEventsPlugin;
 impl Plugin for DebugEventsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(CoreStage::Last, event_debug_system.after(PickStage::Focus));
+        app.add_system_set_to_stage(
+            CoreStage::PreUpdate,
+            SystemSet::new().with_system(event_debug_system.exclusive_system()),
+        );
     }
 }
 
-#[derive(Bundle, Default)]
-pub struct PickableBundle {
-    pub pickable_mesh: PickableTarget,
-    pub focus_policy: FocusPolicy,
-    pub interaction: CursorInteraction,
-    pub selection: Selection,
-    pub highlight: Highlight,
+pub struct DefaultPointersPlugin;
+impl Plugin for DefaultPointersPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_startup_system(PointerId::add_default_pointers);
+    }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
+pub enum PointerId {
+    Touch(u64),
+    Mouse,
+    Other(Uuid),
+}
+impl PointerId {
+    pub fn is_touch(&self) -> bool {
+        matches!(self, PointerId::Touch(_))
+    }
+    pub fn is_mouse(&self) -> bool {
+        matches!(self, PointerId::Mouse)
+    }
+    pub fn is_other(&self) -> bool {
+        matches!(self, PointerId::Other(_))
+    }
+    pub fn add_default_pointers(mut commands: Commands) {
+        commands.spawn_bundle(PointerBundle::new(PointerId::Mouse));
+        // Windows was the highest amount I could find at 20 touch + 10 writing
+        for i in 0..30 {
+            commands.spawn_bundle(PointerBundle::new(PointerId::Touch(i)));
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PickingSettings {
+    pub backend: ShouldRun,
+    pub highlighting: ShouldRun,
+    pub interacting: ShouldRun,
+}
+
+impl Default for PickingSettings {
+    fn default() -> Self {
+        Self {
+            backend: ShouldRun::Yes,
+            highlighting: ShouldRun::Yes,
+            interacting: ShouldRun::Yes,
+        }
+    }
+}
+
+/// Listens for [HoverEvent] and [SelectionEvent] events and prints them
+pub fn event_debug_system(
+    // mut clicks: EventReader<input::PointerClickEvent>,
+    // mut locations: EventReader<input::PointerLocationEvent>,
+    // mut overs: EventReader<backend::PointerOverEvent>,
+    mut interactions: EventReader<output::PointerInteractionEvent>,
+) {
+    // for event in clicks.iter() {
+    //     info!("{event}");
+    // }
+    // for event in locations.iter() {
+    //     info!("{event}");
+    // }
+    // for event in overs.iter() {
+    //     info!("{event}");
+    // }
+    for event in interactions.iter() {
+        info!("{event}");
+    }
 }
 
 pub trait IntoShouldRun {

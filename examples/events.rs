@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use bevy_mod_picking::{CursorEvent, DefaultPickingPlugins, PickableBundle, PickingSourceBundle};
+use bevy_mod_picking::{
+    output::{Just, PointerInteractionEvent},
+    DefaultPickingPlugins, PickRaycastSource, PickableBundle,
+};
 
 fn main() {
     App::new()
@@ -10,12 +13,33 @@ fn main() {
         .run();
 }
 
-pub fn print_events(mut events: EventReader<CursorEvent>) {
-    for event in events.iter() {
-        match event {
-            CursorEvent::Select(e) => info!("A selection event happened: {:?}", e),
-            CursorEvent::Hover(e) => info!("Egads! A hover event!? {:?}", e),
-            CursorEvent::Click(e) => info!("Gee Willikers, it's a click! {:?}", e),
+pub fn print_events(mut events: EventReader<PointerInteractionEvent>) {
+    for interaction in events.iter() {
+        match interaction.event {
+            Just::Entered => info!(
+                "{:?} just entered {:?}",
+                interaction.id, interaction.pick_entity
+            ),
+            Just::Exited => info!(
+                "{:?} just exited {:?}",
+                interaction.id, interaction.pick_entity
+            ),
+            Just::Down => info!(
+                "{:?} just pressed down on {:?}",
+                interaction.id, interaction.pick_entity
+            ),
+            Just::Up => info!(
+                "{:?} just stopped pressing on {:?}",
+                interaction.id, interaction.pick_entity
+            ),
+            Just::Clicked => info!(
+                "{:?} just clicked {:?}",
+                interaction.id, interaction.pick_entity
+            ),
+            Just::Moved => info!(
+                "{:?} just moved over {:?}",
+                interaction.id, interaction.pick_entity
+            ),
         }
     }
 }
@@ -50,9 +74,9 @@ fn setup(
         ..Default::default()
     });
     commands
-        .spawn_bundle(PerspectiveCameraBundle {
+        .spawn_bundle(Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         })
-        .insert_bundle(PickingSourceBundle::default()); // <- Sets the camera to use for picking.
+        .insert(PickRaycastSource::default()); // <- Sets the camera to use for picking.
 }

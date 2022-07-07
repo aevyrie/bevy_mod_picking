@@ -1,5 +1,5 @@
 use bevy::{prelude::*, window::PresentMode};
-use bevy_mod_picking::{DefaultPickingPlugins, NoDeselect, PickableBundle, PickingSourceBundle};
+use bevy_mod_picking::{DefaultPickingPlugins, NoDeselect, PickRaycastSource, PickableBundle};
 
 /// This example is identical to the 3d_scene example, except a cube has been added, that when
 /// clicked on, won't deselect everything else you have selected.
@@ -61,9 +61,9 @@ fn setup(
     });
     // camera
     commands
-        .spawn_bundle(PerspectiveCameraBundle {
+        .spawn_bundle(Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         })
-        .insert_bundle(PickingSourceBundle::default());
+        .insert(PickRaycastSource::default());
 }
