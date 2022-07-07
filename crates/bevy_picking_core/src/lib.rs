@@ -161,21 +161,7 @@ impl Default for PickingSettings {
 }
 
 /// Listens for [HoverEvent] and [SelectionEvent] events and prints them
-pub fn event_debug_system(
-    // mut clicks: EventReader<input::PointerClickEvent>,
-    // mut locations: EventReader<input::PointerLocationEvent>,
-    // mut overs: EventReader<backend::PointerOverEvent>,
-    mut interactions: EventReader<output::PointerInteractionEvent>,
-) {
-    // for event in clicks.iter() {
-    //     info!("{event}");
-    // }
-    // for event in locations.iter() {
-    //     info!("{event}");
-    // }
-    // for event in overs.iter() {
-    //     info!("{event}");
-    // }
+pub fn event_debug_system(mut interactions: EventReader<output::PointerInteractionEvent>) {
     for event in interactions.iter() {
         info!("{event}");
     }

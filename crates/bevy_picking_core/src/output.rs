@@ -16,10 +16,7 @@ impl std::fmt::Display for PointerInteractionEvent {
             id,
             event,
         } = self;
-        write!(
-            f,
-            "Event::Interaction::{event:?}::{id:?} {pick_entity:.15?}"
-        )
+        write!(f, "{id:?}::{event:?} [{pick_entity:.15?}]")
     }
 }
 impl PointerInteractionEvent {

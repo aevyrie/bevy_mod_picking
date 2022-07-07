@@ -1,5 +1,8 @@
 use bevy::{prelude::*, window::PresentMode};
-use bevy_mod_picking::{DefaultPickingPlugins, NoDeselect, PickRaycastSource, PickableBundle};
+use bevy_mod_picking::{
+    DefaultPickingPlugins, NoDeselect, PickRaycastSource, PickRaycastTarget, PickSelection,
+    PickableBundle,
+};
 
 /// This example is identical to the 3d_scene example, except a cube has been added, that when
 /// clicked on, won't deselect everything else you have selected.
@@ -28,7 +31,8 @@ fn setup(
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
         })
-        .insert_bundle(PickableBundle::default());
+        .insert_bundle(PickableBundle::default())
+        .insert(PickRaycastTarget::default()); // <- Needed for the raycast backend.
 
     // cube
     commands
@@ -38,7 +42,9 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         })
-        .insert_bundle(PickableBundle::default());
+        .insert_bundle(PickableBundle::default())
+        .insert(PickRaycastTarget::default()); // <- Needed for the raycast backend.
+
     // cube with NoDeselect
     commands
         .spawn_bundle(PbrBundle {
@@ -48,7 +54,10 @@ fn setup(
             ..Default::default()
         })
         .insert_bundle(PickableBundle::default())
-        .insert(NoDeselect);
+        .remove::<PickSelection>() // <- Removing this removes the entity's ability to be selected.
+        .insert(PickRaycastTarget::default()) // <- Needed for the raycast backend.
+        .insert(NoDeselect); // <- This ensures that when this entity is clicked, other entities won't be deselected.
+
     // light
     commands.spawn_bundle(PointLightBundle {
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
@@ -59,6 +68,7 @@ fn setup(
         },
         ..Default::default()
     });
+
     // camera
     commands
         .spawn_bundle(Camera3dBundle {
