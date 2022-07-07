@@ -32,6 +32,3 @@ bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-fe
 default = ["raycast"]
 raycast = ["bevy_picking_raycast"]
 rapier = ["bevy_picking_rapier"]
-
-[patch."https://github.com/bevyengine/bevy"]
-bevy = { git = "https://github.com/aevyrie/bevy", branch = "viewport-rect-fix" }

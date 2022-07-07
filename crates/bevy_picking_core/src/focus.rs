@@ -57,7 +57,9 @@ pub fn update_focus(
     }
     // Build an unsorted set of hovered entities, accounting for depth, layer, and focus policy.
     for &id in pointers.iter() {
-        hover_set.clear();
+        if !hover_set.is_empty() {
+            hover_set.clear();
+        }
         if let Some(under_pointer) = pointer_map.get_mut(&id) {
             for (_layer, depth_map) in under_pointer.iter() {
                 for (_depth, entity) in depth_map.iter() {

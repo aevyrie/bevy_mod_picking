@@ -70,7 +70,8 @@ fn setup(
                         )),
                         ..Default::default()
                     })
-                    .insert_bundle(PickableBundle::default());
+                    .insert_bundle(PickableBundle::default())
+                    .insert(PickRaycastTarget::default());
             }
         }
     }
