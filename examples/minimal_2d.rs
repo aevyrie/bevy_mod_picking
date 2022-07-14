@@ -28,6 +28,6 @@ fn setup(
         .insert_bundle(PickableBundle::default()); // <- Makes the mesh pickable.
                                                    // camera
     commands
-        .spawn_bundle(OrthographicCameraBundle::new_2d())
+        .spawn_bundle(Camera2dBundle::default())
         .insert_bundle(PickingCameraBundle::default()); // <- Sets the camera to use for picking.
 }
