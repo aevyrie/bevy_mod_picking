@@ -6,10 +6,7 @@ use bevy_mod_picking::{
 
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            vsync: false, // Disabled for this demo to reduce input latency
-            ..Default::default()
-        })
+        .insert_resource(WindowDescriptor::default())
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
         .add_plugin(DebugCursorPickingPlugin) // <- Adds the green debug cursor.
