@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{output::Just, PickStage, PickingSettings, PointerInteractionEvent};
+use crate::{output, PickStage, PickingSettings};
 
 use super::selection::*;
 use bevy::{app::PluginGroupBuilder, asset::Asset, prelude::*, render::color::Color};
@@ -66,7 +66,7 @@ where
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
-                    .after(PickStage::Output)
+                    .after(PickStage::Events)
                     .with_run_criteria(|state: Res<PickingSettings>| state.highlighting)
                     .with_system(get_initial_highlight_asset::<T>)
                     .with_system(
@@ -86,7 +86,7 @@ pub struct InitialHighlight<T: Asset> {
 }
 
 /// Resource that defines the default highlighting assets to use. This can be overridden per-entity
-/// with the [`Highlighting`] component.
+/// with the [`HighlightOverride`] component.
 pub struct DefaultHighlighting<T: Highlightable + ?Sized> {
     pub hovered: Handle<T>,
     pub pressed: Handle<T>,
@@ -161,34 +161,64 @@ pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
         &InitialHighlight<T>,
         &HighlightOverride<T>,
     )>,
-    mut events: EventReader<PointerInteractionEvent>,
+    mut up_events: EventReader<output::PointerUp>,
+    mut down_events: EventReader<output::PointerDown>,
+    mut over_events: EventReader<output::PointerOver>,
+    mut out_events: EventReader<output::PointerOut>,
+    mut click_events: EventReader<output::PointerClick>,
 ) {
-    for interaction in events.iter() {
+    for event in up_events.iter() {
         // Reset *all* deselected entities
-        if interaction.event == Just::Up {
-            for (mut active_asset, pick_selection, h_initial, _) in interaction_query.iter_mut() {
-                match pick_selection {
-                    Some(s) if s.is_selected => (),
-                    _ => *active_asset = h_initial.initial.to_owned(),
-                }
+        for (mut active_asset, pick_selection, h_initial, _) in interaction_query.iter_mut() {
+            match pick_selection {
+                Some(s) if s.is_selected => (),
+                _ => *active_asset = h_initial.initial.to_owned(),
             }
         }
+
         // Only update the entity picked in the current interaction event:
-        if let Ok((mut active_asset, pick_selection, h_initial, h_override)) =
-            interaction_query.get_mut(interaction.pick_entity)
+        if let Ok((mut active_asset, pick_selection, _, h_override)) =
+            interaction_query.get_mut(event.target())
         {
-            *active_asset = match interaction.event {
-                Just::Entered => h_override.hovered(&global_defaults),
-                Just::Up | Just::Clicked => match pick_selection {
-                    Some(s) if s.is_selected => h_override.selected(&global_defaults),
-                    _ => h_override.hovered(&global_defaults),
-                },
-                Just::Exited => match pick_selection {
-                    Some(s) if s.is_selected => h_override.selected(&global_defaults),
-                    _ => h_initial.initial.clone(),
-                },
-                Just::Down => h_override.pressed(&global_defaults),
-                _ => continue,
+            *active_asset = match pick_selection {
+                Some(s) if s.is_selected => h_override.selected(&global_defaults),
+                _ => h_override.hovered(&global_defaults),
+            };
+        }
+    }
+
+    for event in down_events.iter() {
+        if let Ok((mut active_asset, _, _, h_override)) = interaction_query.get_mut(event.target())
+        {
+            *active_asset = h_override.pressed(&global_defaults);
+        }
+    }
+
+    for event in over_events.iter() {
+        if let Ok((mut active_asset, _, _, h_override)) = interaction_query.get_mut(event.target())
+        {
+            *active_asset = h_override.hovered(&global_defaults);
+        }
+    }
+
+    for event in out_events.iter() {
+        if let Ok((mut active_asset, pick_selection, h_initial, h_override)) =
+            interaction_query.get_mut(event.target())
+        {
+            *active_asset = match pick_selection {
+                Some(s) if s.is_selected => h_override.selected(&global_defaults),
+                _ => h_initial.initial.clone(),
+            };
+        }
+    }
+
+    for event in click_events.iter() {
+        if let Ok((mut active_asset, pick_selection, _, h_override)) =
+            interaction_query.get_mut(event.target())
+        {
+            *active_asset = match pick_selection {
+                Some(s) if s.is_selected => h_override.selected(&global_defaults),
+                _ => h_override.hovered(&global_defaults),
             };
         }
     }

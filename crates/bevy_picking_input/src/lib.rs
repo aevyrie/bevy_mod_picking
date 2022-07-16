@@ -1,3 +1,14 @@
+//! `bevy_picking_input` is a thin layer that provides unsurprising default inputs to `bevy_picking
+//! core`. The included systems are responsible for sending  mouse and touch inputs to their
+//! respective `Pointer`s.
+//!
+//! Because this resides in its own crate, it's easy to omit it, and provide your own inputs as
+//! needed. Because `Pointer`s aren't coupled to the underlying input hardware, you can easily mock
+//! inputs, and allow users full accessibility to map whatever inputs they need to pointer input.
+
+#![allow(clippy::type_complexity)]
+#![allow(clippy::too_many_arguments)]
+
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
 use bevy_picking_core::{input::PointerMultiselect, IntoShouldRun, PickStage};
 

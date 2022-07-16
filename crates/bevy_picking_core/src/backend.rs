@@ -1,6 +1,20 @@
+//! A picking backend is responsible for consuming [`crate::input::PointerLocationEvent`]s, and
+//! producing corresponding [`PointerOverEvent`]s. The `PointerOverEvent`s produced by a backend do
+//! not need to be sorted or filtered, all that needs to be provided is an unordered list of
+//! entities and their distance from the pointer into the screen (depth).
+//!
+//! Depth only needs to be self-consistent with other [`PointerOverEvent`]s in the same
+//! [`crate::focus::PickLayer`].
+//!
+//! Because bevy_picking_core is very loosely coupled with its backends, you can mix and match as
+//! many backends as you want. For example, You could use the `rapier` backend to raycast against
+//! physics objects, a picking shader backend to pick non-physics meshes, and a custom backend for
+//! your UI.
+
 use crate::PointerId;
 use bevy::prelude::*;
 
+/// An event containing a point and the entities the pointer is over.
 #[derive(Debug, Clone)]
 pub struct PointerOverEvent {
     pub id: PointerId,
@@ -9,59 +23,6 @@ pub struct PointerOverEvent {
 impl std::fmt::Display for PointerOverEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Event::Over::{:?} {:?}", self.id, self.over_list)
-    }
-}
-
-/// A component that assigns an entity to a picking layer. When computing picking focus, entities
-/// are sorted in order from the highest to lowest layer, and by depth within each layer.
-#[derive(Debug, Clone, Copy, Component, PartialEq, Eq, PartialOrd, Ord)]
-pub struct PickLayer(u8);
-impl PickLayer {
-    pub fn above_all() -> Self {
-        PickLayer(0)
-    }
-    pub fn ui() -> Self {
-        PickLayer(10)
-    }
-    pub fn above_world() -> Self {
-        PickLayer(20)
-    }
-    pub fn world() -> Self {
-        PickLayer(30)
-    }
-    pub fn below_world() -> Self {
-        PickLayer(40)
-    }
-    pub fn below_all() -> Self {
-        PickLayer(50)
-    }
-    pub fn custom(layer: u8) -> Self {
-        PickLayer(layer)
-    }
-    pub fn layer(&self) -> u8 {
-        self.0
-    }
-}
-impl Default for PickLayer {
-    fn default() -> Self {
-        PickLayer::world()
-    }
-}
-impl std::fmt::Display for PickLayer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self.0 {
-                0 => "Above All".into(),
-                10 => "UI".into(),
-                20 => "Above World".into(),
-                30 => "World".into(),
-                40 => "Below World".into(),
-                50 => "Below All".into(),
-                n => format!("Custom {n}"),
-            }
-        )
     }
 }
 

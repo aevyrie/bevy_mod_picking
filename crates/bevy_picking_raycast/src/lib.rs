@@ -23,7 +23,7 @@ impl Plugin for RaycastPlugin {
             SystemSet::new()
                 .label(PickStage::Backend)
                 .after(PickStage::Input)
-                .before(PickStage::Output)
+                .before(PickStage::Events)
                 .with_run_criteria(|state: Res<PickingSettings>| state.backend)
                 .with_system(build_rays_from_pointers)
                 .with_system(

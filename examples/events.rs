@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_mod_picking::{
-    output::{Just, PointerInteractionEvent},
+    output::{IsPointerEventInner, PointerEventData},
     DefaultPickingPlugins, PickRaycastSource, PickableBundle,
 };
 
@@ -13,33 +13,63 @@ fn main() {
         .run();
 }
 
-pub fn print_events(mut events: EventReader<PointerInteractionEvent>) {
+pub fn print_events(mut events: EventReader<PointerEventData>) {
     for interaction in events.iter() {
         match interaction.event {
-            Just::Entered => info!(
-                "{:?} just entered {:?}",
-                interaction.id, interaction.pick_entity
-            ),
-            Just::Exited => info!(
-                "{:?} just exited {:?}",
-                interaction.id, interaction.pick_entity
-            ),
-            Just::Down => info!(
-                "{:?} just pressed down on {:?}",
-                interaction.id, interaction.pick_entity
-            ),
-            Just::Up => info!(
-                "{:?} just stopped pressing on {:?}",
-                interaction.id, interaction.pick_entity
-            ),
-            Just::Clicked => info!(
-                "{:?} just clicked {:?}",
-                interaction.id, interaction.pick_entity
-            ),
-            Just::Moved => info!(
-                "{:?} just moved over {:?}",
-                interaction.id, interaction.pick_entity
-            ),
+            IsPointerEventInner::Over => {
+                info!(
+                    "{:?} just entered {:?}",
+                    interaction.id, interaction.current_target
+                )
+            }
+            IsPointerEventInner::Out => {
+                info!(
+                    "{:?} just exited {:?}",
+                    interaction.id, interaction.current_target
+                )
+            }
+            IsPointerEventInner::Down => {
+                info!(
+                    "{:?} just pressed {:?}",
+                    interaction.id, interaction.current_target
+                )
+            }
+            IsPointerEventInner::Up => {
+                info!(
+                    "{:?} just lifted {:?}",
+                    interaction.id, interaction.current_target
+                )
+            }
+            IsPointerEventInner::Click => {
+                info!(
+                    "{:?} just clicked {:?}",
+                    interaction.id, interaction.current_target
+                )
+            }
+            IsPointerEventInner::Move => {
+                info!(
+                    "{:?} moved over {:?}",
+                    interaction.id, interaction.current_target
+                )
+            }
+            IsPointerEventInner::Enter => {
+                info!(
+                    "{:?} just entered {:?}",
+                    interaction.id, interaction.current_target
+                )
+            }
+            IsPointerEventInner::Leave => {
+                info!(
+                    "{:?} just left {:?}",
+                    interaction.id, interaction.current_target
+                )
+            }
+            IsPointerEventInner::Cancel => {
+                info!(
+                    "{:?} just cancelled {:?}",
+                    interaction.id, interaction.current_target
+                )
+            }
         }
     }
 }

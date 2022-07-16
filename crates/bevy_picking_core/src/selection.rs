@@ -1,13 +1,8 @@
 use bevy::prelude::*;
 
-use crate::{
-    input::PointerMultiselect,
-    output::{Just, PointerInteractionEvent},
-    PointerId,
-};
+use crate::{input::PointerMultiselect, output, PointerId};
 
-/// Tracks the current selection state to be used with change tracking in the events system.
-/// Entities with [Selection] will have selection state managed.
+/// Tracks the current selection state of the entity.
 #[derive(Component, Debug, Default, Clone)]
 pub struct PickSelection {
     pub is_selected: bool,
@@ -46,47 +41,43 @@ impl PointerSelectionEvent {
 pub struct NoDeselect;
 
 pub fn send_selection_events(
-    mut interactions: EventReader<PointerInteractionEvent>,
+    mut pointer_down: EventReader<output::PointerDown>,
+    mut pointer_click: EventReader<output::PointerClick>,
     pointers: Query<(&PointerId, &PointerMultiselect)>,
     no_deselect: Query<&NoDeselect>,
     selectables: Query<(Entity, &PickSelection)>,
     mut selection_events: EventWriter<PointerSelectionEvent>,
 ) {
-    for interaction in interactions.iter() {
+    for down_event in pointer_down.iter() {
         let multiselect = pointers
             .iter()
-            .find_map(|(id, ms)| id.eq(&interaction.id).then_some(ms.is_pressed))
+            .find_map(|(id, multi)| id.eq(&down_event.id()).then_some(multi.is_pressed))
             .unwrap_or(false);
-
-        let entity_can_deselect = no_deselect.get(interaction.pick_entity).is_err();
-
-        match interaction.event {
-            Just::Down => {
-                if !multiselect && entity_can_deselect {
-                    for (entity, selection) in selectables.iter() {
-                        if selection.is_selected {
-                            selection_events.send(PointerSelectionEvent::JustDeselected(entity))
-                        }
-                    }
+        let target_should_deselect = !no_deselect.get(down_event.target()).is_ok();
+        // Deselect everything
+        if !multiselect && target_should_deselect {
+            for (entity, selection) in selectables.iter() {
+                if selection.is_selected {
+                    selection_events.send(PointerSelectionEvent::JustDeselected(entity))
                 }
             }
-            Just::Clicked => {
-                if let Ok((entity, selection)) = selectables.get(interaction.pick_entity) {
-                    if multiselect {
-                        match selection.is_selected {
-                            true => {
-                                selection_events.send(PointerSelectionEvent::JustDeselected(entity))
-                            }
-                            false => {
-                                selection_events.send(PointerSelectionEvent::JustSelected(entity))
-                            }
-                        }
-                    } else if !selection.is_selected {
-                        selection_events.send(PointerSelectionEvent::JustSelected(entity))
-                    }
+        }
+    }
+
+    for click_event in pointer_click.iter() {
+        let multiselect = pointers
+            .iter()
+            .find_map(|(id, multi)| id.eq(&click_event.id()).then_some(multi.is_pressed))
+            .unwrap_or(false);
+        if let Ok((entity, selection)) = selectables.get(click_event.target()) {
+            if multiselect {
+                match selection.is_selected {
+                    true => selection_events.send(PointerSelectionEvent::JustDeselected(entity)),
+                    false => selection_events.send(PointerSelectionEvent::JustSelected(entity)),
                 }
+            } else if !selection.is_selected {
+                selection_events.send(PointerSelectionEvent::JustSelected(entity))
             }
-            _ => (),
         }
     }
 }

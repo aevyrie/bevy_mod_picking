@@ -4,7 +4,7 @@ use bevy::{
     render::camera::RenderTarget,
 };
 use bevy_picking_core::{
-    input::{Location, PointerClickEvent, PointerLocationEvent},
+    input::{Location, PointerButton, PointerLocationEvent, PointerPressEvent},
     PointerId,
 };
 
@@ -13,7 +13,7 @@ pub fn mouse_pick_events(
     windows: Res<Windows>,
     mut mouse_inputs: EventReader<MouseButtonInput>,
     mut pointer_moves: EventWriter<PointerLocationEvent>,
-    mut pointer_clicks: EventWriter<PointerClickEvent>,
+    mut pointer_clicks: EventWriter<PointerPressEvent>,
 ) {
     let id = PointerId::Mouse;
     let location = match get_cursor_position(windows) {
@@ -23,14 +23,19 @@ pub fn mouse_pick_events(
     pointer_moves.send(PointerLocationEvent { id, location });
 
     for input in mouse_inputs.iter() {
-        if matches!(input.button, MouseButton::Left) {
-            match input.state {
-                ButtonState::Pressed => pointer_clicks.send(PointerClickEvent::Down {
-                    id: PointerId::Mouse,
-                }),
-                ButtonState::Released => pointer_clicks.send(PointerClickEvent::Up {
-                    id: PointerId::Mouse,
-                }),
+        let button = match input.button {
+            MouseButton::Left => PointerButton::Primary,
+            MouseButton::Right => PointerButton::Secondary,
+            MouseButton::Middle => PointerButton::Middle,
+            MouseButton::Other(_) => continue,
+        };
+
+        match input.state {
+            ButtonState::Pressed => {
+                pointer_clicks.send(PointerPressEvent::new_down(PointerId::Mouse, button))
+            }
+            ButtonState::Released => {
+                pointer_clicks.send(PointerPressEvent::new_up(PointerId::Mouse, button))
             }
         }
     }

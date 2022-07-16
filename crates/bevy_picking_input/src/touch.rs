@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::camera::RenderTarget, window::WindowId};
 use bevy_picking_core::{
-    input::{Location, PointerClickEvent, PointerLocationEvent},
+    input::{Location, PointerButton, PointerLocationEvent, PointerPressEvent, PressStage},
     PointerId,
 };
 
@@ -8,7 +8,7 @@ use bevy_picking_core::{
 pub fn touch_pick_events(
     touches: Res<Touches>,
     mut pointer_moves: EventWriter<PointerLocationEvent>,
-    mut pointer_clicks: EventWriter<PointerClickEvent>,
+    mut pointer_clicks: EventWriter<PointerPressEvent>,
 ) {
     for touch in touches.iter() {
         let id = PointerId::Touch(touch.id());
@@ -19,13 +19,17 @@ pub fn touch_pick_events(
         pointer_moves.send(PointerLocationEvent { id, location })
     }
     for touch in touches.iter_just_pressed() {
-        pointer_clicks.send(PointerClickEvent::Down {
+        pointer_clicks.send(PointerPressEvent {
             id: PointerId::Touch(touch.id()),
+            press: PressStage::Down,
+            button: PointerButton::Primary,
         })
     }
     for touch in touches.iter_just_released() {
-        pointer_clicks.send(PointerClickEvent::Up {
+        pointer_clicks.send(PointerPressEvent {
             id: PointerId::Touch(touch.id()),
+            press: PressStage::Up,
+            button: PointerButton::Primary,
         })
     }
 }

@@ -29,27 +29,35 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // plane
-    commands
+    // cube
+    let parent = commands
         .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
+            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::WHITE.into()),
+            transform: Transform::from_scale(Vec3::new(1.0, 0.1, 1.0)),
             ..Default::default()
         })
         .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
         .insert(PickRaycastTarget::default()) // <- Needed for the raycast backend.
-        .insert(EventListener::<PointerClick>::new(delete_myself));
+        .insert(EventListener::<PointerClick>::new(delete_myself))
+        .id();
 
-    // cube
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::WHITE.into()),
-            transform: Transform::from_xyz(0.0, 0.5, 0.0),
-            ..Default::default()
+    let children: Vec<Entity> = (0..100)
+        .map(|i| {
+            commands
+                .spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Mesh::from(shape::Cube { size: 0.4 })),
+                    material: materials.add(Color::RED.into()),
+                    transform: Transform::from_xyz(2.0, i as f32 * 0.5 - 2.5, 0.0),
+                    ..Default::default()
+                })
+                .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
+                .insert(PickRaycastTarget::default())
+                .id()
         })
-        .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
-        .insert(PickRaycastTarget::default()); // <- Needed for the raycast backend.
+        .collect(); // <- Needed for the raycast backend.}
+
+    commands.entity(parent).push_children(&children);
 
     // light
     commands.spawn_bundle(PointLightBundle {
