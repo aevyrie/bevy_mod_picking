@@ -1,6 +1,6 @@
 use bevy::{ecs::schedule::ReportExecutionOrderAmbiguities, prelude::*, window::PresentMode};
 use bevy_mod_picking::{
-    output::{Bubble, EventListener, PointerClick, PointerEventData, PointerOver},
+    output::{Bubble, EventData, EventListener, PointerClick, PointerOver},
     DebugEventsPlugin, DefaultPickingPlugins, PickRaycastSource, PickRaycastTarget, PickableBundle,
 };
 
@@ -17,7 +17,7 @@ fn main() {
         .run();
 }
 
-fn delete_myself(commands: &mut Commands, event: PointerEventData) -> Bubble {
+fn delete_myself(commands: &mut Commands, event: EventData) -> Bubble {
     commands.entity(event.target).despawn_recursive();
     warn!("oopsy woopsy o_O you deweeted me");
     Bubble::Up
@@ -38,7 +38,7 @@ fn setup(
         })
         .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
         .insert(PickRaycastTarget::default()) // <- Needed for the raycast backend.
-        .insert(EventListener::<PointerClick>::new(delete_myself));
+        .insert(EventListener::<PointerClick>::run_commands(delete_myself));
 
     // cube
     commands

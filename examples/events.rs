@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_mod_picking::{
-    output::{IsPointerEventInner, PointerEventData},
+    output::{EventData, IsPointerEventInner},
     DefaultPickingPlugins, PickRaycastSource, PickableBundle,
 };
 
@@ -13,7 +13,7 @@ fn main() {
         .run();
 }
 
-pub fn print_events(mut events: EventReader<PointerEventData>) {
+pub fn print_events(mut events: EventReader<EventData>) {
     for interaction in events.iter() {
         match interaction.event {
             IsPointerEventInner::Over => {

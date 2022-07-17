@@ -2,7 +2,6 @@
 
 use std::{
     fmt::Display,
-    marker::PhantomData,
     ops::{Deref, DerefMut},
 };
 
@@ -26,34 +25,67 @@ impl DerefMut for PointerInteraction {
     }
 }
 
-pub trait IsPointerEventInner: Send + Sync + 'static {}
+pub trait IsPointerEventInner: Send + Sync + 'static + Clone {}
 
 #[derive(Component, Clone)]
 pub struct EventListener<E: IsPointerEvent> {
     /// Called when the event listener is triggered.
-    on_event: fn(&mut Commands, PointerEventData) -> Bubble,
-    spooky: PhantomData<E>,
+    on_event: fn(&mut Commands, &mut EventData<E>),
 }
 
 impl<E: IsPointerEvent> EventListener<E> {
-    pub fn new(on_event: fn(&mut Commands, PointerEventData) -> Bubble) -> Self {
-        Self {
-            on_event,
-            spooky: PhantomData,
-        }
+    pub fn run_commands(on_event: fn(&mut Commands, &mut EventData<E>)) -> Self {
+        Self { on_event }
+    }
+    // pub fn forward_event<T: ForwardEvent>(
+    //     world: &mut World,
+    //     event_data: &mut EventData<E>,
+    // ) -> Self {
+    //     world.resource_mut::<Events<T>>().send(T::new(event_data))
+    // }
+}
+
+pub trait ForwardEvent: bevy::ecs::event::Event {
+    fn new(event_date: &mut EventData<impl IsPointerEvent>) -> Self;
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub struct EventData<E: IsPointerEvent> {
+    /// The pointer involved in this event.
+    id: PointerId,
+    /// The entity that was listening for this event.
+    listener: Entity,
+    /// The entity that this event was originally triggered on.
+    target: Entity,
+    /// The inner event data, if any, for the specific event that was triggered.
+    event: E::InnerEventType,
+    /// Controls whether this event will continue to bubble up the entity hierarchy.
+    bubble: Bubble,
+}
+impl<E: IsPointerEvent> EventData<E> {
+    pub fn id(&self) -> PointerId {
+        self.id
+    }
+
+    pub fn listener(&self) -> Entity {
+        self.listener
+    }
+
+    pub fn target(&self) -> Entity {
+        self.target
+    }
+
+    pub fn event(&self) -> &E::InnerEventType {
+        &self.event
+    }
+
+    pub fn stop_bubbling(&mut self) {
+        self.bubble = Bubble::Burst
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub struct PointerEventData {
-    /// The entity that was listening for this event.
-    pub listener: Entity,
-    /// The entity that this event was initially triggered on.
-    pub target: Entity,
-}
-
 /// Should the event bubble up to the entity's parent, or halt?
-#[derive(Default)]
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub enum Bubble {
     /// This event will bubble up to its parent.
     #[default]
@@ -62,21 +94,25 @@ pub enum Bubble {
     Burst,
 }
 
-pub trait IsPointerEvent: Send + Sync + 'static + Display {}
+pub trait IsPointerEvent: Send + Sync + 'static + Display + Clone {
+    type InnerEventType: IsPointerEventInner;
+}
 
 #[derive(Debug, Clone)]
 pub struct PointerEvent<E: IsPointerEventInner> {
     id: PointerId,
     target: Entity,
-    spooky: PhantomData<E>,
+    event: E,
 }
-impl<E: IsPointerEventInner> IsPointerEvent for PointerEvent<E> {}
+impl<E: IsPointerEventInner> IsPointerEvent for PointerEvent<E> {
+    type InnerEventType = E;
+}
 impl<E: IsPointerEventInner> PointerEvent<E> {
-    pub fn new(id: &PointerId, target: &Entity) -> Self {
+    pub fn new(id: &PointerId, target: &Entity, event: E) -> Self {
         Self {
             id: *id,
             target: *target,
-            spooky: PhantomData,
+            event,
         }
     }
 
@@ -94,15 +130,19 @@ impl<E: IsPointerEventInner> PointerEvent<E> {
         listeners: Query<(Option<&EventListener<PointerEvent<E>>>, Option<&Parent>)>,
     ) {
         for event in events.iter() {
-            let target = event.target;
             let mut listener = event.target;
             while let Ok((event_listener, parent)) = listeners.get(listener) {
                 match event_listener {
                     Some(event_listener) => {
-                        match (event_listener.on_event)(
-                            &mut commands,
-                            PointerEventData { listener, target },
-                        ) {
+                        let mut event_data = EventData {
+                            id: event.id,
+                            listener,
+                            target: event.target,
+                            event: event.event.clone(),
+                            bubble: Bubble::default(),
+                        };
+                        (event_listener.on_event)(&mut commands, &mut event_data);
+                        match event_data.bubble {
                             Bubble::Up => match parent {
                                 Some(parent) => listener = **parent,
                                 None => break, // Bubble reached the surface!
@@ -127,47 +167,47 @@ impl<E: IsPointerEventInner> std::fmt::Display for PointerEvent<E> {
 
 pub type PointerOver = PointerEvent<Over>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Over {}
+pub struct Over;
 impl IsPointerEventInner for Over {}
 
 pub type PointerOut = PointerEvent<Out>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Out {}
+pub struct Out;
 impl IsPointerEventInner for Out {}
 
 pub type PointerEnter = PointerEvent<Enter>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Enter {}
+pub struct Enter;
 impl IsPointerEventInner for Enter {}
 
 pub type PointerLeave = PointerEvent<Leave>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Leave {}
+pub struct Leave;
 impl IsPointerEventInner for Leave {}
 
 pub type PointerDown = PointerEvent<Down>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Down {}
+pub struct Down;
 impl IsPointerEventInner for Down {}
 
 pub type PointerUp = PointerEvent<Up>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Up {}
+pub struct Up;
 impl IsPointerEventInner for Up {}
 
 pub type PointerClick = PointerEvent<Click>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Click {}
+pub struct Click;
 impl IsPointerEventInner for Click {}
 
 pub type PointerMove = PointerEvent<Move>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Move {}
+pub struct Move;
 impl IsPointerEventInner for Move {}
 
 pub type PointerCancel = PointerEvent<Cancel>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Cancel {}
+pub struct Cancel;
 impl IsPointerEventInner for Cancel {}
 
 #[derive(Clone, Eq, PartialEq, Debug, Default, Component)]

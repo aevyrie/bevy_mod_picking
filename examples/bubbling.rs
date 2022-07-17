@@ -1,26 +1,24 @@
-use bevy::{ecs::schedule::ReportExecutionOrderAmbiguities, prelude::*, window::PresentMode};
+use bevy::{prelude::*, window::PresentMode};
 use bevy_mod_picking::{
-    output::{Bubble, EventListener, PointerClick, PointerEventData, PointerOver},
+    output::{EventData, EventListener, PointerClick, PointerOver},
     DebugEventsPlugin, DefaultPickingPlugins, PickRaycastSource, PickRaycastTarget, PickableBundle,
 };
 
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            present_mode: PresentMode::Mailbox, // Reduce input latency
-            ..Default::default()
-        })
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
         .add_plugin(DebugEventsPlugin) // <- Adds debug event logging.
+        .insert_resource(PresentMode::Mailbox)
         .add_startup_system(setup)
         .run();
 }
 
-fn delete_myself(commands: &mut Commands, event: PointerEventData) -> Bubble {
-    commands.entity(event.target).despawn_recursive();
-    warn!("oopsy woopsy o_O you deweeted me");
-    Bubble::Up
+struct MyEvent;
+
+fn delete_target(commands: &mut Commands, event_data: &mut EventData<PointerClick>) {
+    commands.entity(event_data.target()).despawn_recursive();
+    event_data.event();
 }
 
 /// set up a simple 3D scene
@@ -39,7 +37,7 @@ fn setup(
         })
         .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
         .insert(PickRaycastTarget::default()) // <- Needed for the raycast backend.
-        .insert(EventListener::<PointerClick>::new(delete_myself))
+        .insert(EventListener::<PointerClick>::run_commands(delete_target))
         .id();
 
     let children: Vec<Entity> = (0..100)
@@ -48,14 +46,14 @@ fn setup(
                 .spawn_bundle(PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::Cube { size: 0.4 })),
                     material: materials.add(Color::RED.into()),
-                    transform: Transform::from_xyz(2.0, i as f32 * 0.5 - 2.5, 0.0),
+                    transform: Transform::from_xyz(2.0, i as f32 * 0.5 - 25.0, 0.0),
                     ..Default::default()
                 })
                 .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
-                .insert(PickRaycastTarget::default())
+                .insert(PickRaycastTarget::default()) // <- Needed for the raycast backend.
                 .id()
         })
-        .collect(); // <- Needed for the raycast backend.}
+        .collect();
 
     commands.entity(parent).push_children(&children);
 

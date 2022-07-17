@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use crate::{
     backend,
     input::{self, PointerPressEvent, PressStage},
-    output::{self, PointerInteraction},
+    output::{self, Click, Down, Out, Over, PointerInteraction, Up},
     PointerId,
 };
 use bevy::{
@@ -69,15 +69,15 @@ pub fn update_focus(
                 pointer_interaction.get(hover_entity),
                 Some(Interaction::None) | None
             ) {
-                pointer_over.send(output::PointerOver::new(pointer_id, hover_entity));
+                pointer_over.send(output::PointerOver::new(pointer_id, hover_entity, Over));
             }
 
             match just_pressed {
                 Some(PressStage::Down) => {
-                    pointer_down.send(output::PointerDown::new(pointer_id, hover_entity));
+                    pointer_down.send(output::PointerDown::new(pointer_id, hover_entity, Down));
                 }
                 Some(PressStage::Up) => {
-                    pointer_up.send(output::PointerUp::new(pointer_id, hover_entity));
+                    pointer_up.send(output::PointerUp::new(pointer_id, hover_entity, Up));
                 }
                 None => (),
             }
@@ -97,9 +97,9 @@ pub fn update_focus(
                     if matches!(just_pressed, Some(PressStage::Up)) {
                         // ...the pointer is considered just up on this entity even though it was
                         // not hovering the entity this frame
-                        pointer_up.send(output::PointerUp::new(pointer_id, entity));
+                        pointer_up.send(output::PointerUp::new(pointer_id, entity, Up));
                     }
-                    pointer_out.send(output::PointerOut::new(pointer_id, entity));
+                    pointer_out.send(output::PointerOut::new(pointer_id, entity, Out));
                 }
             }
         }
@@ -200,7 +200,11 @@ pub fn send_click_events(
 
     for event in pointer_up.iter() {
         if let Some(Some(_)) = click_down.get(&event.id()) {
-            pointer_click.send(output::PointerClick::new(&event.id(), &event.target()));
+            pointer_click.send(output::PointerClick::new(
+                &event.id(),
+                &event.target(),
+                Click,
+            ));
         }
         click_down.insert(event.id(), None);
     }
