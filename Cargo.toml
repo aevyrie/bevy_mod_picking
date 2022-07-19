@@ -26,6 +26,8 @@ bevy_picking_rapier = { optional = true, path = "crates/bevy_picking_rapier" }
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
   "bevy_winit",
   "x11",
+  "bevy_gltf",
+  "png",
 ] }
 
 [features]

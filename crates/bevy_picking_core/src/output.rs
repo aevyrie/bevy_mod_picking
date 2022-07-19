@@ -41,7 +41,7 @@ impl<E: IsPointerEvent> EventListener<E> {
     pub fn run_command(on_event: fn(&mut Commands, &mut EventData<E>)) -> Self {
         Self { on_event }
     }
-    pub fn forward_event<F: EventFrom<E>>() -> Self {
+    pub fn forward_event<F: EventFrom>() -> Self {
         Self {
             on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
                 let forwarded_event = F::new(event_data);
@@ -53,16 +53,17 @@ impl<E: IsPointerEvent> EventListener<E> {
         }
     }
 }
-pub trait EventFrom<E: IsPointerEvent>: Event {
-    fn new(event_data: &mut EventData<E>) -> Self;
+
+pub trait EventFrom: Event {
+    fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self;
 }
 
 pub trait EventListenerCommands {
-    fn forward_events<E: IsPointerEvent, F: EventFrom<E>>(&mut self) -> &mut Self;
+    fn forward_events<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self;
 }
 
 impl<'w, 's, 'a> EventListenerCommands for EntityCommands<'w, 's, 'a> {
-    fn forward_events<E: IsPointerEvent, F: EventFrom<E>>(&mut self) -> &mut Self {
+    fn forward_events<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self {
         self.commands().add(|world: &mut World| {
             world.init_resource::<Events<F>>();
         });

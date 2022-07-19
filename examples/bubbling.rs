@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy_mod_picking::{
-    output::{EventData, EventFrom, EventListenerCommands, PointerClick},
+    output::{
+        EventData, EventFrom, EventListenerCommands, IsPointerEvent, PointerClick, PointerOver,
+    },
     DebugEventsPlugin, DefaultPickingPlugins, PickRaycastSource, PickRaycastTarget, PickableBundle,
 };
 
@@ -10,22 +12,35 @@ fn main() {
         .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
         .add_plugin(DebugEventsPlugin) // <- Adds debug event logging.
         .add_startup_system(setup)
-        .add_system(DeleteMe::handle_events)
+        .add_system(handle_events)
         .run();
 }
 
 struct DeleteMe(Entity);
-impl EventFrom<PointerClick> for DeleteMe {
-    fn new(event_data: &mut EventData<PointerClick>) -> Self {
+impl EventFrom for DeleteMe {
+    fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self {
         Self(event_data.target())
     }
 }
-impl DeleteMe {
-    fn handle_events(mut commands: Commands, mut events: EventReader<DeleteMe>) {
-        for event in events.iter() {
-            commands.entity(event.0).despawn();
-            info!("I deleted the thing!");
-        }
+
+struct GreetMe(Entity);
+impl EventFrom for GreetMe {
+    fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self {
+        Self(event_data.target())
+    }
+}
+
+fn handle_events(
+    mut commands: Commands,
+    mut deletes: EventReader<DeleteMe>,
+    mut greets: EventReader<GreetMe>,
+) {
+    for event in deletes.iter() {
+        commands.entity(event.0).despawn_recursive();
+        info!("I deleted the thing!");
+    }
+    for event in greets.iter() {
+        info!("Hello {:?}!", event.0);
     }
 }
 
@@ -36,34 +51,27 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // cube
-    let parent = commands
+    commands
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::WHITE.into()),
-            transform: Transform::from_scale(Vec3::new(1.0, 0.1, 1.0)),
             ..Default::default()
         })
         .insert_bundle(PickableBundle::default())
         .insert(PickRaycastTarget::default())
         .forward_events::<PointerClick, DeleteMe>()
-        .id();
-
-    let children: Vec<Entity> = (0..100)
-        .map(|i| {
-            commands
+        .forward_events::<PointerOver, GreetMe>()
+        .with_children(|parent| {
+            parent
                 .spawn_bundle(PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::Cube { size: 0.4 })),
                     material: materials.add(Color::RED.into()),
-                    transform: Transform::from_xyz(2.0, i as f32 * 0.5 - 25.0, 0.0),
+                    transform: Transform::from_xyz(0.0, 1.0, 0.0),
                     ..Default::default()
                 })
                 .insert_bundle(PickableBundle::default())
-                .insert(PickRaycastTarget::default())
-                .id()
-        })
-        .collect();
-
-    commands.entity(parent).push_children(&children);
+                .insert(PickRaycastTarget::default());
+        });
 
     // light
     commands.spawn_bundle(PointLightBundle {
