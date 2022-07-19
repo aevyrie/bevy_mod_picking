@@ -1,6 +1,6 @@
-use bevy::{prelude::*, window::PresentMode};
+use bevy::prelude::*;
 use bevy_mod_picking::{
-    output::{EventData, EventListener, PointerClick, PointerOver},
+    output::{EventData, EventFrom, EventListenerCommands, PointerClick},
     DebugEventsPlugin, DefaultPickingPlugins, PickRaycastSource, PickRaycastTarget, PickableBundle,
 };
 
@@ -9,16 +9,24 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
         .add_plugin(DebugEventsPlugin) // <- Adds debug event logging.
-        .insert_resource(PresentMode::Mailbox)
         .add_startup_system(setup)
+        .add_system(DeleteMe::handle_events)
         .run();
 }
 
-struct MyEvent;
-
-fn delete_target(commands: &mut Commands, event_data: &mut EventData<PointerClick>) {
-    commands.entity(event_data.target()).despawn_recursive();
-    event_data.event();
+struct DeleteMe(Entity);
+impl EventFrom<PointerClick> for DeleteMe {
+    fn new(event_data: &mut EventData<PointerClick>) -> Self {
+        Self(event_data.target())
+    }
+}
+impl DeleteMe {
+    fn handle_events(mut commands: Commands, mut events: EventReader<DeleteMe>) {
+        for event in events.iter() {
+            commands.entity(event.0).despawn();
+            info!("I deleted the thing!");
+        }
+    }
 }
 
 /// set up a simple 3D scene
@@ -35,9 +43,9 @@ fn setup(
             transform: Transform::from_scale(Vec3::new(1.0, 0.1, 1.0)),
             ..Default::default()
         })
-        .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
-        .insert(PickRaycastTarget::default()) // <- Needed for the raycast backend.
-        .insert(EventListener::<PointerClick>::run_commands(delete_target))
+        .insert_bundle(PickableBundle::default())
+        .insert(PickRaycastTarget::default())
+        .forward_events::<PointerClick, DeleteMe>()
         .id();
 
     let children: Vec<Entity> = (0..100)
@@ -49,8 +57,8 @@ fn setup(
                     transform: Transform::from_xyz(2.0, i as f32 * 0.5 - 25.0, 0.0),
                     ..Default::default()
                 })
-                .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
-                .insert(PickRaycastTarget::default()) // <- Needed for the raycast backend.
+                .insert_bundle(PickableBundle::default())
+                .insert(PickRaycastTarget::default())
                 .id()
         })
         .collect();

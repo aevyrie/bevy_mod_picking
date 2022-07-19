@@ -6,7 +6,11 @@ use std::{
 };
 
 use crate::PointerId;
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{
+    ecs::{event::Event, system::EntityCommands},
+    prelude::*,
+    utils::HashMap,
+};
 
 #[derive(Debug, Default, Clone, Component)]
 pub struct PointerInteraction {
@@ -34,19 +38,37 @@ pub struct EventListener<E: IsPointerEvent> {
 }
 
 impl<E: IsPointerEvent> EventListener<E> {
-    pub fn run_commands(on_event: fn(&mut Commands, &mut EventData<E>)) -> Self {
+    pub fn run_command(on_event: fn(&mut Commands, &mut EventData<E>)) -> Self {
         Self { on_event }
     }
-    // pub fn forward_event<T: ForwardEvent>(
-    //     world: &mut World,
-    //     event_data: &mut EventData<E>,
-    // ) -> Self {
-    //     world.resource_mut::<Events<T>>().send(T::new(event_data))
-    // }
+    pub fn forward_event<F: EventFrom<E>>() -> Self {
+        Self {
+            on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
+                let forwarded_event = F::new(event_data);
+                commands.add(|world: &mut World| {
+                    let mut events = world.get_resource_or_insert_with(|| Events::<F>::default());
+                    events.send(forwarded_event);
+                })
+            },
+        }
+    }
+}
+pub trait EventFrom<E: IsPointerEvent>: Event {
+    fn new(event_data: &mut EventData<E>) -> Self;
 }
 
-pub trait ForwardEvent: bevy::ecs::event::Event {
-    fn new(event_date: &mut EventData<impl IsPointerEvent>) -> Self;
+pub trait EventListenerCommands {
+    fn forward_events<E: IsPointerEvent, F: EventFrom<E>>(&mut self) -> &mut Self;
+}
+
+impl<'w, 's, 'a> EventListenerCommands for EntityCommands<'w, 's, 'a> {
+    fn forward_events<E: IsPointerEvent, F: EventFrom<E>>(&mut self) -> &mut Self {
+        self.commands().add(|world: &mut World| {
+            world.init_resource::<Events<F>>();
+        });
+        self.insert(EventListener::<E>::forward_event::<F>());
+        self
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]

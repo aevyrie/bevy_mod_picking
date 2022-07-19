@@ -38,7 +38,7 @@ fn setup(
         })
         .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
         .insert(PickRaycastTarget::default()) // <- Needed for the raycast backend.
-        .insert(EventListener::<PointerClick>::run_commands(delete_myself));
+        .insert(EventListener::<PointerClick>::run_command(delete_myself));
 
     // cube
     commands
