@@ -29,7 +29,9 @@ impl DerefMut for PointerInteraction {
     }
 }
 
-pub trait IsPointerEventInner: Send + Sync + 'static + Clone {}
+pub trait EventFrom: Event {
+    fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self;
+}
 
 #[derive(Component, Clone)]
 pub struct EventListener<E: IsPointerEvent> {
@@ -52,10 +54,6 @@ impl<E: IsPointerEvent> EventListener<E> {
             },
         }
     }
-}
-
-pub trait EventFrom: Event {
-    fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self;
 }
 
 pub trait EventListenerCommands {
@@ -118,19 +116,19 @@ pub enum Bubble {
 }
 
 pub trait IsPointerEvent: Send + Sync + 'static + Display + Clone {
-    type InnerEventType: IsPointerEventInner;
+    type InnerEventType;
 }
 
-#[derive(Debug, Clone)]
-pub struct PointerEvent<E: IsPointerEventInner> {
+#[derive(Clone, Eq, PartialEq, Debug, Reflect)]
+pub struct PointerEvent<E: Send + Sync + Clone + 'static + Reflect> {
     id: PointerId,
     target: Entity,
     event: E,
 }
-impl<E: IsPointerEventInner> IsPointerEvent for PointerEvent<E> {
+impl<E: Clone + Send + Sync + Reflect> IsPointerEvent for PointerEvent<E> {
     type InnerEventType = E;
 }
-impl<E: IsPointerEventInner> PointerEvent<E> {
+impl<E: Clone + Send + Sync + 'static + Reflect> PointerEvent<E> {
     pub fn new(id: &PointerId, target: &Entity, event: E) -> Self {
         Self {
             id: *id,
@@ -182,7 +180,7 @@ impl<E: IsPointerEventInner> PointerEvent<E> {
         }
     }
 }
-impl<E: IsPointerEventInner> std::fmt::Display for PointerEvent<E> {
+impl<E: Clone + Send + Sync + Reflect> std::fmt::Display for PointerEvent<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Target: {:?}, Pointer: {:?}", self.target, self.id)
     }
@@ -191,47 +189,50 @@ impl<E: IsPointerEventInner> std::fmt::Display for PointerEvent<E> {
 pub type PointerOver = PointerEvent<Over>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Over;
-impl IsPointerEventInner for Over {}
 
 pub type PointerOut = PointerEvent<Out>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Out;
-impl IsPointerEventInner for Out {}
 
 pub type PointerEnter = PointerEvent<Enter>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Enter;
-impl IsPointerEventInner for Enter {}
 
 pub type PointerLeave = PointerEvent<Leave>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Leave;
-impl IsPointerEventInner for Leave {}
 
 pub type PointerDown = PointerEvent<Down>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Down;
-impl IsPointerEventInner for Down {}
 
 pub type PointerUp = PointerEvent<Up>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Up;
-impl IsPointerEventInner for Up {}
 
 pub type PointerClick = PointerEvent<Click>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Click;
-impl IsPointerEventInner for Click {}
 
 pub type PointerMove = PointerEvent<Move>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Move;
-impl IsPointerEventInner for Move {}
 
 pub type PointerCancel = PointerEvent<Cancel>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Cancel;
-impl IsPointerEventInner for Cancel {}
+
+pub type PointerDragStart = PointerEvent<DragStart>;
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+pub struct DragStart;
+
+pub type PointerDragEnd = PointerEvent<DragEnd>;
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+pub struct DragEnd;
+
+pub type PointerDrag = PointerEvent<Drag>;
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+pub struct Drag;
 
 #[derive(Clone, Eq, PartialEq, Debug, Default, Component)]
 pub struct PickInteraction {
@@ -270,7 +271,7 @@ impl PickInteraction {
         }
     }
 
-    fn update_interactions<E: IsPointerEventInner>(
+    fn update_interactions<E: Clone + Send + Sync + Reflect>(
         event: &PointerEvent<E>,
         new_interaction: Interaction,
         pointer_interactions: &mut Query<(&PointerId, &mut PointerInteraction)>,

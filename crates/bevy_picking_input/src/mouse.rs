@@ -4,23 +4,26 @@ use bevy::{
     render::camera::RenderTarget,
 };
 use bevy_picking_core::{
-    input::{Location, PointerButton, PointerLocationEvent, PointerPressEvent},
+    input::{Location, PointerButton, PointerMoveEvent, PointerPressEvent},
     PointerId,
 };
 
 /// Sends mouse pointer events to be processed by the picking backend
 pub fn mouse_pick_events(
-    windows: Res<Windows>,
+    mut cursor_moves: EventReader<CursorMoved>,
     mut mouse_inputs: EventReader<MouseButtonInput>,
-    mut pointer_moves: EventWriter<PointerLocationEvent>,
+    mut pointer_move: EventWriter<PointerMoveEvent>,
     mut pointer_clicks: EventWriter<PointerPressEvent>,
 ) {
-    let id = PointerId::Mouse;
-    let location = match get_cursor_position(windows) {
-        Some(location) => location,
-        None => return,
-    };
-    pointer_moves.send(PointerLocationEvent { id, location });
+    for event in cursor_moves.iter() {
+        pointer_move.send(PointerMoveEvent {
+            id: PointerId::Mouse,
+            location: Location {
+                target: RenderTarget::Window(event.id),
+                position: event.position,
+            },
+        });
+    }
 
     for input in mouse_inputs.iter() {
         let button = match input.button {
@@ -39,16 +42,4 @@ pub fn mouse_pick_events(
             }
         }
     }
-}
-
-fn get_cursor_position(windows: Res<Windows>) -> Option<Location> {
-    for window in windows.iter() {
-        if let Some(position) = window.cursor_position() {
-            return Some(Location {
-                position,
-                target: RenderTarget::Window(window.id()),
-            });
-        }
-    }
-    None
 }

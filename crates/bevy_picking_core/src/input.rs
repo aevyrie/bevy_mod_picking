@@ -138,33 +138,33 @@ impl Location {
 
 /// Represents an input pointer used for picking.
 #[derive(Debug, Default, Clone, Component, PartialEq)]
-pub struct PointerLocation {
+pub struct PointerPosition {
     location: Option<Location>,
 }
-impl PointerLocation {
+impl PointerPosition {
     pub fn location(&self) -> Option<&Location> {
         self.location.as_ref()
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct PointerLocationEvent {
+pub struct PointerMoveEvent {
     pub id: PointerId,
     pub location: Location,
 }
-impl std::fmt::Display for PointerLocationEvent {
+impl std::fmt::Display for PointerMoveEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Event::Location::{:?} {}", self.id, self.location)
     }
 }
-impl PointerLocationEvent {
+impl PointerMoveEvent {
     pub fn new(id: PointerId, location: Location) -> Self {
         Self { id, location }
     }
 
     pub fn receive(
         mut events: EventReader<Self>,
-        mut pointers: Query<(&PointerId, &mut PointerLocation)>,
+        mut pointers: Query<(&PointerId, &mut PointerPosition)>,
     ) {
         for event_pointer in events.iter() {
             pointers.for_each_mut(|(id, mut pointer)| {

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{output, PickStage, PickingSettings};
+use crate::{input::PointerPress, output, PickStage, PickingSettings, PointerId};
 
 use super::selection::*;
 use bevy::{app::PluginGroupBuilder, asset::Asset, prelude::*, render::color::Color};
@@ -161,6 +161,7 @@ pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
         &InitialHighlight<T>,
         &HighlightOverride<T>,
     )>,
+    pointer: Query<(&PointerId, &PointerPress)>,
     mut up_events: EventReader<output::PointerUp>,
     mut down_events: EventReader<output::PointerDown>,
     mut over_events: EventReader<output::PointerOver>,
@@ -171,8 +172,8 @@ pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
         // Reset *all* deselected entities
         for (mut active_asset, pick_selection, h_initial, _) in interaction_query.iter_mut() {
             match pick_selection {
-                Some(s) if s.is_selected => (),
-                _ => *active_asset = h_initial.initial.to_owned(),
+                Some(s) if !s.is_selected => *active_asset = h_initial.initial.to_owned(),
+                _ => (),
             }
         }
 
@@ -197,7 +198,15 @@ pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
     for event in over_events.iter() {
         if let Ok((mut active_asset, _, _, h_override)) = interaction_query.get_mut(event.target())
         {
-            *active_asset = h_override.hovered(&global_defaults);
+            if pointer
+                .iter()
+                .find(|(id, press)| **id == event.id() && press.is_primary_down())
+                .is_some()
+            {
+                *active_asset = h_override.pressed(&global_defaults);
+            } else {
+                *active_asset = h_override.hovered(&global_defaults);
+            }
         }
     }
 

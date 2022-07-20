@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
     backend::{PointerOverEvent, PointerOverMetadata},
-    input::PointerLocationEvent,
+    input::PointerPosition,
     PickStage, PickingSettings, PointerId,
 };
 
@@ -36,10 +36,9 @@ impl Plugin for RaycastPlugin {
     }
 }
 
-/// Builds rays and updates raycasting [`PickingSource`]s from [`PointerLocationEvent`]s.
+/// Builds rays and updates raycasting [`PickRaycastSource`]s from [`PointerPosition`]s.
 pub fn build_rays_from_pointers(
-    pointers: Query<(Entity, &PointerId)>,
-    mut pointer_events: EventReader<PointerLocationEvent>,
+    pointers: Query<(Entity, &PointerId, &PointerPosition)>,
     mut commands: Commands,
     mut sources: Query<&mut PickRaycastSource>,
     cameras: Query<(&Camera, &GlobalTransform)>,
@@ -49,21 +48,18 @@ pub fn build_rays_from_pointers(
         source.intersections_mut().clear()
     });
 
-    for event in pointer_events.iter() {
-        let entity = match pointers
-            .iter()
-            .find_map(|(e, &id)| (id == event.id).then_some(e))
-        {
-            Some(e) => e,
-            None => continue,
+    for (entity, _id, location) in pointers.iter() {
+        let location = if let Some(location) = location.location() {
+            location
+        } else {
+            continue;
         };
-
         cameras
             .iter()
-            .filter(|(camera, _)| event.location.is_same_target(camera))
-            .filter(|(camera, _)| event.location.is_in_viewport(camera))
+            .filter(|(camera, _)| location.is_same_target(camera))
+            .filter(|(camera, _)| location.is_in_viewport(camera))
             .map(|(camera, transform)| {
-                Ray3d::from_screenspace(event.location.position, camera, transform)
+                Ray3d::from_screenspace(location.position, camera, transform)
             })
             .for_each(|ray| {
                 if let Ok(mut source) = sources.get_mut(entity) {

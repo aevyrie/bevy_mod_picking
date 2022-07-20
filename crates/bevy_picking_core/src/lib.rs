@@ -9,9 +9,9 @@ pub mod output;
 mod selection;
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*, reflect::Uuid, ui::FocusPolicy};
-use focus::{send_click_events, PickLayer};
+use focus::{send_click_and_drag_events, PickLayer};
 use highlight::PickHighlight;
-use input::{PointerLocation, PointerMultiselect, PointerPress};
+use input::{PointerMultiselect, PointerPosition, PointerPress};
 use output::{PickInteraction, PointerInteraction};
 use selection::PointerSelectionEvent;
 
@@ -37,7 +37,7 @@ pub struct PickableBundle {
 #[derive(Bundle)]
 pub struct PointerBundle {
     pub id: PointerId,
-    pub location: input::PointerLocation,
+    pub location: input::PointerPosition,
     pub click: input::PointerPress,
     pub multi_select: input::PointerMultiselect,
     pub interaction: output::PointerInteraction,
@@ -46,7 +46,7 @@ impl PointerBundle {
     pub fn new(id: PointerId) -> Self {
         PointerBundle {
             id,
-            location: PointerLocation::default(),
+            location: PointerPosition::default(),
             click: PointerPress::default(),
             multi_select: PointerMultiselect::default(),
             interaction: PointerInteraction::default(),
@@ -72,14 +72,14 @@ impl Plugin for CorePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PickingSettings>()
             .add_event::<input::PointerPressEvent>()
-            .add_event::<input::PointerLocationEvent>()
+            .add_event::<input::PointerMoveEvent>()
             .add_event::<backend::PointerOverEvent>()
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
                     .after(PickStage::Input)
                     .before(PickStage::Backend)
-                    .with_system(input::PointerLocationEvent::receive)
+                    .with_system(input::PointerMoveEvent::receive)
                     .with_system(input::PointerPressEvent::receive),
             );
     }
@@ -97,6 +97,9 @@ impl Plugin for InteractionPlugin {
             .add_event::<output::PointerClick>()
             .add_event::<output::PointerMove>()
             .add_event::<output::PointerCancel>()
+            .add_event::<output::PointerDragStart>()
+            .add_event::<output::PointerDragEnd>()
+            .add_event::<output::PointerDrag>()
             .add_event::<PointerSelectionEvent>()
             .add_system_set_to_stage(
                 CoreStage::First,
@@ -106,8 +109,8 @@ impl Plugin for InteractionPlugin {
                     .with_run_criteria(|state: Res<PickingSettings>| state.interacting)
                     .with_system(update_focus)
                     .with_system(PickInteraction::update.after(update_focus))
-                    .with_system(send_click_events.after(update_focus))
-                    .with_system(send_selection_events.after(send_click_events))
+                    .with_system(send_click_and_drag_events.after(update_focus))
+                    .with_system(send_selection_events.after(send_click_and_drag_events))
                     .with_system(PointerSelectionEvent::receive.after(send_selection_events)),
             )
             .add_system_set_to_stage(
@@ -123,7 +126,10 @@ impl Plugin for InteractionPlugin {
                     .with_system(output::PointerUp::event_bubbling)
                     .with_system(output::PointerClick::event_bubbling)
                     .with_system(output::PointerMove::event_bubbling)
-                    .with_system(output::PointerCancel::event_bubbling),
+                    .with_system(output::PointerCancel::event_bubbling)
+                    .with_system(output::PointerDragStart::event_bubbling)
+                    .with_system(output::PointerDragEnd::event_bubbling)
+                    .with_system(output::PointerDrag::event_bubbling),
             );
     }
 }
@@ -141,7 +147,11 @@ impl Plugin for DebugEventsPlugin {
                 .with_system(event_debug_system::<output::PointerDown>)
                 .with_system(event_debug_system::<output::PointerUp>)
                 .with_system(event_debug_system::<output::PointerClick>)
-                .with_system(event_debug_system::<output::PointerMove>),
+                .with_system(event_debug_system::<output::PointerMove>)
+                .with_system(event_debug_system::<output::PointerCancel>)
+                .with_system(event_debug_system::<output::PointerDragStart>)
+                .with_system(event_debug_system::<output::PointerDragEnd>)
+                .with_system(event_debug_system::<output::PointerDrag>),
         );
     }
 }
@@ -195,7 +205,7 @@ impl Default for PickingSettings {
     }
 }
 
-/// Listens for [HoverEvent] and [SelectionEvent] events and prints them
+/// Listens for pointer events of type `E` and prints them
 pub fn event_debug_system<E: output::IsPointerEvent>(mut events: EventReader<E>) {
     for event in events.iter() {
         info!(

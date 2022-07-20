@@ -3,7 +3,10 @@ use std::collections::BTreeMap;
 use crate::{
     backend,
     input::{self, PointerPressEvent, PressStage},
-    output::{self, Click, Down, Out, Over, PointerInteraction, Up},
+    output::{
+        self, Click, Down, Drag, DragEnd, DragStart, Move, Out, Over, PointerDown,
+        PointerInteraction, PointerMove, PointerOut, PointerOver, PointerUp, Up,
+    },
     PointerId,
 };
 use bevy::{
@@ -41,20 +44,28 @@ pub fn update_focus(
     pointers: Query<(&PointerId, &PointerInteraction)>, // <- what happened last frame
     mut click_events: EventReader<input::PointerPressEvent>,
     mut over_events: EventReader<backend::PointerOverEvent>,
+    mut pointer_move_in: EventReader<input::PointerMoveEvent>,
     // Local
     mut pointer_map: Local<HashMap<PointerId, LayerMap>>,
     mut hover_map: Local<HashMap<PointerId, HashSet<Entity>>>,
     // Output
-    mut pointer_over: EventWriter<output::PointerOver>,
-    mut pointer_out: EventWriter<output::PointerOut>,
-    mut pointer_up: EventWriter<output::PointerUp>,
-    mut pointer_down: EventWriter<output::PointerDown>,
+    mut pointer_move: EventWriter<PointerMove>,
+    mut pointer_over: EventWriter<PointerOver>,
+    mut pointer_out: EventWriter<PointerOut>,
+    mut pointer_up: EventWriter<PointerUp>,
+    mut pointer_down: EventWriter<PointerDown>,
 ) {
     reset_local_maps(&mut hover_map, &mut pointer_map);
     build_pointer_map(pick_layers, &mut over_events, &mut pointer_map);
     build_hover_map(&pointers, focus, pointer_map, &mut hover_map);
 
     let click_events: Vec<&PointerPressEvent> = click_events.iter().collect();
+
+    for event in pointer_move_in.iter() {
+        for hover_entity in hover_map.get(&event.id).iter().flat_map(|h| h.iter()) {
+            pointer_move.send(PointerMove::new(&event.id, hover_entity, Move))
+        }
+    }
 
     for (pointer_id, pointer_interaction) in pointers.iter() {
         let just_pressed = click_events
@@ -69,15 +80,15 @@ pub fn update_focus(
                 pointer_interaction.get(hover_entity),
                 Some(Interaction::None) | None
             ) {
-                pointer_over.send(output::PointerOver::new(pointer_id, hover_entity, Over));
+                pointer_over.send(PointerOver::new(pointer_id, hover_entity, Over));
             }
 
             match just_pressed {
                 Some(PressStage::Down) => {
-                    pointer_down.send(output::PointerDown::new(pointer_id, hover_entity, Down));
+                    pointer_down.send(PointerDown::new(pointer_id, hover_entity, Down));
                 }
                 Some(PressStage::Up) => {
-                    pointer_up.send(output::PointerUp::new(pointer_id, hover_entity, Up));
+                    pointer_up.send(PointerUp::new(pointer_id, hover_entity, Up));
                 }
                 None => (),
             }
@@ -97,9 +108,9 @@ pub fn update_focus(
                     if matches!(just_pressed, Some(PressStage::Up)) {
                         // ...the pointer is considered just up on this entity even though it was
                         // not hovering the entity this frame
-                        pointer_up.send(output::PointerUp::new(pointer_id, entity, Up));
+                        pointer_up.send(PointerUp::new(pointer_id, entity, Up));
                     }
-                    pointer_out.send(output::PointerOut::new(pointer_id, entity, Out));
+                    pointer_out.send(PointerOut::new(pointer_id, entity, Out));
                 }
             }
         }
@@ -187,26 +198,56 @@ fn build_hover_map(
 
 /// Sends click events when an entity receives a mouse down event followed by a mouse up event from
 /// the same pointer and from within the same entity.
-pub fn send_click_events(
-    mut pointer_down: EventReader<output::PointerDown>,
-    mut pointer_up: EventReader<output::PointerUp>,
+pub fn send_click_and_drag_events(
+    mut pointer_down: EventReader<PointerDown>,
+    mut pointer_up: EventReader<PointerUp>,
+    mut pointer_move: EventReader<PointerMove>,
     mut pointer_click: EventWriter<output::PointerClick>,
+    mut pointer_drag_start: EventWriter<output::PointerDragStart>,
+    mut pointer_drag_end: EventWriter<output::PointerDragEnd>,
+    mut pointer_drag: EventWriter<output::PointerDrag>,
     mut presses: EventReader<PointerPressEvent>,
     mut click_down: Local<HashMap<PointerId, Option<Entity>>>,
+    mut drag_map: Local<HashMap<PointerId, Option<Entity>>>,
 ) {
+    // The pointer moved and was already pressed
+    for event in pointer_move.iter() {
+        if let Some(Some(_)) = click_down.get(&event.id()) {
+            if let Some(Some(drag_entity)) = drag_map.get(&event.id()) {
+                pointer_drag.send(output::PointerDrag::new(&event.id(), &drag_entity, Drag))
+            } else {
+                drag_map.insert(event.id(), Some(event.target()));
+                pointer_drag_start.send(output::PointerDragStart::new(
+                    &event.id(),
+                    &event.target(),
+                    DragStart,
+                ))
+            }
+        }
+    }
+
     for event in pointer_down.iter() {
         click_down.insert(event.id(), Some(event.target()));
     }
 
     for event in pointer_up.iter() {
-        if let Some(Some(_)) = click_down.get(&event.id()) {
-            pointer_click.send(output::PointerClick::new(
-                &event.id(),
-                &event.target(),
-                Click,
-            ));
+        if let Some(Some(down_entity)) = click_down.get(&event.id()) {
+            if *down_entity == event.target() {
+                pointer_click.send(output::PointerClick::new(
+                    &event.id(),
+                    &event.target(),
+                    Click,
+                ));
+            }
         }
         click_down.insert(event.id(), None);
+
+        pointer_drag_end.send(output::PointerDragEnd::new(
+            &event.id(),
+            &event.target(),
+            DragEnd,
+        ));
+        drag_map.insert(event.id(), None);
     }
 
     for press in presses.iter() {

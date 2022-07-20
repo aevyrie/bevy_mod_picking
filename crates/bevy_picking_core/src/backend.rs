@@ -1,7 +1,7 @@
-//! A picking backend is responsible for consuming [`crate::input::PointerLocationEvent`]s, and
-//! producing corresponding [`PointerOverEvent`]s. The `PointerOverEvent`s produced by a backend do
-//! not need to be sorted or filtered, all that needs to be provided is an unordered list of
-//! entities and their distance from the pointer into the screen (depth).
+//! A picking backend is responsible for reading [`crate::input::PointerPosition`]s, and producing
+//! [`PointerOverEvent`]s. The [`PointerOverEvent`]s produced by a backend do not need to be sorted or
+//! filtered, all that needs to be provided is an unordered list of entities and their distance from
+//! the pointer into the screen (depth).
 //!
 //! Depth only needs to be self-consistent with other [`PointerOverEvent`]s in the same
 //! [`crate::focus::PickLayer`].
