@@ -1,10 +1,9 @@
 //! This module provides a simple interface for implementing a picking backend. A picking backend is
-//! responsible for reading [`PointerPosition`](crate::input::PointerPosition) components, and
-//! producing [`EntitiesUnderPointer`]s. The [`EntitiesUnderPointer`]s produced by a backend do
-//! **not** need to be sorted or filtered, all that needs to be provided is an unordered list of
-//! entities and their distance from the pointer into the screen (depth). Depth only needs to be
-//! self-consistent with other [`EntitiesUnderPointer`]s in the same
-//! [`PickLayer`](crate::focus::PickLayer).
+//! responsible for reading [`PointerPosition`] components, and producing [`EntitiesUnderPointer`]s.
+//! The [`EntitiesUnderPointer`]s produced by a backend do **not** need to be sorted or filtered,
+//! all that needs to be provided is an unordered list of entities and their distance from the
+//! pointer into the screen (depth). Depth only needs to be self-consistent with other
+//! [`EntitiesUnderPointer`]s in the same [`PickLayer`](crate::focus::PickLayer).
 //!
 //! In plain English, a backend is provided the location of pointers, and is asked to provide a list
 //! of all entities under those pointers.
@@ -18,7 +17,10 @@
 use crate::PointerId;
 use bevy::prelude::*;
 
-/// An event produced by a picking backend, describing the entities under a pointer.
+pub use crate::input::PointerPosition;
+
+/// An event produced by a picking backend, describing the entities under a pointer in an unordered
+/// list.
 ///
 /// Some backends may only support providing the topmost entity; this is a valid limitation of some
 /// backends. For example, a picking shader might only have data on the topmost rendered output from
@@ -26,12 +28,12 @@ use bevy::prelude::*;
 #[derive(Debug, Clone)]
 pub struct EntitiesUnderPointer {
     pub id: PointerId,
-    pub over_list: Vec<PointerOverMetadata>,
+    pub over_list: Vec<EntityDepth>,
 }
 
 /// Metadata for each entity this pointer is over.
 #[derive(Debug, Clone)]
-pub struct PointerOverMetadata {
+pub struct EntityDepth {
     pub entity: Entity,
     pub depth: f32,
 }

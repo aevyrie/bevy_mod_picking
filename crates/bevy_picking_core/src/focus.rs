@@ -43,7 +43,7 @@ pub fn update_focus(
     pick_layers: Query<&PickLayer>,
     pointers: Query<(&PointerId, &PointerInteraction)>, // <- what happened last frame
     mut input_presses: EventReader<input::InputPress>,
-    mut over_events: EventReader<backend::EntitiesUnderPointer>,
+    mut under_pointer: EventReader<backend::EntitiesUnderPointer>,
     mut pointer_move_in: EventReader<input::InputMove>,
     // Locals
     mut pointer_map: Local<HashMap<PointerId, LayerMap>>,
@@ -56,7 +56,7 @@ pub fn update_focus(
     mut pointer_down: EventWriter<PointerDown>,
 ) {
     reset_local_maps(&mut hover_map, &mut pointer_map);
-    build_pointer_map(pick_layers, &mut over_events, &mut pointer_map);
+    build_pointer_map(pick_layers, &mut under_pointer, &mut pointer_map);
     build_hover_map(&pointers, focus, pointer_map, &mut hover_map);
 
     let input_presses: Vec<&InputPress> = input_presses.iter().collect();

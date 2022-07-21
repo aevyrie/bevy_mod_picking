@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
-    backend::{EntitiesUnderPointer, PointerOverMetadata},
+    backend::{EntitiesUnderPointer, EntityDepth},
     input::PointerPosition,
     PickStage, PickingSettings, PointerId,
 };
@@ -73,29 +73,27 @@ pub fn build_rays_from_pointers(
     }
 }
 
-/// Produces [`EntitiesUnderPointer`]s from [`PickingSource`] intersections.
+/// Produces [`EntitiesUnderPointer`]s from [`PickRaycastSource`] intersections.
 fn update_hits(
     mut sources: Query<(&PickRaycastSource, &PointerId)>,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
     for (source, &id) in sources.iter_mut() {
-        let over: Vec<PointerOverMetadata> = source
+        let under_cursor: Vec<EntityDepth> = source
             .intersect_list()
             .iter()
             .flat_map(|inner| {
-                inner
-                    .iter()
-                    .map(|(entity, intersection)| PointerOverMetadata {
-                        entity: *entity,
-                        depth: intersection.distance(),
-                    })
+                inner.iter().map(|(entity, intersection)| EntityDepth {
+                    entity: *entity,
+                    depth: intersection.distance(),
+                })
             })
             .collect();
 
-        if !over.is_empty() {
+        if !under_cursor.is_empty() {
             output.send(EntitiesUnderPointer {
                 id,
-                over_list: over,
+                over_list: under_cursor,
             });
         }
     }
