@@ -1,5 +1,5 @@
 [package]
-name = "bevy_picking_raycast"
+name = "bevy_picking_selection"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,6 +8,5 @@ edition = "2021"
 [dependencies]
 bevy_picking_core = { path = "../bevy_picking_core" }
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
-  "render",
+    "render",
 ] }
-bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "main" }

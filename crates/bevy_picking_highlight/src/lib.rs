@@ -1,9 +1,11 @@
 use std::marker::PhantomData;
 
-use crate::{input::PointerPress, output, PickStage, PickingSettings, PointerId};
-
-use super::selection::*;
 use bevy::{app::PluginGroupBuilder, asset::Asset, prelude::*, render::color::Color};
+use bevy_picking_core::{
+    input::PointerPress,
+    output::{PointerClick, PointerDown, PointerOut, PointerOver, PointerUp},
+    PickStage, PointerId,
+};
 
 /// Makes an entity highlightable with any [`Highlightable`] [`Asset`]. By default, this plugin
 /// provides an implementation for [`StandardMaterial`] and [`ColorMaterial`]. If this entity has
@@ -66,13 +68,12 @@ where
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
-                    .after(PickStage::Events)
-                    .with_run_criteria(|state: Res<PickingSettings>| state.highlighting)
+                    .after(PickStage::Focus)
                     .with_system(get_initial_highlight_asset::<T>)
                     .with_system(
                         update_highlight_assets::<T>
                             .after(get_initial_highlight_asset::<T>)
-                            .after(send_selection_events),
+                            .after(bevy_picking_selection::send_selection_events),
                     ),
             );
     }
@@ -157,16 +158,16 @@ pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
     global_defaults: Res<DefaultHighlighting<T>>,
     mut interaction_query: Query<(
         &mut Handle<T>,
-        Option<&PickSelection>,
+        Option<&bevy_picking_selection::PickSelection>,
         &InitialHighlight<T>,
         &HighlightOverride<T>,
     )>,
     pointer: Query<(&PointerId, &PointerPress)>,
-    mut up_events: EventReader<output::PointerUp>,
-    mut down_events: EventReader<output::PointerDown>,
-    mut over_events: EventReader<output::PointerOver>,
-    mut out_events: EventReader<output::PointerOut>,
-    mut click_events: EventReader<output::PointerClick>,
+    mut up_events: EventReader<PointerUp>,
+    mut down_events: EventReader<PointerDown>,
+    mut over_events: EventReader<PointerOver>,
+    mut out_events: EventReader<PointerOut>,
+    mut click_events: EventReader<PointerClick>,
 ) {
     for event in up_events.iter() {
         // Reset *all* deselected entities

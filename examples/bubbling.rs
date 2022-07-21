@@ -3,14 +3,15 @@ use bevy_mod_picking::{
     output::{
         EventData, EventFrom, EventListenerCommands, IsPointerEvent, PointerClick, PointerOver,
     },
-    DebugEventsPlugin, DefaultPickingPlugins, PickRaycastSource, PickRaycastTarget, PickableBundle,
+    raycast::{PickRaycastSource, PickRaycastTarget},
+    DebugEventsPlugin, DefaultPickingPlugins, PickableBundle,
 };
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
-        .add_plugin(DebugEventsPlugin) // <- Adds debug event logging.
+        .add_plugins(DefaultPickingPlugins)
+        .add_plugin(DebugEventsPlugin)
         .add_startup_system(setup)
         .add_system(handle_events)
         .run();

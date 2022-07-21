@@ -2,57 +2,13 @@
 #![allow(clippy::too_many_arguments)]
 
 pub mod backend;
-mod focus;
-mod highlight;
+pub mod focus;
 pub mod input;
 pub mod output;
-mod selection;
 
-use bevy::{ecs::schedule::ShouldRun, prelude::*, reflect::Uuid, ui::FocusPolicy};
-use focus::PickLayer;
-use highlight::PickHighlight;
-use input::{PointerMultiselect, PointerPosition, PointerPress};
-use output::{send_click_and_drag_events, PickInteraction, PointerInteraction};
-use selection::PointerSelectionEvent;
-
-pub use crate::{
-    focus::update_focus,
-    highlight::{
-        update_highlight_assets, CustomHighlightingPlugin, DefaultHighlighting, Highlightable,
-        HighlightingPlugins, InitialHighlight,
-    },
-    selection::{send_selection_events, NoDeselect, PickSelection},
-};
-
-/// Makes an entity pickable.
-#[derive(Bundle, Default)]
-pub struct PickableBundle {
-    pub pick_layer: PickLayer,
-    pub interaction: PickInteraction,
-    pub selection: PickSelection,
-    pub highlight: PickHighlight,
-    pub focus_policy: FocusPolicy,
-}
-
-#[derive(Bundle)]
-pub struct PointerBundle {
-    pub id: PointerId,
-    pub location: input::PointerPosition,
-    pub click: input::PointerPress,
-    pub multi_select: input::PointerMultiselect,
-    pub interaction: output::PointerInteraction,
-}
-impl PointerBundle {
-    pub fn new(id: PointerId) -> Self {
-        PointerBundle {
-            id,
-            location: PointerPosition::default(),
-            click: PointerPress::default(),
-            multi_select: PointerMultiselect::default(),
-            interaction: PointerInteraction::default(),
-        }
-    }
-}
+use bevy::{ecs::schedule::ShouldRun, prelude::*, reflect::Uuid};
+use focus::{pointer_events, update_focus};
+use output::{event_bubbling, send_click_and_drag_events, PickInteraction};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickStage {
@@ -62,8 +18,8 @@ pub enum PickStage {
     /// Reads inputs and produces [`backend::EntitiesUnderPointer`]s.
     Backend,
     /// Reads [`backend::EntitiesUnderPointer`]s, and updates focus, selection, and highlighting states.
-    Events,
-    ///
+    Focus,
+    /// Updates event listeners and bubbles [`output::PointerEvent`]s
     EventListeners,
 }
 
@@ -88,7 +44,8 @@ impl Plugin for CorePlugin {
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<output::PointerOver>()
+        app.init_resource::<focus::HoverMap>()
+            .add_event::<output::PointerOver>()
             .add_event::<output::PointerOut>()
             .add_event::<output::PointerEnter>()
             .add_event::<output::PointerLeave>()
@@ -100,36 +57,36 @@ impl Plugin for InteractionPlugin {
             .add_event::<output::PointerDragStart>()
             .add_event::<output::PointerDragEnd>()
             .add_event::<output::PointerDrag>()
-            .add_event::<PointerSelectionEvent>()
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
                     .after(PickStage::Backend)
-                    .label(PickStage::Events)
+                    .label(PickStage::Focus)
                     .with_run_criteria(|state: Res<PickingSettings>| state.interacting)
+                    // Focus
                     .with_system(update_focus)
-                    .with_system(PickInteraction::update.after(update_focus))
-                    .with_system(send_click_and_drag_events.after(update_focus))
-                    .with_system(send_selection_events.after(send_click_and_drag_events))
-                    .with_system(PointerSelectionEvent::receive.after(send_selection_events)),
+                    .with_system(pointer_events.after(update_focus))
+                    // Output
+                    .with_system(PickInteraction::update_from_events.after(pointer_events))
+                    .with_system(send_click_and_drag_events.after(update_focus)),
             )
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
-                    .after(PickStage::Events)
+                    .after(PickStage::Focus)
                     .label(PickStage::EventListeners)
-                    .with_system(output::PointerOver::event_bubbling)
-                    .with_system(output::PointerOut::event_bubbling)
-                    .with_system(output::PointerEnter::event_bubbling)
-                    .with_system(output::PointerLeave::event_bubbling)
-                    .with_system(output::PointerDown::event_bubbling)
-                    .with_system(output::PointerUp::event_bubbling)
-                    .with_system(output::PointerClick::event_bubbling)
-                    .with_system(output::PointerMove::event_bubbling)
-                    .with_system(output::PointerCancel::event_bubbling)
-                    .with_system(output::PointerDragStart::event_bubbling)
-                    .with_system(output::PointerDragEnd::event_bubbling)
-                    .with_system(output::PointerDrag::event_bubbling),
+                    .with_system(event_bubbling::<output::Over>)
+                    .with_system(event_bubbling::<output::Out>)
+                    .with_system(event_bubbling::<output::Enter>)
+                    .with_system(event_bubbling::<output::Leave>)
+                    .with_system(event_bubbling::<output::Down>)
+                    .with_system(event_bubbling::<output::Up>)
+                    .with_system(event_bubbling::<output::Click>)
+                    .with_system(event_bubbling::<output::Move>)
+                    .with_system(event_bubbling::<output::Cancel>)
+                    .with_system(event_bubbling::<output::DragStart>)
+                    .with_system(event_bubbling::<output::DragEnd>)
+                    .with_system(event_bubbling::<output::Drag>),
             );
     }
 }
@@ -156,13 +113,6 @@ impl Plugin for DebugEventsPlugin {
     }
 }
 
-pub struct DefaultPointersPlugin;
-impl Plugin for DefaultPointersPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_startup_system(PointerId::add_default_pointers);
-    }
-}
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
 pub enum PointerId {
     Touch(u64),
@@ -178,13 +128,6 @@ impl PointerId {
     }
     pub fn is_other(&self) -> bool {
         matches!(self, PointerId::Other(_))
-    }
-    pub fn add_default_pointers(mut commands: Commands) {
-        commands.spawn_bundle(PointerBundle::new(PointerId::Mouse));
-        // Windows was the highest amount I could find at 20 touch + 10 writing
-        for i in 0..30 {
-            commands.spawn_bundle(PointerBundle::new(PointerId::Touch(i)));
-        }
     }
 }
 

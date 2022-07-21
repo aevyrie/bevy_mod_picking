@@ -164,38 +164,38 @@ impl<E: Clone + Send + Sync + 'static + Reflect> PointerEvent<E> {
     pub fn target(&self) -> Entity {
         self.target
     }
+}
 
-    pub fn event_bubbling(
-        mut commands: Commands,
-        mut events: EventReader<PointerEvent<E>>,
-        listeners: Query<(Option<&EventListener<PointerEvent<E>>>, Option<&Parent>)>,
-    ) {
-        for event in events.iter() {
-            let mut listener = event.target;
-            while let Ok((event_listener, parent)) = listeners.get(listener) {
-                match event_listener {
-                    Some(event_listener) => {
-                        let mut event_data = EventData {
-                            id: event.id,
-                            listener,
-                            target: event.target,
-                            event: event.event.clone(),
-                            bubble: Bubble::default(),
-                        };
-                        (event_listener.on_event)(&mut commands, &mut event_data);
-                        match event_data.bubble {
-                            Bubble::Up => match parent {
-                                Some(parent) => listener = **parent,
-                                None => break, // Bubble reached the surface!
-                            },
-                            Bubble::Burst => break,
-                        }
+pub fn event_bubbling<E: Clone + Send + Sync + 'static + Reflect>(
+    mut commands: Commands,
+    mut events: EventReader<PointerEvent<E>>,
+    listeners: Query<(Option<&EventListener<PointerEvent<E>>>, Option<&Parent>)>,
+) {
+    for event in events.iter() {
+        let mut listener = event.target;
+        while let Ok((event_listener, parent)) = listeners.get(listener) {
+            match event_listener {
+                Some(event_listener) => {
+                    let mut event_data = EventData {
+                        id: event.id,
+                        listener,
+                        target: event.target,
+                        event: event.event.clone(),
+                        bubble: Bubble::default(),
+                    };
+                    (event_listener.on_event)(&mut commands, &mut event_data);
+                    match event_data.bubble {
+                        Bubble::Up => match parent {
+                            Some(parent) => listener = **parent,
+                            None => break, // Bubble reached the surface!
+                        },
+                        Bubble::Burst => break,
                     }
-                    None => match parent {
-                        Some(parent) => listener = **parent,
-                        None => break, // Bubble reached the surface!
-                    },
                 }
+                None => match parent {
+                    Some(parent) => listener = **parent,
+                    None => break, // Bubble reached the surface!
+                },
             }
         }
     }
@@ -267,7 +267,7 @@ impl PickInteraction {
         matches!(self.inner, Interaction::Clicked)
     }
 
-    pub fn update(
+    pub fn update_from_events(
         // Input
         mut pointer_over: EventReader<PointerEvent<Over>>,
         mut pointer_out: EventReader<PointerEvent<Out>>,

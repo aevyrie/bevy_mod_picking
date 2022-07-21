@@ -11,12 +11,15 @@ pub struct PointerPress {
     middle: bool,
 }
 impl PointerPress {
+    #[inline]
     pub fn is_primary_down(&self) -> bool {
         self.primary
     }
+    #[inline]
     pub fn is_secondary_down(&self) -> bool {
         self.secondary
     }
+    #[inline]
     pub fn is_middle_down(&self) -> bool {
         self.middle
     }
@@ -33,14 +36,6 @@ pub struct InputPress {
     pub id: PointerId,
     pub press: PressStage,
     pub button: PointerButton,
-}
-impl std::fmt::Display for InputPress {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.press {
-            PressStage::Down => write!(f, "Event::Click::Down::{:?}", self.id),
-            PressStage::Up => write!(f, "Event::Click::Up::{:?}", self.id),
-        }
-    }
 }
 impl InputPress {
     pub fn new_down(id: PointerId, button: PointerButton) -> InputPress {
@@ -59,16 +54,18 @@ impl InputPress {
         }
     }
 
+    #[inline]
     pub fn is_just_down(&self, id: &PointerId, button: PointerButton) -> bool {
         *self == Self::new_down(*id, button)
     }
 
+    #[inline]
     pub fn is_just_up(&self, id: &PointerId, button: PointerButton) -> bool {
         *self == Self::new_up(*id, button)
     }
 
     pub fn receive(
-        mut events: EventReader<Self>,
+        mut events: EventReader<InputPress>,
         mut pointers: Query<(&PointerId, &mut PointerPress)>,
     ) {
         for press_event in events.iter() {
@@ -93,11 +90,6 @@ pub enum PointerButton {
     Middle,
 }
 
-#[derive(Debug, Default, Clone, Component, PartialEq)]
-pub struct PointerMultiselect {
-    pub is_pressed: bool,
-}
-
 /// Represents an input pointer used for picking.
 #[derive(Debug, Default, Clone, Component, PartialEq)]
 pub struct PointerPosition {
@@ -113,11 +105,6 @@ impl PointerPosition {
 pub struct InputMove {
     pub id: PointerId,
     pub location: Location,
-}
-impl std::fmt::Display for InputMove {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Event::Location::{:?} {}", self.id, self.location)
-    }
 }
 impl InputMove {
     pub fn new(id: PointerId, location: Location) -> InputMove {
@@ -142,21 +129,6 @@ impl InputMove {
 pub struct Location {
     pub target: RenderTarget,
     pub position: Vec2,
-}
-impl std::fmt::Display for Location {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let pos = self.position;
-        write!(
-            f,
-            "({:6.1} {:6.1}), {}",
-            pos.x,
-            pos.y,
-            match self.target {
-                RenderTarget::Window(_) => "Window",
-                RenderTarget::Image(_) => "Image",
-            }
-        )
-    }
 }
 impl Location {
     #[inline]

@@ -4,7 +4,7 @@ use bevy_picking_core::{
     PointerId,
 };
 
-/// Sends touch pointer events to be processed by the picking backend
+/// Sends touch pointer events to be consumed by the core plugin
 pub fn touch_pick_events(
     touches: Res<Touches>,
     mut pointer_moves: EventWriter<InputMove>,

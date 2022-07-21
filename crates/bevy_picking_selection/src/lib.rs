@@ -1,6 +1,25 @@
 use bevy::prelude::*;
+use bevy_picking_core::{output, PickStage, PointerId};
 
-use crate::{input::PointerMultiselect, output, PointerId};
+pub struct SelectionPlugin;
+impl Plugin for SelectionPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<PointerSelectionEvent>()
+            .add_system_set_to_stage(
+                CoreStage::First,
+                SystemSet::new()
+                    .after(PickStage::Focus)
+                    .before(PickStage::EventListeners)
+                    .with_system(send_selection_events)
+                    .with_system(PointerSelectionEvent::receive.after(send_selection_events)),
+            );
+    }
+}
+
+#[derive(Debug, Default, Clone, Component, PartialEq)]
+pub struct PointerMultiselect {
+    pub is_pressed: bool,
+}
 
 /// Tracks the current selection state of the entity.
 #[derive(Component, Debug, Default, Clone)]
@@ -79,5 +98,22 @@ pub fn send_selection_events(
                 selection_events.send(PointerSelectionEvent::JustSelected(entity))
             }
         }
+    }
+}
+
+/// Unsurprising default multiselect inputs
+pub fn multiselect_events(
+    keyboard: Res<Input<KeyCode>>,
+    mut pointer_query: Query<&mut PointerMultiselect>,
+) {
+    let is_multiselect_pressed = keyboard.any_pressed([
+        KeyCode::LControl,
+        KeyCode::RControl,
+        KeyCode::LShift,
+        KeyCode::RShift,
+    ]);
+
+    for mut multiselect in pointer_query.iter_mut() {
+        multiselect.is_pressed = is_multiselect_pressed;
     }
 }

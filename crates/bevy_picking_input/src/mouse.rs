@@ -8,10 +8,12 @@ use bevy_picking_core::{
     PointerId,
 };
 
-/// Sends mouse pointer events to be processed by the picking backend
+/// Sends mouse pointer events to be processed by the core plugin
 pub fn mouse_pick_events(
+    // Input
     mut cursor_moves: EventReader<CursorMoved>,
     mut mouse_inputs: EventReader<MouseButtonInput>,
+    // Output
     mut pointer_move: EventWriter<InputMove>,
     mut pointer_clicks: EventWriter<InputPress>,
 ) {
