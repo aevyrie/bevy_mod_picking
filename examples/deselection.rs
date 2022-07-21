@@ -1,7 +1,8 @@
 use bevy::{prelude::*, window::PresentMode};
 use bevy_mod_picking::{
-    DefaultPickingPlugins, NoDeselect, PickRaycastSource, PickRaycastTarget, PickSelection,
-    PickableBundle,
+    raycast::{PickRaycastSource, PickRaycastTarget},
+    selection::{NoDeselect, PickSelection},
+    DefaultPickingPlugins, PickableBundle,
 };
 
 /// This example is identical to the 3d_scene example, except a cube has been added, that when

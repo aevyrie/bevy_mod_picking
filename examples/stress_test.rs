@@ -4,6 +4,7 @@ use bevy::{
     window::PresentMode,
 };
 use bevy_mod_picking::*;
+use raycast::{PickRaycastSource, PickRaycastTarget};
 
 fn main() {
     App::new()
@@ -11,7 +12,7 @@ fn main() {
             title: "bevy_mod_picking stress test".to_string(),
             width: 800.,
             height: 600.,
-            present_mode: PresentMode::Mailbox, // Reduce input latency
+            present_mode: PresentMode::AutoNoVsync, // Reduce input latency
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)

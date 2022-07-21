@@ -1,6 +1,7 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::{
-    DebugEventsPlugin, DefaultPickingPlugins, PickRaycastSource, PickRaycastTarget, PickableBundle,
+    raycast::{PickRaycastSource, PickRaycastTarget},
+    DebugEventsPlugin, DefaultPickingPlugins, PickableBundle,
 };
 
 fn main() {
