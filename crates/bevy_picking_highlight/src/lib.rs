@@ -1,3 +1,6 @@
+#![allow(clippy::type_complexity)]
+#![allow(clippy::too_many_arguments)]
+
 use std::marker::PhantomData;
 
 use bevy::{app::PluginGroupBuilder, asset::Asset, prelude::*, render::color::Color};
@@ -201,8 +204,7 @@ pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
         {
             if pointer
                 .iter()
-                .find(|(id, press)| **id == event.id() && press.is_primary_down())
-                .is_some()
+                .any(|(id, press)| *id == event.id() && press.is_primary_down())
             {
                 *active_asset = h_override.pressed(&global_defaults);
             } else {

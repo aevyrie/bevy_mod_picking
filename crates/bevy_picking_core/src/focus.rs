@@ -124,7 +124,7 @@ fn build_hover_map(
 ) {
     for (id, _) in pointers.iter() {
         let pointer_entity_set = match hover_map.contains_key(id) {
-            true => hover_map.get_mut(&id).unwrap(),
+            true => hover_map.get_mut(id).unwrap(),
             false => hover_map.try_insert(*id, HashSet::new()).unwrap(),
         };
         if let Some(layer_map) = pointer_map.get(id) {

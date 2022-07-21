@@ -1,3 +1,6 @@
+#![allow(clippy::type_complexity)]
+#![allow(clippy::too_many_arguments)]
+
 use bevy::prelude::*;
 use bevy_picking_core::{output, PickStage, PointerId};
 
@@ -72,7 +75,7 @@ pub fn send_selection_events(
             .iter()
             .find_map(|(id, multi)| id.eq(&down_event.id()).then_some(multi.is_pressed))
             .unwrap_or(false);
-        let target_should_deselect = !no_deselect.get(down_event.target()).is_ok();
+        let target_should_deselect = no_deselect.get(down_event.target()).is_err();
         // Deselect everything
         if !multiselect && target_should_deselect {
             for (entity, selection) in selectables.iter() {

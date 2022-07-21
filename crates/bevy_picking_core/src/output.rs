@@ -48,7 +48,7 @@ impl<E: IsPointerEvent> EventListener<E> {
             on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
                 let forwarded_event = F::new(event_data);
                 commands.add(|world: &mut World| {
-                    let mut events = world.get_resource_or_insert_with(|| Events::<F>::default());
+                    let mut events = world.get_resource_or_insert_with(Events::<F>::default);
                     events.send(forwarded_event);
                 });
             },
@@ -59,7 +59,7 @@ impl<E: IsPointerEvent> EventListener<E> {
             on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
                 let forwarded_event = F::new(event_data);
                 commands.add(|world: &mut World| {
-                    let mut events = world.get_resource_or_insert_with(|| Events::<F>::default());
+                    let mut events = world.get_resource_or_insert_with(Events::<F>::default);
                     events.send(forwarded_event);
                 });
                 event_data.stop_bubbling();

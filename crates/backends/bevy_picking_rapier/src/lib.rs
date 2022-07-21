@@ -1,3 +1,6 @@
+#![allow(clippy::type_complexity)]
+#![allow(clippy::too_many_arguments)]
+
 use bevy::prelude::*;
 
 pub struct RapierPlugin;

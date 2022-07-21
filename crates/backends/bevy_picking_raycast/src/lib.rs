@@ -1,3 +1,6 @@
+#![allow(clippy::type_complexity)]
+#![allow(clippy::too_many_arguments)]
+
 use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
