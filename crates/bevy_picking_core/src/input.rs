@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crate::PointerId;
 use bevy::{prelude::*, render::camera::RenderTarget};
 
-/// Tracks the state of the pointer's buttons in response to [`PointerPressEvent`]s.
+/// Tracks the state of the pointer's buttons in response to [`InputPress`]s.
 #[derive(Debug, Default, Clone, Component, PartialEq)]
 pub struct PointerPress {
     primary: bool,
@@ -29,19 +29,12 @@ pub enum PressStage {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PointerButton {
-    Primary,
-    Secondary,
-    Middle,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PointerPressEvent {
+pub struct InputPress {
     pub id: PointerId,
     pub press: PressStage,
     pub button: PointerButton,
 }
-impl std::fmt::Display for PointerPressEvent {
+impl std::fmt::Display for InputPress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.press {
             PressStage::Down => write!(f, "Event::Click::Down::{:?}", self.id),
@@ -49,8 +42,8 @@ impl std::fmt::Display for PointerPressEvent {
         }
     }
 }
-impl PointerPressEvent {
-    pub fn new_down(id: PointerId, button: PointerButton) -> Self {
+impl InputPress {
+    pub fn new_down(id: PointerId, button: PointerButton) -> InputPress {
         Self {
             id,
             press: PressStage::Down,
@@ -58,7 +51,7 @@ impl PointerPressEvent {
         }
     }
 
-    pub fn new_up(id: PointerId, button: PointerButton) -> Self {
+    pub fn new_up(id: PointerId, button: PointerButton) -> InputPress {
         Self {
             id,
             press: PressStage::Up,
@@ -93,9 +86,56 @@ impl PointerPressEvent {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PointerButton {
+    Primary,
+    Secondary,
+    Middle,
+}
+
 #[derive(Debug, Default, Clone, Component, PartialEq)]
 pub struct PointerMultiselect {
     pub is_pressed: bool,
+}
+
+/// Represents an input pointer used for picking.
+#[derive(Debug, Default, Clone, Component, PartialEq)]
+pub struct PointerPosition {
+    location: Option<Location>,
+}
+impl PointerPosition {
+    pub fn location(&self) -> Option<&Location> {
+        self.location.as_ref()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct InputMove {
+    pub id: PointerId,
+    pub location: Location,
+}
+impl std::fmt::Display for InputMove {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Event::Location::{:?} {}", self.id, self.location)
+    }
+}
+impl InputMove {
+    pub fn new(id: PointerId, location: Location) -> InputMove {
+        Self { id, location }
+    }
+
+    pub fn receive(
+        mut events: EventReader<InputMove>,
+        mut pointers: Query<(&PointerId, &mut PointerPosition)>,
+    ) {
+        for event_pointer in events.iter() {
+            pointers.for_each_mut(|(id, mut pointer)| {
+                if *id == event_pointer.id {
+                    pointer.location = Some(event_pointer.location.to_owned());
+                }
+            })
+        }
+    }
 }
 
 #[derive(Debug, Clone, Component, PartialEq)]
@@ -133,45 +173,5 @@ impl Location {
     #[inline]
     pub fn is_same_target(&self, camera: &Camera) -> bool {
         self.target == camera.target
-    }
-}
-
-/// Represents an input pointer used for picking.
-#[derive(Debug, Default, Clone, Component, PartialEq)]
-pub struct PointerPosition {
-    location: Option<Location>,
-}
-impl PointerPosition {
-    pub fn location(&self) -> Option<&Location> {
-        self.location.as_ref()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct PointerMoveEvent {
-    pub id: PointerId,
-    pub location: Location,
-}
-impl std::fmt::Display for PointerMoveEvent {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Event::Location::{:?} {}", self.id, self.location)
-    }
-}
-impl PointerMoveEvent {
-    pub fn new(id: PointerId, location: Location) -> Self {
-        Self { id, location }
-    }
-
-    pub fn receive(
-        mut events: EventReader<Self>,
-        mut pointers: Query<(&PointerId, &mut PointerPosition)>,
-    ) {
-        for event_pointer in events.iter() {
-            pointers.for_each_mut(|(id, mut pointer)| {
-                if *id == event_pointer.id {
-                    pointer.location = Some(event_pointer.location.to_owned());
-                }
-            })
-        }
     }
 }

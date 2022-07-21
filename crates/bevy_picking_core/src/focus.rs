@@ -2,10 +2,10 @@ use std::collections::BTreeMap;
 
 use crate::{
     backend,
-    input::{self, PointerPressEvent, PressStage},
+    input::{self, InputPress, PressStage},
     output::{
-        self, Click, Down, Drag, DragEnd, DragStart, Move, Out, Over, PointerDown,
-        PointerInteraction, PointerMove, PointerOut, PointerOver, PointerUp, Up,
+        Down, Move, Out, Over, PointerDown, PointerInteraction, PointerMove, PointerOut,
+        PointerOver, PointerUp, Up,
     },
     PointerId,
 };
@@ -42,10 +42,10 @@ pub fn update_focus(
     focus: Query<&FocusPolicy>,
     pick_layers: Query<&PickLayer>,
     pointers: Query<(&PointerId, &PointerInteraction)>, // <- what happened last frame
-    mut click_events: EventReader<input::PointerPressEvent>,
-    mut over_events: EventReader<backend::PointerOverEvent>,
-    mut pointer_move_in: EventReader<input::PointerMoveEvent>,
-    // Local
+    mut input_presses: EventReader<input::InputPress>,
+    mut over_events: EventReader<backend::EntitiesUnderPointer>,
+    mut pointer_move_in: EventReader<input::InputMove>,
+    // Locals
     mut pointer_map: Local<HashMap<PointerId, LayerMap>>,
     mut hover_map: Local<HashMap<PointerId, HashSet<Entity>>>,
     // Output
@@ -59,7 +59,7 @@ pub fn update_focus(
     build_pointer_map(pick_layers, &mut over_events, &mut pointer_map);
     build_hover_map(&pointers, focus, pointer_map, &mut hover_map);
 
-    let click_events: Vec<&PointerPressEvent> = click_events.iter().collect();
+    let input_presses: Vec<&InputPress> = input_presses.iter().collect();
 
     for event in pointer_move_in.iter() {
         for hover_entity in hover_map.get(&event.id).iter().flat_map(|h| h.iter()) {
@@ -68,7 +68,7 @@ pub fn update_focus(
     }
 
     for (pointer_id, pointer_interaction) in pointers.iter() {
-        let just_pressed = click_events
+        let just_pressed = input_presses
             .iter()
             .filter_map(|click| (&click.id == pointer_id).then_some(click.press))
             .last();
@@ -117,7 +117,7 @@ pub fn update_focus(
     }
 }
 
-/// Clear local maps, reusing memory.
+/// Clear local maps, reusing allocated memory.
 fn reset_local_maps(
     hover_map: &mut Local<
         bevy::utils::hashbrown::HashMap<PointerId, bevy::utils::hashbrown::HashSet<Entity>>,
@@ -143,7 +143,7 @@ fn reset_local_maps(
 /// Build an ordered map of entities that are under each pointer
 fn build_pointer_map(
     pick_layers: Query<&PickLayer>,
-    over_events: &mut EventReader<backend::PointerOverEvent>,
+    over_events: &mut EventReader<backend::EntitiesUnderPointer>,
     pointer_map: &mut Local<HashMap<PointerId, BTreeMap<PickLayer, BTreeMap<FloatOrd, Entity>>>>,
 ) {
     for event in over_events.iter() {
@@ -192,67 +192,6 @@ fn build_hover_map(
                     }
                 }
             }
-        }
-    }
-}
-
-/// Sends click events when an entity receives a mouse down event followed by a mouse up event from
-/// the same pointer and from within the same entity.
-pub fn send_click_and_drag_events(
-    mut pointer_down: EventReader<PointerDown>,
-    mut pointer_up: EventReader<PointerUp>,
-    mut pointer_move: EventReader<PointerMove>,
-    mut pointer_click: EventWriter<output::PointerClick>,
-    mut pointer_drag_start: EventWriter<output::PointerDragStart>,
-    mut pointer_drag_end: EventWriter<output::PointerDragEnd>,
-    mut pointer_drag: EventWriter<output::PointerDrag>,
-    mut presses: EventReader<PointerPressEvent>,
-    mut click_down: Local<HashMap<PointerId, Option<Entity>>>,
-    mut drag_map: Local<HashMap<PointerId, Option<Entity>>>,
-) {
-    // The pointer moved and was already pressed
-    for event in pointer_move.iter() {
-        if let Some(Some(_)) = click_down.get(&event.id()) {
-            if let Some(Some(drag_entity)) = drag_map.get(&event.id()) {
-                pointer_drag.send(output::PointerDrag::new(&event.id(), &drag_entity, Drag))
-            } else {
-                drag_map.insert(event.id(), Some(event.target()));
-                pointer_drag_start.send(output::PointerDragStart::new(
-                    &event.id(),
-                    &event.target(),
-                    DragStart,
-                ))
-            }
-        }
-    }
-
-    for event in pointer_down.iter() {
-        click_down.insert(event.id(), Some(event.target()));
-    }
-
-    for event in pointer_up.iter() {
-        if let Some(Some(down_entity)) = click_down.get(&event.id()) {
-            if *down_entity == event.target() {
-                pointer_click.send(output::PointerClick::new(
-                    &event.id(),
-                    &event.target(),
-                    Click,
-                ));
-            }
-        }
-        click_down.insert(event.id(), None);
-
-        pointer_drag_end.send(output::PointerDragEnd::new(
-            &event.id(),
-            &event.target(),
-            DragEnd,
-        ));
-        drag_map.insert(event.id(), None);
-    }
-
-    for press in presses.iter() {
-        if press.press == PressStage::Up {
-            click_down.insert(press.id, None);
         }
     }
 }

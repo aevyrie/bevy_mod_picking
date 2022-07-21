@@ -4,7 +4,7 @@ use bevy::{
     render::camera::RenderTarget,
 };
 use bevy_picking_core::{
-    input::{Location, PointerButton, PointerMoveEvent, PointerPressEvent},
+    input::{InputMove, InputPress, Location, PointerButton},
     PointerId,
 };
 
@@ -12,11 +12,11 @@ use bevy_picking_core::{
 pub fn mouse_pick_events(
     mut cursor_moves: EventReader<CursorMoved>,
     mut mouse_inputs: EventReader<MouseButtonInput>,
-    mut pointer_move: EventWriter<PointerMoveEvent>,
-    mut pointer_clicks: EventWriter<PointerPressEvent>,
+    mut pointer_move: EventWriter<InputMove>,
+    mut pointer_clicks: EventWriter<InputPress>,
 ) {
     for event in cursor_moves.iter() {
-        pointer_move.send(PointerMoveEvent {
+        pointer_move.send(InputMove {
             id: PointerId::Mouse,
             location: Location {
                 target: RenderTarget::Window(event.id),
@@ -35,10 +35,10 @@ pub fn mouse_pick_events(
 
         match input.state {
             ButtonState::Pressed => {
-                pointer_clicks.send(PointerPressEvent::new_down(PointerId::Mouse, button))
+                pointer_clicks.send(InputPress::new_down(PointerId::Mouse, button))
             }
             ButtonState::Released => {
-                pointer_clicks.send(PointerPressEvent::new_up(PointerId::Mouse, button))
+                pointer_clicks.send(InputPress::new_up(PointerId::Mouse, button))
             }
         }
     }

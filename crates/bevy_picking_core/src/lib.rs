@@ -9,10 +9,10 @@ pub mod output;
 mod selection;
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*, reflect::Uuid, ui::FocusPolicy};
-use focus::{send_click_and_drag_events, PickLayer};
+use focus::PickLayer;
 use highlight::PickHighlight;
 use input::{PointerMultiselect, PointerPosition, PointerPress};
-use output::{PickInteraction, PointerInteraction};
+use output::{send_click_and_drag_events, PickInteraction, PointerInteraction};
 use selection::PointerSelectionEvent;
 
 pub use crate::{
@@ -59,9 +59,9 @@ pub enum PickStage {
     /// Produces [`input::PointerPressEvent`]s, [`input::PointerLocationEvent`]s, and updates
     /// [`PointerMultiselect`].
     Input,
-    /// Reads inputs and produces [`backend::PointerOverEvent`]s.
+    /// Reads inputs and produces [`backend::EntitiesUnderPointer`]s.
     Backend,
-    /// Reads [`backend::PointerOverEvent`]s, and updates focus, selection, and highlighting states.
+    /// Reads [`backend::EntitiesUnderPointer`]s, and updates focus, selection, and highlighting states.
     Events,
     ///
     EventListeners,
@@ -71,16 +71,16 @@ pub struct CorePlugin;
 impl Plugin for CorePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PickingSettings>()
-            .add_event::<input::PointerPressEvent>()
-            .add_event::<input::PointerMoveEvent>()
-            .add_event::<backend::PointerOverEvent>()
+            .add_event::<input::InputPress>()
+            .add_event::<input::InputMove>()
+            .add_event::<backend::EntitiesUnderPointer>()
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
                     .after(PickStage::Input)
                     .before(PickStage::Backend)
-                    .with_system(input::PointerMoveEvent::receive)
-                    .with_system(input::PointerPressEvent::receive),
+                    .with_system(input::InputMove::receive)
+                    .with_system(input::InputPress::receive),
             );
     }
 }
@@ -140,18 +140,18 @@ impl Plugin for DebugEventsPlugin {
         app.add_system_set_to_stage(
             CoreStage::PreUpdate,
             SystemSet::new()
-                .with_system(event_debug_system::<output::PointerOver>)
-                .with_system(event_debug_system::<output::PointerOut>)
-                .with_system(event_debug_system::<output::PointerEnter>)
-                .with_system(event_debug_system::<output::PointerLeave>)
-                .with_system(event_debug_system::<output::PointerDown>)
-                .with_system(event_debug_system::<output::PointerUp>)
-                .with_system(event_debug_system::<output::PointerClick>)
-                .with_system(event_debug_system::<output::PointerMove>)
-                .with_system(event_debug_system::<output::PointerCancel>)
-                .with_system(event_debug_system::<output::PointerDragStart>)
-                .with_system(event_debug_system::<output::PointerDragEnd>)
-                .with_system(event_debug_system::<output::PointerDrag>),
+                .with_system(event_debug::<output::PointerOver>)
+                .with_system(event_debug::<output::PointerOut>)
+                .with_system(event_debug::<output::PointerEnter>)
+                .with_system(event_debug::<output::PointerLeave>)
+                .with_system(event_debug::<output::PointerDown>)
+                .with_system(event_debug::<output::PointerUp>)
+                .with_system(event_debug::<output::PointerClick>)
+                .with_system(event_debug::<output::PointerMove>)
+                .with_system(event_debug::<output::PointerCancel>)
+                .with_system(event_debug::<output::PointerDragStart>)
+                .with_system(event_debug::<output::PointerDragEnd>)
+                .with_system(event_debug::<output::PointerDrag>),
         );
     }
 }
@@ -206,7 +206,7 @@ impl Default for PickingSettings {
 }
 
 /// Listens for pointer events of type `E` and prints them
-pub fn event_debug_system<E: output::IsPointerEvent>(mut events: EventReader<E>) {
+pub fn event_debug<E: output::IsPointerEvent>(mut events: EventReader<E>) {
     for event in events.iter() {
         info!(
             "{event}, Event: {}",

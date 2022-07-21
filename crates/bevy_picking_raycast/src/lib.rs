@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
-    backend::{PointerOverEvent, PointerOverMetadata},
+    backend::{EntitiesUnderPointer, PointerOverMetadata},
     input::PointerPosition,
     PickStage, PickingSettings, PointerId,
 };
@@ -73,10 +73,10 @@ pub fn build_rays_from_pointers(
     }
 }
 
-/// Produces [`PointerOverEvent`]s from [`PickingSource`] intersections.
+/// Produces [`EntitiesUnderPointer`]s from [`PickingSource`] intersections.
 fn update_hits(
     mut sources: Query<(&PickRaycastSource, &PointerId)>,
-    mut output: EventWriter<PointerOverEvent>,
+    mut output: EventWriter<EntitiesUnderPointer>,
 ) {
     for (source, &id) in sources.iter_mut() {
         let over: Vec<PointerOverMetadata> = source
@@ -93,7 +93,7 @@ fn update_hits(
             .collect();
 
         if !over.is_empty() {
-            output.send(PointerOverEvent {
+            output.send(EntitiesUnderPointer {
                 id,
                 over_list: over,
             });

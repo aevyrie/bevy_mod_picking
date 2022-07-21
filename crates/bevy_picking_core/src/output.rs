@@ -5,7 +5,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::PointerId;
+use crate::{input, PointerId};
 use bevy::{
     ecs::{event::Event, system::EntityCommands},
     prelude::*,
@@ -50,7 +50,19 @@ impl<E: IsPointerEvent> EventListener<E> {
                 commands.add(|world: &mut World| {
                     let mut events = world.get_resource_or_insert_with(|| Events::<F>::default());
                     events.send(forwarded_event);
-                })
+                });
+            },
+        }
+    }
+    pub fn forward_event_and_break<F: EventFrom>() -> Self {
+        Self {
+            on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
+                let forwarded_event = F::new(event_data);
+                commands.add(|world: &mut World| {
+                    let mut events = world.get_resource_or_insert_with(|| Events::<F>::default());
+                    events.send(forwarded_event);
+                });
+                event_data.stop_bubbling();
             },
         }
     }
@@ -58,6 +70,7 @@ impl<E: IsPointerEvent> EventListener<E> {
 
 pub trait EventListenerCommands {
     fn forward_events<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self;
+    fn forward_events_and_break<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self;
 }
 
 impl<'w, 's, 'a> EventListenerCommands for EntityCommands<'w, 's, 'a> {
@@ -66,6 +79,13 @@ impl<'w, 's, 'a> EventListenerCommands for EntityCommands<'w, 's, 'a> {
             world.init_resource::<Events<F>>();
         });
         self.insert(EventListener::<E>::forward_event::<F>());
+        self
+    }
+    fn forward_events_and_break<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self {
+        self.commands().add(|world: &mut World| {
+            world.init_resource::<Events<F>>();
+        });
+        self.insert(EventListener::<E>::forward_event_and_break::<F>());
         self
     }
 }
@@ -282,5 +302,62 @@ impl PickInteraction {
             .find_map(|(id, interaction)| (*id == event.id).then_some(interaction))
             .and_then(|mut interaction_map| interaction_map.insert(event.target, new_interaction));
         entity_interactions.for_each_mut(|mut interaction| *interaction = new_interaction);
+    }
+}
+
+/// Sends click events when an entity receives a mouse down event followed by a mouse up event from
+/// the same pointer and from within the same entity.
+pub fn send_click_and_drag_events(
+    // Input
+    mut pointer_down: EventReader<PointerDown>,
+    mut pointer_up: EventReader<PointerUp>,
+    mut pointer_move: EventReader<PointerMove>,
+    mut input_presses: EventReader<input::InputPress>,
+    // Locals
+    mut click_down: Local<HashMap<PointerId, Option<Entity>>>,
+    mut drag_map: Local<HashMap<PointerId, Option<Entity>>>,
+    // Output
+    mut pointer_click: EventWriter<PointerClick>,
+    mut pointer_drag_start: EventWriter<PointerDragStart>,
+    mut pointer_drag_end: EventWriter<PointerDragEnd>,
+    mut pointer_drag: EventWriter<PointerDrag>,
+) {
+    // The pointer moved and was already pressed
+    for event in pointer_move.iter() {
+        if let Some(Some(_)) = click_down.get(&event.id()) {
+            if let Some(Some(drag_entity)) = drag_map.get(&event.id()) {
+                pointer_drag.send(PointerDrag::new(&event.id(), drag_entity, Drag))
+            } else {
+                drag_map.insert(event.id(), Some(event.target()));
+                pointer_drag_start.send(PointerDragStart::new(
+                    &event.id(),
+                    &event.target(),
+                    DragStart,
+                ))
+            }
+        }
+    }
+
+    for event in pointer_up.iter() {
+        if let Some(Some(down_entity)) = click_down.get(&event.id()) {
+            if *down_entity == event.target() {
+                pointer_click.send(PointerClick::new(&event.id(), &event.target(), Click));
+            }
+            if let Some(Some(drag_entity)) = drag_map.get(&event.id()) {
+                pointer_drag_end.send(PointerDragEnd::new(&event.id(), drag_entity, DragEnd));
+            }
+            drag_map.insert(event.id(), None);
+        }
+        click_down.insert(event.id(), None);
+    }
+
+    for event in pointer_down.iter() {
+        click_down.insert(event.id(), Some(event.target()));
+    }
+
+    for press in input_presses.iter() {
+        if press.press == input::PressStage::Up {
+            click_down.insert(press.id, None);
+        }
     }
 }
