@@ -1,5 +1,5 @@
 use bevy::{app::PluginGroupBuilder, prelude::*, ui::FocusPolicy};
-use bevy_picking_core::{focus::PickLayer, output::PickInteraction};
+use bevy_picking_core::focus::PickLayer;
 
 pub use bevy_picking_core::*;
 pub use bevy_picking_input::*;
@@ -45,7 +45,7 @@ impl PluginGroup for DefaultPickingPlugins {
 #[derive(Bundle, Default)]
 pub struct PickableBundle {
     pub pick_layer: PickLayer,
-    pub interaction: PickInteraction,
+    pub interaction: Interaction,
     pub focus_policy: FocusPolicy,
     #[cfg(feature = "selection")]
     pub selection: bevy_picking_selection::PickSelection,

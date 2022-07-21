@@ -254,55 +254,41 @@ pub type PointerDrag = PointerEvent<Drag>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Drag;
 
-#[derive(Clone, Eq, PartialEq, Debug, Default, Component)]
-pub struct PickInteraction {
-    pub(crate) inner: Interaction,
+pub fn interactions_from_events(
+    // Input
+    mut pointer_over: EventReader<PointerEvent<Over>>,
+    mut pointer_out: EventReader<PointerEvent<Out>>,
+    mut pointer_up: EventReader<PointerEvent<Up>>,
+    mut pointer_down: EventReader<PointerEvent<Down>>,
+    // Outputs
+    mut pointers: Query<(&PointerId, &mut PointerInteraction)>,
+    mut entities: Query<&mut Interaction>,
+) {
+    for event in pointer_over.iter() {
+        update_interactions(event, Interaction::Hovered, &mut pointers, &mut entities);
+    }
+    for event in pointer_out.iter() {
+        update_interactions(event, Interaction::None, &mut pointers, &mut entities);
+    }
+    for event in pointer_down.iter() {
+        update_interactions(event, Interaction::Clicked, &mut pointers, &mut entities);
+    }
+    for event in pointer_up.iter() {
+        update_interactions(event, Interaction::Hovered, &mut pointers, &mut entities);
+    }
 }
-impl PickInteraction {
-    pub fn is_hovered(&self) -> bool {
-        matches!(self.inner, Interaction::Hovered | Interaction::Clicked)
-    }
 
-    pub fn is_pressed(&self) -> bool {
-        matches!(self.inner, Interaction::Clicked)
-    }
-
-    pub fn update_from_events(
-        // Input
-        mut pointer_over: EventReader<PointerEvent<Over>>,
-        mut pointer_out: EventReader<PointerEvent<Out>>,
-        mut pointer_up: EventReader<PointerEvent<Up>>,
-        mut pointer_down: EventReader<PointerEvent<Down>>,
-        // Outputs
-        mut pointers: Query<(&PointerId, &mut PointerInteraction)>,
-        mut entities: Query<&mut Interaction>,
-    ) {
-        for event in pointer_over.iter() {
-            Self::update_interactions(event, Interaction::Hovered, &mut pointers, &mut entities);
-        }
-        for event in pointer_out.iter() {
-            Self::update_interactions(event, Interaction::None, &mut pointers, &mut entities);
-        }
-        for event in pointer_down.iter() {
-            Self::update_interactions(event, Interaction::Clicked, &mut pointers, &mut entities);
-        }
-        for event in pointer_up.iter() {
-            Self::update_interactions(event, Interaction::Hovered, &mut pointers, &mut entities);
-        }
-    }
-
-    fn update_interactions<E: Clone + Send + Sync + Reflect>(
-        event: &PointerEvent<E>,
-        new_interaction: Interaction,
-        pointer_interactions: &mut Query<(&PointerId, &mut PointerInteraction)>,
-        entity_interactions: &mut Query<&mut Interaction>,
-    ) {
-        pointer_interactions
-            .iter_mut()
-            .find_map(|(id, interaction)| (*id == event.id).then_some(interaction))
-            .and_then(|mut interaction_map| interaction_map.insert(event.target, new_interaction));
-        entity_interactions.for_each_mut(|mut interaction| *interaction = new_interaction);
-    }
+fn update_interactions<E: Clone + Send + Sync + Reflect>(
+    event: &PointerEvent<E>,
+    new_interaction: Interaction,
+    pointer_interactions: &mut Query<(&PointerId, &mut PointerInteraction)>,
+    entity_interactions: &mut Query<&mut Interaction>,
+) {
+    pointer_interactions
+        .iter_mut()
+        .find_map(|(id, interaction)| (*id == event.id).then_some(interaction))
+        .and_then(|mut interaction_map| interaction_map.insert(event.target, new_interaction));
+    entity_interactions.for_each_mut(|mut interaction| *interaction = new_interaction);
 }
 
 /// Sends click events when an entity receives a mouse down event followed by a mouse up event from

@@ -8,7 +8,7 @@ pub mod output;
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*, reflect::Uuid};
 use focus::{pointer_events, update_focus};
-use output::{event_bubbling, send_click_and_drag_events, PickInteraction};
+use output::{event_bubbling, interactions_from_events, send_click_and_drag_events};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickStage {
@@ -67,8 +67,8 @@ impl Plugin for InteractionPlugin {
                     .with_system(update_focus)
                     .with_system(pointer_events.after(update_focus))
                     // Output
-                    .with_system(PickInteraction::update_from_events.after(pointer_events))
-                    .with_system(send_click_and_drag_events.after(update_focus)),
+                    .with_system(interactions_from_events.after(pointer_events))
+                    .with_system(send_click_and_drag_events.after(pointer_events)),
             )
             .add_system_set_to_stage(
                 CoreStage::First,
