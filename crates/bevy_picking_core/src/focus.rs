@@ -15,7 +15,7 @@ use bevy::{
     utils::{FloatOrd, HashMap, HashSet},
 };
 
-/// A sorted map of entities; sorted by depth.
+/// A map of entities sorted by depth.
 type DepthMap = BTreeMap<FloatOrd, Entity>;
 
 /// Maps [`PickLayer`]s to the map of entities within that pick layer, sorted by depth.
@@ -23,21 +23,17 @@ type LayerMap = BTreeMap<PickLayer, DepthMap>;
 
 /// Assigns an entity to a picking layer. When computing picking focus, entities
 /// are sorted in order from the highest to lowest layer, and by depth within each layer.
-#[derive(Debug, Clone, Copy, Component, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Component, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PickLayer {
     Top = 0,
     AboveUi = 1,
     UI = 2,
     BelowUi = 3,
     AboveWorld = 4,
+    #[default]
     World = 5,
     BelowWorld = 6,
     Bottom = 7,
-}
-impl Default for PickLayer {
-    fn default() -> Self {
-        PickLayer::World
-    }
 }
 
 /// Maps Pointers to a [`LayerMap`]. Note this is much more complex than the [`HoverMap`] because
@@ -120,6 +116,7 @@ fn build_hover_map(
     pointers: &Query<(&PointerId, &PointerInteraction)>,
     focus: Query<&FocusPolicy>,
     pointer_map: Local<OverMap>,
+    // Output
     hover_map: &mut ResMut<HoverMap>,
 ) {
     for (id, _) in pointers.iter() {
@@ -156,8 +153,8 @@ pub fn pointer_events(
     let input_presses: Vec<&InputPress> = input_presses.iter().collect();
 
     for event in pointer_move_in.iter() {
-        for hover_entity in hover_map.get(&event.id).iter().flat_map(|h| h.iter()) {
-            pointer_move.send(PointerMove::new(&event.id, hover_entity, Move))
+        for hover_entity in hover_map.get(&event.id()).iter().flat_map(|h| h.iter()) {
+            pointer_move.send(PointerMove::new(&event.id(), hover_entity, Move))
         }
     }
 

@@ -21,13 +21,13 @@ pub fn mouse_pick_events(
     mut pointer_clicks: EventWriter<InputPress>,
 ) {
     for event in cursor_moves.iter() {
-        pointer_move.send(InputMove {
-            id: PointerId::Mouse,
-            location: Location {
+        pointer_move.send(InputMove::new(
+            PointerId::Mouse,
+            Location {
                 target: RenderTarget::Window(event.id),
                 position: event.position,
             },
-        });
+        ));
     }
 
     for input in mouse_inputs.iter() {

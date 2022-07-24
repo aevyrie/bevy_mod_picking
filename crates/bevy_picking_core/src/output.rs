@@ -5,7 +5,10 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::{input, PointerId};
+use crate::{
+    input::{self, InputMove},
+    PointerId,
+};
 use bevy::{
     ecs::{event::Event, system::EntityCommands},
     prelude::*,
@@ -166,6 +169,9 @@ impl<E: Clone + Send + Sync + 'static + Reflect> PointerEvent<E> {
     }
 }
 
+//TODO: add a system that errors if a user adds the EventListener<PointerEnter/PointerLeave>
+//components
+
 pub fn event_bubbling<E: Clone + Send + Sync + 'static + Reflect>(
     mut commands: Commands,
     mut events: EventReader<PointerEvent<E>>,
@@ -214,10 +220,12 @@ pub type PointerOut = PointerEvent<Out>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Out;
 
+// TODO:
 pub type PointerEnter = PointerEvent<Enter>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Enter;
 
+//TODO:
 pub type PointerLeave = PointerEvent<Leave>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Leave;
@@ -230,36 +238,63 @@ pub type PointerUp = PointerEvent<Up>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Up;
 
+/// Fires when a pointer sends a mouse down event followed by a mouse up event, with the same
+/// `target` entity for both events.
 pub type PointerClick = PointerEvent<Click>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Click;
 
+/// Fires while a pointer is moving over the `target` entity.
 pub type PointerMove = PointerEvent<Move>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Move;
 
+//TODO:
 pub type PointerCancel = PointerEvent<Cancel>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Cancel;
 
+/// Fires when the `target` entity receives a pointer down event followed by a pointer move event.
 pub type PointerDragStart = PointerEvent<DragStart>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct DragStart;
 
-pub type PointerDragEnd = PointerEvent<DragEnd>;
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct DragEnd;
-
+/// Fires while the `target` entity is being dragged.
 pub type PointerDrag = PointerEvent<Drag>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Drag;
 
+/// Fires when a pointer is dragging the `target` entity and a pointer up event is received.
+pub type PointerDragEnd = PointerEvent<DragEnd>;
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+pub struct DragEnd;
+
+/// Fires when a pointer dragging some entity enters the `target` entity.
+pub type PointerDragEnter = PointerEvent<DragEnter>;
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+pub struct DragEnter;
+
+/// Fires while some entity is being dragged over the `target` entity.
+pub type PointerDragOver = PointerEvent<DragOver>;
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+pub struct DragOver;
+
+/// Fires when a pointer dragging some entity leaves the `target` entity.
+pub type PointerDragLeave = PointerEvent<DragLeave>;
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+pub struct DragLeave;
+
+/// Fires when a pointer drops some entity onto the `target` entity.
+pub type PointerDrop = PointerEvent<Drop>;
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+pub struct Drop;
+
 pub fn interactions_from_events(
     // Input
-    mut pointer_over: EventReader<PointerEvent<Over>>,
-    mut pointer_out: EventReader<PointerEvent<Out>>,
-    mut pointer_up: EventReader<PointerEvent<Up>>,
-    mut pointer_down: EventReader<PointerEvent<Down>>,
+    mut pointer_over: EventReader<PointerOver>,
+    mut pointer_out: EventReader<PointerOut>,
+    mut pointer_up: EventReader<PointerUp>,
+    mut pointer_down: EventReader<PointerDown>,
     // Outputs
     mut pointers: Query<(&PointerId, &mut PointerInteraction)>,
     mut entities: Query<&mut Interaction>,
@@ -291,41 +326,52 @@ fn update_interactions<E: Clone + Send + Sync + Reflect>(
     entity_interactions.for_each_mut(|mut interaction| *interaction = new_interaction);
 }
 
-/// Sends click events when an entity receives a mouse down event followed by a mouse up event from
-/// the same pointer and from within the same entity.
+/// Maps pointers to the entities they are dragging.
+#[derive(Debug, Deref, DerefMut, Default)]
+pub struct DragMap(pub HashMap<PointerId, Option<Entity>>);
+
+/// Uses pointer events to determine when click and drag events occur.
 pub fn send_click_and_drag_events(
     // Input
     mut pointer_down: EventReader<PointerDown>,
     mut pointer_up: EventReader<PointerUp>,
     mut pointer_move: EventReader<PointerMove>,
+    mut input_move: EventReader<InputMove>,
     mut input_presses: EventReader<input::InputPress>,
     // Locals
-    mut click_down: Local<HashMap<PointerId, Option<Entity>>>,
-    mut drag_map: Local<HashMap<PointerId, Option<Entity>>>,
+    mut down_map: Local<HashMap<PointerId, Option<Entity>>>,
     // Output
+    mut drag_map: ResMut<DragMap>,
     mut pointer_click: EventWriter<PointerClick>,
     mut pointer_drag_start: EventWriter<PointerDragStart>,
     mut pointer_drag_end: EventWriter<PointerDragEnd>,
     mut pointer_drag: EventWriter<PointerDrag>,
 ) {
-    // The pointer moved and was already pressed
-    for event in pointer_move.iter() {
-        if let Some(Some(_)) = click_down.get(&event.id()) {
-            if let Some(Some(drag_entity)) = drag_map.get(&event.id()) {
-                pointer_drag.send(PointerDrag::new(&event.id(), drag_entity, Drag))
-            } else {
-                drag_map.insert(event.id(), Some(event.target()));
+    // Only triggers when over an entity
+    for move_event in pointer_move.iter() {
+        if let Some(Some(_)) = down_map.get(&move_event.id()) {
+            if matches!(drag_map.get(&move_event.id()), Some(None) | None) {
+                drag_map.insert(move_event.id(), Some(move_event.target()));
                 pointer_drag_start.send(PointerDragStart::new(
-                    &event.id(),
-                    &event.target(),
+                    &move_event.id(),
+                    &move_event.target(),
                     DragStart,
                 ))
             }
         }
     }
 
+    // Triggers during movement even if not over an entity
+    for move_event in input_move.iter() {
+        if let Some(Some(_)) = down_map.get(&move_event.id()) {
+            if let Some(Some(drag_entity)) = drag_map.get(&move_event.id()) {
+                pointer_drag.send(PointerDrag::new(&move_event.id(), drag_entity, Drag))
+            }
+        }
+    }
+
     for event in pointer_up.iter() {
-        if let Some(Some(down_entity)) = click_down.get(&event.id()) {
+        if let Some(Some(down_entity)) = down_map.get(&event.id()) {
             if *down_entity == event.target() {
                 pointer_click.send(PointerClick::new(&event.id(), &event.target(), Click));
             }
@@ -334,16 +380,83 @@ pub fn send_click_and_drag_events(
             }
             drag_map.insert(event.id(), None);
         }
-        click_down.insert(event.id(), None);
+        down_map.insert(event.id(), None);
     }
 
     for event in pointer_down.iter() {
-        click_down.insert(event.id(), Some(event.target()));
+        down_map.insert(event.id(), Some(event.target()));
     }
 
     for press in input_presses.iter() {
         if press.press == input::PressStage::Up {
-            click_down.insert(press.id, None);
+            down_map.insert(press.id, None);
+        }
+    }
+}
+
+// Uses pointer events to determine when drag-over events occur
+pub fn send_drag_over_events(
+    // Input
+    drag_map: Res<DragMap>,
+    mut pointer_over: EventReader<PointerOver>,
+    mut pointer_move: EventReader<PointerMove>,
+    mut pointer_out: EventReader<PointerOut>,
+    mut pointer_drag_end: EventReader<PointerDragEnd>,
+    // Local
+    mut drag_over_map: Local<HashMap<PointerId, Option<Entity>>>,
+    // Output
+    mut pointer_drag_enter: EventWriter<PointerDragEnter>,
+    mut pointer_drag_over: EventWriter<PointerDragOver>,
+    mut pointer_drag_leave: EventWriter<PointerDragLeave>,
+    mut pointer_drop: EventWriter<PointerDrop>,
+) {
+    for over_event in pointer_over.iter() {
+        if let Some(Some(dragged)) = drag_map.get(&over_event.id()) {
+            if &over_event.target() != dragged {
+                drag_over_map.insert(over_event.id(), Some(over_event.target()));
+                pointer_drag_enter.send(PointerDragEnter::new(
+                    &over_event.id(),
+                    &over_event.target(),
+                    DragEnter,
+                ))
+            }
+        }
+    }
+    for move_event in pointer_move.iter() {
+        if let Some(Some(dragged)) = drag_map.get(&move_event.id()) {
+            if &move_event.target() != dragged {
+                pointer_drag_over.send(PointerDragOver::new(
+                    &move_event.id(),
+                    &move_event.target(),
+                    DragOver,
+                ))
+            }
+        }
+    }
+
+    for out_event in pointer_out.iter() {
+        if let Some(dragged_over) = drag_over_map.get_mut(&out_event.id()) {
+            if Some(out_event.target()) == *dragged_over {
+                *dragged_over = None;
+                pointer_drag_leave.send(PointerDragLeave::new(
+                    &out_event.id(),
+                    &out_event.target(),
+                    DragLeave,
+                ))
+            }
+        }
+    }
+    for drag_end_event in pointer_drag_end.iter() {
+        if let Some(maybe_dragged_over) = drag_over_map.get_mut(&drag_end_event.id()) {
+            if let Some(dragged_over) = *maybe_dragged_over {
+                *maybe_dragged_over = None;
+                pointer_drag_leave.send(PointerDragLeave::new(
+                    &drag_end_event.id(),
+                    &dragged_over,
+                    DragLeave,
+                ));
+                pointer_drop.send(PointerDrop::new(&drag_end_event.id(), &dragged_over, Drop));
+            }
         }
     }
 }

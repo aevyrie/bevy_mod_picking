@@ -103,8 +103,8 @@ impl PointerPosition {
 
 #[derive(Debug, Clone)]
 pub struct InputMove {
-    pub id: PointerId,
-    pub location: Location,
+    id: PointerId,
+    location: Location,
 }
 impl InputMove {
     pub fn new(id: PointerId, location: Location) -> InputMove {
@@ -122,6 +122,14 @@ impl InputMove {
                 }
             })
         }
+    }
+
+    pub fn id(&self) -> PointerId {
+        self.id
+    }
+
+    pub fn location(&self) -> &Location {
+        &self.location
     }
 }
 

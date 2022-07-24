@@ -8,7 +8,9 @@ pub mod output;
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*, reflect::Uuid};
 use focus::{pointer_events, update_focus};
-use output::{event_bubbling, interactions_from_events, send_click_and_drag_events};
+use output::{
+    event_bubbling, interactions_from_events, send_click_and_drag_events, send_drag_over_events,
+};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickStage {
@@ -45,6 +47,7 @@ pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<focus::HoverMap>()
+            .init_resource::<output::DragMap>()
             .add_event::<output::PointerOver>()
             .add_event::<output::PointerOut>()
             .add_event::<output::PointerEnter>()
@@ -55,8 +58,12 @@ impl Plugin for InteractionPlugin {
             .add_event::<output::PointerMove>()
             .add_event::<output::PointerCancel>()
             .add_event::<output::PointerDragStart>()
-            .add_event::<output::PointerDragEnd>()
             .add_event::<output::PointerDrag>()
+            .add_event::<output::PointerDragEnd>()
+            .add_event::<output::PointerDragEnter>()
+            .add_event::<output::PointerDragOver>()
+            .add_event::<output::PointerDragLeave>()
+            .add_event::<output::PointerDrop>()
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
@@ -68,7 +75,8 @@ impl Plugin for InteractionPlugin {
                     .with_system(pointer_events.after(update_focus))
                     // Output
                     .with_system(interactions_from_events.after(pointer_events))
-                    .with_system(send_click_and_drag_events.after(pointer_events)),
+                    .with_system(send_click_and_drag_events.after(pointer_events))
+                    .with_system(send_drag_over_events.after(send_click_and_drag_events)),
             )
             .add_system_set_to_stage(
                 CoreStage::First,
@@ -77,16 +85,20 @@ impl Plugin for InteractionPlugin {
                     .label(PickStage::EventListeners)
                     .with_system(event_bubbling::<output::Over>)
                     .with_system(event_bubbling::<output::Out>)
-                    .with_system(event_bubbling::<output::Enter>)
-                    .with_system(event_bubbling::<output::Leave>)
+                    // PointerEnter does not allow bubbling
+                    // PointerLeave does not allow bubbling
                     .with_system(event_bubbling::<output::Down>)
                     .with_system(event_bubbling::<output::Up>)
                     .with_system(event_bubbling::<output::Click>)
                     .with_system(event_bubbling::<output::Move>)
                     .with_system(event_bubbling::<output::Cancel>)
                     .with_system(event_bubbling::<output::DragStart>)
+                    .with_system(event_bubbling::<output::Drag>)
                     .with_system(event_bubbling::<output::DragEnd>)
-                    .with_system(event_bubbling::<output::Drag>),
+                    .with_system(event_bubbling::<output::DragEnter>)
+                    .with_system(event_bubbling::<output::DragOver>)
+                    .with_system(event_bubbling::<output::DragLeave>)
+                    .with_system(event_bubbling::<output::Drop>),
             );
     }
 }
@@ -107,8 +119,12 @@ impl Plugin for DebugEventsPlugin {
                 .with_system(event_debug::<output::PointerMove>)
                 .with_system(event_debug::<output::PointerCancel>)
                 .with_system(event_debug::<output::PointerDragStart>)
+                .with_system(event_debug::<output::PointerDrag>)
                 .with_system(event_debug::<output::PointerDragEnd>)
-                .with_system(event_debug::<output::PointerDrag>),
+                .with_system(event_debug::<output::PointerDragEnter>)
+                .with_system(event_debug::<output::PointerDragOver>)
+                .with_system(event_debug::<output::PointerDragLeave>)
+                .with_system(event_debug::<output::PointerDrop>),
         );
     }
 }

@@ -17,7 +17,7 @@ pub fn touch_pick_events(
                 target: RenderTarget::Window(WindowId::primary()),
                 position: touch.position(),
             };
-            pointer_moves.send(InputMove { id, location })
+            pointer_moves.send(InputMove::new(id, location))
         }
     }
     for touch in touches.iter_just_pressed() {
