@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
+#![warn(missing_docs)]
 
 use std::marker::PhantomData;
 
@@ -204,7 +205,7 @@ pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
         {
             if pointer
                 .iter()
-                .any(|(id, press)| *id == event.id() && press.is_primary_down())
+                .any(|(id, press)| *id == event.id() && press.is_primary_pressed())
             {
                 *active_asset = h_override.pressed(&global_defaults);
             } else {

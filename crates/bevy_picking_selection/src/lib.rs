@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
+#![warn(missing_docs)]
 
 use bevy::prelude::*;
 use bevy_picking_core::{output, PickStage, PointerId};

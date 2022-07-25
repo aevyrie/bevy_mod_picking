@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
+#![warn(missing_docs)]
 
 pub mod backend;
 pub mod focus;
@@ -7,9 +8,10 @@ pub mod input;
 pub mod output;
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*, reflect::Uuid};
-use focus::{pointer_events, update_focus};
+use focus::update_focus;
 use output::{
-    event_bubbling, interactions_from_events, send_click_and_drag_events, send_drag_over_events,
+    event_bubbling, interactions_from_events, pointer_events, send_click_and_drag_events,
+    send_drag_over_events,
 };
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
@@ -116,10 +118,10 @@ impl Plugin for DebugEventsPlugin {
                 .with_system(event_debug::<output::PointerDown>)
                 .with_system(event_debug::<output::PointerUp>)
                 .with_system(event_debug::<output::PointerClick>)
-                .with_system(event_debug::<output::PointerMove>)
+                //.with_system(event_debug::<output::PointerMove>)
                 .with_system(event_debug::<output::PointerCancel>)
                 .with_system(event_debug::<output::PointerDragStart>)
-                .with_system(event_debug::<output::PointerDrag>)
+                //.with_system(event_debug::<output::PointerDrag>)
                 .with_system(event_debug::<output::PointerDragEnd>)
                 .with_system(event_debug::<output::PointerDragEnter>)
                 .with_system(event_debug::<output::PointerDragOver>)

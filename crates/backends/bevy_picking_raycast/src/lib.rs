@@ -1,11 +1,12 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
+#![warn(missing_docs)]
 
 use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
     backend::{EntitiesUnderPointer, EntityDepth},
-    input::PointerPosition,
+    input::PointerLocation,
     PickStage, PickingSettings, PointerId,
 };
 
@@ -39,7 +40,7 @@ impl Plugin for RaycastPlugin {
 
 /// Builds rays and updates raycasting [`PickRaycastSource`]s from [`PointerPosition`]s.
 pub fn build_rays_from_pointers(
-    pointers: Query<(Entity, &PointerId, &PointerPosition)>,
+    pointers: Query<(Entity, &PointerId, &PointerLocation)>,
     mut commands: Commands,
     mut sources: Query<&mut PickRaycastSource>,
     cameras: Query<(&Camera, &GlobalTransform)>,

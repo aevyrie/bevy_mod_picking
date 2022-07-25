@@ -8,6 +8,7 @@
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
+#![warn(missing_docs)]
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
 use bevy_picking_core::{IntoShouldRun, PickStage};

@@ -17,7 +17,7 @@
 use crate::PointerId;
 use bevy::prelude::*;
 
-pub use crate::input::PointerPosition;
+pub use crate::input::PointerLocation;
 /// Backends should use the `backend` run criteria
 pub use crate::PickingSettings;
 

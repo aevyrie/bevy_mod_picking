@@ -57,7 +57,7 @@ pub struct PickableBundle {
 #[derive(Bundle)]
 pub struct PointerBundle {
     pub id: PointerId,
-    pub location: input::PointerPosition,
+    pub location: input::PointerLocation,
     pub click: input::PointerPress,
     pub interaction: output::PointerInteraction,
     #[cfg(feature = "selection")]
@@ -67,7 +67,7 @@ impl PointerBundle {
     pub fn new(id: PointerId) -> Self {
         PointerBundle {
             id,
-            location: input::PointerPosition::default(),
+            location: input::PointerLocation::default(),
             click: input::PointerPress::default(),
             interaction: output::PointerInteraction::default(),
             #[cfg(feature = "selection")]

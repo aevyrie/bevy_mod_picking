@@ -6,7 +6,8 @@ use std::{
 };
 
 use crate::{
-    input::{self, InputMove},
+    focus::HoverMap,
+    input::{self, InputMove, InputPress, PressStage},
     PointerId,
 };
 use bevy::{
@@ -172,6 +173,17 @@ impl<E: Clone + Send + Sync + 'static + Reflect> PointerEvent<E> {
 //TODO: add a system that errors if a user adds the EventListener<PointerEnter/PointerLeave>
 //components
 
+/// Bubbles [`PointerEvent`]s of inner type `E`.
+///
+///  Event bubbling makes it simple for specific entities to listen for specific events. When an
+///  event is fired, `event_bubbling` will fire that event for each parent entity, walking up the
+///  ancestor hierarchy of the target, until a [`Bubble`]`::Pop` is found or the root of the
+///  hierarchy is reached.
+///
+/// For every entity in the hierarchy, this system will look for an [`EventListener`]  matching the
+/// current event type. If one is found, an event will be fired for that listener.
+///
+/// Some `PointerEvent`s cannot be bubbled, and are instead sent to the entire hierarchy.
 pub fn event_bubbling<E: Clone + Send + Sync + 'static + Reflect>(
     mut commands: Commands,
     mut events: EventReader<PointerEvent<E>>,
@@ -212,83 +224,176 @@ impl<E: Clone + Send + Sync + Reflect> std::fmt::Display for PointerEvent<E> {
     }
 }
 
+/// Fires when a the pointer crosses into the bounds of the `target` entity.
 pub type PointerOver = PointerEvent<Over>;
+/// The inner [`PointerEvent`] type for [`PointerOver`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Over;
 
+/// Fires when a the pointer crosses out of the bounds of the `target` entity.
 pub type PointerOut = PointerEvent<Out>;
+/// The inner [`PointerEvent`] type for [`PointerOut`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Out;
 
-// TODO:
+/// TODO:
 pub type PointerEnter = PointerEvent<Enter>;
+/// The inner [`PointerEvent`] type for [`PointerEnter`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Enter;
 
-//TODO:
+/// Todo:
 pub type PointerLeave = PointerEvent<Leave>;
+/// The inner [`PointerEvent`] type for [`PointerLeave`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Leave;
 
+/// Fires when a the pointer primary button is pressed over the `target` entity.
 pub type PointerDown = PointerEvent<Down>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+/// The inner [`PointerEvent`] type for [`PointerDown`].
 pub struct Down;
 
+/// Fires when a the pointer primary button is released over the `target` entity.
 pub type PointerUp = PointerEvent<Up>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+/// The inner [`PointerEvent`] type for [`PointerUp`].
 pub struct Up;
 
-/// Fires when a pointer sends a mouse down event followed by a mouse up event, with the same
+/// Fires when a pointer sends a pointer down event followed by a pointer up event, with the same
 /// `target` entity for both events.
 pub type PointerClick = PointerEvent<Click>;
+/// The inner [`PointerEvent`] type for [`PointerClick`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Click;
 
 /// Fires while a pointer is moving over the `target` entity.
 pub type PointerMove = PointerEvent<Move>;
+/// The inner [`PointerEvent`] type for [`PointerMove`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Move;
 
-//TODO:
+///TODO:
 pub type PointerCancel = PointerEvent<Cancel>;
+/// The inner [`PointerEvent`] type for [`PointerCancel`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Cancel;
 
 /// Fires when the `target` entity receives a pointer down event followed by a pointer move event.
 pub type PointerDragStart = PointerEvent<DragStart>;
+/// The inner [`PointerEvent`] type for [`PointerDragStart`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct DragStart;
 
 /// Fires while the `target` entity is being dragged.
 pub type PointerDrag = PointerEvent<Drag>;
+/// The inner [`PointerEvent`] type for [`PointerDrag`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Drag;
 
 /// Fires when a pointer is dragging the `target` entity and a pointer up event is received.
 pub type PointerDragEnd = PointerEvent<DragEnd>;
+/// The inner [`PointerEvent`] type for [`PointerDragEnd`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct DragEnd;
 
 /// Fires when a pointer dragging some entity enters the `target` entity.
 pub type PointerDragEnter = PointerEvent<DragEnter>;
+/// The inner [`PointerEvent`] type for [`PointerDragEnter`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct DragEnter;
 
 /// Fires while some entity is being dragged over the `target` entity.
 pub type PointerDragOver = PointerEvent<DragOver>;
+/// The inner [`PointerEvent`] type for [`PointerDragOver`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct DragOver;
 
 /// Fires when a pointer dragging some entity leaves the `target` entity.
 pub type PointerDragLeave = PointerEvent<DragLeave>;
+/// The inner [`PointerEvent`] type for [`PointerDragLeave`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct DragLeave;
 
 /// Fires when a pointer drops some entity onto the `target` entity.
 pub type PointerDrop = PointerEvent<Drop>;
+/// The inner [`PointerEvent`] type for [`PointerDrop`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Drop;
 
+/// Generates pointer events from input data
+pub fn pointer_events(
+    // Input
+    pointers: Query<(&PointerId, &PointerInteraction)>, // <- what happened last frame
+    mut input_presses: EventReader<input::InputPress>,
+    mut pointer_move_in: EventReader<input::InputMove>,
+    hover_map: Res<HoverMap>,
+    // Output
+    mut pointer_move: EventWriter<PointerMove>,
+    mut pointer_over: EventWriter<PointerOver>,
+    mut pointer_out: EventWriter<PointerOut>,
+    mut pointer_up: EventWriter<PointerUp>,
+    mut pointer_down: EventWriter<PointerDown>,
+) {
+    let input_presses: Vec<&InputPress> = input_presses.iter().collect();
+
+    for event in pointer_move_in.iter() {
+        for hover_entity in hover_map.get(&event.id()).iter().flat_map(|h| h.iter()) {
+            pointer_move.send(PointerMove::new(&event.id(), hover_entity, Move))
+        }
+    }
+
+    for (pointer_id, pointer_interaction) in pointers.iter() {
+        let just_pressed = input_presses
+            .iter()
+            .filter_map(|click| (&click.id == pointer_id).then_some(click.press))
+            .last();
+
+        // If the entity is hovered...
+        for hover_entity in hover_map.get(pointer_id).iter().flat_map(|h| h.iter()) {
+            // ...but was not hovered last frame...
+            if matches!(
+                pointer_interaction.get(hover_entity),
+                Some(Interaction::None) | None
+            ) {
+                pointer_over.send(PointerOver::new(pointer_id, hover_entity, Over));
+            }
+
+            match just_pressed {
+                Some(PressStage::Down) => {
+                    pointer_down.send(PointerDown::new(pointer_id, hover_entity, Down));
+                }
+                Some(PressStage::Up) => {
+                    pointer_up.send(PointerUp::new(pointer_id, hover_entity, Up));
+                }
+                None => (),
+            }
+        }
+
+        if let Some(hover_entities) = hover_map.get(pointer_id) {
+            // If the entity was hovered last frame...
+            for entity in pointer_interaction
+                .iter()
+                .filter_map(|(entity, interaction)| {
+                    matches!(interaction, Interaction::Hovered | Interaction::Clicked)
+                        .then_some(entity)
+                })
+            {
+                // ...but is now not being hovered...
+                if !hover_entities.contains(entity) {
+                    if matches!(just_pressed, Some(PressStage::Up)) {
+                        // ...the pointer is considered just up on this entity even though it was
+                        // not hovering the entity this frame
+                        pointer_up.send(PointerUp::new(pointer_id, entity, Up));
+                    }
+                    pointer_out.send(PointerOut::new(pointer_id, entity, Out));
+                }
+            }
+        }
+    }
+}
+
+/// Uses pointer events to update [`PointerInteraction`] and [`Interaction`] components.
 pub fn interactions_from_events(
     // Input
     mut pointer_over: EventReader<PointerOver>,
@@ -394,7 +499,7 @@ pub fn send_click_and_drag_events(
     }
 }
 
-// Uses pointer events to determine when drag-over events occur
+/// Uses pointer events to determine when drag-over events occur
 pub fn send_drag_over_events(
     // Input
     drag_map: Res<DragMap>,
@@ -410,6 +515,7 @@ pub fn send_drag_over_events(
     mut pointer_drag_leave: EventWriter<PointerDragLeave>,
     mut pointer_drop: EventWriter<PointerDrop>,
 ) {
+    // Fire PointerDragEnter events.
     for over_event in pointer_over.iter() {
         if let Some(Some(dragged)) = drag_map.get(&over_event.id()) {
             if &over_event.target() != dragged {
@@ -422,6 +528,7 @@ pub fn send_drag_over_events(
             }
         }
     }
+    // Fire PointerDragOver events.
     for move_event in pointer_move.iter() {
         if let Some(Some(dragged)) = drag_map.get(&move_event.id()) {
             if &move_event.target() != dragged {
@@ -433,7 +540,7 @@ pub fn send_drag_over_events(
             }
         }
     }
-
+    // Fire PointerDragLeave events when the pointer goes out of the target.
     for out_event in pointer_out.iter() {
         if let Some(dragged_over) = drag_over_map.get_mut(&out_event.id()) {
             if Some(out_event.target()) == *dragged_over {
@@ -446,6 +553,7 @@ pub fn send_drag_over_events(
             }
         }
     }
+    // Fire PointerDragLeave and PointerDrop events when the pointer stops dragging.
     for drag_end_event in pointer_drag_end.iter() {
         if let Some(maybe_dragged_over) = drag_over_map.get_mut(&drag_end_event.id()) {
             if let Some(dragged_over) = *maybe_dragged_over {
