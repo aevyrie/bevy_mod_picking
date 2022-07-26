@@ -37,7 +37,7 @@ impl PluginGroup for DefaultPickingPlugins {
         #[cfg(feature = "rapier")]
         group.add(rapier::RapierPlugin);
         #[cfg(feature = "pick_shader")]
-        group.add(shader::ShaderPlugin);
+        group.add(shader::ShaderPickingPlugin);
     }
 }
 

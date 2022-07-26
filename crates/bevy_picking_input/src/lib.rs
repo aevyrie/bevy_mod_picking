@@ -8,7 +8,7 @@
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
 use bevy_picking_core::{IntoShouldRun, PickStage};
@@ -16,6 +16,7 @@ use bevy_picking_core::{IntoShouldRun, PickStage};
 pub mod mouse;
 pub mod touch;
 
+/// Adds mouse and touch inputs for picking pointers to your app.
 pub struct InputPlugin;
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
@@ -30,6 +31,7 @@ impl Plugin for InputPlugin {
     }
 }
 
+/// Settings for the input plugin to allow enabling or disabling mouse or touch inputs at runtime.
 pub struct InputPluginSettings {
     run_mouse: bool,
     run_touch: bool,

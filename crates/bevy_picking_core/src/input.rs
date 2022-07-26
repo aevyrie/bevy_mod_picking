@@ -1,3 +1,5 @@
+//! Types and systems for pointer inputs, such as position and buttons.
+
 use std::fmt::Debug;
 
 use crate::PointerId;

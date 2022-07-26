@@ -1,6 +1,8 @@
+//! Core functionality and types required for `bevy_mod_picking` to function.
+
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 pub mod backend;
 pub mod focus;
@@ -14,6 +16,7 @@ use output::{
     send_drag_over_events,
 };
 
+/// Groups the stages of the picking process under shared labels.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickStage {
     /// Produces [`input::PointerPressEvent`]s, [`input::PointerLocationEvent`]s, and updates
@@ -27,11 +30,11 @@ pub enum PickStage {
     EventListeners,
 }
 
+/// Receives input events, and provides the shared types used by other picking plugins.
 pub struct CorePlugin;
 impl Plugin for CorePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<PickingSettings>()
-            .add_event::<input::InputPress>()
+        app.add_event::<input::InputPress>()
             .add_event::<input::InputMove>()
             .add_event::<backend::EntitiesUnderPointer>()
             .add_system_set_to_stage(
@@ -45,6 +48,7 @@ impl Plugin for CorePlugin {
     }
 }
 
+/// Generates [`PointerEvent`](output::PointerEvent)s and handles event bubbling.
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
@@ -71,7 +75,6 @@ impl Plugin for InteractionPlugin {
                 SystemSet::new()
                     .after(PickStage::Backend)
                     .label(PickStage::Focus)
-                    .with_run_criteria(|state: Res<PickingSettings>| state.interacting)
                     // Focus
                     .with_system(update_focus)
                     .with_system(pointer_events.after(update_focus))
@@ -105,6 +108,7 @@ impl Plugin for InteractionPlugin {
     }
 }
 
+/// Logs events for debugging
 pub struct DebugEventsPlugin;
 impl Plugin for DebugEventsPlugin {
     fn build(&self, app: &mut App) {
@@ -131,38 +135,29 @@ impl Plugin for DebugEventsPlugin {
     }
 }
 
+/// Identifies a unique pointer.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
 pub enum PointerId {
+    /// A touch input
     Touch(u64),
+    /// The mouse
     Mouse,
-    Other(Uuid),
+    /// A custom, uniquely identified pointer. Useful for mocking inputs or implementing a software
+    /// controlled cursor.
+    Custom(Uuid),
 }
 impl PointerId {
+    /// Returns true if the pointer is a touch input
     pub fn is_touch(&self) -> bool {
         matches!(self, PointerId::Touch(_))
     }
+    /// Returns true if the pointer is the mouse
     pub fn is_mouse(&self) -> bool {
         matches!(self, PointerId::Mouse)
     }
+    /// Returns true if the pointer is a custom input
     pub fn is_other(&self) -> bool {
-        matches!(self, PointerId::Other(_))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct PickingSettings {
-    pub backend: ShouldRun,
-    pub highlighting: ShouldRun,
-    pub interacting: ShouldRun,
-}
-
-impl Default for PickingSettings {
-    fn default() -> Self {
-        Self {
-            backend: ShouldRun::Yes,
-            highlighting: ShouldRun::Yes,
-            interacting: ShouldRun::Yes,
-        }
+        matches!(self, PointerId::Custom(_))
     }
 }
 
@@ -176,7 +171,9 @@ pub fn event_debug<E: output::IsPointerEvent>(mut events: EventReader<E>) {
     }
 }
 
+/// Simple trait used to convert a boolean to a run criteria.
 pub trait IntoShouldRun {
+    /// Converts `self` into [`ShouldRun`].
     fn should_run(&self) -> ShouldRun;
 }
 impl IntoShouldRun for bool {

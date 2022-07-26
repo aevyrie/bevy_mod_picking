@@ -18,8 +18,6 @@ use crate::PointerId;
 use bevy::prelude::*;
 
 pub use crate::input::PointerLocation;
-/// Backends should use the `backend` run criteria
-pub use crate::PickingSettings;
 
 /// An event produced by a picking backend, describing the entities under a pointer in an unordered
 /// list.
@@ -29,13 +27,17 @@ pub use crate::PickingSettings;
 /// its buffer.
 #[derive(Debug, Clone)]
 pub struct EntitiesUnderPointer {
+    /// ID of the pointer this event is for
     pub id: PointerId,
+    /// An unordered collection of entities and their distance (depth) from the cursor.
     pub over_list: Vec<EntityDepth>,
 }
 
 /// An entity and its distance from the pointer (depth).
 #[derive(Debug, Clone)]
 pub struct EntityDepth {
+    /// The entity under the pointer
     pub entity: Entity,
+    /// The distance from the pointer to the entity into the screen, or depth.
     pub depth: f32,
 }

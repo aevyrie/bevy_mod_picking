@@ -1,6 +1,9 @@
+//! Adds highlighting functionality to `bevy_mod_picking`. Supports highlighting selection state
+//! from `bevy_picking_selection`.
+
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 use std::marker::PhantomData;
 
@@ -10,6 +13,15 @@ use bevy_picking_core::{
     output::{PointerClick, PointerDown, PointerOut, PointerOver, PointerUp},
     PickStage, PointerId,
 };
+
+/// Adds pick highlighting functionality to your app.
+pub struct HighlightingPlugins;
+impl PluginGroup for HighlightingPlugins {
+    fn build(&mut self, group: &mut PluginGroupBuilder) {
+        group.add(CustomHighlightingPlugin::<StandardMaterial>::default());
+        group.add(CustomHighlightingPlugin::<ColorMaterial>::default());
+    }
+}
 
 /// Makes an entity highlightable with any [`Highlightable`] [`Asset`]. By default, this plugin
 /// provides an implementation for [`StandardMaterial`] and [`ColorMaterial`]. If this entity has
@@ -36,25 +48,22 @@ pub struct HighlightOverride<T: Highlightable> {
     pub selected: Option<Handle<T>>,
 }
 impl<T: Highlightable> HighlightOverride<T> {
+    /// Returns this entity's asset handle for the hovered state, or falls back to the default.
     pub fn hovered(&self, default: &DefaultHighlighting<T>) -> Handle<T> {
         self.hovered.as_ref().unwrap_or(&default.hovered).to_owned()
     }
+
+    /// Returns this entity's asset handle for the pressed state, or falls back to the default.
     pub fn pressed(&self, default: &DefaultHighlighting<T>) -> Handle<T> {
         self.pressed.as_ref().unwrap_or(&default.pressed).to_owned()
     }
+
+    /// Returns this entity's asset handle for the selected state, or falls back to the default.
     pub fn selected(&self, default: &DefaultHighlighting<T>) -> Handle<T> {
         self.selected
             .as_ref()
             .unwrap_or(&default.selected)
             .to_owned()
-    }
-}
-
-pub struct HighlightingPlugins;
-impl PluginGroup for HighlightingPlugins {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(CustomHighlightingPlugin::<StandardMaterial>::default());
-        group.add(CustomHighlightingPlugin::<ColorMaterial>::default());
     }
 }
 
@@ -87,22 +96,29 @@ where
 /// return the highlighting asset back to its original state after highlighting it.
 #[derive(Component, Clone, Debug)]
 pub struct InitialHighlight<T: Asset> {
+    /// A handle for the initial asset state of the highlightable entity.
     pub initial: Handle<T>,
 }
 
 /// Resource that defines the default highlighting assets to use. This can be overridden per-entity
 /// with the [`HighlightOverride`] component.
 pub struct DefaultHighlighting<T: Highlightable + ?Sized> {
+    /// Default asset handle to use for hovered entities without a [`HighlightOverride`].
     pub hovered: Handle<T>,
+    /// Default asset handle to use for pressed entities without a [`HighlightOverride`].
     pub pressed: Handle<T>,
+    /// Default asset handle to use for selected entities without a [`HighlightOverride`].
     pub selected: Handle<T>,
 }
 
-/// This trait makes it possible for highlighting to be generic over any type of asset. You can
+/// This trait makes it possible for highlighting to be generic over any type of asset. This can be
 /// implement this for any [`Asset`] type.
 pub trait Highlightable: Default + Asset {
     /// The asset used to highlight the picked object. For a 3D mesh, this might be [`StandardMaterial`].
     fn highlight_defaults(materials: Mut<Assets<Self>>) -> DefaultHighlighting<Self>;
+
+    /// Retrieves the asset storage, [`Assets`], for the highlighting asset type. This allows
+    /// handles for assets used for highlighting to be dereferenced.
     fn materials(world: &mut World) -> Mut<Assets<Self>> {
         world.resource_mut::<Assets<Self>>()
     }
@@ -134,6 +150,7 @@ impl<T: Highlightable> FromWorld for DefaultHighlighting<T> {
     }
 }
 
+/// Automatically records the "initial" state of highlightable entities.
 pub fn get_initial_highlight_asset<T: Highlightable>(
     mut commands: Commands,
     entity_asset_query: Query<(Entity, &Handle<T>), Added<PickHighlight>>,
@@ -158,6 +175,7 @@ pub fn get_initial_highlight_asset<T: Highlightable>(
     }
 }
 
+/// Apply highlighting assets to entities based on their state.
 pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
     global_defaults: Res<DefaultHighlighting<T>>,
     mut interaction_query: Query<(

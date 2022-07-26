@@ -16,6 +16,7 @@ use bevy::{
     utils::HashMap,
 };
 
+/// Holds a map of entities this pointer is currently interacting with.
 #[derive(Debug, Default, Clone, Component)]
 pub struct PointerInteraction {
     map: HashMap<Entity, Interaction>,
@@ -33,21 +34,32 @@ impl DerefMut for PointerInteraction {
     }
 }
 
+/// Can be implemented on a custom event to allow [`EventListener`]s to convert [`PointerEvent`]s
+/// into the custom event type.
 pub trait EventFrom: Event {
+    /// Create a new event from [`EventData`].
     fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self;
 }
 
+/// An `EventListener` marks an entity, informing the [`event_bubbling`] system to run the
+/// `on_event` function when an event of type `E` is being bubbled up the hierarchy and reaches this
+/// entity.
 #[derive(Component, Clone)]
 pub struct EventListener<E: IsPointerEvent> {
-    /// Called when the event listener is triggered.
+    /// A function that is called when the event listener is triggered.
     on_event: fn(&mut Commands, &mut EventData<E>),
 }
 
 impl<E: IsPointerEvent> EventListener<E> {
-    pub fn run_command(on_event: fn(&mut Commands, &mut EventData<E>)) -> Self {
+    /// Create an [`EventListener`] that will run the supplied `on_event` function with access to
+    /// bevy [`Commands`].
+    pub fn new_run_commands(on_event: fn(&mut Commands, &mut EventData<E>)) -> Self {
         Self { on_event }
     }
-    pub fn forward_event<F: EventFrom>() -> Self {
+
+    /// Create an [`EventListener`] that will send an event of type `F` when the listener is
+    /// triggered, then continue to bubble the original event up this entity's hierarchy.
+    pub fn new_forward_event<F: EventFrom>() -> Self {
         Self {
             on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
                 let forwarded_event = F::new(event_data);
@@ -58,7 +70,13 @@ impl<E: IsPointerEvent> EventListener<E> {
             },
         }
     }
-    pub fn forward_event_and_break<F: EventFrom>() -> Self {
+
+    /// Create an [`EventListener`] that will send an event of type `F` when the listener is
+    /// triggered, then halt bubbling, preventing event listeners of the same type from triggering
+    /// on parents of this entity.
+    ///
+    /// Prefer using [`new_forward_event`] instead, unless you have a good reason to halt bubbling.
+    pub fn new_forward_event_and_halt<F: EventFrom>() -> Self {
         Self {
             on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
                 let forwarded_event = F::new(event_data);
@@ -72,9 +90,32 @@ impl<E: IsPointerEvent> EventListener<E> {
     }
 }
 
+/// Extends the [`EntityCommands`] trait, allowing you to call these methods when spawning an
+/// entity.
+///
+/// # Usage
+///
+/// ```
+/// # struct MyForwardedEvent;
+/// # impl EventFrom for MyForwardedEvent {
+/// #     fn new(_event_data: &mut EventData<impl IsPointerEvent>) -> Self {
+/// #         MyForwardedEvent
+/// #     }
+/// # }
+/// # fn(mut commands: Commands){
+/// commands
+///     .spawn()
+///     .forward_events::<PointerClick, MyForwardedEvent>();
+/// # }
+/// ```
 pub trait EventListenerCommands {
+    /// Listens for events of type `E`. When found, an event of type `F` will be sent.
     fn forward_events<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self;
-    fn forward_events_and_break<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self;
+    /// Listens for events of type `E`. When found, an event of type `F` will be sent. Finally,
+    /// bubbling will be halted. See [`event_bubbling`] for details on how bubbling works.
+    ///
+    /// Prefer using `forward_events` instead, unless you have a good reason to halt bubbling.
+    fn forward_events_and_halt<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self;
 }
 
 impl<'w, 's, 'a> EventListenerCommands for EntityCommands<'w, 's, 'a> {
@@ -82,18 +123,19 @@ impl<'w, 's, 'a> EventListenerCommands for EntityCommands<'w, 's, 'a> {
         self.commands().add(|world: &mut World| {
             world.init_resource::<Events<F>>();
         });
-        self.insert(EventListener::<E>::forward_event::<F>());
+        self.insert(EventListener::<E>::new_forward_event::<F>());
         self
     }
-    fn forward_events_and_break<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self {
+    fn forward_events_and_halt<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self {
         self.commands().add(|world: &mut World| {
             world.init_resource::<Events<F>>();
         });
-        self.insert(EventListener::<E>::forward_event_and_break::<F>());
+        self.insert(EventListener::<E>::new_forward_event_and_halt::<F>());
         self
     }
 }
 
+/// Data from an event, for use with [`EventListener`]s.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct EventData<E: IsPointerEvent> {
     /// The pointer involved in this event.
@@ -108,41 +150,52 @@ pub struct EventData<E: IsPointerEvent> {
     bubble: Bubble,
 }
 impl<E: IsPointerEvent> EventData<E> {
+    /// Get the [`PointerId`] associated with this event.
     pub fn id(&self) -> PointerId {
         self.id
     }
 
+    /// Get the entity that was listening for this event. Note this is ***not*** the target entity
+    /// of the event - though it can be - it is an ancestor of the target entity that has an
+    /// [`EventListener`] which was triggered.
     pub fn listener(&self) -> Entity {
         self.listener
     }
 
+    /// Get the target entity of the event. E.g. the entity that was clicked on.
     pub fn target(&self) -> Entity {
         self.target
     }
 
+    /// The inner event that may contain event-specific data.
     pub fn event(&self) -> &E::InnerEventType {
         &self.event
     }
 
+    /// When called, this will stop bubbling from continuing up the target entity's hierarchy. See
+    /// [`event_bubbling`] for details.
     pub fn stop_bubbling(&mut self) {
         self.bubble = Bubble::Burst
     }
 }
 
-/// Should the event bubble up to the entity's parent, or halt?
+/// Controls whether the event should bubble up to the entity's parent, or halt.
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub enum Bubble {
-    /// This event will bubble up to its parent.
+    /// Allows this event to bubble up to its parent.
     #[default]
     Up,
     /// Stops this event from bubbling to the next parent.
     Burst,
 }
 
+/// This trait restricts the types of events that can be used as [`PointerEvent`]s.
 pub trait IsPointerEvent: Send + Sync + 'static + Display + Clone {
+    /// The inner event type of the [`PointerEvent`].
     type InnerEventType;
 }
 
+/// Stores the common data needed for all `PointerEvent`s.
 #[derive(Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct PointerEvent<E: Send + Sync + Clone + 'static + Reflect> {
     id: PointerId,
@@ -153,6 +206,7 @@ impl<E: Clone + Send + Sync + Reflect> IsPointerEvent for PointerEvent<E> {
     type InnerEventType = E;
 }
 impl<E: Clone + Send + Sync + 'static + Reflect> PointerEvent<E> {
+    /// Create a new `PointerEvent`.
     pub fn new(id: &PointerId, target: &Entity, event: E) -> Self {
         Self {
             id: *id,
@@ -161,10 +215,12 @@ impl<E: Clone + Send + Sync + 'static + Reflect> PointerEvent<E> {
         }
     }
 
+    /// Get the [`PointerId`] of this event.
     pub fn id(&self) -> PointerId {
         self.id
     }
 
+    /// Get the target entity of this event.
     pub fn target(&self) -> Entity {
         self.target
     }
@@ -173,15 +229,15 @@ impl<E: Clone + Send + Sync + 'static + Reflect> PointerEvent<E> {
 //TODO: add a system that errors if a user adds the EventListener<PointerEnter/PointerLeave>
 //components
 
-/// Bubbles [`PointerEvent`]s of inner type `E`.
+/// Bubbles [`PointerEvent`]s of event type `E`.
 ///
-///  Event bubbling makes it simple for specific entities to listen for specific events. When an
-///  event is fired, `event_bubbling` will fire that event for each parent entity, walking up the
-///  ancestor hierarchy of the target, until a [`Bubble`]`::Pop` is found or the root of the
-///  hierarchy is reached.
+/// Event bubbling makes it simple for specific entities to listen for specific events. When a
+/// `PointerEvent` event is fired, `event_bubbling` will look for an `EventListener` on the event's
+/// target entity, then walk up the hierarchy of the entity's ancestors, until a [`Bubble`]`::Pop`
+/// is found or the root of the hierarchy is reached.
 ///
 /// For every entity in the hierarchy, this system will look for an [`EventListener`]  matching the
-/// current event type. If one is found, an event will be fired for that listener.
+/// current event type, and run the `on_event` function in the event listener.
 ///
 /// Some `PointerEvent`s cannot be bubbled, and are instead sent to the entire hierarchy.
 pub fn event_bubbling<E: Clone + Send + Sync + 'static + Reflect>(
@@ -242,7 +298,7 @@ pub type PointerEnter = PointerEvent<Enter>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Enter;
 
-/// Todo:
+/// TODO:
 pub type PointerLeave = PointerEvent<Leave>;
 /// The inner [`PointerEvent`] type for [`PointerLeave`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]

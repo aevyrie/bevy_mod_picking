@@ -1,3 +1,5 @@
+//! Provides sensible defaults for touch picking inputs.
+
 use bevy::{prelude::*, render::camera::RenderTarget, window::WindowId};
 use bevy_picking_core::{
     input::{InputMove, InputPress, Location, PointerButton, PressStage},

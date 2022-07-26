@@ -1,24 +1,18 @@
+//! A raycasting backend for `bevy_mod_picking` that uses `bevy_mod_raycast` for raycasting.
+
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
     backend::{EntitiesUnderPointer, EntityDepth},
     input::PointerLocation,
-    PickStage, PickingSettings, PointerId,
+    PickStage, PointerId,
 };
 
-/// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
-pub type PickRaycastTarget = bevy_mod_raycast::RayCastMesh<RaycastPickingSet>;
-/// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
-pub type PickRaycastSource = RayCastSource<RaycastPickingSet>;
-
-/// This unit struct is used to tag the generic ray casting types
-/// [RayCastMesh](bevy_mod_raycast::RayCastMesh) and [`RayCastSource`].
-pub struct RaycastPickingSet;
-
+/// Adds the raycasting picking backend to your app.
 pub struct RaycastPlugin;
 impl Plugin for RaycastPlugin {
     fn build(&self, app: &mut App) {
@@ -26,7 +20,6 @@ impl Plugin for RaycastPlugin {
             CoreStage::First,
             SystemSet::new()
                 .label(PickStage::Backend)
-                .with_run_criteria(|state: Res<PickingSettings>| state.backend)
                 .with_system(build_rays_from_pointers)
                 .with_system(
                     bevy_mod_raycast::update_raycast::<RaycastPickingSet>
@@ -37,6 +30,15 @@ impl Plugin for RaycastPlugin {
         );
     }
 }
+
+/// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
+pub type PickRaycastTarget = bevy_mod_raycast::RayCastMesh<RaycastPickingSet>;
+/// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
+pub type PickRaycastSource = RayCastSource<RaycastPickingSet>;
+
+/// This unit struct is used to tag the generic ray casting types
+/// [RayCastMesh](bevy_mod_raycast::RayCastMesh) and [`RayCastSource`].
+pub struct RaycastPickingSet;
 
 /// Builds rays and updates raycasting [`PickRaycastSource`]s from [`PointerPosition`]s.
 pub fn build_rays_from_pointers(

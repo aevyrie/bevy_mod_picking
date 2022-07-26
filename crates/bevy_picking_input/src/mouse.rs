@@ -1,5 +1,4 @@
-#![allow(clippy::type_complexity)]
-#![allow(clippy::too_many_arguments)]
+//! Provides sensible defaults for mouse picking inputs.
 
 use bevy::{
     input::{mouse::MouseButtonInput, ButtonState},

@@ -1,14 +1,9 @@
+//! Determines which entities are being hovered by pointers, taking into account [`FocusPolicy`],
+//! [`PickLayer`], and entity depth.
+
 use std::collections::BTreeMap;
 
-use crate::{
-    backend,
-    input::{self, InputPress, PressStage},
-    output::{
-        Down, Move, Out, Over, PointerDown, PointerInteraction, PointerMove, PointerOut,
-        PointerOver, PointerUp, Up,
-    },
-    PointerId,
-};
+use crate::{backend, output::PointerInteraction, PointerId};
 use bevy::{
     prelude::*,
     ui::FocusPolicy,
@@ -25,14 +20,22 @@ type LayerMap = BTreeMap<PickLayer, DepthMap>;
 /// are sorted in order from the highest to lowest layer, and by depth within each layer.
 #[derive(Debug, Clone, Copy, Component, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PickLayer {
+    /// Topmost picking layer
     Top = 0,
+    /// Layer immediately above the UI layer
     AboveUi = 1,
+    /// Contains all UI entities
     UI = 2,
+    /// Layer immediately below the UI
     BelowUi = 3,
+    /// Layer immediately above the world
     AboveWorld = 4,
+    /// The default `PickLayer`.
     #[default]
     World = 5,
+    /// Layer immediately below the world
     BelowWorld = 6,
+    /// Bottommost picking layer
     Bottom = 7,
 }
 

@@ -1,10 +1,13 @@
+//! Adds multiselect functionality to `bevy_mod_picking`
+
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 use bevy::prelude::*;
 use bevy_picking_core::{output, PickStage, PointerId};
 
+/// Adds multiselect picking support to your app.
 pub struct SelectionPlugin;
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
@@ -20,23 +23,32 @@ impl Plugin for SelectionPlugin {
     }
 }
 
+/// Input state that defines whether or not the multiselect button is active. This is often the
+/// `Ctrl` or `Shift` keys.
 #[derive(Debug, Default, Clone, Component, PartialEq)]
 pub struct PointerMultiselect {
+    /// `true` if the multiselect button(s) is active.
     pub is_pressed: bool,
 }
 
 /// Tracks the current selection state of the entity.
 #[derive(Component, Debug, Default, Clone)]
 pub struct PickSelection {
+    /// `true` if this entity is selected.
     pub is_selected: bool,
 }
 
+/// An event that is sent when an entity is selected.
 #[derive(Component, Debug, Copy, Clone)]
 pub enum PointerSelectionEvent {
+    /// The entity was just selected.
     JustSelected(Entity),
+    /// The entity was just deselected.
     JustDeselected(Entity),
 }
 impl PointerSelectionEvent {
+    /// Receives [`PointerSelectionEvent`]s, and uses them to update the [`PickSelection`] state of
+    /// the affected entities.
     pub fn receive(
         mut events: EventReader<PointerSelectionEvent>,
         mut selectables: Query<&mut PickSelection>,
@@ -63,6 +75,8 @@ impl PointerSelectionEvent {
 #[derive(Component, Debug, Copy, Clone)]
 pub struct NoDeselect;
 
+/// Determines which entities have been selected or deselected, and sends
+/// [`PointerSelectionEvent`]s corresponding to these state changes.
 pub fn send_selection_events(
     mut pointer_down: EventReader<output::PointerDown>,
     mut pointer_click: EventReader<output::PointerClick>,
@@ -105,7 +119,7 @@ pub fn send_selection_events(
     }
 }
 
-/// Unsurprising default multiselect inputs
+/// Unsurprising default multiselect inputs: both  control and shift keys.
 pub fn multiselect_events(
     keyboard: Res<Input<KeyCode>>,
     mut pointer_query: Query<&mut PointerMultiselect>,
