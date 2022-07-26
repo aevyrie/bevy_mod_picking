@@ -192,7 +192,7 @@ pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
     mut click_events: EventReader<PointerClick>,
 ) {
     for event in up_events.iter() {
-        // Reset *all* deselected entities
+        // Reset *all* unselected entities
         for (mut active_asset, pick_selection, h_initial, _) in interaction_query.iter_mut() {
             match pick_selection {
                 Some(s) if !s.is_selected => *active_asset = h_initial.initial.to_owned(),
