@@ -1,4 +1,4 @@
-//! Adds multiselect functionality to `bevy_mod_picking`
+//! A [`bevy`] plugin for `bevy_mod_picking` that adds multiselect functionality.
 //!
 //! This adds the [`PointerDeselect`] and [`PointerSelect`] [`PointerEvent`]s, including support for
 //! bubbling these events.
@@ -8,7 +8,7 @@
 #![deny(missing_docs)]
 
 use bevy::prelude::*;
-use bevy_picking_core::{output::PointerEvent, PickStage, PointerId};
+use bevy_picking_core::{output::PointerEvent, pointer::PointerId, PickStage};
 
 /// Adds multiselect picking support to your app.
 pub struct SelectionPlugin;
@@ -91,8 +91,8 @@ pub fn multiselect_events(
     }
 }
 
-/// Determines which entities have been selected or deselected, and sends
-/// [`PointerSelectionEvent`]s corresponding to these state changes.
+/// Determines which entities have been selected or deselected, and sends [`PointerSelect`] and
+/// [`PointerDeselect`] events corresponding to these state changes.
 pub fn send_selection_events(
     mut pointer_down: EventReader<bevy_picking_core::output::PointerDown>,
     mut pointer_click: EventReader<bevy_picking_core::output::PointerClick>,

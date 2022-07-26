@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{backend, output::PointerInteraction, PointerId};
+use crate::{backend, output::PointerInteraction, pointer::PointerId};
 use bevy::{
     prelude::*,
     ui::FocusPolicy,

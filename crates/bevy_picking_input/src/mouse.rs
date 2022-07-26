@@ -5,10 +5,7 @@ use bevy::{
     prelude::*,
     render::camera::RenderTarget,
 };
-use bevy_picking_core::{
-    input::{InputMove, InputPress, Location, PointerButton},
-    PointerId,
-};
+use bevy_picking_core::pointer::{InputMove, InputPress, Location, PointerButton, PointerId};
 
 /// Sends mouse pointer events to be processed by the core plugin
 pub fn mouse_pick_events(

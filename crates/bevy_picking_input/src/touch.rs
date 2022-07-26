@@ -1,9 +1,8 @@
 //! Provides sensible defaults for touch picking inputs.
 
 use bevy::{prelude::*, render::camera::RenderTarget, window::WindowId};
-use bevy_picking_core::{
-    input::{InputMove, InputPress, Location, PointerButton, PressStage},
-    PointerId,
+use bevy_picking_core::pointer::{
+    InputMove, InputPress, Location, PointerButton, PointerId, PressStage,
 };
 
 /// Sends touch pointer events to be consumed by the core plugin

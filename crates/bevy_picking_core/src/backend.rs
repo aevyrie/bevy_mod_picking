@@ -1,5 +1,5 @@
 //! This module provides a simple interface for implementing a picking backend. A picking backend is
-//! responsible for reading [`PointerPosition`] components, and producing [`EntitiesUnderPointer`]
+//! responsible for reading [`PointerLocation`] components, and producing [`EntitiesUnderPointer`]
 //! events. The [`EntitiesUnderPointer`] events produced by a backend do **not** need to be sorted
 //! or filtered, all that is needed is an unordered list of entities and their distance from the
 //! pointer into the screen (depth). Depth only needs to be self-consistent with other
@@ -14,10 +14,9 @@
 //! your UI. The [`EntitiesUnderPointer`]s produced by these various backends will be combined,
 //! sorted, and used as a homogeneous input for the picking systems.
 
-use crate::PointerId;
 use bevy::prelude::*;
 
-pub use crate::input::PointerLocation;
+pub use crate::pointer::{PointerId, PointerLocation};
 
 /// An event produced by a picking backend, describing the entities under a pointer in an unordered
 /// list.

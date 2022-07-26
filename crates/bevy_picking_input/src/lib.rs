@@ -11,7 +11,7 @@
 #![deny(missing_docs)]
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_picking_core::{IntoShouldRun, PickStage};
+use bevy_picking_core::PickStage;
 
 pub mod mouse;
 pub mod touch;
@@ -50,4 +50,19 @@ fn run_if_touch(settings: Res<InputPluginSettings>) -> ShouldRun {
 }
 fn run_if_mouse(settings: Res<InputPluginSettings>) -> ShouldRun {
     settings.run_mouse.should_run()
+}
+
+/// Simple trait used to convert a boolean to a run criteria.
+trait IntoShouldRun {
+    /// Converts `self` into [`ShouldRun`].
+    fn should_run(&self) -> ShouldRun;
+}
+impl IntoShouldRun for bool {
+    fn should_run(&self) -> ShouldRun {
+        if *self {
+            ShouldRun::Yes
+        } else {
+            ShouldRun::No
+        }
+    }
 }

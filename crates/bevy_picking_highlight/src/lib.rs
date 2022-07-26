@@ -9,9 +9,9 @@ use std::marker::PhantomData;
 
 use bevy::{app::PluginGroupBuilder, asset::Asset, prelude::*, render::color::Color};
 use bevy_picking_core::{
-    input::PointerPress,
     output::{PointerClick, PointerDown, PointerOut, PointerOver, PointerUp},
-    PickStage, PointerId,
+    pointer::{PointerId, PointerPress},
+    PickStage,
 };
 
 /// Adds pick highlighting functionality to your app.

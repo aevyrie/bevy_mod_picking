@@ -3,8 +3,7 @@ use bevy::{
     prelude::*,
     window::PresentMode,
 };
-use bevy_mod_picking::*;
-use raycast::{PickRaycastSource, PickRaycastTarget};
+use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()

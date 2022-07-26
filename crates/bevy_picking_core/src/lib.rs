@@ -6,10 +6,10 @@
 
 pub mod backend;
 pub mod focus;
-pub mod input;
 pub mod output;
+pub mod pointer;
 
-use bevy::{ecs::schedule::ShouldRun, prelude::*, reflect::Uuid};
+use bevy::{ecs::schedule::ShouldRun, prelude::*};
 use focus::update_focus;
 use output::{
     event_bubbling, interactions_from_events, pointer_events, send_click_and_drag_events,
@@ -19,8 +19,7 @@ use output::{
 /// Groups the stages of the picking process under shared labels.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickStage {
-    /// Produces [`input::PointerPressEvent`]s, [`input::PointerLocationEvent`]s, and updates
-    /// [`PointerMultiselect`].
+    /// Produces pointer input events.
     Input,
     /// Reads inputs and produces [`backend::EntitiesUnderPointer`]s.
     Backend,
@@ -34,16 +33,16 @@ pub enum PickStage {
 pub struct CorePlugin;
 impl Plugin for CorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<input::InputPress>()
-            .add_event::<input::InputMove>()
+        app.add_event::<pointer::InputPress>()
+            .add_event::<pointer::InputMove>()
             .add_event::<backend::EntitiesUnderPointer>()
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
                     .after(PickStage::Input)
                     .before(PickStage::Backend)
-                    .with_system(input::InputMove::receive)
-                    .with_system(input::InputPress::receive),
+                    .with_system(pointer::InputMove::receive)
+                    .with_system(pointer::InputPress::receive),
             );
     }
 }
@@ -135,32 +134,6 @@ impl Plugin for DebugEventsPlugin {
     }
 }
 
-/// Identifies a unique pointer.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
-pub enum PointerId {
-    /// A touch input
-    Touch(u64),
-    /// The mouse
-    Mouse,
-    /// A custom, uniquely identified pointer. Useful for mocking inputs or implementing a software
-    /// controlled cursor.
-    Custom(Uuid),
-}
-impl PointerId {
-    /// Returns true if the pointer is a touch input
-    pub fn is_touch(&self) -> bool {
-        matches!(self, PointerId::Touch(_))
-    }
-    /// Returns true if the pointer is the mouse
-    pub fn is_mouse(&self) -> bool {
-        matches!(self, PointerId::Mouse)
-    }
-    /// Returns true if the pointer is a custom input
-    pub fn is_other(&self) -> bool {
-        matches!(self, PointerId::Custom(_))
-    }
-}
-
 /// Listens for pointer events of type `E` and prints them
 pub fn event_debug<E: output::IsPointerEvent>(mut events: EventReader<E>) {
     for event in events.iter() {
@@ -172,7 +145,7 @@ pub fn event_debug<E: output::IsPointerEvent>(mut events: EventReader<E>) {
 }
 
 /// Simple trait used to convert a boolean to a run criteria.
-pub trait IntoShouldRun {
+trait IntoShouldRun {
     /// Converts `self` into [`ShouldRun`].
     fn should_run(&self) -> ShouldRun;
 }

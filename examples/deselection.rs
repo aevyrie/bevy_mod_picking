@@ -1,9 +1,5 @@
 use bevy::{prelude::*, window::PresentMode};
-use bevy_mod_picking::{
-    raycast::{PickRaycastSource, PickRaycastTarget},
-    selection::{NoDeselect, PickSelection},
-    DefaultPickingPlugins, PickableBundle,
-};
+use bevy_mod_picking::prelude::*;
 
 /// This example is identical to the 3d_scene example, except a cube has been added, that when
 /// clicked on, won't deselect everything else you have selected.

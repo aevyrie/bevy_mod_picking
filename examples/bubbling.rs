@@ -1,11 +1,5 @@
 use bevy::prelude::*;
-use bevy_mod_picking::{
-    output::{
-        EventData, EventFrom, EventListenerCommands, IsPointerEvent, PointerClick, PointerOver,
-    },
-    raycast::{PickRaycastSource, PickRaycastTarget},
-    DebugEventsPlugin, DefaultPickingPlugins, PickableBundle,
-};
+use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()

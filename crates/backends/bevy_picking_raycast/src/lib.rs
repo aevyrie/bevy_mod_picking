@@ -8,8 +8,8 @@ use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::{
     backend::{EntitiesUnderPointer, EntityDepth},
-    input::PointerLocation,
-    PickStage, PointerId,
+    pointer::{PointerId, PointerLocation},
+    PickStage,
 };
 
 /// Adds the raycasting picking backend to your app.
@@ -31,16 +31,16 @@ impl Plugin for RaycastPlugin {
     }
 }
 
-/// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
+/// A type alias for the concrete [`RayCastMesh`](bevy_mod_raycast::RayCastMesh) type used for Picking.
 pub type PickRaycastTarget = bevy_mod_raycast::RayCastMesh<RaycastPickingSet>;
-/// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
+/// A type alias for the concrete [`RayCastSource`](bevy_mod_raycast::RayCastSource) type used for Picking.
 pub type PickRaycastSource = RayCastSource<RaycastPickingSet>;
 
 /// This unit struct is used to tag the generic ray casting types
-/// [RayCastMesh](bevy_mod_raycast::RayCastMesh) and [`RayCastSource`].
+/// [`RayCastMesh`](bevy_mod_raycast::RayCastMesh) and [`RayCastSource`].
 pub struct RaycastPickingSet;
 
-/// Builds rays and updates raycasting [`PickRaycastSource`]s from [`PointerPosition`]s.
+/// Builds rays and updates raycasting [`PickRaycastSource`]s from [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
     pointers: Query<(Entity, &PointerId, &PointerLocation)>,
     mut commands: Commands,

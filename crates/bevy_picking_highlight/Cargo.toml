@@ -11,4 +11,5 @@ bevy_picking_input = { path = "../bevy_picking_input" }
 bevy_picking_selection = { path = "../bevy_picking_selection" }
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
     "render",
+    "bevy_asset",
 ] }

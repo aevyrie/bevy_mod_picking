@@ -1,9 +1,33 @@
 //! Types and systems for pointer inputs, such as position and buttons.
 
+use bevy::{prelude::*, reflect::Uuid, render::camera::RenderTarget};
 use std::fmt::Debug;
 
-use crate::PointerId;
-use bevy::{prelude::*, render::camera::RenderTarget};
+/// Identifies a unique pointer.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
+pub enum PointerId {
+    /// A touch input
+    Touch(u64),
+    /// The mouse
+    Mouse,
+    /// A custom, uniquely identified pointer. Useful for mocking inputs or implementing a software
+    /// controlled cursor.
+    Custom(Uuid),
+}
+impl PointerId {
+    /// Returns true if the pointer is a touch input
+    pub fn is_touch(&self) -> bool {
+        matches!(self, PointerId::Touch(_))
+    }
+    /// Returns true if the pointer is the mouse
+    pub fn is_mouse(&self) -> bool {
+        matches!(self, PointerId::Mouse)
+    }
+    /// Returns true if the pointer is a custom input
+    pub fn is_other(&self) -> bool {
+        matches!(self, PointerId::Custom(_))
+    }
+}
 
 /// Tracks the state of the pointer's buttons in response to [`InputPress`]s.
 #[derive(Debug, Default, Clone, Component, PartialEq)]
@@ -113,7 +137,7 @@ pub enum PointerButton {
     Middle,
 }
 
-/// Represents an input pointer used for picking.
+/// Component that tracks a pointer's current location.
 #[derive(Debug, Default, Clone, Component, PartialEq)]
 pub struct PointerLocation {
     location: Option<Location>,

@@ -7,8 +7,7 @@ use std::{
 
 use crate::{
     focus::HoverMap,
-    input::{self, InputMove, InputPress, PressStage},
-    PointerId,
+    pointer::{self, InputMove, InputPress, PointerId, PressStage},
 };
 use bevy::{
     ecs::{event::Event, system::EntityCommands},
@@ -75,7 +74,7 @@ impl<E: IsPointerEvent> EventListener<E> {
     /// triggered, then halt bubbling, preventing event listeners of the same type from triggering
     /// on parents of this entity.
     ///
-    /// Prefer using [`new_forward_event`] instead, unless you have a good reason to halt bubbling.
+    /// Prefer using `new_forward_event` instead, unless you have a good reason to halt bubbling.
     pub fn new_forward_event_and_halt<F: EventFrom>() -> Self {
         Self {
             on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
@@ -381,8 +380,8 @@ pub struct Drop;
 pub fn pointer_events(
     // Input
     pointers: Query<(&PointerId, &PointerInteraction)>, // <- what happened last frame
-    mut input_presses: EventReader<input::InputPress>,
-    mut pointer_move_in: EventReader<input::InputMove>,
+    mut input_presses: EventReader<pointer::InputPress>,
+    mut pointer_move_in: EventReader<pointer::InputMove>,
     hover_map: Res<HoverMap>,
     // Output
     mut pointer_move: EventWriter<PointerMove>,
@@ -498,7 +497,7 @@ pub fn send_click_and_drag_events(
     mut pointer_up: EventReader<PointerUp>,
     mut pointer_move: EventReader<PointerMove>,
     mut input_move: EventReader<InputMove>,
-    mut input_presses: EventReader<input::InputPress>,
+    mut input_presses: EventReader<pointer::InputPress>,
     // Locals
     mut down_map: Local<HashMap<PointerId, Option<Entity>>>,
     // Output
@@ -549,7 +548,7 @@ pub fn send_click_and_drag_events(
     }
 
     for press in input_presses.iter() {
-        if press.press == input::PressStage::Up {
+        if press.press == pointer::PressStage::Up {
             down_map.insert(press.id, None);
         }
     }
