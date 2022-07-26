@@ -14,6 +14,7 @@ pub struct Highlighting<T: Asset> {
     pub hovered: Option<Handle<T>>,
     pub pressed: Option<Handle<T>>,
     pub selected: Option<Handle<T>>,
+    pub hover_selected: Option<Handle<T>>,
 }
 
 /// Resource that defines the default highlighting assets to use. This can be overridden per-entity
@@ -22,6 +23,7 @@ pub struct DefaultHighlighting<T: Highlightable + ?Sized> {
     pub hovered: Option<Handle<T::HighlightAsset>>,
     pub pressed: Option<Handle<T::HighlightAsset>>,
     pub selected: Option<Handle<T::HighlightAsset>>,
+    pub hover_selected: Option<Handle<T::HighlightAsset>>,
 }
 
 /// This trait makes it possible for highlighting to be generic over any type of asset.
@@ -50,6 +52,7 @@ impl Highlightable for StandardMaterialHighlight {
             hovered: Some(materials.add(Color::rgb(0.35, 0.35, 0.35).into())),
             pressed: Some(materials.add(Color::rgb(0.35, 0.75, 0.35).into())),
             selected: Some(materials.add(Color::rgb(0.35, 0.35, 0.75).into())),
+            hover_selected: Some(materials.add(Color::rgb(0.35, 0.75, 0.75).into())),
         }
     }
 }
@@ -66,6 +69,7 @@ impl Highlightable for ColorMaterialHighlight {
             hovered: Some(materials.add(Color::rgb(0.35, 0.35, 0.35).into())),
             pressed: Some(materials.add(Color::rgb(0.35, 0.75, 0.35).into())),
             selected: Some(materials.add(Color::rgb(0.35, 0.35, 0.75).into())),
+            hover_selected: Some(materials.add(Color::rgb(0.35, 0.75, 0.75).into())),
         }
     }
 }
@@ -91,6 +95,7 @@ pub fn get_initial_mesh_highlight_asset<T: Asset>(
                     hovered: None,
                     pressed: None,
                     selected: None,
+                    hover_selected: None,
                 };
                 commands.entity(entity).insert(init_component);
             }
@@ -140,16 +145,32 @@ pub fn mesh_highlighting<T: 'static + Highlightable + Send + Sync>(
                 )
             }
             Interaction::Hovered => {
-                highlight.hovered.as_ref().unwrap_or(
-                    global_default_highlight.hovered.as_ref().unwrap_or(
-                        &highlight.initial
+                if selection.filter(|s| s.selected()).is_some() {
+                    highlight.hover_selected.as_ref().unwrap_or(
+                        global_default_highlight.hover_selected.as_ref().unwrap_or(
+                            highlight.hovered.as_ref().unwrap_or(
+                                highlight.selected.as_ref().unwrap_or(
+                                    global_default_highlight.hovered.as_ref().unwrap_or(
+                                        global_default_highlight.selected.as_ref().unwrap_or(
+                                            &highlight.initial
+                                        )
+                                    )
+                                )
+                            )
+                        )
                     )
-                )
+                } else {
+                    highlight.hovered.as_ref().unwrap_or(
+                        global_default_highlight.hovered.as_ref().unwrap_or(
+                            &highlight.initial
+                        )
+                    )
+                }
             }
             Interaction::None => {
                 if selection.filter(|s| s.selected()).is_some() {
                     highlight.selected.as_ref().unwrap_or(
-                        global_default_highlight.as_ref().unwrap_or(
+                        global_default_highlight.selected.as_ref().unwrap_or(
                             &highlight.initial
                         )
                     )
