@@ -19,9 +19,9 @@ pub struct Highlighting<T: Asset> {
 /// Resource that defines the default highlighting assets to use. This can be overridden per-entity
 /// with the [`Highlighting`] component.
 pub struct DefaultHighlighting<T: Highlightable + ?Sized> {
-    pub hovered: Handle<T::HighlightAsset>,
-    pub pressed: Handle<T::HighlightAsset>,
-    pub selected: Handle<T::HighlightAsset>,
+    pub hovered: Option<Handle<T::HighlightAsset>>,
+    pub pressed: Option<Handle<T::HighlightAsset>>,
+    pub selected: Option<Handle<T::HighlightAsset>>,
 }
 
 /// This trait makes it possible for highlighting to be generic over any type of asset.
@@ -47,9 +47,9 @@ impl Highlightable for StandardMaterialHighlight {
         mut materials: Mut<Assets<Self::HighlightAsset>>,
     ) -> DefaultHighlighting<Self> {
         DefaultHighlighting {
-            hovered: materials.add(Color::rgb(0.35, 0.35, 0.35).into()),
-            pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
-            selected: materials.add(Color::rgb(0.35, 0.35, 0.75).into()),
+            hovered: Some(materials.add(Color::rgb(0.35, 0.35, 0.35).into())),
+            pressed: Some(materials.add(Color::rgb(0.35, 0.75, 0.35).into())),
+            selected: Some(materials.add(Color::rgb(0.35, 0.35, 0.75).into())),
         }
     }
 }
@@ -63,9 +63,9 @@ impl Highlightable for ColorMaterialHighlight {
         mut materials: Mut<Assets<Self::HighlightAsset>>,
     ) -> DefaultHighlighting<Self> {
         DefaultHighlighting {
-            hovered: materials.add(Color::rgb(0.35, 0.35, 0.35).into()),
-            pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
-            selected: materials.add(Color::rgb(0.35, 0.35, 0.75).into()),
+            hovered: Some(materials.add(Color::rgb(0.35, 0.35, 0.35).into())),
+            pressed: Some(materials.add(Color::rgb(0.35, 0.75, 0.35).into())),
+            selected: Some(materials.add(Color::rgb(0.35, 0.35, 0.75).into())),
         }
     }
 }
@@ -117,11 +117,11 @@ pub fn mesh_highlighting<T: 'static + Highlightable + Send + Sync>(
         if paused.is_paused() {
             for (_, mut material, selection, highlight) in interaction_query.iter_mut() {
                 *material = if selection.filter(|s| s.selected()).is_some() {
-                    if let Some(highlight_asset) = &highlight.selected {
-                        highlight_asset
-                    } else {
-                        &global_default_highlight.selected
-                    }
+                    highlight.selected.as_ref().unwrap_or(
+                        global_default_highlight.selected.as_ref().unwrap_or(
+                            &highlight.initial
+                        )
+                    )
                 } else {
                     &highlight.initial
                 }
@@ -133,26 +133,26 @@ pub fn mesh_highlighting<T: 'static + Highlightable + Send + Sync>(
     for (interaction, mut material, selection, highlight) in interaction_query.iter_mut() {
         *material = match *interaction {
             Interaction::Clicked => {
-                if let Some(highlight_asset) = &highlight.pressed {
-                    highlight_asset
-                } else {
-                    &global_default_highlight.pressed
-                }
+                highlight.pressed.as_ref().unwrap_or(
+                    global_default_highlight.pressed.as_ref().unwrap_or(
+                        &highlight.initial
+                    )
+                )
             }
             Interaction::Hovered => {
-                if let Some(highlight_asset) = &highlight.hovered {
-                    highlight_asset
-                } else {
-                    &global_default_highlight.hovered
-                }
+                highlight.hovered.as_ref().unwrap_or(
+                    global_default_highlight.hovered.as_ref().unwrap_or(
+                        &highlight.initial
+                    )
+                )
             }
             Interaction::None => {
                 if selection.filter(|s| s.selected()).is_some() {
-                    if let Some(highlight_asset) = &highlight.selected {
-                        highlight_asset
-                    } else {
-                        &global_default_highlight.selected
-                    }
+                    highlight.selected.as_ref().unwrap_or(
+                        global_default_highlight.as_ref().unwrap_or(
+                            &highlight.initial
+                        )
+                    )
                 } else {
                     &highlight.initial
                 }
