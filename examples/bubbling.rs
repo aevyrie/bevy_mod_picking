@@ -27,14 +27,14 @@ impl EventFrom for GreetMe {
 
 fn handle_events(
     mut commands: Commands,
-    mut deletes: EventReader<DeleteMe>,
-    mut greets: EventReader<GreetMe>,
+    mut delete: EventReader<DeleteMe>,
+    mut greet: EventReader<GreetMe>,
 ) {
-    for event in deletes.iter() {
+    for event in delete.iter() {
         commands.entity(event.0).despawn_recursive();
         info!("I deleted the thing!");
     }
-    for event in greets.iter() {
+    for event in greet.iter() {
         info!("Hello {:?}!", event.0);
     }
 }

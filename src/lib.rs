@@ -1,12 +1,67 @@
-//! A flexible set of plugins for adding picking support to your [`bevy`] app.
+//! A flexible set of plugins that add picking functionality to your [`bevy`] app, with a focus on
+//! ergonomics, expressiveness, and ease of use.
 //!
-//! # Choosing a Picking Backend
+//! # About
 //!
-//! You will need to choose a picking backend to use. This plugin uses `bevy_mod_raycast` by
-//! default; it works with bevy `Mesh`es out of the box and requires no extra dependencies. These
-//! qualities make it useful when you are getting started, however it is not particularly performant
-//! for large meshes. You should consider switching to the rapier or shader backends if performance
-//! becomes a problem. For simple or low-poly games, it may never be an issue.
+//! What is "picking"? Picking is the act of interacting with objects on your screen with a pointer.
+//! That pointer might be a mouse cursor, a touch input, or a custom software cursor (such as a game
+//! UI cursor controlled with a gamepad). As you make an application interactive, whether it's a
+//! traditional 2D UI, or 3D objects, you will run into some recurring challenges:
+//!
+//! - How do I highlight things?
+//! - How can I trigger an event when I click/drag/hover/etc over a thing?
+//! - How do I add touch support?
+//! - Is it possible to do all of this across many windows?
+//! - Can I test all of this somehow?
+//!
+//! These are the problems this crate tries to solve.
+//!
+//! # Getting Started
+//!
+//! Making objects pickable is pretty straightforward. In the most minimal cases, it's as simple as:
+//!
+//! ```
+//! # use bevy::prelude::*;
+//! use bevy_mod_picking::prelude::*;
+//!
+//! # struct DeleteMe(Entity);
+//! # impl EventFrom for DeleteMe {
+//! #     fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self {
+//! #         Self(event_data.target())
+//! #     }
+//! # }
+//! # struct GreetMe(Entity);
+//! # impl EventFrom for GreetMe {
+//! #     fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self {
+//! #         Self(event_data.target())
+//! #     }
+//! # }
+//! # fn setup(
+//! #     mut commands: Commands,
+//! # ) {
+//! commands
+//!     .spawn()
+//!     .insert_bundle(PickableBundle::default())       // Make the entity pickable
+//!     .insert(PickRaycastTarget::default())           // Marker for the `mod_picking` backend
+//!     .forward_events::<PointerClick, DeleteMe>()     // When clicked, fire a `DeleteMe` event!
+//!     .forward_events::<PointerDragStart, GreetMe>(); // When dragging starts, fire a `GreetMe` event!
+//! # }
+//! ```
+//!
+//! # Picking Backends
+//!
+//! Picking [`backend`](bevy_picking_core::backend)s inform `bevy_mod_picking` what entities are
+//! underneath its pointers.
+//!
+//! You will eventually need to choose which picking backend(s) you want to use. This plugin uses
+//! `bevy_mod_raycast` by default; it works with bevy `Mesh`es out of the box and requires no extra
+//! dependencies. These qualities make it useful when prototyping, however it is not particularly
+//! performant for large meshes. You can consider switching to the rapier or shader backends if
+//! performance becomes a problem. For simple or low-poly games, it may never be an issue.
+//!
+//! However, it's important to understand that you can mix and match backends! This crate provides
+//! some backends out of the box, but you can even write your own. It's been made as easy as
+//! possible intentionally; the entire mod_picking backend is less than 100 lines of code.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
@@ -14,16 +69,17 @@
 
 use bevy::{app::PluginGroupBuilder, prelude::*, ui::FocusPolicy};
 
-pub use bevy_picking_core::{self as core, focus, output, pointer};
+// Re-exports
+pub use bevy_picking_core::{self as core, backend, focus, output, pointer};
 pub use bevy_picking_input as input;
 
-// Optional
+// Optional, feature-gated exports
 #[cfg(feature = "highlight")]
 pub use bevy_picking_highlight as highlight;
 #[cfg(feature = "selection")]
 pub use bevy_picking_selection as selection;
 
-// Backends
+// Backend exports, also feature-gated
 #[cfg(feature = "rapier")]
 pub use bevy_picking_rapier as rapier;
 #[cfg(feature = "mod_raycast")]
