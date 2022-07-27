@@ -47,3 +47,11 @@ selection = ["bevy_picking_selection"]
 mod_raycast = ["bevy_picking_raycast"]
 rapier = ["bevy_picking_rapier"]
 pick_shader = ["bevy_picking_shader"]
+
+
+[patch.crates-io]
+nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "dev" }
+parry2d = { git = "https://github.com/dimforge/parry", branch = "master" }
+parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }
+rapier2d = { git = "https://github.com/dimforge/rapier", branch = "master" }
+rapier3d = { git = "https://github.com/dimforge/rapier", branch = "master" }
