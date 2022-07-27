@@ -42,7 +42,7 @@ pub struct RaycastPickingSet;
 
 /// Builds rays and updates raycasting [`PickRaycastSource`]s from [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
-    pointers: Query<(Entity, &PointerId, &PointerLocation)>,
+    pointers: Query<(Entity, &PointerLocation)>,
     mut commands: Commands,
     mut sources: Query<&mut PickRaycastSource>,
     cameras: Query<(&Camera, &GlobalTransform)>,
@@ -52,7 +52,7 @@ pub fn build_rays_from_pointers(
         source.intersections_mut().clear()
     });
 
-    for (entity, _id, location) in pointers.iter() {
+    for (entity, location) in pointers.iter() {
         let location = if let Some(location) = location.location() {
             location
         } else {
