@@ -79,25 +79,27 @@ pub use bevy_picking_highlight as highlight;
 #[cfg(feature = "selection")]
 pub use bevy_picking_selection as selection;
 
-// Backend exports, also feature-gated
-#[cfg(feature = "rapier")]
-pub use bevy_picking_rapier as rapier;
-#[cfg(feature = "mod_raycast")]
-pub use bevy_picking_raycast as mod_raycast;
-#[cfg(feature = "pick_shader")]
-pub use bevy_picking_shader as shader;
+/// Picking backend exports, feature-gated.
+pub mod backends {
+    #[cfg(feature = "pick_rapier")]
+    pub use bevy_picking_rapier as rapier;
+    #[cfg(feature = "pick_raycast")]
+    pub use bevy_picking_raycast as raycast;
+    #[cfg(feature = "pick_shader")]
+    pub use bevy_picking_shader as shader;
+}
 
 /// Common imports
 pub mod prelude {
+    pub use crate as bevy_picking;
     pub use crate::{
-        core::DebugEventsPlugin,
         output::{
             EventData, EventFrom, EventListenerCommands, IsPointerEvent, PointerCancel,
             PointerClick, PointerDown, PointerDrag, PointerDragEnd, PointerDragEnter,
             PointerDragLeave, PointerDragOver, PointerDragStart, PointerDrop, PointerEnter,
             PointerLeave, PointerMove, PointerOut, PointerOver, PointerUp,
         },
-        DefaultPickingPlugins, PickableBundle,
+        DebugEventsPlugin, DefaultPickingPlugins, PickableBundle,
     };
 
     #[cfg(feature = "highlight")]
@@ -112,11 +114,23 @@ pub mod prelude {
         SelectionPlugin,
     };
 
-    #[cfg(feature = "mod_raycast")]
-    pub use crate::mod_raycast::{PickRaycastSource, PickRaycastTarget};
+    #[cfg(feature = "pick_raycast")]
+    pub use crate::backends::raycast::{PickRaycastSource, PickRaycastTarget};
 
-    #[cfg(feature = "rapier")]
-    pub use crate::rapier::RapierPickSource;
+    #[cfg(feature = "pick_rapier")]
+    pub use crate::backends::rapier::RapierPickSource;
+
+    /// Imports for picking backends
+    pub mod backends {
+        #[cfg(feature = "pick_raycast")]
+        pub use crate::backends::raycast::RaycastPlugin;
+
+        #[cfg(feature = "pick_rapier")]
+        pub use crate::backends::rapier::RapierPlugin;
+
+        #[cfg(feature = "pick_shader")]
+        pub use crate::backends::shader::ShaderPlugin;
+    }
 }
 
 /// A "batteries-included" set of plugins that adds everything needed for picking, highlighting, and
@@ -135,14 +149,6 @@ impl PluginGroup for DefaultPickingPlugins {
         group.add(selection::SelectionPlugin);
         #[cfg(feature = "highlight")]
         highlight::HighlightingPlugins.build(group);
-
-        // Backends
-        #[cfg(feature = "mod_raycast")]
-        group.add(mod_raycast::RaycastPlugin);
-        #[cfg(feature = "rapier")]
-        group.add(rapier::RapierPlugin);
-        #[cfg(feature = "pick_shader")]
-        group.add(shader::ShaderPickingPlugin);
     }
 }
 
@@ -206,5 +212,41 @@ pub fn add_default_pointers(mut commands: Commands) {
     // Windows supports up to 20 touch + 10 writing
     for i in 0..30 {
         commands.spawn_bundle(PointerBundle::new(pointer::PointerId::Touch(i)));
+    }
+}
+
+/// Logs events for debugging
+pub struct DebugEventsPlugin;
+impl Plugin for DebugEventsPlugin {
+    fn build(&self, app: &mut App) {
+        use bevy_picking_core::event_debug;
+
+        app.add_system_set_to_stage(
+            CoreStage::PreUpdate,
+            SystemSet::new()
+                .with_system(event_debug::<output::PointerOver>)
+                .with_system(event_debug::<output::PointerOut>)
+                .with_system(event_debug::<output::PointerEnter>)
+                .with_system(event_debug::<output::PointerLeave>)
+                .with_system(event_debug::<output::PointerDown>)
+                .with_system(event_debug::<output::PointerUp>)
+                .with_system(event_debug::<output::PointerClick>)
+                //.with_system(event_debug::<output::PointerMove>)
+                .with_system(event_debug::<output::PointerCancel>)
+                .with_system(event_debug::<output::PointerDragStart>)
+                //.with_system(event_debug::<output::PointerDrag>)
+                .with_system(event_debug::<output::PointerDragEnd>)
+                .with_system(event_debug::<output::PointerDragEnter>)
+                .with_system(event_debug::<output::PointerDragOver>)
+                .with_system(event_debug::<output::PointerDragLeave>)
+                .with_system(event_debug::<output::PointerDrop>),
+        );
+        #[cfg(feature = "selection")]
+        app.add_system_set_to_stage(
+            CoreStage::PreUpdate,
+            SystemSet::new()
+                .with_system(event_debug::<selection::PointerSelect>)
+                .with_system(event_debug::<selection::PointerDeselect>),
+        );
     }
 }

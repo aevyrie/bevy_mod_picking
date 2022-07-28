@@ -32,12 +32,6 @@ impl Plugin for SelectionPlugin {
                     .label(PickStage::EventListeners)
                     .with_system(bevy_picking_core::output::event_bubbling::<Select>)
                     .with_system(bevy_picking_core::output::event_bubbling::<Deselect>),
-            )
-            .add_system_set_to_stage(
-                CoreStage::PreUpdate,
-                SystemSet::new()
-                    .with_system(bevy_picking_core::event_debug::<PointerSelect>)
-                    .with_system(bevy_picking_core::event_debug::<PointerDeselect>),
             );
     }
 }
@@ -103,41 +97,36 @@ pub fn send_selection_events(
     mut selections: EventWriter<PointerSelect>,
     mut deselections: EventWriter<PointerDeselect>,
 ) {
-    for down_event in pointer_down.iter() {
+    for down in pointer_down.iter() {
         let multiselect = pointers
             .iter()
-            .find_map(|(id, multi)| id.eq(&down_event.id()).then_some(multi.is_pressed))
+            .find_map(|(id, multi)| id.eq(&down.id()).then_some(multi.is_pressed))
             .unwrap_or(false);
-        let target_should_deselect = no_deselect.get(down_event.target()).is_err();
+        let target_should_deselect = no_deselect.get(down.target()).is_err();
         // Deselect everything
         if !multiselect && target_should_deselect {
             for (entity, selection) in selectables.iter() {
-                if selection.is_selected {
-                    deselections.send(PointerDeselect::new(&down_event.id(), &entity, Deselect))
+                let not_click_target = down.target() != entity;
+                if selection.is_selected && not_click_target {
+                    deselections.send(PointerDeselect::new(&down.id(), &entity, Deselect))
                 }
             }
         }
     }
 
-    for click_event in pointer_click.iter() {
+    for click in pointer_click.iter() {
         let multiselect = pointers
             .iter()
-            .find_map(|(id, multi)| id.eq(&click_event.id()).then_some(multi.is_pressed))
+            .find_map(|(id, multi)| id.eq(&click.id()).then_some(multi.is_pressed))
             .unwrap_or(false);
-        if let Ok((entity, selection)) = selectables.get(click_event.target()) {
+        if let Ok((entity, selection)) = selectables.get(click.target()) {
             if multiselect {
                 match selection.is_selected {
-                    true => deselections.send(PointerDeselect::new(
-                        &click_event.id(),
-                        &entity,
-                        Deselect,
-                    )),
-                    false => {
-                        selections.send(PointerSelect::new(&click_event.id(), &entity, Select))
-                    }
+                    true => deselections.send(PointerDeselect::new(&click.id(), &entity, Deselect)),
+                    false => selections.send(PointerSelect::new(&click.id(), &entity, Select)),
                 }
             } else if !selection.is_selected {
-                selections.send(PointerSelect::new(&click_event.id(), &entity, Select))
+                selections.send(PointerSelect::new(&click.id(), &entity, Select))
             }
         }
     }

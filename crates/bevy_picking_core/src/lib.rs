@@ -107,33 +107,6 @@ impl Plugin for InteractionPlugin {
     }
 }
 
-/// Logs events for debugging
-pub struct DebugEventsPlugin;
-impl Plugin for DebugEventsPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            CoreStage::PreUpdate,
-            SystemSet::new()
-                .with_system(event_debug::<output::PointerOver>)
-                .with_system(event_debug::<output::PointerOut>)
-                .with_system(event_debug::<output::PointerEnter>)
-                .with_system(event_debug::<output::PointerLeave>)
-                .with_system(event_debug::<output::PointerDown>)
-                .with_system(event_debug::<output::PointerUp>)
-                .with_system(event_debug::<output::PointerClick>)
-                //.with_system(event_debug::<output::PointerMove>)
-                .with_system(event_debug::<output::PointerCancel>)
-                .with_system(event_debug::<output::PointerDragStart>)
-                //.with_system(event_debug::<output::PointerDrag>)
-                .with_system(event_debug::<output::PointerDragEnd>)
-                .with_system(event_debug::<output::PointerDragEnter>)
-                .with_system(event_debug::<output::PointerDragOver>)
-                .with_system(event_debug::<output::PointerDragLeave>)
-                .with_system(event_debug::<output::PointerDrop>),
-        );
-    }
-}
-
 /// Listens for pointer events of type `E` and prints them
 pub fn event_debug<E: output::IsPointerEvent>(mut events: EventReader<E>) {
     for event in events.iter() {

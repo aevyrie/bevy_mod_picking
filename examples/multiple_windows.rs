@@ -9,6 +9,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins) // <- Adds Picking
+        .add_plugin(backends::RaycastPlugin)
         .add_plugin(DebugEventsPlugin) // <- Adds debug event logging.
         .add_startup_system(setup)
         .add_system(bevy::window::close_on_esc)

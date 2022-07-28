@@ -549,6 +549,9 @@ pub fn send_click_and_drag_events(
 
     for press in input_presses.iter() {
         if press.press == pointer::PressStage::Up {
+            if let Some(Some(drag_entity)) = drag_map.insert(press.id, None) {
+                pointer_drag_end.send(PointerDragEnd::new(&press.id, &drag_entity, DragEnd));
+            }
             down_map.insert(press.id, None);
         }
     }

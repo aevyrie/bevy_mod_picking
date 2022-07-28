@@ -1,7 +1,7 @@
 use bevy::{prelude::*, window::PresentMode};
 use bevy_mod_picking::prelude::*;
 
-/// This example is identical to the 3d_scene example, except a cube has been added, that when
+/// This example is identical to the minimal example, except a cube has been added, that when
 /// clicked on, won't deselect everything else you have selected.
 fn main() {
     App::new()
@@ -11,6 +11,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
+        .add_plugin(backends::RaycastPlugin)
         .add_startup_system(setup)
         .run();
 }

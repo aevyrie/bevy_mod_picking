@@ -7,7 +7,7 @@
 use bevy::prelude::*;
 
 /// Adds support for shader picking to `bevy_mod_picking`.
-pub struct ShaderPickingPlugin;
-impl Plugin for ShaderPickingPlugin {
+pub struct ShaderPlugin;
+impl Plugin for ShaderPlugin {
     fn build(&self, _app: &mut App) {}
 }

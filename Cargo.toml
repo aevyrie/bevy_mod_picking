@@ -6,13 +6,20 @@ edition = "2021"
 license = "MIT"
 description = "A 3D mouse picking and raycasting plugin for Bevy."
 repository = "https://github.com/aevyrie/bevy_mod_picking/"
-keywords = ["gamedev", "picking", "bevy", "mod_raycast"]
+keywords = ["gamedev", "picking", "bevy", "pick_raycast"]
 categories = ["game-engines", "rendering"]
 resolver = "2"
 
 [workspace]
-members = ["crates/*", "crates/backends/*"]
-exclude = ["crates/backends"]
+members = [
+  "crates/bevy_picking_core",
+  "crates/bevy_picking_highlight",
+  "crates/bevy_picking_input",
+  "crates/bevy_picking_selection",
+  "crates/backends/bevy_picking_rapier",
+  "crates/backends/bevy_picking_raycast",
+  "crates/backends/bevy_picking_shader",
+]
 
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
@@ -33,27 +40,23 @@ bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-fe
   "x11",
   "bevy_gltf",
   "bevy_scene",
+  "png",
 ] }
-bevy_mod_picking = { path = "", features = [
-  "rapier",
-  "pick_shader",
-  "mod_raycast",
-] }
+# bevy_mod_picking = { path = "", features = ["pick_rapier", "pick_shader"] }
 bevy_rapier3d = "0.15"
 
 [features]
-default = ["mod_raycast", "highlight", "selection"]
+default = ["pick_raycast", "highlight", "selection"]
 highlight = ["bevy_picking_highlight"]
 selection = ["bevy_picking_selection"]
-mod_raycast = ["bevy_picking_raycast"]
-rapier = ["bevy_picking_rapier"]
+pick_raycast = ["bevy_picking_raycast"]
+pick_rapier = ["bevy_picking_rapier"]
 pick_shader = ["bevy_picking_shader"]
 
 
 [patch.crates-io]
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "main" }
 bevy_rapier3d = { path = "../bevy_rapier/bevy_rapier3d" }
 nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "dev" }
-parry2d = { git = "https://github.com/dimforge/parry", branch = "master" }
 parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }
-rapier2d = { git = "https://github.com/dimforge/rapier", branch = "master" }
 rapier3d = { git = "https://github.com/dimforge/rapier", branch = "master" }
