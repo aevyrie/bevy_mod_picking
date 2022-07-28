@@ -6,11 +6,7 @@
 
 use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
-use bevy_picking_core::{
-    backend::{EntitiesUnderPointer, EntityDepth},
-    pointer::{PointerId, PointerLocation},
-    PickStage,
-};
+use bevy_picking_core::backend::prelude::*;
 
 /// Adds the raycasting picking backend to your app.
 pub struct RaycastPlugin;
@@ -31,10 +27,12 @@ impl Plugin for RaycastPlugin {
     }
 }
 
-/// A type alias for the concrete [`RayCastMesh`](bevy_mod_raycast::RayCastMesh) type used for Picking.
+/// Marks an entity that should be pickable with [`bevy_mod_raycast`] ray casts.
 pub type PickRaycastTarget = bevy_mod_raycast::RayCastMesh<RaycastPickingSet>;
-/// A type alias for the concrete [`RayCastSource`](bevy_mod_raycast::RayCastSource) type used for Picking.
-pub type PickRaycastSource = RayCastSource<RaycastPickingSet>;
+
+/// Marks a camera that should be used for [`bevy_mod_raycast`] picking.
+#[derive(Debug, Default, Clone, Component)]
+pub struct PickRaycastSource;
 
 /// This unit struct is used to tag the generic ray casting types
 /// [`RayCastMesh`](bevy_mod_raycast::RayCastMesh) and [`RayCastSource`].
@@ -44,32 +42,28 @@ pub struct RaycastPickingSet;
 pub fn build_rays_from_pointers(
     pointers: Query<(Entity, &PointerLocation)>,
     mut commands: Commands,
-    mut sources: Query<&mut PickRaycastSource>,
-    cameras: Query<(&Camera, &GlobalTransform)>,
+    mut sources: Query<&mut RayCastSource<RaycastPickingSet>>,
+    cameras: Query<(&Camera, &GlobalTransform), With<PickRaycastSource>>,
 ) {
     sources.iter_mut().for_each(|mut source| {
         source.ray = None;
         source.intersections_mut().clear()
     });
 
-    for (entity, location) in pointers.iter() {
-        let location = if let Some(location) = location.location() {
-            location
-        } else {
-            continue;
+    for (entity, pointer_location) in &pointers {
+        let pointer_location = match pointer_location.location() {
+            Some(l) => l,
+            None => continue,
         };
         cameras
             .iter()
-            .filter(|(camera, _)| location.is_same_target(camera))
-            .filter(|(camera, _)| location.is_in_viewport(camera))
-            .map(|(camera, transform)| {
-                Ray3d::from_screenspace(location.position, camera, transform)
-            })
-            .for_each(|ray| {
+            .filter(|(camera, _)| pointer_location.is_in_viewport(camera))
+            .for_each(|(camera, transform)| {
+                let ray = Ray3d::from_screenspace(pointer_location.position, camera, transform);
                 if let Ok(mut source) = sources.get_mut(entity) {
                     source.ray = ray;
                 } else {
-                    let mut source = PickRaycastSource::default();
+                    let mut source = RayCastSource::<RaycastPickingSet>::default();
                     source.ray = ray;
                     commands.entity(entity).insert(source);
                 }
@@ -79,10 +73,10 @@ pub fn build_rays_from_pointers(
 
 /// Produces [`EntitiesUnderPointer`]s from [`PickRaycastSource`] intersections.
 fn update_hits(
-    mut sources: Query<(&PickRaycastSource, &PointerId)>,
+    mut sources: Query<(&RayCastSource<RaycastPickingSet>, &PointerId)>,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
-    for (source, &id) in sources.iter_mut() {
+    for (source, &id) in &mut sources {
         let under_cursor: Vec<EntityDepth> = source
             .intersect_list()
             .iter()

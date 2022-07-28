@@ -11,4 +11,4 @@ bevy_picking_core = { path = "../../bevy_picking_core" }
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
   "render",
 ] }
-bevy_rapier3d = { path = "../../../../bevy_rapier/bevy_rapier3d" }
+bevy_rapier3d = "0.15"

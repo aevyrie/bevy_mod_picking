@@ -39,6 +39,7 @@ bevy_mod_picking = { path = "", features = [
   "pick_shader",
   "mod_raycast",
 ] }
+bevy_rapier3d = "0.15"
 
 [features]
 default = ["mod_raycast", "highlight", "selection"]
@@ -50,6 +51,7 @@ pick_shader = ["bevy_picking_shader"]
 
 
 [patch.crates-io]
+bevy_rapier3d = { path = "../bevy_rapier/bevy_rapier3d" }
 nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "dev" }
 parry2d = { git = "https://github.com/dimforge/parry", branch = "master" }
 parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }

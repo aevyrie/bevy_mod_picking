@@ -114,6 +114,9 @@ pub mod prelude {
 
     #[cfg(feature = "mod_raycast")]
     pub use crate::mod_raycast::{PickRaycastSource, PickRaycastTarget};
+
+    #[cfg(feature = "rapier")]
+    pub use crate::rapier::RapierPickSource;
 }
 
 /// A "batteries-included" set of plugins that adds everything needed for picking, highlighting, and

@@ -16,7 +16,12 @@
 
 use bevy::prelude::*;
 
-pub use crate::pointer::{PointerId, PointerLocation};
+/// Common imports for implementing a picking backend.
+pub mod prelude {
+    pub use super::{EntitiesUnderPointer, EntityDepth};
+    pub use crate::pointer::{PointerId, PointerLocation};
+    pub use crate::PickStage;
+}
 
 /// An event produced by a picking backend, describing the entities under a pointer in an unordered
 /// list.
@@ -27,7 +32,7 @@ pub use crate::pointer::{PointerId, PointerLocation};
 #[derive(Debug, Clone)]
 pub struct EntitiesUnderPointer {
     /// ID of the pointer this event is for
-    pub id: PointerId,
+    pub id: prelude::PointerId,
     /// An unordered collection of entities and their distance (depth) from the cursor.
     pub over_list: Vec<EntityDepth>,
 }

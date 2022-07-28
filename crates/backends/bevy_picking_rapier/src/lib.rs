@@ -5,104 +5,123 @@
 #![deny(missing_docs)]
 
 use bevy::prelude::*;
+use bevy_picking_core::backend::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 /// Adds the `rapier` raycasting picking backend to your app.
 pub struct RapierPlugin;
 impl Plugin for RapierPlugin {
-    fn build(&self, _app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.add_system_set_to_stage(
+            CoreStage::First,
+            SystemSet::new()
+                .label(PickStage::Backend)
+                .with_system(build_rays_from_pointers)
+                .with_system(update_hits.after(build_rays_from_pointers)),
+        );
+    }
 }
 
-// fn cast_ray(
-//     mut commands: Commands,
-//     windows: Res<Windows>,
-//     rapier_context: Res<RapierContext>,
-//     cameras: Query<(&Camera, &GlobalTransform)>,
-// ) {
-//     // We will color in read the colliders hovered by the mouse.
-//     for (camera, camera_transform) in cameras.iter() {
-//         // First, compute a ray from the mouse position.
-//         let (ray_pos, ray_dir) =
-//             ray_from_mouse_position(windows.get_primary().unwrap(), camera, camera_transform);
+/// Marks a camera that should be used for rapier raycast picking.
+#[derive(Debug, Clone, Default, Component)]
+pub struct RapierPickSource;
 
-//         // Then cast the ray.
-//         let hit = rapier_context.cast_ray(
-//             ray_pos,
-//             ray_dir,
-//             f32::MAX,
-//             true,
-//             QueryFilter::only_dynamic(),
-//         );
+/// Component to allow pointers to raycast for picking using rapier.
+#[derive(Debug, Clone, Default, Component)]
+pub struct RapierPickRay {
+    /// A ray may not exist if the pointer is not active
+    pub ray: Option<Ray>,
+}
 
-//         if let Some((entity, _toi)) = hit {
-//             // Color in blue the entity we just hit.
-//             // Because of the query filter, only colliders attached to a dynamic body
-//             // will get an event.
-//             let color = Color::BLUE;
-//             commands.entity(entity).insert(ColliderDebugColor(color));
-//         }
-//     }
-// }
+/// Updates all picking [`Ray`]s with [`PointerLocation`]s.
+pub fn build_rays_from_pointers(
+    pointers: Query<(Entity, &PointerLocation)>,
+    mut commands: Commands,
+    mut sources: Query<&mut RapierPickRay>,
+    cameras: Query<(&Camera, &GlobalTransform), With<RapierPickSource>>,
+) {
+    sources.iter_mut().for_each(|mut source| {
+        source.ray = None;
+    });
 
-// // Credit to @doomy on discord.
-// fn ray_from_mouse_position(
-//     window: &Window,
-//     camera: &Camera,
-//     camera_transform: &GlobalTransform,
-// ) -> (Vec3, Vec3) {
-//     let mouse_position = window.cursor_position().unwrap_or(Vec2::new(0.0, 0.0));
+    for (entity, pointer_location) in &pointers {
+        let pointer_location = match pointer_location.location() {
+            Some(l) => l,
+            None => continue,
+        };
+        cameras
+            .iter()
+            .filter(|(camera, _)| pointer_location.is_in_viewport(camera))
+            .for_each(|(camera, transform)| {
+                let ray = ray_from_screenspace(pointer_location.position, camera, transform);
+                if let Ok(mut source) = sources.get_mut(entity) {
+                    source.ray = ray;
+                } else {
+                    let mut source = RapierPickRay::default();
+                    source.ray = ray;
+                    commands.entity(entity).insert(source);
+                }
+            });
+    }
+}
 
-//     let x = 2.0 * (mouse_position.x / window.width() as f32) - 1.0;
-//     let y = 2.0 * (mouse_position.y / window.height() as f32) - 1.0;
+/// Produces [`EntitiesUnderPointer`]s from [`RapierPickRay`] intersections.
+fn update_hits(
+    rapier_context: Res<RapierContext>,
+    sources: Query<(&RapierPickRay, &PointerId)>,
+    mut output: EventWriter<EntitiesUnderPointer>,
+) {
+    sources
+        .iter()
+        .filter_map(|(source, id)| source.ray.as_ref().and_then(|ray| Some((id, ray))))
+        .filter_map(|(id, ray)| {
+            rapier_context
+                .cast_ray(
+                    ray.origin,
+                    ray.direction,
+                    f32::MAX,
+                    true,
+                    QueryFilter::new(),
+                )
+                .and_then(|hit| Some((hit.0, hit.1, id)))
+        })
+        .for_each(|(entity, depth, &id)| {
+            let over_list = vec![EntityDepth { entity, depth }];
+            output.send(EntitiesUnderPointer { id, over_list });
+        });
+}
 
-//     let camera_inverse_matrix =
-//         camera_transform.compute_matrix() * camera.projection_matrix().inverse();
-//     let near = camera_inverse_matrix * Vec3::new(x, y, -1.0).extend(1.0);
-//     let far = camera_inverse_matrix * Vec3::new(x, y, 1.0).extend(1.0);
+/// Create a [`Ray`] from a camera's screenspace coordinates.
+pub fn ray_from_screenspace(
+    cursor_pos_screen: Vec2,
+    camera: &Camera,
+    camera_transform: &GlobalTransform,
+) -> Option<Ray> {
+    let view = camera_transform.compute_matrix();
+    let screen_size = camera.logical_target_size()?;
+    let projection = camera.projection_matrix();
+    let far_ndc = projection.project_point3(Vec3::NEG_Z * 1000.0).z;
+    let near_ndc = projection.project_point3(Vec3::NEG_Z * 0.001).z;
+    let cursor_ndc = (cursor_pos_screen / screen_size) * 2.0 - Vec2::ONE;
+    let ndc_to_world: Mat4 = view * projection.inverse();
+    let near = ndc_to_world.project_point3(cursor_ndc.extend(near_ndc));
+    let far = ndc_to_world.project_point3(cursor_ndc.extend(far_ndc));
+    let ray_direction = far - near;
+    Some(Ray::new(near, ray_direction))
+}
 
-//     let near = near.truncate() / near.w;
-//     let far = far.truncate() / far.w;
-//     let dir: Vec3 = far - near;
-//     (near, dir)
-// }
+/// A ray used for raycasting
+#[derive(Debug, Clone)]
+pub struct Ray {
+    /// A point that the ray passes through
+    pub origin: Vec3,
+    /// A vector that points parallel to the ray
+    pub direction: Vec3,
+}
 
-// pub fn from_screenspace(
-//     cursor_pos_screen: Vec2,
-//     camera: &Camera,
-//     camera_transform: &GlobalTransform,
-// ) -> Option<Self> {
-//     let view = camera_transform.compute_matrix();
-//     let screen_size = match camera.logical_target_size() {
-//         Some(s) => s,
-//         None => {
-//             error!(
-//                 "Unable to get screen size for RenderTarget {:?}",
-//                 camera.target
-//             );
-//             return None;
-//         }
-//     };
-//     let projection = camera.projection_matrix();
-
-//     // 2D Normalized device coordinate cursor position from (-1, -1) to (1, 1)
-//     let cursor_ndc = (cursor_pos_screen / screen_size) * 2.0 - Vec2::from([1.0, 1.0]);
-//     let ndc_to_world: Mat4 = view * projection.inverse();
-//     let world_to_ndc = projection * view;
-//     let is_orthographic = projection.w_axis[3] == 1.0;
-
-//     // Calculate the camera's near plane using the projection matrix
-//     let projection = projection.to_cols_array_2d();
-//     let camera_near = (2.0 * projection[3][2]) / (2.0 * projection[2][2] - 2.0);
-
-//     // Compute the cursor position at the near plane. The bevy camera looks at -Z.
-//     let ndc_near = world_to_ndc.transform_point3(-Vec3::Z * camera_near).z;
-//     let cursor_pos_near = ndc_to_world.transform_point3(cursor_ndc.extend(ndc_near));
-
-//     // Compute the ray's direction depending on the projection used.
-//     let ray_direction = match is_orthographic {
-//         true => view.transform_vector3(-Vec3::Z), // All screenspace rays are parallel in ortho
-//         false => cursor_pos_near - camera_transform.translation(), // Direction from camera to cursor
-//     };
-
-//     Some(Ray3d::new(cursor_pos_near, ray_direction))
-// }
+impl Ray {
+    /// Build a new ray
+    pub fn new(origin: Vec3, direction: Vec3) -> Self {
+        Self { origin, direction }
+    }
+}
