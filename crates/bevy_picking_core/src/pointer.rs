@@ -3,12 +3,13 @@
 use bevy::{prelude::*, reflect::Uuid, render::camera::RenderTarget};
 use std::fmt::Debug;
 
-/// Identifies a unique pointer.
+/// Identifies a unique pointer entity. `Mouse` and `Touch` pointers are automatically spawned by the
+/// `DefaultPointersPlugin` in `bevy_mod_picking`.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
 pub enum PointerId {
-    /// A touch input
+    /// A touch input, normally numbered by incoming window touch events from `winit`.
     Touch(u64),
-    /// The mouse
+    /// The mouse pointer.
     Mouse,
     /// A custom, uniquely identified pointer. Useful for mocking inputs or implementing a software
     /// controlled cursor.

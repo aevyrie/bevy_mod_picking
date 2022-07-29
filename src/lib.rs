@@ -169,7 +169,9 @@ pub struct PickableBundle {
     pub highlight: highlight::PickHighlight,
 }
 
-/// Components needed to build a pointer
+/// Components needed to build a pointer. `Mouse` and `Touch` pointers are automatically spawned by
+/// the [`DefaultPointersPlugin`]. Use this if you are spawning a custom `PointerId::Custom`
+/// pointer, either for testing, or as a software controller pointer.
 #[derive(Bundle)]
 pub struct PointerBundle {
     /// The pointer's unique [`PointerId`](pointer::PointerId).
@@ -185,7 +187,7 @@ pub struct PointerBundle {
     pub multi_select: selection::PointerMultiselect,
 }
 impl PointerBundle {
-    /// Create a new pointer with the provided `id`.
+    /// Create a new pointer with the provided [`PointerId`](pointer::PointerId).
     pub fn new(id: pointer::PointerId) -> Self {
         PointerBundle {
             id,
