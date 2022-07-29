@@ -35,7 +35,7 @@ impl DerefMut for PointerInteraction {
 
 /// Can be implemented on a custom event to allow [`EventListener`]s to convert [`PointerEvent`]s
 /// into the custom event type.
-pub trait EventFrom: Event {
+pub trait ForwardedEvent: Event {
     /// Create a new event from [`EventData`].
     fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self;
 }
@@ -58,7 +58,7 @@ impl<E: IsPointerEvent> EventListener<E> {
 
     /// Create an [`EventListener`] that will send an event of type `F` when the listener is
     /// triggered, then continue to bubble the original event up this entity's hierarchy.
-    pub fn new_forward_event<F: EventFrom>() -> Self {
+    pub fn new_forward_event<F: ForwardedEvent>() -> Self {
         Self {
             on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
                 let forwarded_event = F::new(event_data);
@@ -75,7 +75,7 @@ impl<E: IsPointerEvent> EventListener<E> {
     /// on parents of this entity.
     ///
     /// Prefer using `new_forward_event` instead, unless you have a good reason to halt bubbling.
-    pub fn new_forward_event_and_halt<F: EventFrom>() -> Self {
+    pub fn new_forward_event_and_halt<F: ForwardedEvent>() -> Self {
         Self {
             on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
                 let forwarded_event = F::new(event_data);
@@ -96,7 +96,7 @@ impl<E: IsPointerEvent> EventListener<E> {
 ///
 /// ```
 /// # struct MyForwardedEvent;
-/// # impl EventFrom for MyForwardedEvent {
+/// # impl ForwardedEvent for MyForwardedEvent {
 /// #     fn new(_event_data: &mut EventData<impl IsPointerEvent>) -> Self {
 /// #         MyForwardedEvent
 /// #     }
@@ -109,23 +109,23 @@ impl<E: IsPointerEvent> EventListener<E> {
 /// ```
 pub trait EventListenerCommands {
     /// Listens for events of type `E`. When found, an event of type `F` will be sent.
-    fn forward_events<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self;
+    fn forward_events<E: IsPointerEvent, F: ForwardedEvent>(&mut self) -> &mut Self;
     /// Listens for events of type `E`. When found, an event of type `F` will be sent. Finally,
     /// bubbling will be halted. See [`event_bubbling`] for details on how bubbling works.
     ///
     /// Prefer using `forward_events` instead, unless you have a good reason to halt bubbling.
-    fn forward_events_and_halt<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self;
+    fn forward_events_and_halt<E: IsPointerEvent, F: ForwardedEvent>(&mut self) -> &mut Self;
 }
 
 impl<'w, 's, 'a> EventListenerCommands for EntityCommands<'w, 's, 'a> {
-    fn forward_events<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self {
+    fn forward_events<E: IsPointerEvent, F: ForwardedEvent>(&mut self) -> &mut Self {
         self.commands().add(|world: &mut World| {
             world.init_resource::<Events<F>>();
         });
         self.insert(EventListener::<E>::new_forward_event::<F>());
         self
     }
-    fn forward_events_and_halt<E: IsPointerEvent, F: EventFrom>(&mut self) -> &mut Self {
+    fn forward_events_and_halt<E: IsPointerEvent, F: ForwardedEvent>(&mut self) -> &mut Self {
         self.commands().add(|world: &mut World| {
             world.init_resource::<Events<F>>();
         });
