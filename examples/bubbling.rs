@@ -1,3 +1,7 @@
+//! This example demonstrates how event bubbling can be used to propagate events up an entity
+//! hierarchy, as well as how event listeners can be used to forward events for specific entities -
+//! triggered when a specific pointer event occurs.
+
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
@@ -15,6 +19,9 @@ fn main() {
 struct DeleteMe(Entity);
 impl EventFrom for DeleteMe {
     fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self {
+        // Note that we forward the target, not the entity! The target is the child that the event
+        // was originally called on, whereas the listener is the parent entity that was listening
+        // for the event that bubbled up from the target.
         Self(event_data.target())
     }
 }
@@ -55,6 +62,11 @@ fn setup(
         })
         .insert_bundle(PickableBundle::default())
         .insert(PickRaycastTarget::default())
+        // Check out this neat trick!
+        //
+        // Because event forwarding can rely on event bubbling, events that target children of the
+        // scene will bubble up to this level and will fire off a `GreetMe` or `DeleteMe` event,
+        // depending on the event that bubbled up:
         .forward_events::<PointerClick, DeleteMe>()
         .forward_events::<PointerOver, GreetMe>()
         .with_children(|parent| {
