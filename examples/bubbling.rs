@@ -1,6 +1,18 @@
 //! This example demonstrates how event bubbling can be used to propagate events up an entity
-//! hierarchy, as well as how event listeners can be used to forward events for specific entities -
-//! triggered when a specific pointer event occurs.
+//! hierarchy, as well as how event listeners can be used to forward events to specific entities
+//! when a specific pointer event occurs.
+//!
+//! The Big Idea here is to make it easy to couple interaction events with specific entities. In
+//! other words, it allows you to easily implement "If entity X is hovered/clicked/dragged, do Y".
+//!
+//! The `forward_events` function might feel like magic, but it's pretty straightforward under the
+//! hood. It simply adds an [`EventListener`](bevy_picking::output::EventListener) component to the
+//! entity. When the event bubbling system encounters this `EventListener`, it uses the
+//! [`ForwardedEvent`] trait you implemented on your custom event to convert the `PointerEvent` into
+//! your custom event.
+//!
+//! In other words, the `forward_events` function is really a helper function that just inserts a
+//! predefined `EventListener` component on your entity.
 
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -12,48 +24,60 @@ fn main() {
         .add_plugin(backends::RaycastPlugin)
         .add_plugin(DebugEventsPlugin)
         .add_startup_system(setup)
-        .add_system(handle_events)
+        .add_system(DeleteMe::handle_events)
+        .add_system(GreetMe::handle_events)
         .run();
 }
 
+// We want to implement a feature that will delete an entity when it is clicked on. To do this,
+// we'll start by making an event we can send when we want to delete an entity.
 struct DeleteMe(Entity);
-impl EventFrom for DeleteMe {
-    fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self {
-        // Note that we forward the target, not the entity! The target is the child that the event
-        // was originally called on, whereas the listener is the parent entity that was listening
-        // for the event that bubbled up from the target.
-        Self(event_data.target())
+// We're going to use the event forwarding feature of this crate to send a `DeleteMe` event when the
+// entity is clicked. To be able to forward events, we need to implement the `ForwardedEvent` trait
+// on our custom `DeleteMe` event.
+impl ForwardedEvent for DeleteMe {
+    fn new<E: IsPointerEvent>(event_data: &mut PointerEventData<E>) -> DeleteMe {
+        // Note that we forward the target entity in our event, not the listener entity! The target
+        // is the child that the event was originally called on, whereas the listener is the
+        // ancestor that was listening for the event that bubbled up from the target.
+        //
+        // Why is this useful? It allows us to add an event listener once on the parent entity, yet
+        // it can trigger actions specific to the child that was interacted with! Instead of needing
+        // to add an event listener on every child, we can just stick one on the parent, and any
+        // events that happen on the children will bubble up the the parent and be handled there.
+        DeleteMe(event_data.target())
+    }
+}
+impl DeleteMe {
+    // Here we will implement the system that does something with our `DeleteMe` events.
+    fn handle_events(mut commands: Commands, mut delete: EventReader<DeleteMe>) {
+        for event in delete.iter() {
+            commands.entity(event.0).despawn_recursive();
+            info!("I deleted the thing!");
+        }
     }
 }
 
+// Same concept as the `DeleteMe` event, but just says "Hello!" to the entity.
 struct GreetMe(Entity);
-impl EventFrom for GreetMe {
-    fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self {
-        Self(event_data.target())
+impl ForwardedEvent for GreetMe {
+    fn new<E: IsPointerEvent>(event_data: &mut PointerEventData<E>) -> GreetMe {
+        GreetMe(event_data.target())
+    }
+}
+impl GreetMe {
+    fn handle_events(mut greet: EventReader<GreetMe>) {
+        for event in greet.iter() {
+            info!("Hello {:?}!", event.0);
+        }
     }
 }
 
-fn handle_events(
-    mut commands: Commands,
-    mut delete: EventReader<DeleteMe>,
-    mut greet: EventReader<GreetMe>,
-) {
-    for event in delete.iter() {
-        commands.entity(event.0).despawn_recursive();
-        info!("I deleted the thing!");
-    }
-    for event in greet.iter() {
-        info!("Hello {:?}!", event.0);
-    }
-}
-
-/// set up a simple 3D scene
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // cube
     commands
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -62,11 +86,9 @@ fn setup(
         })
         .insert_bundle(PickableBundle::default())
         .insert(PickRaycastTarget::default())
-        // Check out this neat trick!
-        //
         // Because event forwarding can rely on event bubbling, events that target children of the
-        // scene will bubble up to this level and will fire off a `GreetMe` or `DeleteMe` event,
-        // depending on the event that bubbled up:
+        // parent cube will bubble up to this level and will fire off a `GreetMe` or `DeleteMe`
+        // event, depending on the event that bubbled up:
         .forward_events::<PointerClick, DeleteMe>()
         .forward_events::<PointerOver, GreetMe>()
         .with_children(|parent| {
@@ -77,11 +99,12 @@ fn setup(
                     transform: Transform::from_xyz(0.0, 1.0, 0.0),
                     ..Default::default()
                 })
+                // As noted above, we are adding a child here but we don't need to add an
+                // event listener. Events on this child will bubble up to the parent!
                 .insert_bundle(PickableBundle::default())
                 .insert(PickRaycastTarget::default());
         });
 
-    // light
     commands.spawn_bundle(PointLightBundle {
         point_light: PointLight {
             intensity: 1500.0,
@@ -91,12 +114,10 @@ fn setup(
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..Default::default()
     });
-
-    // camera
     commands
         .spawn_bundle(Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         })
-        .insert(PickRaycastSource::default()); // <- Sets the camera to use for picking.
+        .insert(PickRaycastSource::default());
 }

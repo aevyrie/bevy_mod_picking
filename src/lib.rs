@@ -43,8 +43,8 @@
 //!     .spawn()
 //!     .insert_bundle(PickableBundle::default())       // Make the entity pickable
 //!     .insert(PickRaycastTarget::default())           // Marker for the `mod_picking` backend
-//!     .forward_events::<PointerClick, DeleteMe>()     // When clicked, fire a `DeleteMe` event!
-//!     .forward_events::<PointerDragStart, GreetMe>(); // When dragging starts, fire a `GreetMe` event!
+//!     .forward_events::<PointerClick, DeleteMe>()     // On click, fire a `DeleteMe` event!
+//!     .forward_events::<PointerDragStart, GreetMe>(); // On drag start, fire a `GreetMe` event!
 //! # }
 //! ```
 //!
@@ -94,9 +94,9 @@ pub mod prelude {
     pub use crate as bevy_picking;
     pub use crate::{
         output::{
-            EventData, EventFrom, EventListenerCommands, IsPointerEvent, PointerCancel,
-            PointerClick, PointerDown, PointerDrag, PointerDragEnd, PointerDragEnter,
-            PointerDragLeave, PointerDragOver, PointerDragStart, PointerDrop, PointerEnter,
+            EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerCancel, PointerClick,
+            PointerDown, PointerDrag, PointerDragEnd, PointerDragEnter, PointerDragLeave,
+            PointerDragOver, PointerDragStart, PointerDrop, PointerEnter, PointerEventData,
             PointerLeave, PointerMove, PointerOut, PointerOver, PointerUp,
         },
         DebugEventsPlugin, DefaultPickingPlugins, PickableBundle,

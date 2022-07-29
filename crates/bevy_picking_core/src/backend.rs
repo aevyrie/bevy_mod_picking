@@ -1,9 +1,10 @@
 //! This module provides a simple interface for implementing a picking backend. A picking backend is
-//! responsible for reading [`PointerLocation`] components, and producing [`EntitiesUnderPointer`]
-//! events. The [`EntitiesUnderPointer`] events produced by a backend do **not** need to be sorted
-//! or filtered, all that is needed is an unordered list of entities and their distance from the
-//! pointer into the screen (depth). Depth only needs to be self-consistent with other
-//! [`EntitiesUnderPointer`]s in the same [`PickLayer`](crate::focus::PickLayer).
+//! responsible for reading [`PointerLocation`](crate::pointer::PointerLocation) components, and
+//! producing [`EntitiesUnderPointer`] events. The [`EntitiesUnderPointer`] events produced by a
+//! backend do **not** need to be sorted or filtered, all that is needed is an unordered list of
+//! entities and their distance from the pointer into the screen (depth). Depth only needs to be
+//! self-consistent with other [`EntitiesUnderPointer`]s in the same
+//! [`PickLayer`](crate::focus::PickLayer).
 //!
 //! In plain English, a backend is provided the location of pointers, and is asked to provide a list
 //! of entities under those pointers.

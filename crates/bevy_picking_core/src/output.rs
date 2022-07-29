@@ -37,7 +37,7 @@ impl DerefMut for PointerInteraction {
 /// into the custom event type.
 pub trait ForwardedEvent: Event {
     /// Create a new event from [`EventData`].
-    fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self;
+    fn new<E: IsPointerEvent>(event_data: &mut PointerEventData<E>) -> Self;
 }
 
 /// An `EventListener` marks an entity, informing the [`event_bubbling`] system to run the
@@ -46,13 +46,13 @@ pub trait ForwardedEvent: Event {
 #[derive(Component, Clone)]
 pub struct EventListener<E: IsPointerEvent> {
     /// A function that is called when the event listener is triggered.
-    on_event: fn(&mut Commands, &mut EventData<E>),
+    on_event: fn(&mut Commands, &mut PointerEventData<E>),
 }
 
 impl<E: IsPointerEvent> EventListener<E> {
     /// Create an [`EventListener`] that will run the supplied `on_event` function with access to
     /// bevy [`Commands`].
-    pub fn new_run_commands(on_event: fn(&mut Commands, &mut EventData<E>)) -> Self {
+    pub fn new_run_commands(on_event: fn(&mut Commands, &mut PointerEventData<E>)) -> Self {
         Self { on_event }
     }
 
@@ -60,7 +60,7 @@ impl<E: IsPointerEvent> EventListener<E> {
     /// triggered, then continue to bubble the original event up this entity's hierarchy.
     pub fn new_forward_event<F: ForwardedEvent>() -> Self {
         Self {
-            on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
+            on_event: |commands: &mut Commands, event_data: &mut PointerEventData<E>| {
                 let forwarded_event = F::new(event_data);
                 commands.add(|world: &mut World| {
                     let mut events = world.get_resource_or_insert_with(Events::<F>::default);
@@ -77,7 +77,7 @@ impl<E: IsPointerEvent> EventListener<E> {
     /// Prefer using `new_forward_event` instead, unless you have a good reason to halt bubbling.
     pub fn new_forward_event_and_halt<F: ForwardedEvent>() -> Self {
         Self {
-            on_event: |commands: &mut Commands, event_data: &mut EventData<E>| {
+            on_event: |commands: &mut Commands, event_data: &mut PointerEventData<E>| {
                 let forwarded_event = F::new(event_data);
                 commands.add(|world: &mut World| {
                     let mut events = world.get_resource_or_insert_with(Events::<F>::default);
@@ -91,24 +91,28 @@ impl<E: IsPointerEvent> EventListener<E> {
 
 /// Extends the [`EntityCommands`] trait, allowing you to call these methods when spawning an
 /// entity.
-///
-/// # Usage
-///
-/// ```
-/// # struct MyForwardedEvent;
-/// # impl ForwardedEvent for MyForwardedEvent {
-/// #     fn new(_event_data: &mut EventData<impl IsPointerEvent>) -> Self {
-/// #         MyForwardedEvent
-/// #     }
-/// # }
-/// # fn(mut commands: Commands){
-/// commands
-///     .spawn()
-///     .forward_events::<PointerClick, MyForwardedEvent>();
-/// # }
-/// ```
 pub trait EventListenerCommands {
     /// Listens for events of type `E`. When found, an event of type `F` will be sent.
+    ///
+    /// # Usage
+    ///
+    /// This will send your custom `MyForwardedEvent`, when this entity receives a `PointerClick`. A
+    /// helpful way to read this statement is "forward events of type `PointerClick` to events of
+    /// type `MyForwardedEvent`"
+    ///
+    /// ```
+    /// # struct MyForwardedEvent;
+    /// # impl ForwardedEvent for MyForwardedEvent {
+    /// #     fn new(_event_data: &mut EventData<impl IsPointerEvent>) -> Self {
+    /// #         MyForwardedEvent
+    /// #     }
+    /// # }
+    /// # fn(mut commands: Commands){
+    /// commands
+    ///     .spawn()
+    ///     .forward_events::<PointerClick, MyForwardedEvent>();
+    /// # }
+    /// ```
     fn forward_events<E: IsPointerEvent, F: ForwardedEvent>(&mut self) -> &mut Self;
     /// Listens for events of type `E`. When found, an event of type `F` will be sent. Finally,
     /// bubbling will be halted. See [`event_bubbling`] for details on how bubbling works.
@@ -134,9 +138,13 @@ impl<'w, 's, 'a> EventListenerCommands for EntityCommands<'w, 's, 'a> {
     }
 }
 
-/// Data from an event, for use with [`EventListener`]s.
+/// Data from a pointer event, for use with [`EventListener`]s and event forwarding.
+///
+/// This is similar to the [`PointerEvent`] struct, except it also contains the event listener for
+/// this event, as well as the ability to stop bubbling this event. When you forward an event, this
+/// is the data that you can use to build your own custom, [`ForwardedEvent`].
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct EventData<E: IsPointerEvent> {
+pub struct PointerEventData<E: IsPointerEvent> {
     /// The pointer involved in this event.
     id: PointerId,
     /// The entity that was listening for this event.
@@ -148,7 +156,7 @@ pub struct EventData<E: IsPointerEvent> {
     /// Controls whether this event will continue to bubble up the entity hierarchy.
     bubble: Bubble,
 }
-impl<E: IsPointerEvent> EventData<E> {
+impl<E: IsPointerEvent> PointerEventData<E> {
     /// Get the [`PointerId`] associated with this event.
     pub fn id(&self) -> PointerId {
         self.id
@@ -191,7 +199,7 @@ pub enum Bubble {
 /// This trait restricts the types of events that can be used as [`PointerEvent`]s.
 pub trait IsPointerEvent: Send + Sync + 'static + Display + Clone {
     /// The inner event type of the [`PointerEvent`].
-    type InnerEventType;
+    type InnerEventType: Send + Sync + Clone;
 }
 
 /// Stores the common data needed for all `PointerEvent`s.
@@ -236,7 +244,7 @@ impl<E: Clone + Send + Sync + 'static + Reflect> PointerEvent<E> {
 /// is found or the root of the hierarchy is reached.
 ///
 /// For every entity in the hierarchy, this system will look for an [`EventListener`]  matching the
-/// current event type, and run the `on_event` function in the event listener.
+/// event type `E`, and run the `on_event` function in the event listener.
 ///
 /// Some `PointerEvent`s cannot be bubbled, and are instead sent to the entire hierarchy.
 pub fn event_bubbling<E: Clone + Send + Sync + 'static + Reflect>(
@@ -249,7 +257,7 @@ pub fn event_bubbling<E: Clone + Send + Sync + 'static + Reflect>(
         while let Ok((event_listener, parent)) = listeners.get(listener) {
             match event_listener {
                 Some(event_listener) => {
-                    let mut event_data = EventData {
+                    let mut event_data = PointerEventData {
                         id: event.id,
                         listener,
                         target: event.target,

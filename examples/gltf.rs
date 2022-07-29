@@ -17,8 +17,8 @@ fn main() {
 }
 
 struct GreetMe(Entity);
-impl EventFrom for GreetMe {
-    fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self {
+impl ForwardedEvent for GreetMe {
+    fn new<E: IsPointerEvent>(event_data: &mut PointerEventData<E>) -> Self {
         // Note that we forward the target, not the entity! The target is the child that the event
         // was originally called on, whereas the listener is the parent entity that was listening
         // for the event that bubbled up from the target.
