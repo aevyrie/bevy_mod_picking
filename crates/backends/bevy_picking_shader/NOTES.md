@@ -17,4 +17,4 @@ set the target of the picking camera to be a texture
 
 Is the above just duplicating work already done in bevy_render?
 
-Instead, need to add a node to the render graph that takes the output from the vertex shader, and runs th picking frag shader, writing to a texture.
+Instead, need to add a node to the render graph that takes the output from the vertex shader, and runs the picking frag shader, writing to a texture.
