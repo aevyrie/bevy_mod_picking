@@ -42,7 +42,7 @@ bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-fe
   "bevy_scene",
   "png",
 ] }
-# bevy_mod_picking = { path = "", features = ["pick_rapier", "pick_shader"] }
+bevy_mod_picking = { path = "", features = ["pick_rapier", "pick_shader"] }
 bevy_rapier3d = "0.15"
 
 [features]
