@@ -6,7 +6,7 @@ use bevy_mod_picking::{DefaultPickingPlugins, NoDeselect, PickableBundle, Pickin
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
-            present_mode: PresentMode::Mailbox, // Reduce input latency
+            present_mode: PresentMode::AutoNoVsync, // Reduce input latency
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
