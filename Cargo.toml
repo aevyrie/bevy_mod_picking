@@ -56,7 +56,7 @@ pick_shader = ["bevy_picking_shader"]
 
 [patch.crates-io]
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main" }
-bevy_rapier3d = { path = "../bevy_rapier/bevy_rapier3d" }
+bevy_rapier3d = { git = "https://github.com/aevyrie/bevy_rapier", branch = "update-to-bevy-0.8" }
 nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "dev" }
 parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }
 rapier3d = { git = "https://github.com/dimforge/rapier", branch = "master" }
