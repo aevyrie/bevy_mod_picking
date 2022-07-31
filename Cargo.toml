@@ -22,9 +22,7 @@ members = [
 ]
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
-  "render",
-] }
+bevy = { version = "0.8", default-features = false, features = ["render"] }
 # Local
 bevy_picking_core = { path = "crates/bevy_picking_core" }
 bevy_picking_input = { path = "crates/bevy_picking_input" }
@@ -35,7 +33,7 @@ bevy_picking_rapier = { optional = true, path = "crates/backends/bevy_picking_ra
 bevy_picking_shader = { optional = true, path = "crates/backends/bevy_picking_shader" }
 
 [dev-dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
+bevy = { version = "0.8", default-features = false, features = [
   "bevy_winit",
   "x11",
   "bevy_gltf",
@@ -43,7 +41,7 @@ bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-fe
   "png",
 ] }
 bevy_mod_picking = { path = "", features = ["pick_rapier", "pick_shader"] }
-bevy_rapier3d = "0.15"
+bevy_rapier3d = "0.16"
 
 [features]
 default = ["pick_raycast", "highlight", "selection"]
@@ -52,11 +50,3 @@ selection = ["bevy_picking_selection"]
 pick_raycast = ["bevy_picking_raycast"]
 pick_rapier = ["bevy_picking_rapier"]
 pick_shader = ["bevy_picking_shader"]
-
-
-[patch.crates-io]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main" }
-bevy_rapier3d = { git = "https://github.com/aevyrie/bevy_rapier", branch = "update-to-bevy-0.8" }
-nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "dev" }
-parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }
-rapier3d = { git = "https://github.com/dimforge/rapier", branch = "master" }

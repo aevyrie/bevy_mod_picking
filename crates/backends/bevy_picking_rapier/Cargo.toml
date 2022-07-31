@@ -8,7 +8,5 @@ edition = "2021"
 [dependencies]
 bevy_picking_core = { path = "../../bevy_picking_core" }
 
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
-  "render",
-] }
-bevy_rapier3d = "0.15"
+bevy = { version = "0.8", default-features = false, features = ["render"] }
+bevy_rapier3d = "0.16"

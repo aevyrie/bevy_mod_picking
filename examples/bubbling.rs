@@ -29,23 +29,24 @@ fn main() {
         .run();
 }
 
-// We want to implement a feature that will delete an entity when it is clicked on. To do this,
+// We want to implement a feature that will allow us to click on a cube to delete it. To do this,
 // we'll start by making an event we can send when we want to delete an entity.
 struct DeleteMe(Entity);
 // We're going to use the event forwarding feature of this crate to send a `DeleteMe` event when the
 // entity is clicked. To be able to forward events, we need to implement the `ForwardedEvent` trait
 // on our custom `DeleteMe` event.
+//
+// All we're doing is defining how to take a pointer event and turn it into our custom event.
 impl ForwardedEvent for DeleteMe {
     fn new<E: IsPointerEvent>(event_data: &mut PointerEventData<E>) -> DeleteMe {
-        // Note that we forward the target entity in our event, not the listener entity! The target
-        // is the child that the event was originally called on, whereas the listener is the
-        // ancestor that was listening for the event that bubbled up from the target.
-        //
+        // Note that we are using the `target()` entity here, not the listener entity! The target is
+        // the child that the event was originally called on, whereas the listener is the ancestor
+        // that was listening for the event that bubbled up from the target.
+        DeleteMe(event_data.target())
         // Why is this useful? It allows us to add an event listener once on the parent entity, yet
         // it can trigger actions specific to the child that was interacted with! Instead of needing
         // to add an event listener on every child, we can just stick one on the parent, and any
         // events that happen on the children will bubble up the the parent and be handled there.
-        DeleteMe(event_data.target())
     }
 }
 impl DeleteMe {
