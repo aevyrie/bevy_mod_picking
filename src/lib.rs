@@ -1,8 +1,8 @@
-mod events;
-mod focus;
-mod highlight;
-mod mouse;
-mod selection;
+pub mod events;
+pub mod focus;
+pub mod highlight;
+pub mod mouse;
+pub mod selection;
 
 pub use crate::{
     events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
