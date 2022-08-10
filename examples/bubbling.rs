@@ -38,7 +38,7 @@ struct DeleteMe(Entity);
 //
 // All we're doing is defining how to take a pointer event and turn it into our custom event.
 impl ForwardedEvent for DeleteMe {
-    fn new<E: IsPointerEvent>(event_data: &mut PointerEventData<E>) -> DeleteMe {
+    fn from_data<E: IsPointerEvent>(event_data: &PointerEventData<E>) -> DeleteMe {
         // Note that we are using the `target()` entity here, not the listener entity! The target is
         // the child that the event was originally called on, whereas the listener is the ancestor
         // that was listening for the event that bubbled up from the target.
@@ -62,7 +62,7 @@ impl DeleteMe {
 // Same concept as the `DeleteMe` event, but just says "Hello!" to the entity.
 struct GreetMe(Entity);
 impl ForwardedEvent for GreetMe {
-    fn new<E: IsPointerEvent>(event_data: &mut PointerEventData<E>) -> GreetMe {
+    fn from_data<E: IsPointerEvent>(event_data: &PointerEventData<E>) -> GreetMe {
         GreetMe(event_data.target())
     }
 }

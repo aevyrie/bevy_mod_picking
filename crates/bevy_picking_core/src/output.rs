@@ -37,7 +37,7 @@ impl DerefMut for PointerInteraction {
 /// into the custom event type.
 pub trait ForwardedEvent: Event {
     /// Create a new event from [`EventData`].
-    fn new<E: IsPointerEvent>(event_data: &mut PointerEventData<E>) -> Self;
+    fn from_data<E: IsPointerEvent>(event_data: &PointerEventData<E>) -> Self;
 }
 
 /// An `EventListener` marks an entity, informing the [`event_bubbling`] system to run the
@@ -45,23 +45,27 @@ pub trait ForwardedEvent: Event {
 /// entity.
 #[derive(Component, Clone)]
 pub struct EventListener<E: IsPointerEvent> {
-    /// A function that is called when the event listener is triggered.
-    on_event: fn(&mut Commands, &mut PointerEventData<E>),
+    /// A collection of functions that are called when the event listener is triggered.
+    callback: fn(&mut Commands, &PointerEventData<E>, &mut Bubble),
 }
 
 impl<E: IsPointerEvent> EventListener<E> {
     /// Create an [`EventListener`] that will run the supplied `on_event` function with access to
     /// bevy [`Commands`].
-    pub fn new_run_commands(on_event: fn(&mut Commands, &mut PointerEventData<E>)) -> Self {
-        Self { on_event }
+    pub fn new_run_commands(
+        callback: fn(&mut Commands, &PointerEventData<E>, &mut Bubble),
+    ) -> Self {
+        Self { callback }
     }
 
     /// Create an [`EventListener`] that will send an event of type `F` when the listener is
     /// triggered, then continue to bubble the original event up this entity's hierarchy.
     pub fn new_forward_event<F: ForwardedEvent>() -> Self {
         Self {
-            on_event: |commands: &mut Commands, event_data: &mut PointerEventData<E>| {
-                let forwarded_event = F::new(event_data);
+            callback: |commands: &mut Commands,
+                       event_data: &PointerEventData<E>,
+                       _bubble: &mut Bubble| {
+                let forwarded_event = F::from_data(event_data);
                 commands.add(|world: &mut World| {
                     let mut events = world.get_resource_or_insert_with(Events::<F>::default);
                     events.send(forwarded_event);
@@ -77,13 +81,15 @@ impl<E: IsPointerEvent> EventListener<E> {
     /// Prefer using `new_forward_event` instead, unless you have a good reason to halt bubbling.
     pub fn new_forward_event_and_halt<F: ForwardedEvent>() -> Self {
         Self {
-            on_event: |commands: &mut Commands, event_data: &mut PointerEventData<E>| {
-                let forwarded_event = F::new(event_data);
+            callback: |commands: &mut Commands,
+                       event_data: &PointerEventData<E>,
+                       bubble: &mut Bubble| {
+                let forwarded_event = F::from_data(event_data);
                 commands.add(|world: &mut World| {
                     let mut events = world.get_resource_or_insert_with(Events::<F>::default);
                     events.send(forwarded_event);
                 });
-                event_data.stop_bubbling();
+                *bubble = Bubble::Burst;
             },
         }
     }
@@ -92,7 +98,8 @@ impl<E: IsPointerEvent> EventListener<E> {
 /// Extends the [`EntityCommands`] trait, allowing you to call these methods when spawning an
 /// entity.
 pub trait EventListenerCommands {
-    /// Listens for events of type `E`. When found, an event of type `F` will be sent.
+    /// Listens for events of type `E`; when one bubbles up to this entity, an event of type `F`
+    /// will be sent.
     ///
     /// # Usage
     ///
@@ -153,8 +160,6 @@ pub struct PointerEventData<E: IsPointerEvent> {
     target: Entity,
     /// The inner event data, if any, for the specific event that was triggered.
     event: E::InnerEventType,
-    /// Controls whether this event will continue to bubble up the entity hierarchy.
-    bubble: Bubble,
 }
 impl<E: IsPointerEvent> PointerEventData<E> {
     /// Get the [`PointerId`] associated with this event.
@@ -178,12 +183,6 @@ impl<E: IsPointerEvent> PointerEventData<E> {
     pub fn event(&self) -> &E::InnerEventType {
         &self.event
     }
-
-    /// When called, this will stop bubbling from continuing up the target entity's hierarchy. See
-    /// [`event_bubbling`] for details.
-    pub fn stop_bubbling(&mut self) {
-        self.bubble = Bubble::Burst
-    }
 }
 
 /// Controls whether the event should bubble up to the entity's parent, or halt.
@@ -194,6 +193,12 @@ pub enum Bubble {
     Up,
     /// Stops this event from bubbling to the next parent.
     Burst,
+}
+impl Bubble {
+    /// Stop this event from bubbling to the next parent.
+    pub fn burst(&mut self) {
+        *self = Bubble::Burst;
+    }
 }
 
 /// This trait restricts the types of events that can be used as [`PointerEvent`]s.
@@ -255,28 +260,29 @@ pub fn event_bubbling<E: Clone + Send + Sync + 'static + Reflect>(
     for event in events.iter() {
         let mut listener = event.target;
         while let Ok((event_listener, parent)) = listeners.get(listener) {
-            match event_listener {
-                Some(event_listener) => {
-                    let mut event_data = PointerEventData {
-                        id: event.id,
-                        listener,
-                        target: event.target,
-                        event: event.event.clone(),
-                        bubble: Bubble::default(),
-                    };
-                    (event_listener.on_event)(&mut commands, &mut event_data);
-                    match event_data.bubble {
-                        Bubble::Up => match parent {
-                            Some(parent) => listener = **parent,
-                            None => break, // Bubble reached the surface!
-                        },
-                        Bubble::Burst => break,
-                    }
+            if let Some(event_listener) = event_listener {
+                let event_data = PointerEventData {
+                    id: event.id,
+                    listener,
+                    target: event.target,
+                    event: event.event.clone(),
+                };
+                let mut bubble = Bubble::default();
+                let callback = event_listener.callback;
+                callback(&mut commands, &event_data, &mut bubble);
+
+                match bubble {
+                    Bubble::Up => match parent {
+                        Some(parent) => listener = **parent,
+                        None => break, // Bubble reached the surface!
+                    },
+                    Bubble::Burst => break,
                 }
-                None => match parent {
+            } else {
+                match parent {
                     Some(parent) => listener = **parent,
                     None => break, // Bubble reached the surface!
-                },
+                }
             }
         }
     }
@@ -465,19 +471,19 @@ pub fn interactions_from_events(
     mut pointer_down: EventReader<PointerDown>,
     // Outputs
     mut pointers: Query<(&PointerId, &mut PointerInteraction)>,
-    mut entities: Query<&mut Interaction>,
+    mut interact: Query<&mut Interaction>,
 ) {
     for event in pointer_over.iter() {
-        update_interactions(event, Interaction::Hovered, &mut pointers, &mut entities);
+        update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);
     }
     for event in pointer_out.iter() {
-        update_interactions(event, Interaction::None, &mut pointers, &mut entities);
+        update_interactions(event, Interaction::None, &mut pointers, &mut interact);
     }
     for event in pointer_down.iter() {
-        update_interactions(event, Interaction::Clicked, &mut pointers, &mut entities);
+        update_interactions(event, Interaction::Clicked, &mut pointers, &mut interact);
     }
     for event in pointer_up.iter() {
-        update_interactions(event, Interaction::Hovered, &mut pointers, &mut entities);
+        update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);
     }
 }
 
@@ -487,11 +493,15 @@ fn update_interactions<E: Clone + Send + Sync + Reflect>(
     pointer_interactions: &mut Query<(&PointerId, &mut PointerInteraction)>,
     entity_interactions: &mut Query<&mut Interaction>,
 ) {
-    pointer_interactions
+    if let Some(mut interaction_map) = pointer_interactions
         .iter_mut()
         .find_map(|(id, interaction)| (*id == event.id).then_some(interaction))
-        .and_then(|mut interaction_map| interaction_map.insert(event.target, new_interaction));
-    entity_interactions.for_each_mut(|mut interaction| *interaction = new_interaction);
+    {
+        interaction_map.insert(event.target, new_interaction);
+        if let Ok(mut interaction) = entity_interactions.get_mut(event.target) {
+            *interaction = new_interaction;
+        }
+    };
 }
 
 /// Maps pointers to the entities they are dragging.

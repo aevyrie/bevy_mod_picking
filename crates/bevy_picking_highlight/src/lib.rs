@@ -8,11 +8,8 @@
 use std::marker::PhantomData;
 
 use bevy::{app::PluginGroupBuilder, asset::Asset, prelude::*, render::color::Color};
-use bevy_picking_core::{
-    output::{PointerClick, PointerDown, PointerOut, PointerOver, PointerUp},
-    pointer::{PointerId, PointerPress},
-    PickStage,
-};
+use bevy_picking_core::PickStage;
+use bevy_picking_selection::PickSelection;
 
 /// Adds pick highlighting functionality to your app.
 pub struct HighlightingPlugins;
@@ -37,7 +34,7 @@ impl PluginGroup for HighlightingPlugins {
 #[derive(Component, Clone, Debug, Default)]
 pub struct PickHighlight;
 
-/// Overrides the highlighting appearance of an entity. See
+/// Overrides the highlighting appearance of an entity. See [`PickHighlight`].
 #[derive(Component, Clone, Debug, Default)]
 pub struct HighlightOverride<T: Highlightable> {
     /// Overrides this asset's global default appearance when hovered
@@ -46,25 +43,6 @@ pub struct HighlightOverride<T: Highlightable> {
     pub pressed: Option<Handle<T>>,
     /// Overrides this asset's global default appearance when selected
     pub selected: Option<Handle<T>>,
-}
-impl<T: Highlightable> HighlightOverride<T> {
-    /// Returns this entity's asset handle for the hovered state, or falls back to the default.
-    pub fn hovered(&self, default: &DefaultHighlighting<T>) -> Handle<T> {
-        self.hovered.as_ref().unwrap_or(&default.hovered).to_owned()
-    }
-
-    /// Returns this entity's asset handle for the pressed state, or falls back to the default.
-    pub fn pressed(&self, default: &DefaultHighlighting<T>) -> Handle<T> {
-        self.pressed.as_ref().unwrap_or(&default.pressed).to_owned()
-    }
-
-    /// Returns this entity's asset handle for the selected state, or falls back to the default.
-    pub fn selected(&self, default: &DefaultHighlighting<T>) -> Handle<T> {
-        self.selected
-            .as_ref()
-            .unwrap_or(&default.selected)
-            .to_owned()
-    }
 }
 
 /// A highlighting plugin, generic over any asset that might be used for rendering the different
@@ -109,6 +87,34 @@ pub struct DefaultHighlighting<T: Highlightable + ?Sized> {
     pub pressed: Handle<T>,
     /// Default asset handle to use for selected entities without a [`HighlightOverride`].
     pub selected: Handle<T>,
+}
+
+impl<T: Highlightable> DefaultHighlighting<T> {
+    /// Returns the hovered highlight override if it exists, falling back to the default.
+    pub fn hovered(&self, h_override: &Option<&HighlightOverride<T>>) -> Handle<T> {
+        if let Some(h_override) = h_override.and_then(|h| h.hovered.as_ref()) {
+            h_override.to_owned()
+        } else {
+            self.hovered.clone()
+        }
+    }
+
+    /// Returns the pressed highlight override if it exists, falling back to the default.
+    pub fn pressed(&self, h_override: &Option<&HighlightOverride<T>>) -> Handle<T> {
+        if let Some(h_override) = h_override.and_then(|h| h.pressed.as_ref()) {
+            h_override.to_owned()
+        } else {
+            self.pressed.clone()
+        }
+    }
+    /// Returns the selected highlight override if it exists, falling back to the default.
+    pub fn selected(&self, h_override: &Option<&HighlightOverride<T>>) -> Handle<T> {
+        if let Some(h_override) = h_override.and_then(|h| h.selected.as_ref()) {
+            h_override.to_owned()
+        } else {
+            self.selected.clone()
+        }
+    }
 }
 
 /// This trait makes it possible for highlighting to be generic over any type of asset. This can be
@@ -160,16 +166,9 @@ pub fn get_initial_highlight_asset<T: Highlightable>(
         match highlighting_query.get_mut(entity) {
             Ok(Some(mut highlighting)) => highlighting.initial = material.to_owned(),
             _ => {
-                commands
-                    .entity(entity)
-                    .insert(InitialHighlight {
-                        initial: material.to_owned(),
-                    })
-                    .insert(HighlightOverride::<T> {
-                        hovered: None,
-                        pressed: None,
-                        selected: None,
-                    });
+                commands.entity(entity).insert(InitialHighlight {
+                    initial: material.to_owned(),
+                });
             }
         }
     }
@@ -178,79 +177,28 @@ pub fn get_initial_highlight_asset<T: Highlightable>(
 /// Apply highlighting assets to entities based on their state.
 pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
     global_defaults: Res<DefaultHighlighting<T>>,
-    mut interaction_query: Query<(
-        &mut Handle<T>,
-        Option<&bevy_picking_selection::PickSelection>,
-        &InitialHighlight<T>,
-        &HighlightOverride<T>,
-    )>,
-    pointer: Query<(&PointerId, &PointerPress)>,
-    mut up_events: EventReader<PointerUp>,
-    mut down_events: EventReader<PointerDown>,
-    mut over_events: EventReader<PointerOver>,
-    mut out_events: EventReader<PointerOut>,
-    mut click_events: EventReader<PointerClick>,
+    mut interaction_query: Query<
+        (
+            &mut Handle<T>,
+            &Interaction,
+            Option<&PickSelection>,
+            &InitialHighlight<T>,
+            Option<&HighlightOverride<T>>,
+        ),
+        Or<(Changed<Interaction>, Changed<PickSelection>)>,
+    >,
 ) {
-    for event in up_events.iter() {
-        // Reset *all* unselected entities
-        for (mut active_asset, pick_selection, h_initial, _) in interaction_query.iter_mut() {
-            match pick_selection {
-                Some(s) if !s.is_selected => *active_asset = h_initial.initial.to_owned(),
-                _ => (),
+    for (mut asset, interaction, selection, init_highlight, h_override) in &mut interaction_query {
+        match interaction {
+            Interaction::Clicked => *asset = global_defaults.pressed(&h_override),
+            Interaction::Hovered => *asset = global_defaults.hovered(&h_override),
+            Interaction::None => {
+                *asset = if let Some(PickSelection { is_selected: true }) = selection {
+                    global_defaults.selected(&h_override)
+                } else {
+                    init_highlight.initial.to_owned()
+                }
             }
-        }
-
-        // Only update the entity picked in the current interaction event:
-        if let Ok((mut active_asset, pick_selection, _, h_override)) =
-            interaction_query.get_mut(event.target())
-        {
-            *active_asset = match pick_selection {
-                Some(s) if s.is_selected => h_override.selected(&global_defaults),
-                _ => h_override.hovered(&global_defaults),
-            };
-        }
-    }
-
-    for event in down_events.iter() {
-        if let Ok((mut active_asset, _, _, h_override)) = interaction_query.get_mut(event.target())
-        {
-            *active_asset = h_override.pressed(&global_defaults);
-        }
-    }
-
-    for event in over_events.iter() {
-        if let Ok((mut active_asset, _, _, h_override)) = interaction_query.get_mut(event.target())
-        {
-            if pointer
-                .iter()
-                .any(|(id, press)| *id == event.id() && press.is_primary_pressed())
-            {
-                *active_asset = h_override.pressed(&global_defaults);
-            } else {
-                *active_asset = h_override.hovered(&global_defaults);
-            }
-        }
-    }
-
-    for event in out_events.iter() {
-        if let Ok((mut active_asset, pick_selection, h_initial, h_override)) =
-            interaction_query.get_mut(event.target())
-        {
-            *active_asset = match pick_selection {
-                Some(s) if s.is_selected => h_override.selected(&global_defaults),
-                _ => h_initial.initial.clone(),
-            };
-        }
-    }
-
-    for event in click_events.iter() {
-        if let Ok((mut active_asset, pick_selection, _, h_override)) =
-            interaction_query.get_mut(event.target())
-        {
-            *active_asset = match pick_selection {
-                Some(s) if s.is_selected => h_override.selected(&global_defaults),
-                _ => h_override.hovered(&global_defaults),
-            };
         }
     }
 }

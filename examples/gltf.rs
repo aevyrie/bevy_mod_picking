@@ -5,32 +5,15 @@ fn main() {
     App::new()
         .insert_resource(AmbientLight {
             color: Color::WHITE,
-            brightness: 1.0 / 5.0f32,
+            brightness: 0.2,
         })
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins)
         .add_plugin(backends::RaycastPlugin)
         .add_startup_system(setup)
         .add_system(make_pickable)
-        .add_system(handle_events)
+        .add_system(HelmetClicked::handle_events)
         .run();
-}
-
-struct GreetMe(Entity);
-impl ForwardedEvent for GreetMe {
-    fn new<E: IsPointerEvent>(event_data: &mut PointerEventData<E>) -> Self {
-        // Note that we forward the target, not the entity! The target is the child that the event
-        // was originally called on, whereas the listener is the parent entity that was listening
-        // for the event that bubbled up from the target.
-        Self(event_data.target())
-    }
-}
-
-/// Handle our custom forwarded event.
-fn handle_events(mut greets: EventReader<GreetMe>) {
-    for event in greets.iter() {
-        info!("Hello {:?}!", event.0);
-    }
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -53,10 +36,29 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         // Check out this neat trick!
         //
         // Because event forwarding can rely on event bubbling, events that target children of the
-        // scene will bubble up to this level and will fire off a `GreetMe` event.
-        .forward_events::<PointerClick, GreetMe>();
+        // scene will bubble up to this level and will fire off a `HelmetClicked` event.
+        .forward_events::<PointerClick, HelmetClicked>();
 }
 
+struct HelmetClicked(Entity);
+impl ForwardedEvent for HelmetClicked {
+    fn from_data<E: IsPointerEvent>(event_data: &PointerEventData<E>) -> Self {
+        // Note that we forward the target, not the entity! The target is the child that the event
+        // was originally called on, whereas the listener is the parent entity that was listening
+        // for the event that bubbled up from the target.
+        Self(event_data.target())
+    }
+}
+impl HelmetClicked {
+    /// Handle our custom forwarded event.
+    fn handle_events(mut click_events: EventReader<HelmetClicked>) {
+        for event in click_events.iter() {
+            info!("Hello {:?}!", event.0);
+        }
+    }
+}
+
+/// Makes everything in the scene with a mesh pickable
 fn make_pickable(
     mut commands: Commands,
     meshes: Query<Entity, (With<Handle<Mesh>>, Without<PickRaycastTarget>)>,

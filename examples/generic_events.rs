@@ -35,7 +35,7 @@ struct GreetMe<E: IsPointerEvent> {
 }
 // Here we are implementing event forwarding only for the `PointerOver` version of our event.
 impl ForwardedEvent for GreetMe<PointerOver> {
-    fn new<E: IsPointerEvent>(event_data: &mut PointerEventData<E>) -> GreetMe<PointerOver> {
+    fn from_data<E: IsPointerEvent>(event_data: &PointerEventData<E>) -> GreetMe<PointerOver> {
         GreetMe {
             entity: event_data.target(),
             greeting: "Hello".into(),
@@ -45,7 +45,7 @@ impl ForwardedEvent for GreetMe<PointerOver> {
 }
 // Here we are implementing event forwarding only for `PointerOut` version of our event.
 impl ForwardedEvent for GreetMe<PointerOut> {
-    fn new<E: IsPointerEvent>(event_data: &mut PointerEventData<E>) -> GreetMe<PointerOut> {
+    fn from_data<E: IsPointerEvent>(event_data: &PointerEventData<E>) -> GreetMe<PointerOut> {
         GreetMe {
             entity: event_data.target(),
             greeting: "Goodbye".into(),

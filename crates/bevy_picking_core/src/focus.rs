@@ -56,23 +56,23 @@ pub fn update_focus(
     pointers: Query<(&PointerId, &PointerInteraction)>, // <- what happened last frame
     mut under_pointer: EventReader<backend::EntitiesUnderPointer>,
     // Local
-    mut pointer_map: Local<OverMap>,
+    mut pointer_over_map: Local<OverMap>,
     // Output
     mut hover_map: ResMut<HoverMap>,
 ) {
-    reset_local_maps(&mut hover_map, &mut pointer_map);
-    build_pointer_map(pick_layers, &mut under_pointer, &mut pointer_map);
-    build_hover_map(&pointers, focus, pointer_map, &mut hover_map);
+    reset_local_maps(&mut hover_map, &mut pointer_over_map);
+    build_pointer_map(pick_layers, &mut under_pointer, &mut pointer_over_map);
+    build_hover_map(&pointers, focus, pointer_over_map, &mut hover_map);
 }
 
 /// Clear non-empty local maps, reusing allocated memory.
-fn reset_local_maps(hover_map: &mut ResMut<HoverMap>, pointer_map: &mut Local<OverMap>) {
+fn reset_local_maps(hover_map: &mut ResMut<HoverMap>, pointer_over_map: &mut Local<OverMap>) {
     for entity_set in hover_map.values_mut() {
         if !entity_set.is_empty() {
             entity_set.clear()
         }
     }
-    for layer_map in pointer_map.values_mut() {
+    for layer_map in pointer_over_map.values_mut() {
         for depth_map in layer_map.values_mut() {
             if !depth_map.is_empty() {
                 depth_map.clear()
@@ -85,12 +85,14 @@ fn reset_local_maps(hover_map: &mut ResMut<HoverMap>, pointer_map: &mut Local<Ov
 fn build_pointer_map(
     pick_layers: Query<&PickLayer>,
     over_events: &mut EventReader<backend::EntitiesUnderPointer>,
-    pointer_map: &mut Local<OverMap>,
+    pointer_over_map: &mut Local<OverMap>,
 ) {
     for event in over_events.iter() {
-        let layer_map = match pointer_map.get_mut(&event.id) {
+        let layer_map = match pointer_over_map.get_mut(&event.id) {
             Some(map) => map,
-            None => pointer_map.try_insert(event.id, BTreeMap::new()).unwrap(),
+            None => pointer_over_map
+                .try_insert(event.id, BTreeMap::new())
+                .unwrap(),
         };
         for over in event.over_list.iter() {
             let layer = pick_layers
@@ -118,7 +120,7 @@ fn build_pointer_map(
 fn build_hover_map(
     pointers: &Query<(&PointerId, &PointerInteraction)>,
     focus: Query<&FocusPolicy>,
-    pointer_map: Local<OverMap>,
+    pointer_over_map: Local<OverMap>,
     // Output
     hover_map: &mut ResMut<HoverMap>,
 ) {
@@ -127,7 +129,7 @@ fn build_hover_map(
             true => hover_map.get_mut(id).unwrap(),
             false => hover_map.try_insert(*id, HashSet::new()).unwrap(),
         };
-        if let Some(layer_map) = pointer_map.get(id) {
+        if let Some(layer_map) = pointer_over_map.get(id) {
             for depth_map in layer_map.values() {
                 for entity in depth_map.values() {
                     pointer_entity_set.insert(*entity);
