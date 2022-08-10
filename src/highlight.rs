@@ -18,6 +18,7 @@ pub struct Highlighting<T: Asset> {
 
 /// Resource that defines the default highlighting assets to use. This can be overridden per-entity
 /// with the [`Highlighting`] component.
+#[derive(Resource)]
 pub struct DefaultHighlighting<T: Highlightable + ?Sized> {
     pub hovered: Handle<T::HighlightAsset>,
     pub pressed: Handle<T::HighlightAsset>,

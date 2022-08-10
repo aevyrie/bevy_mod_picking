@@ -44,6 +44,7 @@ pub type PickingCamera = bevy_mod_raycast::RayCastSource<PickingRaycastSet>;
 /// vs. `RayCastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
 pub struct PickingRaycastSet;
 
+#[derive(Resource)]
 pub struct PickingPluginsState {
     pub enable_picking: bool,
     pub enable_highlighting: bool,
@@ -68,7 +69,7 @@ fn simple_criteria(flag: bool) -> ShouldRun {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct PausedForBlockers(pub(crate) bool);
 impl PausedForBlockers {
     pub fn is_paused(&self) -> bool {
