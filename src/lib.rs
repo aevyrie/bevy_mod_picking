@@ -61,7 +61,7 @@
 //!
 //! However, it's important to understand that you can mix and match backends! This crate provides
 //! some backends out of the box, but you can even write your own. It's been made as easy as
-//! possible intentionally; the entire mod_picking backend is less than 100 lines of code.
+//! possible intentionally; the entire `bevy_mod_raycast` backend is less than 100 lines of code.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
@@ -87,11 +87,12 @@ pub mod backends {
     pub use bevy_picking_raycast as raycast;
     #[cfg(feature = "pick_shader")]
     pub use bevy_picking_shader as shader;
+    #[cfg(feature = "pick_bevy_ui")]
+    pub use bevy_picking_ui as bevy_ui;
 }
 
 /// Common imports
 pub mod prelude {
-    pub use crate as bevy_picking;
     pub use crate::{
         output::{
             EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerCancel, PointerClick,
@@ -114,23 +115,13 @@ pub mod prelude {
         SelectionPlugin,
     };
 
-    #[cfg(feature = "pick_raycast")]
-    pub use crate::backends::raycast::{PickRaycastSource, PickRaycastTarget};
-
+    pub use crate::backends;
+    pub use crate::backends::bevy_ui::prelude::*;
     #[cfg(feature = "pick_rapier")]
-    pub use crate::backends::rapier::RapierPickSource;
-
-    /// Imports for picking backends
-    pub mod backends {
-        #[cfg(feature = "pick_raycast")]
-        pub use crate::backends::raycast::RaycastPlugin;
-
-        #[cfg(feature = "pick_rapier")]
-        pub use crate::backends::rapier::RapierPlugin;
-
-        #[cfg(feature = "pick_shader")]
-        pub use crate::backends::shader::ShaderPlugin;
-    }
+    pub use crate::backends::rapier::prelude::*;
+    pub use crate::backends::raycast::prelude::*;
+    #[cfg(feature = "pick_shader")]
+    pub use crate::backends::shader::prelude::*;
 }
 
 /// A "batteries-included" set of plugins that adds everything needed for picking, highlighting, and
@@ -155,8 +146,6 @@ impl PluginGroup for DefaultPickingPlugins {
 /// Makes an entity pickable.
 #[derive(Bundle, Default)]
 pub struct PickableBundle {
-    /// The entity's configurable [`PickLayer`](focus::PickLayer)
-    pub pick_layer: focus::PickLayer,
     /// Tracks entity [`Interaction`] state.
     pub interaction: Interaction,
     /// The entity's configurable [`FocusPolicy`]

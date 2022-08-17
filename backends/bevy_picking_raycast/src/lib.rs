@@ -8,6 +8,11 @@ use bevy::prelude::*;
 use bevy_mod_raycast::{Ray3d, RayCastSource};
 use bevy_picking_core::backend::prelude::*;
 
+/// Commonly used imports for the [`bevy_picking_raycast`] crate.
+pub mod prelude {
+    pub use crate::{PickRaycastSource, PickRaycastTarget, RaycastPlugin};
+}
+
 /// Adds the raycasting picking backend to your app.
 pub struct RaycastPlugin;
 impl Plugin for RaycastPlugin {

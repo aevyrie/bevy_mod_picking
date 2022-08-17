@@ -15,13 +15,16 @@
 //! predefined `EventListener` component on your entity.
 
 use bevy::prelude::*;
-use bevy_mod_picking::prelude::*;
+use bevy_mod_picking::prelude::{
+    backends::raycast::{PickRaycastSource, PickRaycastTarget, RaycastPlugin},
+    *,
+};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(backends::RaycastPlugin)
+        .add_plugin(RaycastPlugin)
         .add_plugin(DebugEventsPlugin)
         .add_startup_system(setup)
         .add_system(DeleteMe::handle_events)

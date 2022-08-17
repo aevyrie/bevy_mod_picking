@@ -8,6 +8,11 @@ use bevy::prelude::*;
 use bevy_picking_core::backend::prelude::*;
 use bevy_rapier3d::prelude::*;
 
+/// Commonly used imports for the [`bevy_picking_rapier`] crate.
+pub mod prelude {
+    pub use crate::{RapierPickSource, RapierPlugin};
+}
+
 /// Adds the `rapier` raycasting picking backend to your app.
 pub struct RapierPlugin;
 impl Plugin for RapierPlugin {

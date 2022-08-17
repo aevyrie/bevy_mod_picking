@@ -14,14 +14,14 @@ resolver = "2"
 members = ["crates/*", "backends/*"]
 
 [dependencies]
-bevy = { version = "0.8", default-features = false, features = ["render"] }
+bevy = { version = "0.8", default-features = false, features = ["bevy_render"] }
 # Local
 bevy_picking_core = { path = "crates/bevy_picking_core" }
 bevy_picking_input = { path = "crates/bevy_picking_input" }
-bevy_picking_ui = { path = "backends/bevy_picking_ui" }
 bevy_picking_selection = { optional = true, path = "crates/bevy_picking_selection" }
 bevy_picking_highlight = { optional = true, path = "crates/bevy_picking_highlight" }
 bevy_picking_raycast = { optional = true, path = "backends/bevy_picking_raycast" }
+bevy_picking_ui = { optional = true, path = "backends/bevy_picking_ui" }
 bevy_picking_rapier = { optional = true, path = "backends/bevy_picking_rapier" }
 bevy_picking_shader = { optional = true, path = "backends/bevy_picking_shader" }
 
@@ -34,13 +34,22 @@ bevy = { version = "0.8", default-features = false, features = [
   "bevy_scene",
   "png",
 ] }
-bevy_mod_picking = { path = "", features = ["pick_rapier", "pick_shader"] }
 bevy_rapier3d = "0.16"
+bevy_mod_picking = { path = "../bevy_mod_picking", features = ["all"] }
 
 [features]
-default = ["pick_raycast", "highlight", "selection"]
+default = ["pick_raycast", "highlight", "selection", "pick_bevy_ui"]
+all = [
+  "pick_raycast",
+  "highlight",
+  "selection",
+  "pick_bevy_ui",
+  "pick_rapier",
+  "pick_shader",
+]
 highlight = ["bevy_picking_highlight"]
 selection = ["bevy_picking_selection"]
 pick_raycast = ["bevy_picking_raycast"]
 pick_rapier = ["bevy_picking_rapier"]
 pick_shader = ["bevy_picking_shader"]
+pick_bevy_ui = ["bevy_picking_ui"]

@@ -6,6 +6,11 @@
 
 use bevy::prelude::*;
 
+/// Commonly used imports for the [`bevy_picking_raycast`] crate.
+pub mod prelude {
+    // pub use crate::;
+}
+
 /// Adds support for shader picking to `bevy_mod_picking`.
 pub struct ShaderPlugin;
 impl Plugin for ShaderPlugin {

@@ -7,6 +7,11 @@
 use bevy::{prelude::*, render::camera::RenderTarget, window::WindowId};
 use bevy_picking_core::backend::prelude::*;
 
+/// Commonly used imports for the [`bevy_picking_ui`] crate.
+pub mod prelude {
+    pub use crate::UiPickingPlugin;
+}
+
 /// Adds picking support for [`bevy_ui`](bevy::ui)
 pub struct UiPickingPlugin;
 impl Plugin for UiPickingPlugin {

@@ -11,7 +11,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
-        .add_plugin(backends::RaycastPlugin)
+        .add_plugin(RaycastPlugin)
         .add_startup_system(setup)
         .run();
 }

@@ -9,7 +9,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(backends::RaycastPlugin)
+        .add_plugin(RaycastPlugin)
         .add_startup_system(setup)
         .add_system(make_pickable)
         .add_system(HelmetClicked::handle_events)
