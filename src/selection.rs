@@ -75,19 +75,19 @@ pub fn mesh_selection(
                 selection.selected = true;
             }
         }
-    } else {
+    } else if !keyboard_input.pressed(KeyCode::LControl) {
         // This branch deselects everything if the user clicks, in empty space. Deselection is not
         // run if the UI or an item tagged with `NoDeselect` was clicked on.
         let mut ui_not_clicked = true;
         for interaction in node_query.iter() {
             // Check if anything in the UI is being interacted with
-            if *interaction == Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
+            if *interaction == Interaction::Clicked {
                 ui_not_clicked = false;
             }
         }
         let mut no_deselect_not_clicked = true;
         for interaction in no_deselect_query.iter() {
-            if *interaction == Interaction::Clicked && !keyboard_input.pressed(KeyCode::LControl) {
+            if *interaction == Interaction::Clicked {
                 no_deselect_not_clicked = false;
             }
         }
