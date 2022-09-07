@@ -98,7 +98,7 @@ impl<E: IsPointerEvent> EventListener<E> {
 /// Extends the [`EntityCommands`] trait, allowing you to call these methods when spawning an
 /// entity.
 pub trait EventListenerCommands {
-    /// Listens for events of type `E`; when one bubbles up to this entity, an event of type `F`
+    /// Listens for events of type `In`; when one bubbles up to this entity, an event of type `Out`
     /// will be sent.
     ///
     /// # Usage
@@ -108,39 +108,44 @@ pub trait EventListenerCommands {
     /// type `MyForwardedEvent`"
     ///
     /// ```
+    /// # use bevy::prelude::*;
+    /// # use bevy_picking_core::output::*;
     /// # struct MyForwardedEvent;
-    /// # impl ForwardedEvent for MyForwardedEvent {
-    /// #     fn new(_event_data: &mut EventData<impl IsPointerEvent>) -> Self {
+    /// # impl ForwardedEvent<PointerClick> for MyForwardedEvent {
+    /// #    fn from_data(event_data: &PointerEventData<PointerClick>) -> Self {
     /// #         MyForwardedEvent
     /// #     }
     /// # }
-    /// # fn(mut commands: Commands){
+    /// # fn my_func(mut commands: Commands){
     /// commands
     ///     .spawn()
     ///     .forward_events::<PointerClick, MyForwardedEvent>();
     /// # }
     /// ```
-    fn forward_events<E: IsPointerEvent, F: ForwardedEvent<E>>(&mut self) -> &mut Self;
-    /// Listens for events of type `E`. When found, an event of type `F` will be sent. Finally,
+    fn forward_events<In: IsPointerEvent, Out: ForwardedEvent<In>>(&mut self) -> &mut Self;
+    /// Listens for events of type `In`. When found, an event of type `Out` will be sent. Finally,
     /// bubbling will be halted. See [`event_bubbling`] for details on how bubbling works.
     ///
     /// Prefer using `forward_events` instead, unless you have a good reason to halt bubbling.
-    fn forward_events_and_halt<E: IsPointerEvent, F: ForwardedEvent<E>>(&mut self) -> &mut Self;
+    fn forward_events_and_halt<In: IsPointerEvent, Out: ForwardedEvent<In>>(&mut self)
+        -> &mut Self;
 }
 
 impl<'w, 's, 'a> EventListenerCommands for EntityCommands<'w, 's, 'a> {
-    fn forward_events<E: IsPointerEvent, F: ForwardedEvent<E>>(&mut self) -> &mut Self {
+    fn forward_events<In: IsPointerEvent, Out: ForwardedEvent<In>>(&mut self) -> &mut Self {
         self.commands().add(|world: &mut World| {
-            world.init_resource::<Events<F>>();
+            world.init_resource::<Events<Out>>();
         });
-        self.insert(EventListener::<E>::new_forward_event::<F>());
+        self.insert(EventListener::<In>::new_forward_event::<Out>());
         self
     }
-    fn forward_events_and_halt<E: IsPointerEvent, F: ForwardedEvent<E>>(&mut self) -> &mut Self {
+    fn forward_events_and_halt<In: IsPointerEvent, Out: ForwardedEvent<In>>(
+        &mut self,
+    ) -> &mut Self {
         self.commands().add(|world: &mut World| {
-            world.init_resource::<Events<F>>();
+            world.init_resource::<Events<Out>>();
         });
-        self.insert(EventListener::<E>::new_forward_event_and_halt::<F>());
+        self.insert(EventListener::<In>::new_forward_event_and_halt::<Out>());
         self
     }
 }
