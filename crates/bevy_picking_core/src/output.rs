@@ -35,9 +35,9 @@ impl DerefMut for PointerInteraction {
 
 /// Can be implemented on a custom event to allow [`EventListener`]s to convert [`PointerEvent`]s
 /// into the custom event type.
-pub trait ForwardedEvent: Event {
+pub trait ForwardedEvent<E: IsPointerEvent>: Event {
     /// Create a new event from [`EventData`].
-    fn from_data<E: IsPointerEvent>(event_data: &PointerEventData<E>) -> Self;
+    fn from_data(event_data: &PointerEventData<E>) -> Self;
 }
 
 /// An `EventListener` marks an entity, informing the [`event_bubbling`] system to run the
@@ -60,7 +60,7 @@ impl<E: IsPointerEvent> EventListener<E> {
 
     /// Create an [`EventListener`] that will send an event of type `F` when the listener is
     /// triggered, then continue to bubble the original event up this entity's hierarchy.
-    pub fn new_forward_event<F: ForwardedEvent>() -> Self {
+    pub fn new_forward_event<F: ForwardedEvent<E>>() -> Self {
         Self {
             callback: |commands: &mut Commands,
                        event_data: &PointerEventData<E>,
@@ -79,7 +79,7 @@ impl<E: IsPointerEvent> EventListener<E> {
     /// on parents of this entity.
     ///
     /// Prefer using `new_forward_event` instead, unless you have a good reason to halt bubbling.
-    pub fn new_forward_event_and_halt<F: ForwardedEvent>() -> Self {
+    pub fn new_forward_event_and_halt<F: ForwardedEvent<E>>() -> Self {
         Self {
             callback: |commands: &mut Commands,
                        event_data: &PointerEventData<E>,
@@ -120,23 +120,23 @@ pub trait EventListenerCommands {
     ///     .forward_events::<PointerClick, MyForwardedEvent>();
     /// # }
     /// ```
-    fn forward_events<E: IsPointerEvent, F: ForwardedEvent>(&mut self) -> &mut Self;
+    fn forward_events<E: IsPointerEvent, F: ForwardedEvent<E>>(&mut self) -> &mut Self;
     /// Listens for events of type `E`. When found, an event of type `F` will be sent. Finally,
     /// bubbling will be halted. See [`event_bubbling`] for details on how bubbling works.
     ///
     /// Prefer using `forward_events` instead, unless you have a good reason to halt bubbling.
-    fn forward_events_and_halt<E: IsPointerEvent, F: ForwardedEvent>(&mut self) -> &mut Self;
+    fn forward_events_and_halt<E: IsPointerEvent, F: ForwardedEvent<E>>(&mut self) -> &mut Self;
 }
 
 impl<'w, 's, 'a> EventListenerCommands for EntityCommands<'w, 's, 'a> {
-    fn forward_events<E: IsPointerEvent, F: ForwardedEvent>(&mut self) -> &mut Self {
+    fn forward_events<E: IsPointerEvent, F: ForwardedEvent<E>>(&mut self) -> &mut Self {
         self.commands().add(|world: &mut World| {
             world.init_resource::<Events<F>>();
         });
         self.insert(EventListener::<E>::new_forward_event::<F>());
         self
     }
-    fn forward_events_and_halt<E: IsPointerEvent, F: ForwardedEvent>(&mut self) -> &mut Self {
+    fn forward_events_and_halt<E: IsPointerEvent, F: ForwardedEvent<E>>(&mut self) -> &mut Self {
         self.commands().add(|world: &mut World| {
             world.init_resource::<Events<F>>();
         });
@@ -204,7 +204,15 @@ impl Bubble {
 /// This trait restricts the types of events that can be used as [`PointerEvent`]s.
 pub trait IsPointerEvent: Send + Sync + 'static + Display + Clone {
     /// The inner event type of the [`PointerEvent`].
-    type InnerEventType: Send + Sync + Clone;
+    type InnerEventType: Send + Sync + Clone + std::fmt::Debug;
+    /// Create a new `PointerEvent`.
+    fn new(id: &PointerId, target: &Entity, event: Self::InnerEventType) -> Self;
+    /// Get the [`PointerId`] of this event.
+    fn id(&self) -> PointerId;
+    /// Get the target entity of this event.
+    fn target(&self) -> Entity;
+    /// Get the inner event entity of this event.
+    fn event(&self) -> Self::InnerEventType;
 }
 
 /// Stores the common data needed for all `PointerEvent`s.
@@ -214,12 +222,10 @@ pub struct PointerEvent<E: Send + Sync + Clone + 'static + Reflect> {
     target: Entity,
     event: E,
 }
-impl<E: Clone + Send + Sync + Reflect> IsPointerEvent for PointerEvent<E> {
+impl<E: Clone + Send + Sync + std::fmt::Debug + Reflect> IsPointerEvent for PointerEvent<E> {
     type InnerEventType = E;
-}
-impl<E: Clone + Send + Sync + 'static + Reflect> PointerEvent<E> {
-    /// Create a new `PointerEvent`.
-    pub fn new(id: &PointerId, target: &Entity, event: E) -> Self {
+
+    fn new(id: &PointerId, target: &Entity, event: E) -> Self {
         Self {
             id: *id,
             target: *target,
@@ -227,14 +233,16 @@ impl<E: Clone + Send + Sync + 'static + Reflect> PointerEvent<E> {
         }
     }
 
-    /// Get the [`PointerId`] of this event.
-    pub fn id(&self) -> PointerId {
+    fn id(&self) -> PointerId {
         self.id
     }
 
-    /// Get the target entity of this event.
-    pub fn target(&self) -> Entity {
+    fn target(&self) -> Entity {
         self.target
+    }
+
+    fn event(&self) -> Self::InnerEventType {
+        self.event.to_owned()
     }
 }
 
@@ -252,7 +260,7 @@ impl<E: Clone + Send + Sync + 'static + Reflect> PointerEvent<E> {
 /// event type `E`, and run the `on_event` function in the event listener.
 ///
 /// Some `PointerEvent`s cannot be bubbled, and are instead sent to the entire hierarchy.
-pub fn event_bubbling<E: Clone + Send + Sync + 'static + Reflect>(
+pub fn event_bubbling<E: Clone + Send + Sync + std::fmt::Debug + Reflect + 'static>(
     mut commands: Commands,
     mut events: EventReader<PointerEvent<E>>,
     listeners: Query<(Option<&EventListener<PointerEvent<E>>>, Option<&Parent>)>,
@@ -366,29 +374,41 @@ pub type PointerDragEnd = PointerEvent<DragEnd>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct DragEnd;
 
-/// Fires when a pointer dragging some entity enters the `target` entity.
+/// Fires when a pointer dragging the `dragged` entity enters the `target` entity.
 pub type PointerDragEnter = PointerEvent<DragEnter>;
 /// The inner [`PointerEvent`] type for [`PointerDragEnter`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct DragEnter;
+pub struct DragEnter {
+    /// The entity that was being dragged when the pointer entered the `target` entity.
+    pub dragged: Entity,
+}
 
-/// Fires while some entity is being dragged over the `target` entity.
+/// Fires while the `dragged` entity is being dragged over the `target` entity.
 pub type PointerDragOver = PointerEvent<DragOver>;
 /// The inner [`PointerEvent`] type for [`PointerDragOver`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct DragOver;
+pub struct DragOver {
+    /// The entity that was being dragged when the pointer was over the `target` entity.
+    pub dragged: Entity,
+}
 
-/// Fires when a pointer dragging some entity leaves the `target` entity.
+/// Fires when a pointer dragging the `dragged` entity leaves the `target` entity.
 pub type PointerDragLeave = PointerEvent<DragLeave>;
 /// The inner [`PointerEvent`] type for [`PointerDragLeave`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct DragLeave;
+pub struct DragLeave {
+    /// The entity that was being dragged when the pointer left the `target` entity.
+    pub dragged: Entity,
+}
 
-/// Fires when a pointer drops some entity onto the `target` entity.
+/// Fires when a pointer drops the `dropped` entity onto the `target` entity.
 pub type PointerDrop = PointerEvent<Drop>;
 /// The inner [`PointerEvent`] type for [`PointerDrop`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Drop;
+pub struct Drop {
+    /// The entity that was dropped onto the `target` entity.
+    pub dropped: Entity,
+}
 
 /// Generates pointer events from input data
 pub fn pointer_events(
@@ -593,25 +613,25 @@ pub fn send_drag_over_events(
 ) {
     // Fire PointerDragEnter events.
     for over_event in pointer_over.iter() {
-        if let Some(Some(dragged)) = drag_map.get(&over_event.id()) {
-            if &over_event.target() != dragged {
+        if let Some(&Some(dragged)) = drag_map.get(&over_event.id()).to_owned() {
+            if over_event.target() != dragged {
                 drag_over_map.insert(over_event.id(), Some(over_event.target()));
                 pointer_drag_enter.send(PointerDragEnter::new(
                     &over_event.id(),
                     &over_event.target(),
-                    DragEnter,
+                    DragEnter { dragged },
                 ))
             }
         }
     }
     // Fire PointerDragOver events.
     for move_event in pointer_move.iter() {
-        if let Some(Some(dragged)) = drag_map.get(&move_event.id()) {
-            if &move_event.target() != dragged {
+        if let Some(&Some(dragged)) = drag_map.get(&move_event.id()) {
+            if move_event.target() != dragged {
                 pointer_drag_over.send(PointerDragOver::new(
                     &move_event.id(),
                     &move_event.target(),
-                    DragOver,
+                    DragOver { dragged },
                 ))
             }
         }
@@ -621,11 +641,13 @@ pub fn send_drag_over_events(
         if let Some(dragged_over) = drag_over_map.get_mut(&out_event.id()) {
             if Some(out_event.target()) == *dragged_over {
                 *dragged_over = None;
-                pointer_drag_leave.send(PointerDragLeave::new(
-                    &out_event.id(),
-                    &out_event.target(),
-                    DragLeave,
-                ))
+                if let Some(&Some(dragged)) = drag_map.get(&out_event.id()) {
+                    pointer_drag_leave.send(PointerDragLeave::new(
+                        &out_event.id(),
+                        &out_event.target(),
+                        DragLeave { dragged },
+                    ))
+                }
             }
         }
     }
@@ -637,9 +659,17 @@ pub fn send_drag_over_events(
                 pointer_drag_leave.send(PointerDragLeave::new(
                     &drag_end_event.id(),
                     &dragged_over,
-                    DragLeave,
+                    DragLeave {
+                        dragged: drag_end_event.target(),
+                    },
                 ));
-                pointer_drop.send(PointerDrop::new(&drag_end_event.id(), &dragged_over, Drop));
+                pointer_drop.send(PointerDrop::new(
+                    &drag_end_event.id(),
+                    &dragged_over,
+                    Drop {
+                        dropped: drag_end_event.target(),
+                    },
+                ));
             }
         }
     }

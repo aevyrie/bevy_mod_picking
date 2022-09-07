@@ -110,10 +110,7 @@ impl Plugin for InteractionPlugin {
 /// Listens for pointer events of type `E` and prints them
 pub fn event_debug<E: output::IsPointerEvent>(mut events: EventReader<E>) {
     for event in events.iter() {
-        info!(
-            "{event}, Event: {}",
-            std::any::type_name::<E>().split("::").last().unwrap()
-        );
+        info!("{event}, Event: {:?}", event.event());
     }
 }
 

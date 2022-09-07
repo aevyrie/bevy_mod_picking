@@ -8,7 +8,11 @@
 #![deny(missing_docs)]
 
 use bevy::prelude::*;
-use bevy_picking_core::{output::PointerEvent, pointer::PointerId, PickStage};
+use bevy_picking_core::{
+    output::{IsPointerEvent, PointerEvent},
+    pointer::PointerId,
+    PickStage,
+};
 
 /// Adds multiselect picking support to your app.
 pub struct SelectionPlugin;
@@ -38,7 +42,7 @@ impl Plugin for SelectionPlugin {
 
 /// Input state that defines whether or not the multiselect button is active. This is often the
 /// `Ctrl` or `Shift` keys.
-#[derive(Debug, Default, Clone, Component, PartialEq)]
+#[derive(Debug, Default, Clone, Component, PartialEq, Eq)]
 pub struct PointerMultiselect {
     /// `true` if the multiselect button(s) is active.
     pub is_pressed: bool,

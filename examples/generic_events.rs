@@ -5,8 +5,6 @@
 //! difference that we can have different behavior depending on the pointer event that triggered our
 //! event.
 
-use std::marker::PhantomData;
-
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
@@ -15,10 +13,9 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins)
         .add_plugin(RaycastPlugin)
-        .add_plugin(DebugEventsPlugin)
         .add_startup_system(setup)
-        .add_system(GreetMe::<PointerOver>::handle_events)
-        .add_system(GreetMe::<PointerOut>::handle_events)
+        .add_system(SpecificEvent::handle_events)
+        .add_system(GeneralEvent::handle_events)
         .run();
 }
 
@@ -28,39 +25,49 @@ fn main() {
 // Why is this useful? It allows us to have different behaviors depending on what event triggered
 // our custom event. In this example, we say "hello" when the pointer enters, and "goodbye" when it
 // leaves, but while using the same generic event, instead of two different events.
-struct GreetMe<E: IsPointerEvent> {
+struct SpecificEvent {
     entity: Entity,
     greeting: String,
-    event: PhantomData<E>,
 }
 // Here we are implementing event forwarding only for the `PointerOver` version of our event.
-impl ForwardedEvent for GreetMe<PointerOver> {
-    fn from_data<E: IsPointerEvent>(event_data: &PointerEventData<E>) -> GreetMe<PointerOver> {
-        GreetMe {
+impl ForwardedEvent<PointerOver> for SpecificEvent {
+    fn from_data(event_data: &PointerEventData<PointerOver>) -> SpecificEvent {
+        SpecificEvent {
             entity: event_data.target(),
             greeting: "Hello".into(),
-            event: PhantomData,
         }
     }
 }
 // Here we are implementing event forwarding only for `PointerOut` version of our event.
-impl ForwardedEvent for GreetMe<PointerOut> {
-    fn from_data<E: IsPointerEvent>(event_data: &PointerEventData<E>) -> GreetMe<PointerOut> {
-        GreetMe {
+impl ForwardedEvent<PointerOut> for SpecificEvent {
+    fn from_data(event_data: &PointerEventData<PointerOut>) -> SpecificEvent {
+        SpecificEvent {
             entity: event_data.target(),
             greeting: "Goodbye".into(),
-            event: PhantomData,
         }
     }
 }
-// Finally, this is our event handler that prints out the greetings. Note this is a generic system,
-// so we need to add both the `PointerOver` and `PointerOut` versions of our system. The advantage
-// to this is that we can define our greeting logic once, but it can handle multiple types of
-// events.
-impl<E: IsPointerEvent> GreetMe<E> {
-    fn handle_events(mut greet: EventReader<GreetMe<E>>) {
+// Finally, do something with our events.
+impl SpecificEvent {
+    fn handle_events(mut greet: EventReader<SpecificEvent>) {
         for event in greet.iter() {
             info!("{} {:?}!", event.greeting, event.entity);
+        }
+    }
+}
+
+// If you don't care what pointer event is triggering your event, and you want to have the same
+// behavior in all cases, you can simply ignore the event type.
+struct GeneralEvent;
+impl<E: IsPointerEvent> ForwardedEvent<E> for GeneralEvent {
+    fn from_data(_event_data: &PointerEventData<E>) -> GeneralEvent {
+        GeneralEvent
+    }
+}
+impl GeneralEvent {
+    fn handle_events(mut greet: EventReader<GeneralEvent>) {
+        for _event in greet.iter() {
+            info!("An event was triggered, but we don't know why.");
         }
     }
 }
@@ -81,9 +88,10 @@ fn setup(
         .insert_bundle(PickableBundle::default())
         .insert(PickRaycastTarget::default())
         // Because event forwarding can rely on event bubbling, events that target children of the
-        // parent cube will bubble up to this level and will fire off a `GreetMe` event:
-        .forward_events::<PointerOver, GreetMe<PointerOver>>()
-        .forward_events::<PointerOut, GreetMe<PointerOut>>()
+        // parent cube will bubble up to this level and will fire off an event:
+        .forward_events::<PointerOver, SpecificEvent>()
+        .forward_events::<PointerOut, SpecificEvent>()
+        .forward_events::<PointerDown, GeneralEvent>()
         .with_children(|parent| {
             parent
                 .spawn_bundle(PbrBundle {

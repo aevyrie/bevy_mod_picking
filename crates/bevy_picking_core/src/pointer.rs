@@ -31,7 +31,7 @@ impl PointerId {
 }
 
 /// Tracks the state of the pointer's buttons in response to [`InputPress`]s.
-#[derive(Debug, Default, Clone, Component, PartialEq)]
+#[derive(Debug, Default, Clone, Component, PartialEq, Eq)]
 pub struct PointerPress {
     primary: bool,
     secondary: bool,

@@ -76,8 +76,7 @@ fn build_pointer_map(
             let layer: Layer = render_layers
                 .get(over.entity)
                 .ok()
-                .map(|layer| layer.iter().max())
-                .flatten()
+                .and_then(|layer| layer.iter().max())
                 .unwrap_or(0);
 
             layer_map.entry(layer).or_insert_with(BTreeMap::new);
