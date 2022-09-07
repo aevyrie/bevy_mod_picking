@@ -25,14 +25,14 @@
 //! use bevy_mod_picking::prelude::*;
 //!
 //! # struct DeleteMe(Entity);
-//! # impl EventFrom for DeleteMe {
-//! #     fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self {
+//! # impl<E: IsPointerEvent> ForwardedEvent<E> for DeleteMe {
+//! #     fn from_data(event_data: &PointerEventData<E>) -> DeleteMe {
 //! #         Self(event_data.target())
 //! #     }
 //! # }
 //! # struct GreetMe(Entity);
-//! # impl EventFrom for GreetMe {
-//! #     fn new(event_data: &mut EventData<impl IsPointerEvent>) -> Self {
+//! # impl<E: IsPointerEvent> ForwardedEvent<E> for GreetMe {
+//! #     fn from_data(event_data: &PointerEventData<E>) -> GreetMe {
 //! #         Self(event_data.target())
 //! #     }
 //! # }

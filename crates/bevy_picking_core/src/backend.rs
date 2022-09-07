@@ -4,7 +4,7 @@
 //! backend do **not** need to be sorted or filtered, all that is needed is an unordered list of
 //! entities and their distance from the pointer into the screen (depth). Depth only needs to be
 //! self-consistent with other [`EntitiesUnderPointer`]s in the same
-//! [`PickLayer`](crate::focus::PickLayer).
+//! [`RenderLayers`](bevy::render::view::RenderLayers).
 //!
 //! In plain English, a backend is provided the location of pointers, and is asked to provide a list
 //! of entities under those pointers.

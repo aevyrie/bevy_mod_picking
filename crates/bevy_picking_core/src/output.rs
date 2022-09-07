@@ -36,7 +36,7 @@ impl DerefMut for PointerInteraction {
 /// Can be implemented on a custom event to allow [`EventListener`]s to convert [`PointerEvent`]s
 /// into the custom event type.
 pub trait ForwardedEvent<E: IsPointerEvent>: Event {
-    /// Create a new event from [`EventData`].
+    /// Create a new event from [`PointerEventData`].
     fn from_data(event_data: &PointerEventData<E>) -> Self;
 }
 
