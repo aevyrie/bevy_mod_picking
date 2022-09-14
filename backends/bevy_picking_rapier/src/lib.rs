@@ -78,7 +78,7 @@ fn update_hits(
 ) {
     sources
         .iter()
-        .filter_map(|(source, id)| source.ray.as_ref().and_then(|ray| Some((id, ray))))
+        .filter_map(|(source, id)| source.ray.as_ref().map(|ray| (id, ray)))
         .filter_map(|(id, ray)| {
             rapier_context
                 .cast_ray(
@@ -88,7 +88,7 @@ fn update_hits(
                     true,
                     QueryFilter::new(),
                 )
-                .and_then(|hit| Some((hit.0, hit.1, id)))
+                .map(|hit| (hit.0, hit.1, id))
         })
         .for_each(|(entity, depth, &id)| {
             let over_list = vec![EntityDepth { entity, depth }];
