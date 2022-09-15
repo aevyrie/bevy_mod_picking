@@ -22,11 +22,15 @@ type LayerMap = BTreeMap<Layer, DepthMap>;
 type OverMap = HashMap<PointerId, LayerMap>;
 
 /// Maps pointers to the entities they are hovering over. "Hovering" refers to the actual hover
-/// interaction state, in this case, not just whether the pointer happens to be over the entity.
+/// state, in this case, not just whether the pointer happens to be over the entity. More
+/// specifically, a pointer is "over" an entity if it is within the bounds of that entity, whereas a
+/// pointer is "hovering" an entity only if the mouse is "over" the entity AND it is the topmost
+/// entity.
 #[derive(Debug, Deref, DerefMut, Default)]
 pub struct HoverMap(pub HashMap<PointerId, HashSet<Entity>>);
 
 /// Coalesces all data from inputs and backends to generate a map of the currently hovered entities.
+/// This is the final focusing step to determine which entity the pointer is hovering over.
 pub fn update_focus(
     // Inputs
     focus: Query<&FocusPolicy>,
@@ -38,23 +42,19 @@ pub fn update_focus(
     // Output
     mut hover_map: ResMut<HoverMap>,
 ) {
-    reset_local_maps(&mut hover_map, &mut pointer_over_map);
+    reset_maps(&mut hover_map, &mut pointer_over_map);
     build_pointer_map(render_layers, &mut under_pointer, &mut pointer_over_map);
     build_hover_map(&pointers, focus, pointer_over_map, &mut hover_map);
 }
 
 /// Clear non-empty local maps, reusing allocated memory.
-fn reset_local_maps(hover_map: &mut ResMut<HoverMap>, pointer_over_map: &mut Local<OverMap>) {
+fn reset_maps(hover_map: &mut HoverMap, pointer_over_map: &mut OverMap) {
     for entity_set in hover_map.values_mut() {
-        if !entity_set.is_empty() {
-            entity_set.clear()
-        }
+        entity_set.clear()
     }
     for layer_map in pointer_over_map.values_mut() {
         for depth_map in layer_map.values_mut() {
-            if !depth_map.is_empty() {
-                depth_map.clear()
-            }
+            depth_map.clear()
         }
     }
 }
@@ -66,12 +66,9 @@ fn build_pointer_map(
     pointer_over_map: &mut Local<OverMap>,
 ) {
     for event in over_events.iter() {
-        let layer_map = match pointer_over_map.get_mut(&event.id) {
-            Some(map) => map,
-            None => pointer_over_map
-                .try_insert(event.id, BTreeMap::new())
-                .unwrap(),
-        };
+        let layer_map = pointer_over_map
+            .entry(event.id)
+            .or_insert_with(BTreeMap::new);
         for over in event.over_list.iter() {
             let layer: Layer = render_layers
                 .get(over.entity)
@@ -87,9 +84,9 @@ fn build_pointer_map(
     }
 }
 
-// Build an unsorted set of hovered entities, accounting for depth, layer, and focus policy. Note
-// that unlike the pointer map, this uses the focus policy to determine if lower entities receive
-// hover focus. Often, only a single entity per pointer will be hovered.
+/// Build an unsorted set of hovered entities, accounting for depth, layer, and focus policy. Note
+/// that unlike the pointer map, this uses the focus policy to determine if lower entities receive
+/// hover focus. Often, only a single entity per pointer will be hovered.
 fn build_hover_map(
     pointers: &Query<(&PointerId, &PointerInteraction)>,
     focus: Query<&FocusPolicy>,
@@ -98,16 +95,13 @@ fn build_hover_map(
     hover_map: &mut ResMut<HoverMap>,
 ) {
     for (id, _) in pointers.iter() {
-        let pointer_entity_set = match hover_map.contains_key(id) {
-            true => hover_map.get_mut(id).unwrap(),
-            false => hover_map.try_insert(*id, HashSet::new()).unwrap(),
-        };
+        let pointer_entity_set = hover_map.entry(*id).or_insert_with(HashSet::new);
         if let Some(layer_map) = pointer_over_map.get(id) {
             // Note we reverse here to start from the highest layer first
             for depth_map in layer_map.values().rev() {
                 for entity in depth_map.values() {
                     pointer_entity_set.insert(*entity);
-                    if let Ok(_policy @ FocusPolicy::Block) = focus.get(*entity) {
+                    if let Ok(FocusPolicy::Block) = focus.get(*entity) {
                         break;
                     }
                 }

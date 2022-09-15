@@ -4,6 +4,7 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
+use bevy::ui;
 use bevy::{prelude::*, render::camera::RenderTarget, window::WindowId};
 use bevy_picking_core::backend::prelude::*;
 
@@ -28,7 +29,7 @@ impl Plugin for UiPickingPlugin {
 /// Computes the UI node entities under each pointer
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    mut node_query: Query<(Entity, &Node, &GlobalTransform, Option<&CalculatedClip>)>,
+    mut node_query: Query<(Entity, &ui::Node, &GlobalTransform, Option<&CalculatedClip>)>,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
     for (pointer, position) in pointers.iter().filter_map(|(pointer, pointer_location)| {
@@ -48,21 +49,17 @@ pub fn ui_picking(
                 let mut min = ui_position - extents;
                 let mut max = ui_position + extents;
                 if let Some(clip) = clip {
-                    min = Vec2::max(min, clip.clip.min);
+                    min = min.max(clip.clip.min);
                     max = Vec2::min(max, clip.clip.max);
                 }
 
                 let contains_cursor = (min.x..max.x).contains(&cursor_position.x)
                     && (min.y..max.y).contains(&cursor_position.y);
 
-                if contains_cursor {
-                    Some(EntityDepth {
-                        entity,
-                        depth: position.z,
-                    })
-                } else {
-                    None
-                }
+                contains_cursor.then_some(EntityDepth {
+                    entity,
+                    depth: position.z,
+                })
             })
             .collect::<Vec<_>>();
 

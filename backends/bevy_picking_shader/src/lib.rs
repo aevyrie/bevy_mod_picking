@@ -6,7 +6,7 @@
 
 use bevy::prelude::*;
 
-/// Commonly used imports for the [`bevy_picking_raycast`] crate.
+/// Commonly used imports for the [`bevy_picking_shader`] crate.
 pub mod prelude {
     // pub use crate::;
 }

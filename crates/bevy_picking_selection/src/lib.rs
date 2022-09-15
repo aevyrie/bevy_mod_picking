@@ -104,7 +104,7 @@ pub fn send_selection_events(
     for down in pointer_down.iter() {
         let multiselect = pointers
             .iter()
-            .find_map(|(id, multi)| id.eq(&down.id()).then_some(multi.is_pressed))
+            .find_map(|(id, multi)| id.eq(&down.pointer_id()).then_some(multi.is_pressed))
             .unwrap_or(false);
         let target_should_deselect = no_deselect.get(down.target()).is_err();
         // Deselect everything
@@ -112,7 +112,7 @@ pub fn send_selection_events(
             for (entity, selection) in selectables.iter() {
                 let not_click_target = down.target() != entity;
                 if selection.is_selected && not_click_target {
-                    deselections.send(PointerDeselect::new(&down.id(), &entity, Deselect))
+                    deselections.send(PointerDeselect::new(&down.pointer_id(), &entity, Deselect))
                 }
             }
         }
@@ -121,16 +121,22 @@ pub fn send_selection_events(
     for click in pointer_click.iter() {
         let multiselect = pointers
             .iter()
-            .find_map(|(id, multi)| id.eq(&click.id()).then_some(multi.is_pressed))
+            .find_map(|(id, multi)| id.eq(&click.pointer_id()).then_some(multi.is_pressed))
             .unwrap_or(false);
         if let Ok((entity, selection)) = selectables.get(click.target()) {
             if multiselect {
                 match selection.is_selected {
-                    true => deselections.send(PointerDeselect::new(&click.id(), &entity, Deselect)),
-                    false => selections.send(PointerSelect::new(&click.id(), &entity, Select)),
+                    true => deselections.send(PointerDeselect::new(
+                        &click.pointer_id(),
+                        &entity,
+                        Deselect,
+                    )),
+                    false => {
+                        selections.send(PointerSelect::new(&click.pointer_id(), &entity, Select))
+                    }
                 }
             } else if !selection.is_selected {
-                selections.send(PointerSelect::new(&click.id(), &entity, Select))
+                selections.send(PointerSelect::new(&click.pointer_id(), &entity, Select))
             }
         }
     }
