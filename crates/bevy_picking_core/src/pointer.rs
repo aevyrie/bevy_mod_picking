@@ -62,7 +62,7 @@ impl PointerPress {
 pub struct InputPress {
     /// ID of the pointer for this event.
     pub id: PointerId,
-    ///Stage of the button press.
+    /// Stage of the button press.
     pub press: PressStage,
     /// Identifies the pointer button changing in this event.
     pub button: PointerButton,
@@ -106,11 +106,11 @@ impl InputPress {
         for press_event in events.iter() {
             pointers.for_each_mut(|(pointer_id, mut pointer)| {
                 if *pointer_id == press_event.id {
-                    let new_value = press_event.press == PressStage::Down;
+                    let is_down = press_event.press == PressStage::Down;
                     match press_event.button {
-                        PointerButton::Primary => pointer.primary = new_value,
-                        PointerButton::Secondary => pointer.secondary = new_value,
-                        PointerButton::Middle => pointer.middle = new_value,
+                        PointerButton::Primary => pointer.primary = is_down,
+                        PointerButton::Secondary => pointer.secondary = is_down,
+                        PointerButton::Middle => pointer.middle = is_down,
                     }
                 }
             })
