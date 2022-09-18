@@ -42,13 +42,17 @@ pub fn update_focus(
     // Output
     mut hover_map: ResMut<HoverMap>,
 ) {
-    reset_maps(&mut hover_map, &mut pointer_over_map);
+    reset_maps(&mut hover_map, &mut pointer_over_map, &pointers);
     build_pointer_map(render_layers, &mut under_pointer, &mut pointer_over_map);
     build_hover_map(&pointers, focus, pointer_over_map, &mut hover_map);
 }
 
 /// Clear non-empty local maps, reusing allocated memory.
-fn reset_maps(hover_map: &mut HoverMap, pointer_over_map: &mut OverMap) {
+fn reset_maps(
+    hover_map: &mut HoverMap,
+    pointer_over_map: &mut OverMap,
+    pointers: &Query<(&PointerId, &PointerInteraction)>,
+) {
     for entity_set in hover_map.values_mut() {
         entity_set.clear()
     }
@@ -57,6 +61,10 @@ fn reset_maps(hover_map: &mut HoverMap, pointer_over_map: &mut OverMap) {
             depth_map.clear()
         }
     }
+
+    let active_pointers: Vec<PointerId> = pointers.iter().map(|q| *q.0).collect();
+    hover_map.retain(|pointer, _| active_pointers.contains(pointer));
+    pointer_over_map.retain(|pointer, _| active_pointers.contains(pointer));
 }
 
 /// Build an ordered map of entities that are under each pointer

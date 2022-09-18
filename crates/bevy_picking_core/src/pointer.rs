@@ -3,8 +3,7 @@
 use bevy::{prelude::*, reflect::Uuid, render::camera::RenderTarget};
 use std::fmt::Debug;
 
-/// Identifies a unique pointer entity. `Mouse` and `Touch` pointers are automatically spawned by the
-/// `DefaultPointersPlugin` in `bevy_mod_picking`.
+/// Identifies a unique pointer entity. `Mouse` and `Touch` pointers are automatically spawned.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
 pub enum PointerId {
     /// A touch input, normally numbered by incoming window touch events from `winit`.
@@ -61,11 +60,11 @@ impl PointerPress {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InputPress {
     /// ID of the pointer for this event.
-    pub id: PointerId,
+    id: PointerId,
     /// Stage of the button press.
-    pub press: PressStage,
+    press: PressStage,
     /// Identifies the pointer button changing in this event.
-    pub button: PointerButton,
+    button: PointerButton,
 }
 impl InputPress {
     /// Create a new pointer button down event.
@@ -115,6 +114,21 @@ impl InputPress {
                 }
             })
         }
+    }
+
+    /// Gets the [`PointerId`] of the event.
+    pub fn id(&self) -> PointerId {
+        self.id
+    }
+
+    /// Gets the [`PressStage`] of the event.
+    pub fn press(&self) -> PressStage {
+        self.press
+    }
+
+    /// Gets the [`PointerButton`] of the event.
+    pub fn button(&self) -> PointerButton {
+        self.button
     }
 }
 

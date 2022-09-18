@@ -253,9 +253,6 @@ impl<E: Clone + Send + Sync + std::fmt::Debug + Reflect + 'static> IsPointerEven
     }
 }
 
-//TODO: add a system that errors if a user adds the EventListener<PointerEnter/PointerLeave>
-//components
-
 /// Bubbles [`PointerEvent`]s of event type `E`.
 ///
 /// Event bubbling makes it simple for specific entities to listen for specific events. When a
@@ -320,18 +317,6 @@ pub type PointerOut = PointerEvent<Out>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Out;
 
-/// TODO:
-pub type PointerEnter = PointerEvent<Enter>;
-/// The inner [`PointerEvent`] type for [`PointerEnter`].
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Enter;
-
-/// TODO:
-pub type PointerLeave = PointerEvent<Leave>;
-/// The inner [`PointerEvent`] type for [`PointerLeave`].
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Leave;
-
 /// Fires when a the pointer primary button is pressed over the `target` entity.
 pub type PointerDown = PointerEvent<Down>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
@@ -356,12 +341,6 @@ pub type PointerMove = PointerEvent<Move>;
 /// The inner [`PointerEvent`] type for [`PointerMove`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Move;
-
-///TODO:
-pub type PointerCancel = PointerEvent<Cancel>;
-/// The inner [`PointerEvent`] type for [`PointerCancel`].
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Cancel;
 
 /// Fires when the `target` entity receives a pointer down event followed by a pointer move event.
 pub type PointerDragStart = PointerEvent<DragStart>;
@@ -420,7 +399,7 @@ pub struct Drop {
 /// Generates pointer events from input data
 pub fn pointer_events(
     // Input
-    pointers: Query<(&PointerId, &PointerInteraction)>, // <- what happened last frame
+    pointers: Query<(&PointerId, &PointerInteraction)>, // <- what interaction happened last frame
     mut input_presses: EventReader<pointer::InputPress>,
     mut pointer_move_in: EventReader<pointer::InputMove>,
     hover_map: Res<HoverMap>,
@@ -442,7 +421,7 @@ pub fn pointer_events(
     for (pointer_id, pointer_interaction) in pointers.iter() {
         let just_pressed = input_presses
             .iter()
-            .filter_map(|click| (&click.id == pointer_id).then_some(click.press))
+            .filter_map(|click| (&click.id() == pointer_id).then_some(click.press()))
             .rev()
             .next();
 
@@ -560,15 +539,19 @@ pub fn send_click_and_drag_events(
 ) {
     // Only triggers when over an entity
     for move_event in pointer_move.iter() {
-        if matches!(down_map.get(&move_event.pointer_id()), Some(Some(_))) {
-            if matches!(drag_map.get(&move_event.pointer_id()), Some(None) | None) {
-                drag_map.insert(move_event.pointer_id(), Some(move_event.target()));
-                pointer_drag_start.send(PointerDragStart::new(
-                    &move_event.pointer_id(),
-                    &move_event.target(),
-                    DragStart,
-                ))
-            }
+        let moving_pointer_is_down =
+            matches!(down_map.get(&move_event.pointer_id()), Some(Some(_)));
+
+        let pointer_not_in_drag_map =
+            matches!(drag_map.get(&move_event.pointer_id()), Some(None) | None);
+
+        if moving_pointer_is_down && pointer_not_in_drag_map {
+            drag_map.insert(move_event.pointer_id(), Some(move_event.target()));
+            pointer_drag_start.send(PointerDragStart::new(
+                &move_event.pointer_id(),
+                &move_event.target(),
+                DragStart,
+            ))
         }
     }
 
@@ -580,7 +563,7 @@ pub fn send_click_and_drag_events(
             }
         }
     }
-j
+
     for event in pointer_up.iter() {
         if let Some(Some(down_entity)) = down_map.get(&event.pointer_id()) {
             if *down_entity == event.target() {
@@ -607,11 +590,11 @@ j
     }
 
     for press in input_presses.iter() {
-        if press.press == pointer::PressStage::Up {
-            if let Some(Some(drag_entity)) = drag_map.insert(press.id, None) {
-                pointer_drag_end.send(PointerDragEnd::new(&press.id, &drag_entity, DragEnd));
+        if press.press() == pointer::PressStage::Up {
+            if let Some(Some(drag_entity)) = drag_map.insert(press.id(), None) {
+                pointer_drag_end.send(PointerDragEnd::new(&press.id(), &drag_entity, DragEnd));
             }
-            down_map.insert(press.id, None);
+            down_map.insert(press.id(), None);
         }
     }
 }

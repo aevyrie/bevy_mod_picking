@@ -11,8 +11,12 @@
 #![deny(missing_docs)]
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_picking_core::PickStage;
+use bevy_picking_core::{
+    pointer::{InputMove, InputPress, PointerId},
+    PickStage, PointerBundle,
+};
 
+pub mod debug;
 pub mod mouse;
 pub mod touch;
 
@@ -25,8 +29,17 @@ impl Plugin for InputPlugin {
                 CoreStage::First,
                 SystemSet::new()
                     .label(PickStage::Input)
-                    .with_system(touch::touch_pick_events.with_run_criteria(run_if_touch))
-                    .with_system(mouse::mouse_pick_events.with_run_criteria(run_if_mouse)),
+                    .with_system(
+                        touch::touch_pick_events
+                            .with_run_criteria(run_if_touch)
+                            .before(spawn_new_pointers),
+                    )
+                    .with_system(
+                        mouse::mouse_pick_events
+                            .with_run_criteria(run_if_mouse)
+                            .before(spawn_new_pointers),
+                    )
+                    .with_system(spawn_new_pointers),
             );
     }
 }
@@ -43,6 +56,23 @@ impl Default for InputPluginSettings {
             run_touch: true,
         }
     }
+}
+
+/// Spawn new pointers when an event comes in for a pointer that doesn't exist yet.
+pub fn spawn_new_pointers(
+    mut commands: Commands,
+    pointers: Query<&PointerId>,
+    mut moves: EventReader<InputMove>,
+    mut press: EventReader<InputPress>,
+) {
+    moves
+        .iter()
+        .map(|e| e.id())
+        .chain(press.iter().map(|e| e.id()))
+        .filter(|id| !pointers.iter().any(|p| p == id))
+        .for_each(|id| {
+            commands.spawn_bundle(PointerBundle::new(id));
+        });
 }
 
 fn run_if_touch(settings: Res<InputPluginSettings>) -> ShouldRun {

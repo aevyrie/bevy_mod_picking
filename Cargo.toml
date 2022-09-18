@@ -6,7 +6,7 @@ edition = "2021"
 license = "MIT"
 description = "A 3D mouse picking and raycasting plugin for Bevy."
 repository = "https://github.com/aevyrie/bevy_mod_picking/"
-keywords = ["gamedev", "picking", "bevy", "pick_raycast"]
+keywords = ["gamedev", "picking", "bevy", "raycast", "input"]
 categories = ["game-engines", "rendering"]
 resolver = "2"
 
@@ -38,18 +38,18 @@ bevy_rapier3d = "0.16"
 bevy_mod_picking = { path = "../bevy_mod_picking", features = ["all"] }
 
 [features]
-default = ["pick_raycast", "highlight", "selection", "pick_bevy_ui"]
+default = ["highlight", "selection", "backend_raycast", "backend_bevy_ui"]
 all = [
-  "pick_raycast",
   "highlight",
   "selection",
-  "pick_bevy_ui",
-  "pick_rapier",
-  "pick_shader",
+  "backend_raycast",
+  "backend_bevy_ui",
+  "backend_rapier",
+  "backend_shader",
 ]
 highlight = ["bevy_picking_highlight"]
 selection = ["bevy_picking_selection"]
-pick_raycast = ["bevy_picking_raycast"]
-pick_rapier = ["bevy_picking_rapier"]
-pick_shader = ["bevy_picking_shader"]
-pick_bevy_ui = ["bevy_picking_ui"]
+backend_raycast = ["bevy_picking_raycast"]
+backend_rapier = ["bevy_picking_rapier"]
+backend_shader = ["bevy_picking_shader"]
+backend_bevy_ui = ["bevy_picking_ui"]

@@ -5,6 +5,7 @@
 #![deny(missing_docs)]
 
 pub mod backend;
+pub mod debug;
 pub mod focus;
 pub mod output;
 pub mod pointer;
@@ -55,13 +56,10 @@ impl Plugin for InteractionPlugin {
             .init_resource::<output::DragMap>()
             .add_event::<output::PointerOver>()
             .add_event::<output::PointerOut>()
-            .add_event::<output::PointerEnter>()
-            .add_event::<output::PointerLeave>()
             .add_event::<output::PointerDown>()
             .add_event::<output::PointerUp>()
             .add_event::<output::PointerClick>()
             .add_event::<output::PointerMove>()
-            .add_event::<output::PointerCancel>()
             .add_event::<output::PointerDragStart>()
             .add_event::<output::PointerDrag>()
             .add_event::<output::PointerDragEnd>()
@@ -89,13 +87,10 @@ impl Plugin for InteractionPlugin {
                     .label(PickStage::EventListeners)
                     .with_system(event_bubbling::<output::Over>)
                     .with_system(event_bubbling::<output::Out>)
-                    // PointerEnter does not allow bubbling
-                    // PointerLeave does not allow bubbling
                     .with_system(event_bubbling::<output::Down>)
                     .with_system(event_bubbling::<output::Up>)
                     .with_system(event_bubbling::<output::Click>)
                     .with_system(event_bubbling::<output::Move>)
-                    .with_system(event_bubbling::<output::Cancel>)
                     .with_system(event_bubbling::<output::DragStart>)
                     .with_system(event_bubbling::<output::Drag>)
                     .with_system(event_bubbling::<output::DragEnd>)
@@ -107,10 +102,38 @@ impl Plugin for InteractionPlugin {
     }
 }
 
-/// Listens for pointer events of type `E` and prints them
-pub fn event_debug<E: output::IsPointerEvent>(mut events: EventReader<E>) {
-    for event in events.iter() {
-        info!("{event}, Event: {:?}", event.event());
+/// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
+/// being an entity.
+///
+/// `Mouse` and `Touch` pointers are automatically spawned as needed. Use this bundle if you are
+/// spawning a custom `PointerId::Custom` pointer, either for testing, or as a software controller
+/// pointer, or if you are replacing the default touch and mouse inputs.
+#[derive(Bundle)]
+pub struct PointerBundle {
+    /// The pointer's unique [`PointerId`](pointer::PointerId).
+    pub id: pointer::PointerId,
+    /// Tracks the pointer's location.
+    pub location: pointer::PointerLocation,
+    /// Tracks the pointer's button press state.
+    pub click: pointer::PointerPress,
+    /// Tracks the pointer's interaction state.
+    pub interaction: output::PointerInteraction,
+    #[cfg(feature = "selection")]
+    /// Tracks whether the pointer's multiselect is active.
+    pub multi_select: selection::PointerMultiselect,
+}
+
+impl PointerBundle {
+    /// Create a new pointer with the provided [`PointerId`](pointer::PointerId).
+    pub fn new(id: pointer::PointerId) -> Self {
+        PointerBundle {
+            id,
+            location: pointer::PointerLocation::default(),
+            click: pointer::PointerPress::default(),
+            interaction: output::PointerInteraction::default(),
+            #[cfg(feature = "selection")]
+            multi_select: selection::PointerMultiselect::default(),
+        }
     }
 }
 

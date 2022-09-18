@@ -43,35 +43,66 @@
 //!     .spawn()
 //!     .insert_bundle(PickableBundle::default())       // Make the entity pickable
 //!     .insert(PickRaycastTarget::default())           // Marker for the `mod_picking` backend
-//!     .forward_events::<PointerClick, DeleteMe>()     // On click, fire a `DeleteMe` event!
-//!     .forward_events::<PointerDragStart, GreetMe>(); // On drag start, fire a `GreetMe` event!
 //! # }
 //! ```
 //!
-//! # Picking Backends
+//! # The Picking Pipeline
 //!
-//! Picking [`backend`](bevy_picking_core::backend)s inform `bevy_mod_picking` what entities are
-//! underneath its pointers.
+//! This plugin is designed to be extremely modular. To do so, it works in well-defined stages that
+//! form a pipeline, where events are used to pass data between each stage. All the types needed for
+//! the pipeline are defined in the [`bevy_picking_core`] crate.
+//!
+//! ## Input ([`bevy_picking_input`])
+//!
+//! The first stage of the pipeline is to gather inputs and create pointers. This stage is
+//! ultimately responsible for generating [`InputMove`](bevy_picking_core::pointer::InputMove) and
+//! [`InputPress`](bevy_picking_core::pointer::InputPress) events. The provided crate does this
+//! automatically for mouse, touch, and pen inputs. If you wanted to implement your own pointer,
+//! controlled by some other input, you can do that here.
+//!
+//! Because pointer positions and presses are driven by these events, you can use them to mock
+//! inputs for testing.
+//!
+//! ## Backend ([`bevy_picking_core::backend`])
+//!
+//! The job of a backend is extremely simple: given the location of a pointer (from the input
+//! stage), return a list of all entities under that pointer.
 //!
 //! You will eventually need to choose which picking backend(s) you want to use. This plugin uses
 //! `bevy_mod_raycast` by default; it works with bevy `Mesh`es out of the box and requires no extra
 //! dependencies. These qualities make it useful when prototyping, however it is not particularly
-//! performant for large meshes. You can consider switching to the rapier or shader backends if
-//! performance becomes a problem. For simple or low-poly games, it may never be an issue.
+//! performant for large meshes. You can consider switching to the rapier backends if performance
+//! becomes a problem. For simple or low-poly games, it may never be an issue.
 //!
 //! However, it's important to understand that you can mix and match backends! This crate provides
 //! some backends out of the box, but you can even write your own. It's been made as easy as
 //! possible intentionally; the entire `bevy_mod_raycast` backend is less than 100 lines of code.
+//! For example, you might have a backend for your UI, and one for the 3d scene, with each being
+//! specialized for their purpose.
+//!
+//! ## Focus ([`bevy_picking_core::focus`])
+//!
+//! The final step is to use the data from the previous stages, combine and sort the results, and
+//! determine what each cursor is hovering over. With this information, high-level pointer events
+//! are generated, such as events that trigger when a pointer enters an entity, or when a pointer
+//! drags and drops one entity onto another.
+//!
+//! From here, these high-level events are used for highlighting, selection, event bubbling, and all
+//! the other features this crate provides. Because it is completely agnostic to the the earlier
+//! stages of the pipeline, you can easily extend the plugin with arbitrary backends and input
+//! methods.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
+use crate::core::output::PointerOver;
+
 use bevy::{app::PluginGroupBuilder, prelude::*, ui::FocusPolicy};
 
 // Re-exports
 pub use bevy_picking_core::{self as core, backend, focus, output, pointer};
-pub use bevy_picking_input as input;
+pub use bevy_picking_input::{self as input};
 
 // Optional, feature-gated exports
 #[cfg(feature = "highlight")]
@@ -81,13 +112,13 @@ pub use bevy_picking_selection as selection;
 
 /// Picking backend exports, feature-gated.
 pub mod backends {
-    #[cfg(feature = "pick_rapier")]
+    #[cfg(feature = "backend_rapier")]
     pub use bevy_picking_rapier as rapier;
-    #[cfg(feature = "pick_raycast")]
+    #[cfg(feature = "backend_raycast")]
     pub use bevy_picking_raycast as raycast;
-    #[cfg(feature = "pick_shader")]
+    #[cfg(feature = "backend_shader")]
     pub use bevy_picking_shader as shader;
-    #[cfg(feature = "pick_bevy_ui")]
+    #[cfg(feature = "backend_bevy_ui")]
     pub use bevy_picking_ui as bevy_ui;
 }
 
@@ -95,10 +126,10 @@ pub mod backends {
 pub mod prelude {
     pub use crate::{
         output::{
-            EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerCancel, PointerClick,
-            PointerDown, PointerDrag, PointerDragEnd, PointerDragEnter, PointerDragLeave,
-            PointerDragOver, PointerDragStart, PointerDrop, PointerEnter, PointerEventData,
-            PointerLeave, PointerMove, PointerOut, PointerOver, PointerUp,
+            EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerClick, PointerDown,
+            PointerDrag, PointerDragEnd, PointerDragEnter, PointerDragLeave, PointerDragOver,
+            PointerDragStart, PointerDrop, PointerEventData, PointerMove, PointerOut, PointerOver,
+            PointerUp,
         },
         DebugEventsPlugin, DefaultPickingPlugins, PickableBundle,
     };
@@ -116,11 +147,13 @@ pub mod prelude {
     };
 
     pub use crate::backends;
+    #[cfg(feature = "backend_bevy_ui")]
     pub use crate::backends::bevy_ui::prelude::*;
-    #[cfg(feature = "pick_rapier")]
+    #[cfg(feature = "backend_rapier")]
     pub use crate::backends::rapier::prelude::*;
+    #[cfg(feature = "backend_raycast")]
     pub use crate::backends::raycast::prelude::*;
-    #[cfg(feature = "pick_shader")]
+    #[cfg(feature = "backend_shader")]
     pub use crate::backends::shader::prelude::*;
 }
 
@@ -132,8 +165,7 @@ impl PluginGroup for DefaultPickingPlugins {
         group
             .add(core::CorePlugin)
             .add(core::InteractionPlugin)
-            .add(input::InputPlugin)
-            .add(crate::DefaultPointersPlugin);
+            .add(input::InputPlugin);
 
         // Optional
         #[cfg(feature = "selection")]
@@ -158,89 +190,35 @@ pub struct PickableBundle {
     pub highlight: highlight::PickHighlight,
 }
 
-/// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
-/// being an entity.
-///
-/// `Mouse` and `Touch` pointers are automatically spawned by the [`DefaultPointersPlugin`]. Use
-/// this bundle if you are spawning a custom `PointerId::Custom` pointer, either for testing, or as
-/// a software controller pointer, or if you are replacing `DefaultPointersPlugin`.
-#[derive(Bundle)]
-pub struct PointerBundle {
-    /// The pointer's unique [`PointerId`](pointer::PointerId).
-    pub id: pointer::PointerId,
-    /// Tracks the pointer's location.
-    pub location: pointer::PointerLocation,
-    /// Tracks the pointer's button press state.
-    pub click: pointer::PointerPress,
-    /// Tracks the pointer's interaction state.
-    pub interaction: output::PointerInteraction,
-    #[cfg(feature = "selection")]
-    /// Tracks whether the pointer's multiselect is active.
-    pub multi_select: selection::PointerMultiselect,
-}
-impl PointerBundle {
-    /// Create a new pointer with the provided [`PointerId`](pointer::PointerId).
-    pub fn new(id: pointer::PointerId) -> Self {
-        PointerBundle {
-            id,
-            location: pointer::PointerLocation::default(),
-            click: pointer::PointerPress::default(),
-            interaction: output::PointerInteraction::default(),
-            #[cfg(feature = "selection")]
-            multi_select: selection::PointerMultiselect::default(),
-        }
-    }
-}
-
-/// Adds default mouse and touch pointers to your app.
-pub struct DefaultPointersPlugin;
-impl Plugin for DefaultPointersPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_startup_system(add_default_pointers);
-    }
-}
-
-/// Spawn default mouse and touch pointers.
-pub fn add_default_pointers(mut commands: Commands) {
-    commands.spawn_bundle(PointerBundle::new(pointer::PointerId::Mouse));
-    // Windows supports up to 20 touch + 10 writing
-    for i in 0..30 {
-        commands.spawn_bundle(PointerBundle::new(pointer::PointerId::Touch(i)));
-    }
-}
-
 /// Logs events for debugging
 pub struct DebugEventsPlugin;
 impl Plugin for DebugEventsPlugin {
     fn build(&self, app: &mut App) {
-        use bevy_picking_core::event_debug;
-
         app.add_system_set_to_stage(
             CoreStage::PreUpdate,
             SystemSet::new()
-                .with_system(event_debug::<output::PointerOver>)
-                .with_system(event_debug::<output::PointerOut>)
-                .with_system(event_debug::<output::PointerEnter>)
-                .with_system(event_debug::<output::PointerLeave>)
-                .with_system(event_debug::<output::PointerDown>)
-                .with_system(event_debug::<output::PointerUp>)
-                .with_system(event_debug::<output::PointerClick>)
-                //.with_system(event_debug::<output::PointerMove>)
-                .with_system(event_debug::<output::PointerCancel>)
-                .with_system(event_debug::<output::PointerDragStart>)
-                //.with_system(event_debug::<output::PointerDrag>)
-                .with_system(event_debug::<output::PointerDragEnd>)
-                .with_system(event_debug::<output::PointerDragEnter>)
-                .with_system(event_debug::<output::PointerDragOver>)
-                .with_system(event_debug::<output::PointerDragLeave>)
-                .with_system(event_debug::<output::PointerDrop>),
+                .with_system(input::debug::print)
+                .with_system(core::debug::print::<PointerOver>)
+                .with_system(core::debug::print::<output::PointerOut>)
+                .with_system(core::debug::print::<output::PointerDown>)
+                .with_system(core::debug::print::<output::PointerUp>)
+                .with_system(core::debug::print::<output::PointerClick>)
+                .with_system(core::debug::print::<output::PointerMove>)
+                .with_system(core::debug::print::<output::PointerDragStart>)
+                .with_system(core::debug::print::<output::PointerDrag>)
+                .with_system(core::debug::print::<output::PointerDragEnd>)
+                .with_system(core::debug::print::<output::PointerDragEnter>)
+                .with_system(core::debug::print::<output::PointerDragOver>)
+                .with_system(core::debug::print::<output::PointerDragLeave>)
+                .with_system(core::debug::print::<output::PointerDrop>),
         );
+
         #[cfg(feature = "selection")]
         app.add_system_set_to_stage(
             CoreStage::PreUpdate,
             SystemSet::new()
-                .with_system(event_debug::<selection::PointerSelect>)
-                .with_system(event_debug::<selection::PointerDeselect>),
+                .with_system(core::debug::print::<selection::PointerSelect>)
+                .with_system(core::debug::print::<selection::PointerDeselect>),
         );
     }
 }
