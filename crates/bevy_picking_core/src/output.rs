@@ -6,8 +6,8 @@ use std::{
 };
 
 use crate::{
-    focus::HoverMap,
-    pointer::{self, InputMove, InputPress, PointerId, PressStage},
+    focus::{HoverMap, PreviousHoverMap},
+    pointer::{self, InputMove, PointerId, PressStage},
 };
 use bevy::{
     ecs::{event::Event, system::EntityCommands},
@@ -399,10 +399,11 @@ pub struct Drop {
 /// Generates pointer events from input data
 pub fn pointer_events(
     // Input
-    pointers: Query<(&PointerId, &PointerInteraction)>, // <- what interaction happened last frame
+    pointers: Query<&PointerId>,
     mut input_presses: EventReader<pointer::InputPress>,
-    mut pointer_move_in: EventReader<pointer::InputMove>,
+    mut input_moves: EventReader<pointer::InputMove>,
     hover_map: Res<HoverMap>,
+    previous_hover_map: Res<PreviousHoverMap>,
     // Output
     mut pointer_move: EventWriter<PointerMove>,
     mut pointer_over: EventWriter<PointerOver>,
@@ -410,62 +411,48 @@ pub fn pointer_events(
     mut pointer_up: EventWriter<PointerUp>,
     mut pointer_down: EventWriter<PointerDown>,
 ) {
-    let input_presses: Vec<&InputPress> = input_presses.iter().collect();
+    // let input_presses: Vec<&InputPress> = input_presses.iter().collect();
 
-    for event in pointer_move_in.iter() {
+    for event in input_moves.iter() {
         for hover_entity in hover_map.get(&event.id()).iter().flat_map(|h| h.iter()) {
             pointer_move.send(PointerMove::new(&event.id(), hover_entity, Move))
         }
     }
 
-    for (pointer_id, pointer_interaction) in pointers.iter() {
-        let just_pressed = input_presses
-            .iter()
-            .filter_map(|click| (&click.id() == pointer_id).then_some(click.press()))
-            .rev()
-            .next();
-
+    for pointer_id in pointers.iter() {
         let pointer_entry = hover_map.get(pointer_id);
+        let prev_pointer_entry = previous_hover_map.get(pointer_id);
 
         // If the entity is hovered...
-        for hover_entity in pointer_entry.iter().flat_map(|h| h.iter()) {
+        for hovered_entity in pointer_entry.iter().flat_map(|h| h.iter()) {
             // ...but was not hovered last frame...
-            if matches!(
-                pointer_interaction.get(hover_entity),
-                Some(Interaction::None) | None
-            ) {
-                pointer_over.send(PointerOver::new(pointer_id, hover_entity, Over));
+            if !prev_pointer_entry
+                .iter()
+                .any(|e| e.contains(hovered_entity))
+            {
+                pointer_over.send(PointerOver::new(pointer_id, hovered_entity, Over));
             }
 
-            match just_pressed {
-                Some(PressStage::Down) => {
-                    pointer_down.send(PointerDown::new(pointer_id, hover_entity, Down));
+            for just_pressed in input_presses
+                .iter()
+                .filter_map(|click| (&click.id() == pointer_id).then_some(click.press()))
+            {
+                match just_pressed {
+                    PressStage::Down => {
+                        pointer_down.send(PointerDown::new(pointer_id, hovered_entity, Down))
+                    }
+                    PressStage::Up => {
+                        pointer_up.send(PointerUp::new(pointer_id, hovered_entity, Up));
+                    }
                 }
-                Some(PressStage::Up) => {
-                    pointer_up.send(PointerUp::new(pointer_id, hover_entity, Up));
-                }
-                None => (),
             }
         }
 
-        if let Some(hover_entities) = pointer_entry {
-            // If the entity was hovered last frame...
-            for entity in pointer_interaction
-                .iter()
-                .filter_map(|(entity, interaction)| {
-                    matches!(interaction, Interaction::Hovered | Interaction::Clicked)
-                        .then_some(entity)
-                })
-            {
-                // ...but is now not being hovered...
-                if !hover_entities.contains(entity) {
-                    if matches!(just_pressed, Some(PressStage::Up)) {
-                        // ...the pointer is considered just up on this entity even though it was
-                        // not hovering the entity this frame
-                        pointer_up.send(PointerUp::new(pointer_id, entity, Up));
-                    }
-                    pointer_out.send(PointerOut::new(pointer_id, entity, Out));
-                }
+        // If the entity was hovered last frame...
+        for hovered_entity in prev_pointer_entry.iter().flat_map(|h| h.iter()) {
+            // ...but is now not being hovered...
+            if !pointer_entry.iter().any(|e| e.contains(hovered_entity)) {
+                pointer_out.send(PointerOut::new(pointer_id, hovered_entity, Out));
             }
         }
     }

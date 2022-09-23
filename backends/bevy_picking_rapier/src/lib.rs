@@ -62,9 +62,7 @@ pub fn build_rays_from_pointers(
                 if let Ok(mut source) = sources.get_mut(entity) {
                     source.ray = ray;
                 } else {
-                    let mut source = RapierPickRay::default();
-                    source.ray = ray;
-                    commands.entity(entity).insert(source);
+                    commands.entity(entity).insert(RapierPickRay { ray });
                 }
             });
     }
@@ -92,7 +90,10 @@ fn update_hits(
         })
         .for_each(|(entity, depth, &id)| {
             let over_list = vec![EntityDepth { entity, depth }];
-            output.send(EntitiesUnderPointer { id, over_list });
+            output.send(EntitiesUnderPointer {
+                pointer: id,
+                over_list,
+            });
         });
 }
 

@@ -14,7 +14,7 @@ pub fn mouse_pick_events(
     mut mouse_inputs: EventReader<MouseButtonInput>,
     // Output
     mut pointer_move: EventWriter<InputMove>,
-    mut pointer_clicks: EventWriter<InputPress>,
+    mut pointer_presses: EventWriter<InputPress>,
 ) {
     for event in cursor_moves.iter() {
         pointer_move.send(InputMove::new(
@@ -36,10 +36,10 @@ pub fn mouse_pick_events(
 
         match input.state {
             ButtonState::Pressed => {
-                pointer_clicks.send(InputPress::new_down(PointerId::Mouse, button))
+                pointer_presses.send(InputPress::new_down(PointerId::Mouse, button))
             }
             ButtonState::Released => {
-                pointer_clicks.send(InputPress::new_up(PointerId::Mouse, button))
+                pointer_presses.send(InputPress::new_up(PointerId::Mouse, button))
             }
         }
     }

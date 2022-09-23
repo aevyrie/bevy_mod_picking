@@ -11,10 +11,7 @@
 #![deny(missing_docs)]
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_picking_core::{
-    pointer::{InputMove, InputPress, PointerId},
-    PickStage, PointerBundle,
-};
+use bevy_picking_core::{pointer::PointerId, PickStage, PointerBundle};
 
 pub mod debug;
 pub mod mouse;
@@ -25,22 +22,21 @@ pub struct InputPlugin;
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<InputPluginSettings>()
+            .add_startup_system(spawn_default_pointers)
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
                     .label(PickStage::Input)
+                    .with_system(touch::deactivate_pointers)
+                    .with_system(touch::activate_pointers.after(touch::deactivate_pointers))
                     .with_system(
                         touch::touch_pick_events
                             .with_run_criteria(run_if_touch)
-                            .before(spawn_new_pointers),
+                            .after(touch::activate_pointers),
                     )
-                    .with_system(
-                        mouse::mouse_pick_events
-                            .with_run_criteria(run_if_mouse)
-                            .before(spawn_new_pointers),
-                    )
-                    .with_system(spawn_new_pointers),
-            );
+                    .with_system(mouse::mouse_pick_events.with_run_criteria(run_if_mouse)),
+            )
+            .add_system_to_stage(CoreStage::Last, touch::deactivate_pointers);
     }
 }
 
@@ -58,21 +54,13 @@ impl Default for InputPluginSettings {
     }
 }
 
-/// Spawn new pointers when an event comes in for a pointer that doesn't exist yet.
-pub fn spawn_new_pointers(
-    mut commands: Commands,
-    pointers: Query<&PointerId>,
-    mut moves: EventReader<InputMove>,
-    mut press: EventReader<InputPress>,
-) {
-    moves
-        .iter()
-        .map(|e| e.id())
-        .chain(press.iter().map(|e| e.id()))
-        .filter(|id| !pointers.iter().any(|p| p == id))
-        .for_each(|id| {
-            commands.spawn_bundle(PointerBundle::new(id));
-        });
+/// Spawn default pointers for mouse and touch.
+pub fn spawn_default_pointers(mut commands: Commands) {
+    commands.spawn_bundle(PointerBundle::new(PointerId::Mouse));
+    // Windows supports up to 20 touch + 10 writing inputs simultaneously
+    for _ in 0..30 {
+        commands.spawn_bundle(PointerBundle::new(PointerId::Inactive));
+    }
 }
 
 fn run_if_touch(settings: Res<InputPluginSettings>) -> ShouldRun {

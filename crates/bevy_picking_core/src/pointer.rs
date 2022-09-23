@@ -10,22 +10,39 @@ pub enum PointerId {
     Touch(u64),
     /// The mouse pointer.
     Mouse,
+    /// A pointer that is not currently active. This is needed so pointers entities can be spawned
+    /// ahead of time, then assigned to touch inputs as needed. Without this events could be missed
+    /// because the spawn command would not take effect until the current stage is complete.
+    /// TODO: remove this once bevy "stageless" is merged.
+    Inactive,
     /// A custom, uniquely identified pointer. Useful for mocking inputs or implementing a software
     /// controlled cursor.
     Custom(Uuid),
 }
 impl PointerId {
-    /// Returns true if the pointer is a touch input
+    /// Returns true if the pointer is a touch input.
     pub fn is_touch(&self) -> bool {
         matches!(self, PointerId::Touch(_))
     }
-    /// Returns true if the pointer is the mouse
+    /// Returns true if the pointer is the mouse.
     pub fn is_mouse(&self) -> bool {
         matches!(self, PointerId::Mouse)
     }
-    /// Returns true if the pointer is a custom input
-    pub fn is_other(&self) -> bool {
+    /// Returns true if the pointer is a custom input.
+    pub fn is_custom(&self) -> bool {
         matches!(self, PointerId::Custom(_))
+    }
+    /// Returns true if the pointer is active.
+    pub fn is_active(&self) -> bool {
+        !matches!(self, PointerId::Inactive)
+    }
+    /// Returns the touch id if the pointer is a touch input.
+    pub fn get_touch_id(&self) -> Option<u64> {
+        if let PointerId::Touch(id) = self {
+            Some(*id)
+        } else {
+            None
+        }
     }
 }
 
@@ -102,11 +119,11 @@ impl InputPress {
         mut events: EventReader<InputPress>,
         mut pointers: Query<(&PointerId, &mut PointerPress)>,
     ) {
-        for press_event in events.iter() {
+        for input_press_event in events.iter() {
             pointers.for_each_mut(|(pointer_id, mut pointer)| {
-                if *pointer_id == press_event.id {
-                    let is_down = press_event.press == PressStage::Down;
-                    match press_event.button {
+                if *pointer_id == input_press_event.id {
+                    let is_down = input_press_event.press == PressStage::Down;
+                    match input_press_event.button {
                         PointerButton::Primary => pointer.primary = is_down,
                         PointerButton::Secondary => pointer.secondary = is_down,
                         PointerButton::Middle => pointer.middle = is_down,

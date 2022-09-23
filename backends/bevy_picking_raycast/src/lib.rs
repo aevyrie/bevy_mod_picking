@@ -95,7 +95,7 @@ fn update_hits(
 
         if !under_cursor.is_empty() {
             output.send(EntitiesUnderPointer {
-                id,
+                pointer: id,
                 over_list: under_cursor,
             });
         }

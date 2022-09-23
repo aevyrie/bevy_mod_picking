@@ -96,8 +96,6 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use crate::core::output::PointerOver;
-
 use bevy::{app::PluginGroupBuilder, prelude::*, ui::FocusPolicy};
 
 // Re-exports
@@ -198,7 +196,7 @@ impl Plugin for DebugEventsPlugin {
             CoreStage::PreUpdate,
             SystemSet::new()
                 .with_system(input::debug::print)
-                .with_system(core::debug::print::<PointerOver>)
+                .with_system(core::debug::print::<output::PointerOver>)
                 .with_system(core::debug::print::<output::PointerOut>)
                 .with_system(core::debug::print::<output::PointerDown>)
                 .with_system(core::debug::print::<output::PointerUp>)

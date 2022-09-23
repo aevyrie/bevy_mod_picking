@@ -33,7 +33,7 @@ pub mod prelude {
 #[derive(Debug, Clone)]
 pub struct EntitiesUnderPointer {
     /// ID of the pointer this event is for
-    pub id: prelude::PointerId,
+    pub pointer: prelude::PointerId,
     /// An unordered collection of entities and their distance (depth) from the cursor.
     pub over_list: Vec<EntityDepth>,
 }

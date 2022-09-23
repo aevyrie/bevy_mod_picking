@@ -53,6 +53,7 @@ pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<focus::HoverMap>()
+            .init_resource::<focus::PreviousHoverMap>()
             .init_resource::<output::DragMap>()
             .add_event::<output::PointerOver>()
             .add_event::<output::PointerOut>()

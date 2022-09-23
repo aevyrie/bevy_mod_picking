@@ -64,7 +64,7 @@ pub fn ui_picking(
             .collect::<Vec<_>>();
 
         output.send(EntitiesUnderPointer {
-            id: *pointer,
+            pointer: *pointer,
             over_list,
         })
     }
