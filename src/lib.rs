@@ -77,7 +77,7 @@ impl PausedForBlockers {
     }
 }
 
-#[derive(Component, Debug, Clone, Copy)]
+#[derive(Component, Debug, Clone, Copy, Reflect)]
 pub enum UpdatePicks {
     EveryFrame(Vec2),
     OnMouseEvent,
