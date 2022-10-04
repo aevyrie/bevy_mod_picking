@@ -120,8 +120,10 @@ fn build_hover_map(
     hover_map: &mut HoverMap,
 ) {
     panic!(
-        "note to self, why does the despawn message show up before the out message?
-    is the hover map not properly clearing the entry until the pointer is despawned???"
+        "note to self, why does the despawn message show up before the out message? is the hover map not properly clearing the entry until the pointer is despawned???
+
+        looks like the issue is the overmap will continue to receive pointeroverentities events from the backend until the pointer gets despawned. Need to send a pointercancel event as soon as touch is lifted, and use that when building the over map. If the cancel event is received, just delete that pointer from the map, ignoring hte backend.
+    "
     );
 
     for pointer_id in pointers.iter() {
