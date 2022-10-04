@@ -18,7 +18,7 @@ pub struct RapierPlugin;
 impl Plugin for RapierPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
-            CoreStage::First,
+            CoreStage::PreUpdate,
             SystemSet::new()
                 .label(PickStage::Backend)
                 .with_system(build_rays_from_pointers)

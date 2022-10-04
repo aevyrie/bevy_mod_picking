@@ -5,7 +5,15 @@ use bevy::{
     prelude::*,
     render::camera::RenderTarget,
 };
-use bevy_picking_core::pointer::{InputMove, InputPress, Location, PointerButton, PointerId};
+use bevy_picking_core::{
+    pointer::{InputMove, InputPress, Location, PointerButton, PointerId},
+    PointerBundle,
+};
+
+/// Spawns the default mouse pointer.
+pub fn spawn_mouse_pointer(mut commands: Commands) {
+    commands.spawn_bundle(PointerBundle::new(PointerId::Mouse));
+}
 
 /// Sends mouse pointer events to be processed by the core plugin
 pub fn mouse_pick_events(

@@ -57,7 +57,7 @@ where
     fn build(&self, app: &mut App) {
         app.init_resource::<DefaultHighlighting<T>>()
             .add_system_set_to_stage(
-                CoreStage::First,
+                CoreStage::PreUpdate,
                 SystemSet::new()
                     .after(PickStage::Focus)
                     .with_system(get_initial_highlight_asset::<T>)
@@ -193,10 +193,11 @@ pub fn update_highlight_assets<T: 'static + Highlightable + Send + Sync>(
             Interaction::Clicked => *asset = global_defaults.pressed(&h_override),
             Interaction::Hovered => *asset = global_defaults.hovered(&h_override),
             Interaction::None => {
-                *asset = if let Some(PickSelection { is_selected: true }) = selection {
-                    global_defaults.selected(&h_override)
-                } else {
-                    init_highlight.initial.to_owned()
+                *asset = match selection {
+                    Some(PickSelection { is_selected: true }) => {
+                        global_defaults.selected(&h_override)
+                    }
+                    _ => init_highlight.initial.to_owned(),
                 }
             }
         }

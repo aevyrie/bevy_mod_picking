@@ -11,7 +11,7 @@
 #![deny(missing_docs)]
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_picking_core::{pointer::PointerId, PickStage, PointerBundle};
+use bevy_picking_core::PickStage;
 
 pub mod debug;
 pub mod mouse;
@@ -22,18 +22,13 @@ pub struct InputPlugin;
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<InputPluginSettings>()
-            .add_startup_system(spawn_default_pointers)
+            .add_startup_system(mouse::spawn_mouse_pointer)
+            .add_system_to_stage(CoreStage::First, touch::activate_pointers)
             .add_system_set_to_stage(
-                CoreStage::First,
+                CoreStage::PreUpdate,
                 SystemSet::new()
                     .label(PickStage::Input)
-                    .with_system(touch::deactivate_pointers)
-                    .with_system(touch::activate_pointers.after(touch::deactivate_pointers))
-                    .with_system(
-                        touch::touch_pick_events
-                            .with_run_criteria(run_if_touch)
-                            .after(touch::activate_pointers),
-                    )
+                    .with_system(touch::touch_pick_events.with_run_criteria(run_if_touch))
                     .with_system(mouse::mouse_pick_events.with_run_criteria(run_if_mouse)),
             )
             .add_system_to_stage(CoreStage::Last, touch::deactivate_pointers);
@@ -51,15 +46,6 @@ impl Default for InputPluginSettings {
             run_mouse: true,
             run_touch: true,
         }
-    }
-}
-
-/// Spawn default pointers for mouse and touch.
-pub fn spawn_default_pointers(mut commands: Commands) {
-    commands.spawn_bundle(PointerBundle::new(PointerId::Mouse));
-    // Windows supports up to 20 touch + 10 writing inputs simultaneously
-    for _ in 0..30 {
-        commands.spawn_bundle(PointerBundle::new(PointerId::Inactive));
     }
 }
 

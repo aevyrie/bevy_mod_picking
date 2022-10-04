@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     focus::{HoverMap, PreviousHoverMap},
-    pointer::{self, InputMove, PointerId, PressStage},
+    pointer::{self, InputMove, InputPress, PointerId, PressStage},
 };
 use bevy::{
     ecs::{event::Event, system::EntityCommands},
@@ -217,13 +217,13 @@ pub trait IsPointerEvent: Send + Sync + Display + Clone + 'static {
     /// Get the target entity of this event.
     fn target(&self) -> Entity;
     /// Get the inner event entity of this event.
-    fn event(&self) -> Self::InnerEventType;
+    fn event_type(&self) -> Self::InnerEventType;
 }
 
 /// Stores the common data needed for all `PointerEvent`s.
 #[derive(Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct PointerEvent<E: Send + Sync + Clone + Reflect> {
-    id: PointerId,
+    pointer_id: PointerId,
     target: Entity,
     event: E,
 }
@@ -234,21 +234,21 @@ impl<E: Clone + Send + Sync + std::fmt::Debug + Reflect + 'static> IsPointerEven
 
     fn new(id: &PointerId, target: &Entity, event: E) -> Self {
         Self {
-            id: *id,
+            pointer_id: *id,
             target: *target,
             event,
         }
     }
 
     fn pointer_id(&self) -> PointerId {
-        self.id
+        self.pointer_id
     }
 
     fn target(&self) -> Entity {
         self.target
     }
 
-    fn event(&self) -> Self::InnerEventType {
+    fn event_type(&self) -> Self::InnerEventType {
         self.event.to_owned()
     }
 }
@@ -274,7 +274,7 @@ pub fn event_bubbling<E: Clone + Send + Sync + std::fmt::Debug + Reflect + 'stat
         while let Ok((event_listener, parent)) = listeners.get(listener) {
             if let Some(event_listener) = event_listener {
                 let event_data = PointerEventData {
-                    id: event.id,
+                    id: event.pointer_id,
                     listener,
                     target: event.target,
                     event: event.event.clone(),
@@ -301,9 +301,13 @@ pub fn event_bubbling<E: Clone + Send + Sync + std::fmt::Debug + Reflect + 'stat
 }
 impl<E: Clone + Send + Sync + Reflect> std::fmt::Display for PointerEvent<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Target: {:?}, Pointer: {:?}", self.target, self.id)
+        write!(f, "Target: {:?}, ID: {:?}", self.target, self.pointer_id)
     }
 }
+
+/// Fires when a pointer is no longer available.
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
+pub struct PointerCancel;
 
 /// Fires when a the pointer crosses into the bounds of the `target` entity.
 pub type PointerOver = PointerEvent<Over>;
@@ -399,8 +403,7 @@ pub struct Drop {
 /// Generates pointer events from input data
 pub fn pointer_events(
     // Input
-    pointers: Query<&PointerId>,
-    mut input_presses: EventReader<pointer::InputPress>,
+    mut input_presses: EventReader<InputPress>,
     mut input_moves: EventReader<pointer::InputMove>,
     hover_map: Res<HoverMap>,
     previous_hover_map: Res<PreviousHoverMap>,
@@ -411,49 +414,68 @@ pub fn pointer_events(
     mut pointer_up: EventWriter<PointerUp>,
     mut pointer_down: EventWriter<PointerDown>,
 ) {
-    // let input_presses: Vec<&InputPress> = input_presses.iter().collect();
-
-    for event in input_moves.iter() {
-        for hover_entity in hover_map.get(&event.id()).iter().flat_map(|h| h.iter()) {
-            pointer_move.send(PointerMove::new(&event.id(), hover_entity, Move))
+    for move_event in input_moves.iter() {
+        for hovered_entity in hover_map
+            .get(&move_event.pointer_id())
+            .iter()
+            .flat_map(|h| h.iter())
+        {
+            pointer_move.send(PointerMove::new(
+                &move_event.pointer_id(),
+                hovered_entity,
+                Move,
+            ))
         }
     }
 
-    for pointer_id in pointers.iter() {
-        let pointer_entry = hover_map.get(pointer_id);
-        let prev_pointer_entry = previous_hover_map.get(pointer_id);
-
-        // If the entity is hovered...
-        for hovered_entity in pointer_entry.iter().flat_map(|h| h.iter()) {
-            // ...but was not hovered last frame...
-            if !prev_pointer_entry
-                .iter()
-                .any(|e| e.contains(hovered_entity))
-            {
-                pointer_over.send(PointerOver::new(pointer_id, hovered_entity, Over));
-            }
-
-            for just_pressed in input_presses
-                .iter()
-                .filter_map(|click| (&click.id() == pointer_id).then_some(click.press()))
-            {
-                match just_pressed {
-                    PressStage::Down => {
-                        pointer_down.send(PointerDown::new(pointer_id, hovered_entity, Down))
-                    }
-                    PressStage::Up => {
-                        pointer_up.send(PointerUp::new(pointer_id, hovered_entity, Up));
-                    }
-                }
+    for press_event in input_presses.iter() {
+        for hovered_entity in hover_map
+            .get(&press_event.pointer_id())
+            .iter()
+            .flat_map(|h| h.iter())
+        {
+            match press_event.press() {
+                PressStage::Down => pointer_down.send(PointerDown::new(
+                    &press_event.pointer_id(),
+                    hovered_entity,
+                    Down,
+                )),
+                PressStage::Up => pointer_up.send(PointerUp::new(
+                    &press_event.pointer_id(),
+                    hovered_entity,
+                    Up,
+                )),
             }
         }
+    }
 
-        // If the entity was hovered last frame...
-        for hovered_entity in prev_pointer_entry.iter().flat_map(|h| h.iter()) {
-            // ...but is now not being hovered...
-            if !pointer_entry.iter().any(|e| e.contains(hovered_entity)) {
-                pointer_out.send(PointerOut::new(pointer_id, hovered_entity, Out));
-            }
+    // If the entity is hovered...
+    for (pointer_id, hovered_entity) in hover_map
+        .iter()
+        .flat_map(|(p, h)| h.iter().map(|h| (p.to_owned(), h)))
+    {
+        // ...but was not hovered last frame...
+        if !previous_hover_map
+            .get(&pointer_id)
+            .iter()
+            .any(|e| e.contains(hovered_entity))
+        {
+            pointer_over.send(PointerOver::new(&pointer_id, hovered_entity, Over));
+        }
+    }
+
+    // If the entity was hovered last frame...
+    for (pointer_id, hovered_entity) in previous_hover_map
+        .iter()
+        .flat_map(|(p, h)| h.iter().map(|h| (p.to_owned(), h)))
+    {
+        // ...but is now not being hovered...
+        if !hover_map
+            .get(&pointer_id)
+            .iter()
+            .any(|e| e.contains(hovered_entity))
+        {
+            pointer_out.send(PointerOut::new(&pointer_id, hovered_entity, Out));
         }
     }
 }
@@ -472,14 +494,14 @@ pub fn interactions_from_events(
     for event in pointer_over.iter() {
         update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);
     }
-    for event in pointer_out.iter() {
-        update_interactions(event, Interaction::None, &mut pointers, &mut interact);
-    }
     for event in pointer_down.iter() {
         update_interactions(event, Interaction::Clicked, &mut pointers, &mut interact);
     }
     for event in pointer_up.iter() {
         update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);
+    }
+    for event in pointer_out.iter() {
+        update_interactions(event, Interaction::None, &mut pointers, &mut interact);
     }
 }
 
@@ -491,7 +513,7 @@ fn update_interactions<E: Clone + Send + Sync + Reflect>(
 ) {
     if let Some(mut interaction_map) = pointer_interactions
         .iter_mut()
-        .find_map(|(id, interaction)| (*id == event.id).then_some(interaction))
+        .find_map(|(id, interaction)| (*id == event.pointer_id).then_some(interaction))
     {
         interaction_map.insert(event.target, new_interaction);
         if let Ok(mut interaction) = entity_interactions.get_mut(event.target) {
@@ -514,7 +536,7 @@ pub fn send_click_and_drag_events(
     mut pointer_up: EventReader<PointerUp>,
     mut pointer_move: EventReader<PointerMove>,
     mut input_move: EventReader<InputMove>,
-    mut input_presses: EventReader<pointer::InputPress>,
+    mut input_presses: EventReader<InputPress>,
     // Locals
     mut down_map: Local<HashMap<PointerId, Option<Entity>>>,
     // Output
@@ -544,9 +566,13 @@ pub fn send_click_and_drag_events(
 
     // Triggers during movement even if not over an entity
     for move_event in input_move.iter() {
-        if let Some(Some(_)) = down_map.get(&move_event.id()) {
-            if let Some(Some(drag_entity)) = drag_map.get(&move_event.id()) {
-                pointer_drag.send(PointerDrag::new(&move_event.id(), drag_entity, Drag))
+        if let Some(Some(_)) = down_map.get(&move_event.pointer_id()) {
+            if let Some(Some(drag_entity)) = drag_map.get(&move_event.pointer_id()) {
+                pointer_drag.send(PointerDrag::new(
+                    &move_event.pointer_id(),
+                    drag_entity,
+                    Drag,
+                ))
             }
         }
     }
@@ -578,10 +604,14 @@ pub fn send_click_and_drag_events(
 
     for press in input_presses.iter() {
         if press.press() == pointer::PressStage::Up {
-            if let Some(Some(drag_entity)) = drag_map.insert(press.id(), None) {
-                pointer_drag_end.send(PointerDragEnd::new(&press.id(), &drag_entity, DragEnd));
+            if let Some(Some(drag_entity)) = drag_map.insert(press.pointer_id(), None) {
+                pointer_drag_end.send(PointerDragEnd::new(
+                    &press.pointer_id(),
+                    &drag_entity,
+                    DragEnd,
+                ));
             }
-            down_map.insert(press.id(), None);
+            down_map.insert(press.pointer_id(), None);
         }
     }
 }

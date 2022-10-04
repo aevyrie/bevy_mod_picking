@@ -193,7 +193,7 @@ pub struct DebugEventsPlugin;
 impl Plugin for DebugEventsPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
-            CoreStage::PreUpdate,
+            CoreStage::Update,
             SystemSet::new()
                 .with_system(input::debug::print)
                 .with_system(core::debug::print::<output::PointerOver>)
@@ -213,7 +213,7 @@ impl Plugin for DebugEventsPlugin {
 
         #[cfg(feature = "selection")]
         app.add_system_set_to_stage(
-            CoreStage::PreUpdate,
+            CoreStage::Update,
             SystemSet::new()
                 .with_system(core::debug::print::<selection::PointerSelect>)
                 .with_system(core::debug::print::<selection::PointerDeselect>),

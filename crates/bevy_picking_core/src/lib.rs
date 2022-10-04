@@ -24,7 +24,8 @@ pub enum PickStage {
     Input,
     /// Reads inputs and produces [`backend::EntitiesUnderPointer`]s.
     Backend,
-    /// Reads [`backend::EntitiesUnderPointer`]s, and updates focus, selection, and highlighting states.
+    /// Reads [`backend::EntitiesUnderPointer`]s, and updates focus, selection, and highlighting
+    /// states.
     Focus,
     /// Updates event listeners and bubbles [`output::PointerEvent`]s
     EventListeners,
@@ -38,7 +39,7 @@ impl Plugin for CorePlugin {
             .add_event::<pointer::InputMove>()
             .add_event::<backend::EntitiesUnderPointer>()
             .add_system_set_to_stage(
-                CoreStage::First,
+                CoreStage::PreUpdate,
                 SystemSet::new()
                     .after(PickStage::Input)
                     .before(PickStage::Backend)
@@ -55,6 +56,7 @@ impl Plugin for InteractionPlugin {
         app.init_resource::<focus::HoverMap>()
             .init_resource::<focus::PreviousHoverMap>()
             .init_resource::<output::DragMap>()
+            .add_event::<output::PointerCancel>()
             .add_event::<output::PointerOver>()
             .add_event::<output::PointerOut>()
             .add_event::<output::PointerDown>()
@@ -69,7 +71,7 @@ impl Plugin for InteractionPlugin {
             .add_event::<output::PointerDragLeave>()
             .add_event::<output::PointerDrop>()
             .add_system_set_to_stage(
-                CoreStage::First,
+                CoreStage::PreUpdate,
                 SystemSet::new()
                     .after(PickStage::Backend)
                     .label(PickStage::Focus)
@@ -82,7 +84,7 @@ impl Plugin for InteractionPlugin {
                     .with_system(send_drag_over_events.after(send_click_and_drag_events)),
             )
             .add_system_set_to_stage(
-                CoreStage::First,
+                CoreStage::PreUpdate,
                 SystemSet::new()
                     .after(PickStage::Focus)
                     .label(PickStage::EventListeners)

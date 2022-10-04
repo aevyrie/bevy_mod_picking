@@ -1,6 +1,9 @@
 //! Provides sensible defaults for touch picking inputs.
 
-use bevy::{prelude::*, render::camera::RenderTarget, window::WindowId};
+use bevy::{
+    input::touch::TouchPhase, prelude::*, render::camera::RenderTarget, utils::HashSet,
+    window::WindowId,
+};
 use bevy_picking_core::{
     pointer::{InputMove, InputPress, Location, PointerButton, PointerId},
     PointerBundle,
@@ -9,7 +12,7 @@ use bevy_picking_core::{
 /// Sends touch pointer events to be consumed by the core plugin
 pub fn touch_pick_events(
     // Input
-    touches: Res<Touches>,
+    mut touches: EventReader<TouchInput>,
     windows: Res<Windows>,
     // Output
     mut input_moves: EventWriter<InputMove>,
@@ -21,54 +24,42 @@ pub fn touch_pick_events(
         .next()
         .unwrap_or_else(WindowId::primary);
 
-    for touch in touches.iter_just_pressed() {
-        let pointer = PointerId::Touch(touch.id());
-        input_presses.send(InputPress::new_down(pointer, PointerButton::Primary));
-    }
     for touch in touches.iter() {
-        let pointer = PointerId::Touch(touch.id());
-        if touch.delta() != Vec2::ZERO {
-            let pos = touch.position();
-            let height = windows.primary().height();
-            let location = Location {
-                target: RenderTarget::Window(active_window),
-                position: Vec2::new(pos.x, height - pos.y),
-            };
-            input_moves.send(InputMove::new(pointer, location))
+        match touch.phase {
+            TouchPhase::Started => {
+                let pointer = PointerId::Touch(touch.id);
+                input_presses.send(InputPress::new_down(pointer, PointerButton::Primary));
+            }
+            TouchPhase::Moved => {
+                let pointer = PointerId::Touch(touch.id);
+                let pos = touch.position;
+                let height = windows.primary().height();
+                let location = Location {
+                    target: RenderTarget::Window(active_window),
+                    position: Vec2::new(pos.x, height - pos.y),
+                };
+                input_moves.send(InputMove::new(pointer, location))
+            }
+            TouchPhase::Ended | TouchPhase::Cancelled => {
+                let pointer = PointerId::Touch(touch.id);
+                input_presses.send(InputPress::new_up(pointer, PointerButton::Primary));
+            }
         }
-    }
-    for touch in touches
-        .iter_just_released()
-        .chain(touches.iter_just_cancelled())
-    {
-        let pointer = PointerId::Touch(touch.id());
-        input_presses.send(InputPress::new_up(pointer, PointerButton::Primary));
     }
 }
 
-/// Activates new touch pointers
-pub fn activate_pointers(
-    mut commands: Commands,
-    mut pointers: Query<&mut PointerId>,
-    touches: Res<Touches>,
-) {
-    let mut new_pointers: Vec<_> = touches.iter_just_pressed().collect();
-
-    pointers
-        .iter_mut()
-        .filter(|p| **p == PointerId::Inactive)
-        .for_each(|mut p| {
-            if let Some(t) = new_pointers.pop() {
-                *p = PointerId::Touch(t.id());
-            }
-        });
-
-    for touch in new_pointers.drain(..) {
-        warn!(
-            "Spawning a touch pointer. This can result in a missed pointer down event.
-        Ensure there are enough inactive pointers spawned at startup."
-        );
-        commands.spawn_bundle(PointerBundle::new(PointerId::Touch(touch.id())));
+/// Activates new touch pointers.
+///
+/// Care must be taken to ensure pointers are spawned without causing a stage delay.
+pub fn activate_pointers(mut commands: Commands, mut touches: EventReader<TouchInput>) {
+    for pointer_bundle in touches.iter().filter_map(|touch| {
+        touch
+            .phase
+            .eq(&TouchPhase::Started)
+            .then_some(PointerBundle::new(PointerId::Touch(touch.id)))
+    }) {
+        info!("Spawning pointer {:?}", pointer_bundle.id);
+        commands.spawn_bundle(pointer_bundle);
     }
 }
 
@@ -77,25 +68,26 @@ pub fn activate_pointers(
 /// Because each new touch gets assigned a new ID, we need to remove the pointers associated with
 /// touches that are no longer active.
 pub fn deactivate_pointers(
-    mut pointers: Query<&mut PointerId>,
-    mut inactive_pointers: Local<Vec<u64>>,
-    touches: Res<Touches>,
+    mut commands: Commands,
+    mut despawn_list: Local<HashSet<(Entity, PointerId)>>,
+    pointers: Query<(Entity, &PointerId)>,
+    mut touches: EventReader<TouchInput>,
 ) {
-    // Deactivate touch pointers that were released or cancelled *last* frame.
-    for mut pointer in &mut pointers {
-        if pointer
-            .get_touch_id()
-            .iter()
-            .any(|id| inactive_pointers.contains(id))
-        {
-            *pointer = PointerId::Inactive;
+    // A hash set is used to prevent despawning the same entity twice.
+    for (entity, pointer) in despawn_list.drain() {
+        info!("Despawning pointer {:?}", pointer);
+        commands.entity(entity).despawn_recursive();
+    }
+    for touch in touches.iter() {
+        match touch.phase {
+            TouchPhase::Ended | TouchPhase::Cancelled => {
+                for (entity, pointer) in &pointers {
+                    if pointer.get_touch_id() == Some(touch.id) {
+                        despawn_list.insert((entity, *pointer));
+                    }
+                }
+            }
+            _ => {}
         }
     }
-
-    inactive_pointers.clear();
-
-    touches
-        .iter_just_released()
-        .chain(touches.iter_just_cancelled())
-        .for_each(|touch| inactive_pointers.push(touch.id()));
 }

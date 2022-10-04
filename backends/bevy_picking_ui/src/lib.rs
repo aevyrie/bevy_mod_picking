@@ -18,7 +18,7 @@ pub struct UiPickingPlugin;
 impl Plugin for UiPickingPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
-            CoreStage::First,
+            CoreStage::PreUpdate,
             SystemSet::new()
                 .label(PickStage::Backend)
                 .with_system(ui_picking),

@@ -10,11 +10,6 @@ pub enum PointerId {
     Touch(u64),
     /// The mouse pointer.
     Mouse,
-    /// A pointer that is not currently active. This is needed so pointers entities can be spawned
-    /// ahead of time, then assigned to touch inputs as needed. Without this events could be missed
-    /// because the spawn command would not take effect until the current stage is complete.
-    /// TODO: remove this once bevy "stageless" is merged.
-    Inactive,
     /// A custom, uniquely identified pointer. Useful for mocking inputs or implementing a software
     /// controlled cursor.
     Custom(Uuid),
@@ -31,10 +26,6 @@ impl PointerId {
     /// Returns true if the pointer is a custom input.
     pub fn is_custom(&self) -> bool {
         matches!(self, PointerId::Custom(_))
-    }
-    /// Returns true if the pointer is active.
-    pub fn is_active(&self) -> bool {
-        !matches!(self, PointerId::Inactive)
     }
     /// Returns the touch id if the pointer is a touch input.
     pub fn get_touch_id(&self) -> Option<u64> {
@@ -77,7 +68,7 @@ impl PointerPress {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InputPress {
     /// ID of the pointer for this event.
-    id: PointerId,
+    pointer_id: PointerId,
     /// Stage of the button press.
     press: PressStage,
     /// Identifies the pointer button changing in this event.
@@ -87,7 +78,7 @@ impl InputPress {
     /// Create a new pointer button down event.
     pub fn new_down(id: PointerId, button: PointerButton) -> InputPress {
         Self {
-            id,
+            pointer_id: id,
             press: PressStage::Down,
             button,
         }
@@ -96,7 +87,7 @@ impl InputPress {
     /// Create a new pointer button up event.
     pub fn new_up(id: PointerId, button: PointerButton) -> InputPress {
         Self {
-            id,
+            pointer_id: id,
             press: PressStage::Up,
             button,
         }
@@ -121,7 +112,7 @@ impl InputPress {
     ) {
         for input_press_event in events.iter() {
             pointers.for_each_mut(|(pointer_id, mut pointer)| {
-                if *pointer_id == input_press_event.id {
+                if *pointer_id == input_press_event.pointer_id {
                     let is_down = input_press_event.press == PressStage::Down;
                     match input_press_event.button {
                         PointerButton::Primary => pointer.primary = is_down,
@@ -134,8 +125,8 @@ impl InputPress {
     }
 
     /// Gets the [`PointerId`] of the event.
-    pub fn id(&self) -> PointerId {
-        self.id
+    pub fn pointer_id(&self) -> PointerId {
+        self.pointer_id
     }
 
     /// Gets the [`PressStage`] of the event.
@@ -185,13 +176,16 @@ impl PointerLocation {
 /// Pointer input event for pointer moves. Fires when a pointer changes location.
 #[derive(Debug, Clone)]
 pub struct InputMove {
-    id: PointerId,
+    pointer_id: PointerId,
     location: Location,
 }
 impl InputMove {
     /// Create a new [`InputMove`] event.
     pub fn new(id: PointerId, location: Location) -> InputMove {
-        Self { id, location }
+        Self {
+            pointer_id: id,
+            location,
+        }
     }
 
     /// Receives [`InputMove`] events and updates corresponding [`PointerLocation`] components.
@@ -201,7 +195,7 @@ impl InputMove {
     ) {
         for event_pointer in events.iter() {
             pointers.for_each_mut(|(id, mut pointer)| {
-                if *id == event_pointer.id {
+                if *id == event_pointer.pointer_id {
                     pointer.location = Some(event_pointer.location.to_owned());
                 }
             })
@@ -209,8 +203,8 @@ impl InputMove {
     }
 
     /// Returns the [`PointerId`] of this event.
-    pub fn id(&self) -> PointerId {
-        self.id
+    pub fn pointer_id(&self) -> PointerId {
+        self.pointer_id
     }
 
     /// Returns the [`Location`] of this event.

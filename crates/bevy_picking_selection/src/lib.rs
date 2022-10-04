@@ -21,7 +21,7 @@ impl Plugin for SelectionPlugin {
         app.add_event::<PointerSelect>()
             .add_event::<PointerDeselect>()
             .add_system_set_to_stage(
-                CoreStage::First,
+                CoreStage::PreUpdate,
                 SystemSet::new()
                     .after(PickStage::Focus)
                     .before(PickStage::EventListeners)
@@ -30,7 +30,7 @@ impl Plugin for SelectionPlugin {
                     .with_system(update_state_from_events.after(send_selection_events)),
             )
             .add_system_set_to_stage(
-                CoreStage::First,
+                CoreStage::PreUpdate,
                 SystemSet::new()
                     .after(PickStage::Focus)
                     .label(PickStage::EventListeners)
