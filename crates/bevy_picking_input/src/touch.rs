@@ -73,11 +73,6 @@ pub fn deactivate_pointers(
     pointers: Query<(Entity, &PointerId)>,
     mut touches: EventReader<TouchInput>,
 ) {
-    // A hash set is used to prevent despawning the same entity twice.
-    for (entity, pointer) in despawn_list.drain() {
-        info!("Despawning pointer {:?}", pointer);
-        commands.entity(entity).despawn_recursive();
-    }
     for touch in touches.iter() {
         match touch.phase {
             TouchPhase::Ended | TouchPhase::Cancelled => {
@@ -89,5 +84,10 @@ pub fn deactivate_pointers(
             }
             _ => {}
         }
+    }
+    // A hash set is used to prevent despawning the same entity twice.
+    for (entity, pointer) in despawn_list.drain() {
+        info!("Despawning pointer {:?}", pointer);
+        commands.entity(entity).despawn_recursive();
     }
 }
