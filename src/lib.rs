@@ -97,14 +97,16 @@
 #![deny(missing_docs)]
 
 use bevy::{app::PluginGroupBuilder, prelude::*, ui::FocusPolicy};
+use bevy_picking_core::backend::PickingBackend;
 
 // Re-exports
 pub use bevy_picking_core::{self as core, backend, focus, output, pointer};
-pub use bevy_picking_input::{self as input};
 
 // Optional, feature-gated exports
 #[cfg(feature = "highlight")]
 pub use bevy_picking_highlight as highlight;
+#[cfg(feature = "input")]
+pub use bevy_picking_input::{self as input};
 #[cfg(feature = "selection")]
 pub use bevy_picking_selection as selection;
 
@@ -157,8 +159,41 @@ pub mod prelude {
 
 /// A "batteries-included" set of plugins that adds everything needed for picking, highlighting, and
 /// multiselect.
+///
+/// You will need to add at least one backend to construct this plugin group.
 pub struct DefaultPickingPlugins;
-impl PluginGroup for DefaultPickingPlugins {
+impl DefaultPickingPlugins {
+    /// Construct a set of picking plugins with the supplied backend.
+    pub fn with_backend(backend: impl PickingBackend + 'static) -> DefaultPickingPluginsBuilder {
+        let mut result = DefaultPickingPluginsBuilder {
+            backends: Vec::new(),
+        };
+        result.backends.push(Box::new(backend));
+        result
+    }
+}
+
+/// A type that facilitates building picking plugin groups correctly. [`DefaultPickingPlugins`] does
+/// not implement [`PluginGroup`], so it cannot be added to a bevy app with `.add_plugins()`. The
+/// type [`DefaultPickingPluginsBuilder`] *does* implement `PluginGroups` but can only be created
+/// using the `with_backend()` functions. This ensures that when a user is adding this plugin, the
+/// type system will guarantee thy have added at least one picking backend.
+pub struct DefaultPickingPluginsBuilder {
+    backends: Vec<Box<dyn PickingBackend>>,
+}
+
+impl DefaultPickingPluginsBuilder {
+    /// Adds a backend
+    pub fn with_backend(
+        mut self,
+        backend: impl PickingBackend + 'static,
+    ) -> DefaultPickingPluginsBuilder {
+        self.backends.push(Box::new(backend));
+        self
+    }
+}
+
+impl PluginGroup for DefaultPickingPluginsBuilder {
     fn build(&mut self, group: &mut PluginGroupBuilder) {
         group
             .add(core::CorePlugin)
@@ -170,6 +205,10 @@ impl PluginGroup for DefaultPickingPlugins {
         group.add(selection::SelectionPlugin);
         #[cfg(feature = "highlight")]
         highlight::HighlightingPlugins.build(group);
+
+        for mut backend in self.backends.drain(..) {
+            backend.build(group);
+        }
     }
 }
 
@@ -188,14 +227,46 @@ pub struct PickableBundle {
     pub highlight: highlight::PickHighlight,
 }
 
+/// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
+/// being an entity.
+///
+/// `Mouse` and `Touch` pointers are automatically spawned as needed. Use this bundle if you are
+/// spawning a custom `PointerId::Custom` pointer, either for testing, or as a software controlled
+/// pointer, or if you are replacing or extending the default touch and mouse inputs.
+#[derive(Bundle)]
+pub struct PointerBundle {
+    #[bundle]
+    /// The core pointer components bundle
+    pub core: core::PointerCoreBundle,
+    #[cfg(feature = "selection")]
+    /// Tracks whether the pointer's multiselect is active.
+    pub multi_select: selection::PointerMultiselect,
+}
+
+impl PointerBundle {
+    /// Create a new pointer with the provided [`PointerId`](pointer::PointerId).
+    pub fn new(id: pointer::PointerId) -> Self {
+        PointerBundle {
+            core: core::PointerCoreBundle::new(id),
+            #[cfg(feature = "selection")]
+            multi_select: selection::PointerMultiselect::default(),
+        }
+    }
+}
+
 /// Logs events for debugging
 pub struct DebugEventsPlugin;
 impl Plugin for DebugEventsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
+        app.add_system_to_stage(
             CoreStage::Update,
+            input::debug::print
+                .before(core::PickStage::Backend)
+                .before("PointerOutputDebug"),
+        )
+        .add_system_set_to_stage(
+            CoreStage::PostUpdate,
             SystemSet::new()
-                .with_system(input::debug::print)
                 .with_system(core::debug::print::<output::PointerOver>)
                 .with_system(core::debug::print::<output::PointerOut>)
                 .with_system(core::debug::print::<output::PointerDown>)
@@ -208,7 +279,8 @@ impl Plugin for DebugEventsPlugin {
                 .with_system(core::debug::print::<output::PointerDragEnter>)
                 .with_system(core::debug::print::<output::PointerDragOver>)
                 .with_system(core::debug::print::<output::PointerDragLeave>)
-                .with_system(core::debug::print::<output::PointerDrop>),
+                .with_system(core::debug::print::<output::PointerDrop>)
+                .label("PointerOutputDebug"),
         );
 
         #[cfg(feature = "selection")]

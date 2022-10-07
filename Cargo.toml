@@ -3,8 +3,8 @@ name = "bevy_mod_picking"
 version = "0.6.0"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 edition = "2021"
-license = "MIT"
-description = "A 3D mouse picking and raycasting plugin for Bevy."
+license = "MIT OR Apache-2.0"
+description = "A modular picking plugin for Bevy."
 repository = "https://github.com/aevyrie/bevy_mod_picking/"
 keywords = ["gamedev", "picking", "bevy", "raycast", "input"]
 categories = ["game-engines", "rendering"]
@@ -17,7 +17,7 @@ members = ["crates/*", "backends/*"]
 bevy = { version = "0.8", default-features = false, features = ["bevy_render"] }
 # Local
 bevy_picking_core = { path = "crates/bevy_picking_core" }
-bevy_picking_input = { path = "crates/bevy_picking_input" }
+bevy_picking_input = { optional = true, path = "crates/bevy_picking_input" }
 bevy_picking_selection = { optional = true, path = "crates/bevy_picking_selection" }
 bevy_picking_highlight = { optional = true, path = "crates/bevy_picking_highlight" }
 bevy_picking_raycast = { optional = true, path = "backends/bevy_picking_raycast" }
@@ -34,12 +34,18 @@ bevy = { version = "0.8", default-features = false, features = [
   "bevy_scene",
   "png",
 ] }
-bevy_rapier3d = "0.16"
-bevy_mod_picking = { path = "../bevy_mod_picking", features = ["all"] }
+bevy_rapier3d = "0.17"
 
 [features]
-default = ["highlight", "selection", "backend_raycast", "backend_bevy_ui"]
+default = [
+  "input",
+  "highlight",
+  "selection",
+  "backend_raycast",
+  "backend_bevy_ui",
+]
 all = [
+  "input",
   "highlight",
   "selection",
   "backend_raycast",
@@ -47,6 +53,7 @@ all = [
   "backend_rapier",
   "backend_shader",
 ]
+input = ["bevy_picking_input"]
 highlight = ["bevy_picking_highlight"]
 selection = ["bevy_picking_selection"]
 backend_raycast = ["bevy_picking_raycast"]

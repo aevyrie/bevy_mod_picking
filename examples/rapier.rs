@@ -1,3 +1,7 @@
+//! Demonstrates how to use the rapier picking backend.
+//!
+//! You must enable the `backend_rapier` or `all` features to run the example.
+
 use bevy::{prelude::*, window::PresentMode};
 use bevy_mod_picking::prelude::*;
 use bevy_rapier3d::prelude::*;
@@ -9,9 +13,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
-        .add_plugin(RapierPlugin) // <- Adds the `rapier` picking backend.
-        .add_plugin(DebugEventsPlugin) // <- Adds debug event logging.
+        .add_plugins(DefaultPickingPlugins::with_backend(RapierPlugin))
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin::default())
         .add_startup_system(setup)

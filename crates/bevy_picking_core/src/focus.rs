@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{backend, pointer::PointerId};
+use crate::{backend, output::PointerCancel, pointer::PointerId};
 use bevy::{
     prelude::*,
     render::view::{Layer, RenderLayers},
@@ -41,6 +41,7 @@ pub fn update_focus(
     render_layers: Query<&RenderLayers>,
     pointers: Query<&PointerId>,
     mut under_pointer: EventReader<backend::EntitiesUnderPointer>,
+    mut cancellations: EventReader<PointerCancel>,
     // Local
     mut over_map: Local<OverMap>,
     // Output
@@ -53,7 +54,12 @@ pub fn update_focus(
         &mut over_map,
         &pointers,
     );
-    build_over_map(render_layers, &mut under_pointer, &mut over_map);
+    build_over_map(
+        render_layers,
+        &mut under_pointer,
+        &mut over_map,
+        &mut cancellations,
+    );
     build_hover_map(&pointers, focus, &over_map, &mut hover_map);
 }
 
@@ -89,8 +95,14 @@ fn build_over_map(
     render_layers: Query<&RenderLayers>,
     backend_events: &mut EventReader<backend::EntitiesUnderPointer>,
     pointer_over_map: &mut Local<OverMap>,
+    pointer_cancel: &mut EventReader<PointerCancel>,
 ) {
-    for entities_under_pointer in backend_events.iter() {
+    let cancelled_pointers: Vec<PointerId> = pointer_cancel.iter().map(|p| p.pointer_id).collect();
+
+    for entities_under_pointer in backend_events
+        .iter()
+        .filter(|e| !cancelled_pointers.contains(&e.pointer))
+    {
         let layer_map = pointer_over_map
             .entry(entities_under_pointer.pointer)
             .or_insert_with(BTreeMap::new);
@@ -119,13 +131,6 @@ fn build_hover_map(
     // Output
     hover_map: &mut HoverMap,
 ) {
-    panic!(
-        "note to self, why does the despawn message show up before the out message? is the hover map not properly clearing the entry until the pointer is despawned???
-
-        looks like the issue is the overmap will continue to receive pointeroverentities events from the backend until the pointer gets despawned. Need to send a pointercancel event as soon as touch is lifted, and use that when building the over map. If the cancel event is received, just delete that pointer from the map, ignoring hte backend.
-    "
-    );
-
     for pointer_id in pointers.iter() {
         let pointer_entity_set = hover_map.entry(*pointer_id).or_insert_with(HashSet::new);
         if let Some(layer_map) = over_map.get(pointer_id) {

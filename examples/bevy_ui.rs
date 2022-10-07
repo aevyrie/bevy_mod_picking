@@ -4,8 +4,7 @@ use bevy_mod_picking::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins)
-        .add_plugin(UiPickingPlugin)
+        .add_plugins(DefaultPickingPlugins::with_backend(UiPickingPlugin))
         .add_plugin(DebugEventsPlugin)
         .add_startup_system(setup)
         .add_system(button_system)

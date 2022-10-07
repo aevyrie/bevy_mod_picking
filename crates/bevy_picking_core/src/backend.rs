@@ -19,10 +19,15 @@ use bevy::prelude::*;
 
 /// Common imports for implementing a picking backend.
 pub mod prelude {
-    pub use super::{EntitiesUnderPointer, EntityDepth};
-    pub use crate::pointer::{PointerId, PointerLocation};
-    pub use crate::PickStage;
+    pub use super::{EntitiesUnderPointer, EntityDepth, PickingBackend};
+    pub use crate::{
+        pointer::{PointerId, PointerLocation},
+        PickStage,
+    };
 }
+
+/// Implement this trait for a group of plugins to make them useable as a picking backend.
+pub trait PickingBackend: bevy::app::PluginGroup {}
 
 /// An event produced by a picking backend, describing the entities under a pointer in an unordered
 /// list.

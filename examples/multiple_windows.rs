@@ -8,9 +8,7 @@ use bevy_mod_picking::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins) // <- Adds Picking
-        .add_plugin(RaycastPlugin)
-        .add_plugin(DebugEventsPlugin) // <- Adds debug event logging.
+        .add_plugins(DefaultPickingPlugins::with_backend(RaycastPlugin))
         .add_startup_system(setup)
         .add_system(bevy::window::close_on_esc)
         .add_system(make_pickable)

@@ -15,6 +15,12 @@ pub mod prelude {
 
 /// Adds picking support for [`bevy_ui`](bevy::ui)
 pub struct UiPickingPlugin;
+impl PickingBackend for UiPickingPlugin {}
+impl PluginGroup for UiPickingPlugin {
+    fn build(&mut self, group: &mut bevy::app::PluginGroupBuilder) {
+        group.add(Self);
+    }
+}
 impl Plugin for UiPickingPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(

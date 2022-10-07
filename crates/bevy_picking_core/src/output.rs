@@ -301,13 +301,20 @@ pub fn event_bubbling<E: Clone + Send + Sync + std::fmt::Debug + Reflect + 'stat
 }
 impl<E: Clone + Send + Sync + Reflect> std::fmt::Display for PointerEvent<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Target: {:?}, ID: {:?}", self.target, self.pointer_id)
+        write!(
+            f,
+            "Target: \x1b[1;31m{:?}\x1b[1;31m, ID: \x1b[1;31m{:?}\x1b[1;31m",
+            self.target, self.pointer_id
+        )
     }
 }
 
 /// Fires when a pointer is no longer available.
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct PointerCancel;
+pub struct PointerCancel {
+    /// ID of the pointer that was cancelled.
+    pub pointer_id: PointerId,
+}
 
 /// Fires when a the pointer crosses into the bounds of the `target` entity.
 pub type PointerOver = PointerEvent<Over>;
@@ -429,6 +436,10 @@ pub fn pointer_events(
     }
 
     for press_event in input_presses.iter() {
+        if press_event.pointer_id().is_touch() {
+            dbg!(&hover_map);
+        }
+
         for hovered_entity in hover_map
             .get(&press_event.pointer_id())
             .iter()

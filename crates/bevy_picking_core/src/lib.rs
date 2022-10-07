@@ -17,6 +17,36 @@ use output::{
     send_drag_over_events,
 };
 
+/// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
+/// being an entity.
+///
+/// `Mouse` and `Touch` pointers are automatically spawned as needed. Use this bundle if you are
+/// spawning a custom `PointerId::Custom` pointer, either for testing, or as a software controller
+/// pointer, or if you are replacing the default touch and mouse inputs.
+#[derive(Bundle)]
+pub struct PointerCoreBundle {
+    /// The pointer's unique [`PointerId`](pointer::PointerId).
+    pub id: pointer::PointerId,
+    /// Tracks the pointer's location.
+    pub location: pointer::PointerLocation,
+    /// Tracks the pointer's button press state.
+    pub click: pointer::PointerPress,
+    /// Tracks the pointer's interaction state.
+    pub interaction: output::PointerInteraction,
+}
+
+impl PointerCoreBundle {
+    /// Create a new pointer with the provided [`PointerId`](pointer::PointerId).
+    pub fn new(id: pointer::PointerId) -> Self {
+        PointerCoreBundle {
+            id,
+            location: pointer::PointerLocation::default(),
+            click: pointer::PointerPress::default(),
+            interaction: output::PointerInteraction::default(),
+        }
+    }
+}
+
 /// Groups the stages of the picking process under shared labels.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickStage {
@@ -102,41 +132,6 @@ impl Plugin for InteractionPlugin {
                     .with_system(event_bubbling::<output::DragLeave>)
                     .with_system(event_bubbling::<output::Drop>),
             );
-    }
-}
-
-/// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
-/// being an entity.
-///
-/// `Mouse` and `Touch` pointers are automatically spawned as needed. Use this bundle if you are
-/// spawning a custom `PointerId::Custom` pointer, either for testing, or as a software controller
-/// pointer, or if you are replacing the default touch and mouse inputs.
-#[derive(Bundle)]
-pub struct PointerBundle {
-    /// The pointer's unique [`PointerId`](pointer::PointerId).
-    pub id: pointer::PointerId,
-    /// Tracks the pointer's location.
-    pub location: pointer::PointerLocation,
-    /// Tracks the pointer's button press state.
-    pub click: pointer::PointerPress,
-    /// Tracks the pointer's interaction state.
-    pub interaction: output::PointerInteraction,
-    #[cfg(feature = "selection")]
-    /// Tracks whether the pointer's multiselect is active.
-    pub multi_select: selection::PointerMultiselect,
-}
-
-impl PointerBundle {
-    /// Create a new pointer with the provided [`PointerId`](pointer::PointerId).
-    pub fn new(id: pointer::PointerId) -> Self {
-        PointerBundle {
-            id,
-            location: pointer::PointerLocation::default(),
-            click: pointer::PointerPress::default(),
-            interaction: output::PointerInteraction::default(),
-            #[cfg(feature = "selection")]
-            multi_select: selection::PointerMultiselect::default(),
-        }
     }
 }
 

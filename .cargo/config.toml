@@ -1,0 +1,5 @@
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld.exe"
+
+[toolchain.nightly]
+rustflags = ["-Zshare-generics=n"]

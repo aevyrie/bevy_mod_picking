@@ -11,8 +11,7 @@ use bevy_mod_picking::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins)
-        .add_plugin(RaycastPlugin)
+        .add_plugins(DefaultPickingPlugins::with_backend(RaycastPlugin))
         .add_startup_system(setup)
         .add_system(SpecificEvent::handle_events)
         .add_system(GeneralEvent::handle_events)

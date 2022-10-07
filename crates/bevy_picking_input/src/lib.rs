@@ -5,6 +5,10 @@
 //! Because this resides in its own crate, it's easy to omit it, and provide your own inputs as
 //! needed. Because `Pointer`s aren't coupled to the underlying input hardware, you can easily mock
 //! inputs, and allow users full accessibility to map whatever inputs they need to pointer input.
+//!
+//! If, for example, you wanted to add support for VR input, all you need to do is spawn a pointer
+//! entity with a custom [`PointerId`](bevy_picking_core::pointer::PointerId), and write a system
+//! that updates its position.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]

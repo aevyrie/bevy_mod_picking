@@ -1,12 +1,16 @@
 //! Provides sensible defaults for touch picking inputs.
 
 use bevy::{
-    input::touch::TouchPhase, prelude::*, render::camera::RenderTarget, utils::HashSet,
+    input::touch::TouchPhase,
+    prelude::*,
+    render::camera::RenderTarget,
+    utils::{HashMap, HashSet},
     window::WindowId,
 };
 use bevy_picking_core::{
+    output::PointerCancel,
     pointer::{InputMove, InputPress, Location, PointerButton, PointerId},
-    PointerBundle,
+    PointerCoreBundle,
 };
 
 /// Sends touch pointer events to be consumed by the core plugin
@@ -14,9 +18,12 @@ pub fn touch_pick_events(
     // Input
     mut touches: EventReader<TouchInput>,
     windows: Res<Windows>,
+    // Local
+    mut location_cache: Local<HashMap<u64, TouchInput>>,
     // Output
     mut input_moves: EventWriter<InputMove>,
     mut input_presses: EventWriter<InputPress>,
+    mut cancel_events: EventWriter<PointerCancel>,
 ) {
     let active_window = windows
         .iter()
@@ -29,6 +36,7 @@ pub fn touch_pick_events(
             TouchPhase::Started => {
                 let pointer = PointerId::Touch(touch.id);
                 input_presses.send(InputPress::new_down(pointer, PointerButton::Primary));
+                location_cache.insert(touch.id, *touch);
             }
             TouchPhase::Moved => {
                 let pointer = PointerId::Touch(touch.id);
@@ -38,11 +46,19 @@ pub fn touch_pick_events(
                     target: RenderTarget::Window(active_window),
                     position: Vec2::new(pos.x, height - pos.y),
                 };
-                input_moves.send(InputMove::new(pointer, location))
+                // Send a move event only if it isn't the same as the last one
+                if location_cache.get(&touch.id) != Some(touch) {
+                    input_moves.send(InputMove::new(pointer, location));
+                }
+                location_cache.insert(touch.id, *touch);
             }
             TouchPhase::Ended | TouchPhase::Cancelled => {
                 let pointer = PointerId::Touch(touch.id);
                 input_presses.send(InputPress::new_up(pointer, PointerButton::Primary));
+                location_cache.remove(&touch.id);
+                cancel_events.send(PointerCancel {
+                    pointer_id: pointer,
+                })
             }
         }
     }
@@ -56,7 +72,7 @@ pub fn activate_pointers(mut commands: Commands, mut touches: EventReader<TouchI
         touch
             .phase
             .eq(&TouchPhase::Started)
-            .then_some(PointerBundle::new(PointerId::Touch(touch.id)))
+            .then_some(PointerCoreBundle::new(PointerId::Touch(touch.id)))
     }) {
         info!("Spawning pointer {:?}", pointer_bundle.id);
         commands.spawn_bundle(pointer_bundle);
