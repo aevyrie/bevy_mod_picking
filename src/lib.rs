@@ -131,6 +131,7 @@ pub mod prelude {
             PointerDragStart, PointerDrop, PointerEventData, PointerMove, PointerOut, PointerOver,
             PointerUp,
         },
+        pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
         DebugEventsPlugin, DefaultPickingPlugins, PickableBundle,
     };
 

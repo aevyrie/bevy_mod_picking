@@ -1,6 +1,6 @@
 //! Types and systems for pointer inputs, such as position and buttons.
 
-use bevy::{prelude::*, reflect::Uuid, render::camera::RenderTarget};
+use bevy::{prelude::*, reflect::Uuid, render::camera::RenderTarget, utils::HashMap};
 use std::fmt::Debug;
 
 /// Identifies a unique pointer entity. `Mouse` and `Touch` pointers are automatically spawned.
@@ -34,6 +34,27 @@ impl PointerId {
         } else {
             None
         }
+    }
+}
+
+/// Maps pointers to their entity for easy lookups.
+#[derive(Debug, Clone, Default)]
+pub struct PointerMap {
+    inner: HashMap<PointerId, Entity>,
+}
+
+impl PointerMap {
+    /// Get the [`Entity`] of the supplied [`PointerId`].
+    pub fn get_entity(&self, pointer_id: PointerId) -> Option<Entity> {
+        self.inner.get(&pointer_id).copied()
+    }
+}
+
+/// Update the [`PointerMap`] resource with the current frame's data.
+pub fn update_pointer_map(pointers: Query<(Entity, &PointerId)>, mut map: ResMut<PointerMap>) {
+    map.inner.clear();
+    for (entity, id) in &pointers {
+        map.inner.insert(*id, entity);
     }
 }
 

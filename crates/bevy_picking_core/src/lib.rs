@@ -76,6 +76,8 @@ impl Plugin for CorePlugin {
         app.add_event::<pointer::InputPress>()
             .add_event::<pointer::InputMove>()
             .add_event::<backend::EntitiesUnderPointer>()
+            .init_resource::<pointer::PointerMap>()
+            .add_system_to_stage(CoreStage::First, pointer::update_pointer_map)
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
