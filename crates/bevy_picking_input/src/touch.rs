@@ -29,6 +29,9 @@ struct TouchState<'w, 's> {
 }
 
 /// Sends touch pointer events to be consumed by the core plugin
+///
+/// This is an exclusive event because we need spawning to happen immediately to prevent issues with
+/// missed events needed for drag and drop.
 pub fn touch_pick_events(world: &mut World) {
     if world.get_resource::<SystemState<TouchState>>().is_none() {
         let state = SystemState::new(world);
@@ -66,7 +69,7 @@ pub fn touch_pick_events(world: &mut World) {
                 TouchPhase::Started => {
                     let pointer_bundle =
                         PointerCoreBundle::new(pointer).with_location(location.clone());
-                    info!("Spawning pointer {:?}", pointer_bundle.id);
+                    debug!("Spawning pointer {:?}", pointer_bundle.id);
                     commands.spawn_bundle(pointer_bundle);
 
                     input_moves.send(InputMove::new(pointer, location));
@@ -118,7 +121,7 @@ pub fn deactivate_pointers(
     }
     // A hash set is used to prevent despawning the same entity twice.
     for (entity, pointer) in despawn_list.drain() {
-        info!("Despawning pointer {:?}", pointer);
+        debug!("Despawning pointer {:?}", pointer);
         commands.entity(entity).despawn_recursive();
     }
 }

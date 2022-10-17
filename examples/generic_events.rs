@@ -1,9 +1,9 @@
 //! This example is similar to the `bubbling` example, except we will demonstrate a more advanced
 //! method of forwarding events that are generic.
 //!
-//! This allows us to use the same event for multiple pointer events, as usual, but with the key
-//! difference that we can have different behavior depending on the pointer event that triggered our
-//! event.
+//! This allows us to use the same custom event for multiple pointer events, as usual, but with the
+//! key difference that we can have different behavior depending on the pointer event that triggered
+//! our event.
 
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -87,7 +87,7 @@ fn setup(
         .insert_bundle(PickableBundle::default())
         .insert(PickRaycastTarget::default())
         // Because event forwarding can rely on event bubbling, events that target children of the
-        // parent cube will bubble up to this level and will fire off an event:
+        // parent cube will also bubble up to this parent level and will fire off an event:
         .forward_events::<PointerOver, SpecificEvent>()
         .forward_events::<PointerOut, SpecificEvent>()
         .forward_events::<PointerDown, GeneralEvent>()

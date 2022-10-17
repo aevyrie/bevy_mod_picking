@@ -2,18 +2,15 @@
 //!
 //! You must enable the `backend_rapier` or `all` features to run the example.
 
-use bevy::{prelude::*, window::PresentMode};
+use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            present_mode: PresentMode::AutoNoVsync, // Reduce input latency
-            ..Default::default()
-        })
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins::build(RapierBackend))
+        .add_plugin(DebugEventsPlugin::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin::default())
         .add_startup_system(setup)

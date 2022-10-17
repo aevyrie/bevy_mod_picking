@@ -5,6 +5,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins::build(RaycastBackend))
+        .add_plugin(DebugEventsPlugin::default())
         .add_startup_system(setup)
         .run();
 }

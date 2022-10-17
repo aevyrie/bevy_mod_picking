@@ -5,7 +5,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins::build(BevyUiBackend))
-        .add_plugin(DebugEventsPlugin { noisy: false })
+        .add_plugin(DebugEventsPlugin::default())
         .add_startup_system(setup)
         .add_system(button_system)
         .run();
