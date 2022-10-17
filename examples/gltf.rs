@@ -8,7 +8,7 @@ fn main() {
             brightness: 0.2,
         })
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins::with_backend(RaycastPlugin))
+        .add_plugins(DefaultPickingPlugins::build(RaycastBackend))
         .add_startup_system(setup)
         .add_system(make_pickable)
         .add_system(HelmetClicked::handle_events)

@@ -1,6 +1,7 @@
 //! Provides sensible defaults for touch picking inputs.
 
 use bevy::{
+    ecs::system::{SystemParam, SystemState},
     input::touch::TouchPhase,
     prelude::*,
     render::camera::RenderTarget,
@@ -13,70 +14,84 @@ use bevy_picking_core::{
     PointerCoreBundle,
 };
 
-/// Sends touch pointer events to be consumed by the core plugin
-pub fn touch_pick_events(
+#[derive(SystemParam)]
+struct TouchState<'w, 's> {
     // Input
-    mut touches: EventReader<TouchInput>,
-    windows: Res<Windows>,
+    touches: EventReader<'w, 's, TouchInput>,
+    windows: Res<'w, Windows>,
     // Local
-    mut location_cache: Local<HashMap<u64, TouchInput>>,
+    location_cache: Local<'s, HashMap<u64, TouchInput>>,
     // Output
-    mut input_moves: EventWriter<InputMove>,
-    mut input_presses: EventWriter<InputPress>,
-    mut cancel_events: EventWriter<PointerCancel>,
-) {
-    let active_window = windows
-        .iter()
-        .filter_map(|window| window.is_focused().then_some(window.id()))
-        .next()
-        .unwrap_or_else(WindowId::primary);
-
-    for touch in touches.iter() {
-        match touch.phase {
-            TouchPhase::Started => {
-                let pointer = PointerId::Touch(touch.id);
-                input_presses.send(InputPress::new_down(pointer, PointerButton::Primary));
-                location_cache.insert(touch.id, *touch);
-            }
-            TouchPhase::Moved => {
-                let pointer = PointerId::Touch(touch.id);
-                let pos = touch.position;
-                let height = windows.primary().height();
-                let location = Location {
-                    target: RenderTarget::Window(active_window),
-                    position: Vec2::new(pos.x, height - pos.y),
-                };
-                // Send a move event only if it isn't the same as the last one
-                if location_cache.get(&touch.id) != Some(touch) {
-                    input_moves.send(InputMove::new(pointer, location));
-                }
-                location_cache.insert(touch.id, *touch);
-            }
-            TouchPhase::Ended | TouchPhase::Cancelled => {
-                let pointer = PointerId::Touch(touch.id);
-                input_presses.send(InputPress::new_up(pointer, PointerButton::Primary));
-                location_cache.remove(&touch.id);
-                cancel_events.send(PointerCancel {
-                    pointer_id: pointer,
-                })
-            }
-        }
-    }
+    commands: Commands<'w, 's>,
+    input_moves: EventWriter<'w, 's, InputMove>,
+    input_presses: EventWriter<'w, 's, InputPress>,
+    cancel_events: EventWriter<'w, 's, PointerCancel>,
 }
 
-/// Activates new touch pointers.
-///
-/// Care must be taken to ensure pointers are spawned without causing a stage delay.
-pub fn activate_pointers(mut commands: Commands, mut touches: EventReader<TouchInput>) {
-    for pointer_bundle in touches.iter().filter_map(|touch| {
-        touch
-            .phase
-            .eq(&TouchPhase::Started)
-            .then_some(PointerCoreBundle::new(PointerId::Touch(touch.id)))
-    }) {
-        info!("Spawning pointer {:?}", pointer_bundle.id);
-        commands.spawn_bundle(pointer_bundle);
+/// Sends touch pointer events to be consumed by the core plugin
+pub fn touch_pick_events(world: &mut World) {
+    if world.get_resource::<SystemState<TouchState>>().is_none() {
+        let state = SystemState::new(world);
+        world.insert_resource::<SystemState<TouchState>>(state);
     }
+    world.resource_scope(|world, mut state: Mut<SystemState<TouchState>>| {
+        let TouchState {
+            // Input
+            mut touches,
+            windows,
+            // Local
+            mut location_cache,
+            // Output
+            mut commands,
+            mut input_moves,
+            mut input_presses,
+            mut cancel_events,
+        } = state.get_mut(world);
+
+        let active_window = windows
+            .iter()
+            .filter_map(|window| window.is_focused().then_some(window.id()))
+            .next()
+            .unwrap_or_else(WindowId::primary);
+
+        for touch in touches.iter() {
+            let pointer = PointerId::Touch(touch.id);
+            let pos = touch.position;
+            let height = windows.primary().height();
+            let location = Location {
+                target: RenderTarget::Window(active_window),
+                position: Vec2::new(pos.x, height - pos.y),
+            };
+            match touch.phase {
+                TouchPhase::Started => {
+                    let pointer_bundle =
+                        PointerCoreBundle::new(pointer).with_location(location.clone());
+                    info!("Spawning pointer {:?}", pointer_bundle.id);
+                    commands.spawn_bundle(pointer_bundle);
+
+                    input_moves.send(InputMove::new(pointer, location));
+                    input_presses.send(InputPress::new_down(pointer, PointerButton::Primary));
+                    location_cache.insert(touch.id, *touch);
+                }
+                TouchPhase::Moved => {
+                    // Send a move event only if it isn't the same as the last one
+                    if location_cache.get(&touch.id) != Some(touch) {
+                        input_moves.send(InputMove::new(pointer, location));
+                    }
+                    location_cache.insert(touch.id, *touch);
+                }
+                TouchPhase::Ended | TouchPhase::Cancelled => {
+                    input_presses.send(InputPress::new_up(pointer, PointerButton::Primary));
+                    location_cache.remove(&touch.id);
+                    cancel_events.send(PointerCancel {
+                        pointer_id: pointer,
+                    })
+                }
+            }
+        }
+
+        state.apply(world);
+    });
 }
 
 /// Deactivates unused touch pointers.

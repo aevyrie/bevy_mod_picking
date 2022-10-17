@@ -163,7 +163,7 @@ pub enum PointerButton {
 /// Component that tracks a pointer's current location.
 #[derive(Debug, Default, Clone, Component, PartialEq)]
 pub struct PointerLocation {
-    location: Option<Location>,
+    pub(crate) location: Option<Location>,
 }
 impl PointerLocation {
     /// Returns `Some(&`[`Location`]`)` if the pointer is active, or `None` if the pointer is

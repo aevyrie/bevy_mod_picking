@@ -96,7 +96,7 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{app::PluginGroupBuilder, prelude::*, ui::FocusPolicy};
+use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
 use bevy_picking_core::backend::PickingBackend;
 
 // Re-exports
@@ -164,7 +164,7 @@ pub mod prelude {
 pub struct DefaultPickingPlugins;
 impl DefaultPickingPlugins {
     /// Construct a set of picking plugins with the supplied backend.
-    pub fn with_backend(backend: impl PickingBackend + 'static) -> DefaultPickingPluginsBuilder {
+    pub fn build(backend: impl PickingBackend + 'static) -> DefaultPickingPluginsBuilder {
         let mut result = DefaultPickingPluginsBuilder {
             backends: Vec::new(),
         };
@@ -255,33 +255,51 @@ impl PointerBundle {
 }
 
 /// Logs events for debugging
-pub struct DebugEventsPlugin;
+#[derive(Debug, Default, Clone)]
+pub struct DebugEventsPlugin {
+    /// Suppresses noisy events like `Move` and `Drag` when set to `false`
+    pub noisy: bool,
+}
 impl Plugin for DebugEventsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            CoreStage::Update,
-            input::debug::print
-                .before(core::PickStage::Backend)
-                .before("PointerOutputDebug"),
-        )
-        .add_system_set_to_stage(
-            CoreStage::PostUpdate,
-            SystemSet::new()
-                .with_system(core::debug::print::<output::PointerOver>)
-                .with_system(core::debug::print::<output::PointerOut>)
-                .with_system(core::debug::print::<output::PointerDown>)
-                .with_system(core::debug::print::<output::PointerUp>)
-                .with_system(core::debug::print::<output::PointerClick>)
-                .with_system(core::debug::print::<output::PointerMove>)
-                .with_system(core::debug::print::<output::PointerDragStart>)
-                .with_system(core::debug::print::<output::PointerDrag>)
-                .with_system(core::debug::print::<output::PointerDragEnd>)
-                .with_system(core::debug::print::<output::PointerDragEnter>)
-                .with_system(core::debug::print::<output::PointerDragOver>)
-                .with_system(core::debug::print::<output::PointerDragLeave>)
-                .with_system(core::debug::print::<output::PointerDrop>)
-                .label("PointerOutputDebug"),
-        );
+        let should_run = if self.noisy {
+            ShouldRun::Yes
+        } else {
+            ShouldRun::No
+        };
+
+        app.init_resource::<core::debug::Frame>()
+            .add_system_to_stage(CoreStage::First, core::debug::increment_frame)
+            .add_system_to_stage(
+                CoreStage::PreUpdate,
+                input::debug::print
+                    .before(core::PickStage::Backend)
+                    .with_run_criteria(move || should_run),
+            )
+            .add_system_set_to_stage(
+                CoreStage::Update,
+                SystemSet::new()
+                    .with_system(core::debug::print::<output::PointerOver>)
+                    .with_system(core::debug::print::<output::PointerOut>)
+                    .with_system(core::debug::print::<output::PointerDown>)
+                    .with_system(core::debug::print::<output::PointerUp>)
+                    .with_system(core::debug::print::<output::PointerClick>)
+                    .with_system(
+                        core::debug::print::<output::PointerMove>
+                            .with_run_criteria(move || should_run),
+                    )
+                    .with_system(core::debug::print::<output::PointerDragStart>)
+                    .with_system(
+                        core::debug::print::<output::PointerDrag>
+                            .with_run_criteria(move || should_run),
+                    )
+                    .with_system(core::debug::print::<output::PointerDragEnd>)
+                    .with_system(core::debug::print::<output::PointerDragEnter>)
+                    .with_system(core::debug::print::<output::PointerDragOver>)
+                    .with_system(core::debug::print::<output::PointerDragLeave>)
+                    .with_system(core::debug::print::<output::PointerDrop>)
+                    .label("PointerOutputDebug"),
+            );
 
         #[cfg(feature = "selection")]
         app.add_system_set_to_stage(

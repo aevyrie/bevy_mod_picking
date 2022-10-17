@@ -303,7 +303,7 @@ impl<E: Clone + Send + Sync + Reflect> std::fmt::Display for PointerEvent<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Target: \x1b[1;31m{:?}\x1b[1;31m, ID: \x1b[1;31m{:?}\x1b[1;31m",
+            "Target: \x1b[0;1;0m{:?}\x1b[0m, ID: \x1b[0;1;0m{:?}\x1b[0m",
             self.target, self.pointer_id
         )
     }
@@ -436,26 +436,33 @@ pub fn pointer_events(
     }
 
     for press_event in input_presses.iter() {
-        if press_event.pointer_id().is_touch() {
-            dbg!(&hover_map);
+        // We use the previous hover map because we want to consider entities that just left the
+        // entity. Without this, touch inputs would never send up events because they are lifted up
+        // and leave the bounds of the entity at the same time.
+        for hovered_entity in previous_hover_map
+            .get(&press_event.pointer_id())
+            .iter()
+            .flat_map(|h| h.iter())
+        {
+            if let PressStage::Up = press_event.press() {
+                pointer_up.send(PointerUp::new(
+                    &press_event.pointer_id(),
+                    hovered_entity,
+                    Up,
+                ))
+            }
         }
-
         for hovered_entity in hover_map
             .get(&press_event.pointer_id())
             .iter()
             .flat_map(|h| h.iter())
         {
-            match press_event.press() {
-                PressStage::Down => pointer_down.send(PointerDown::new(
+            if let PressStage::Down = press_event.press() {
+                pointer_down.send(PointerDown::new(
                     &press_event.pointer_id(),
                     hovered_entity,
                     Down,
-                )),
-                PressStage::Up => pointer_up.send(PointerUp::new(
-                    &press_event.pointer_id(),
-                    hovered_entity,
-                    Up,
-                )),
+                ))
             }
         }
     }
@@ -668,21 +675,6 @@ pub fn send_drag_over_events(
             }
         }
     }
-    // Fire PointerDragLeave events when the pointer goes out of the target.
-    for out_event in pointer_out.iter() {
-        if let Some(dragged_over) = drag_over_map.get_mut(&out_event.pointer_id()) {
-            if Some(out_event.target()) == *dragged_over {
-                *dragged_over = None;
-                if let Some(&Some(dragged)) = drag_map.get(&out_event.pointer_id()) {
-                    pointer_drag_leave.send(PointerDragLeave::new(
-                        &out_event.pointer_id(),
-                        &out_event.target(),
-                        DragLeave { dragged },
-                    ))
-                }
-            }
-        }
-    }
     // Fire PointerDragLeave and PointerDrop events when the pointer stops dragging.
     for drag_end_event in pointer_drag_end.iter() {
         if let Some(maybe_dragged_over) = drag_over_map.get_mut(&drag_end_event.pointer_id()) {
@@ -702,6 +694,21 @@ pub fn send_drag_over_events(
                         dropped: drag_end_event.target(),
                     },
                 ));
+            }
+        }
+    }
+    // Fire PointerDragLeave events when the pointer goes out of the target.
+    for out_event in pointer_out.iter() {
+        if let Some(dragged_over) = drag_over_map.get_mut(&out_event.pointer_id()) {
+            if Some(out_event.target()) == *dragged_over {
+                *dragged_over = None;
+                if let Some(&Some(dragged)) = drag_map.get(&out_event.pointer_id()) {
+                    pointer_drag_leave.send(PointerDragLeave::new(
+                        &out_event.pointer_id(),
+                        &out_event.target(),
+                        DragLeave { dragged },
+                    ))
+                }
             }
         }
     }

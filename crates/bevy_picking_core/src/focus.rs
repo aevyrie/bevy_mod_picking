@@ -112,10 +112,7 @@ fn build_over_map(
                 .ok()
                 .and_then(|layer| layer.iter().max())
                 .unwrap_or(0);
-
-            layer_map.entry(layer).or_insert_with(BTreeMap::new);
-
-            let depth_map = layer_map.get_mut(&layer).unwrap();
+            let depth_map = layer_map.entry(layer).or_insert_with(BTreeMap::new);
             depth_map.insert(FloatOrd(over.depth), over.entity);
         }
     }

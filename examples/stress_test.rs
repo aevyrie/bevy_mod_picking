@@ -15,7 +15,7 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins::with_backend(RaycastPlugin))
+        .add_plugins(DefaultPickingPlugins::build(RaycastBackend))
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_startup_system(setup)

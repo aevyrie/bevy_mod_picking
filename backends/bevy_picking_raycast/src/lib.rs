@@ -10,31 +10,29 @@ use bevy_picking_core::backend::{prelude::*, PickingBackend};
 
 /// Commonly used imports for the [`bevy_picking_raycast`](crate) crate.
 pub mod prelude {
-    pub use crate::{PickRaycastSource, PickRaycastTarget, RaycastPlugin};
+    pub use crate::{PickRaycastSource, PickRaycastTarget, RaycastBackend};
 }
 
 /// Adds the raycasting picking backend to your app.
-pub struct RaycastPlugin;
-impl PickingBackend for RaycastPlugin {}
-impl PluginGroup for RaycastPlugin {
+pub struct RaycastBackend;
+impl PickingBackend for RaycastBackend {}
+impl PluginGroup for RaycastBackend {
     fn build(&mut self, group: &mut bevy::app::PluginGroupBuilder) {
-        group.add(RaycastPlugin);
+        group.add(RaycastBackend);
     }
 }
-impl Plugin for RaycastPlugin {
+impl Plugin for RaycastBackend {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            CoreStage::PreUpdate,
-            SystemSet::new()
-                .label(PickStage::Backend)
-                .with_system(build_rays_from_pointers)
-                .with_system(
-                    bevy_mod_raycast::update_raycast::<RaycastPickingSet>
-                        .after(build_rays_from_pointers)
-                        .before(update_hits),
-                )
-                .with_system(update_hits),
-        );
+        app.add_system_to_stage(CoreStage::First, build_rays_from_pointers)
+            .add_system_set_to_stage(
+                CoreStage::PreUpdate,
+                SystemSet::new()
+                    .label(PickStage::Backend)
+                    .with_system(
+                        bevy_mod_raycast::update_raycast::<RaycastPickingSet>.before(update_hits),
+                    )
+                    .with_system(update_hits),
+            );
     }
 }
 

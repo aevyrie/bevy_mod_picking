@@ -10,26 +10,21 @@ use bevy_rapier3d::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_rapier`] crate.
 pub mod prelude {
-    pub use crate::{RapierPickSource, RapierPlugin};
+    pub use crate::{RapierBackend, RapierPickSource};
 }
 
 /// Adds the `rapier` raycasting picking backend to your app.
-pub struct RapierPlugin;
-impl PickingBackend for RapierPlugin {}
-impl PluginGroup for RapierPlugin {
+pub struct RapierBackend;
+impl PickingBackend for RapierBackend {}
+impl PluginGroup for RapierBackend {
     fn build(&mut self, group: &mut bevy::app::PluginGroupBuilder) {
         group.add(Self);
     }
 }
-impl Plugin for RapierPlugin {
+impl Plugin for RapierBackend {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            CoreStage::PreUpdate,
-            SystemSet::new()
-                .label(PickStage::Backend)
-                .with_system(build_rays_from_pointers)
-                .with_system(update_hits.after(build_rays_from_pointers)),
-        );
+        app.add_system_to_stage(CoreStage::First, build_rays_from_pointers)
+            .add_system_to_stage(CoreStage::PreUpdate, update_hits.label(PickStage::Backend));
     }
 }
 

@@ -27,12 +27,16 @@ impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<InputPluginSettings>()
             .add_startup_system(mouse::spawn_mouse_pointer)
-            .add_system_to_stage(CoreStage::First, touch::activate_pointers)
             .add_system_set_to_stage(
-                CoreStage::PreUpdate,
+                CoreStage::First,
                 SystemSet::new()
                     .label(PickStage::Input)
-                    .with_system(touch::touch_pick_events.with_run_criteria(run_if_touch))
+                    .with_system(
+                        touch::touch_pick_events
+                            .exclusive_system()
+                            .at_start()
+                            .with_run_criteria(run_if_touch),
+                    )
                     .with_system(mouse::mouse_pick_events.with_run_criteria(run_if_mouse)),
             )
             .add_system_to_stage(CoreStage::Last, touch::deactivate_pointers);

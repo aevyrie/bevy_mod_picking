@@ -36,6 +36,14 @@ pub struct PointerCoreBundle {
 }
 
 impl PointerCoreBundle {
+    /// Sets the location of the pointer bundle
+    pub fn with_location(mut self, location: pointer::Location) -> Self {
+        self.location.location = Some(location);
+        self
+    }
+}
+
+impl PointerCoreBundle {
     /// Create a new pointer with the provided [`PointerId`](pointer::PointerId).
     pub fn new(id: pointer::PointerId) -> Self {
         PointerCoreBundle {
@@ -71,7 +79,6 @@ impl Plugin for CorePlugin {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .after(PickStage::Input)
                     .before(PickStage::Backend)
                     .with_system(pointer::InputMove::receive)
                     .with_system(pointer::InputPress::receive),

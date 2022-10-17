@@ -10,18 +10,18 @@ use bevy_picking_core::backend::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_ui`](crate) crate.
 pub mod prelude {
-    pub use crate::UiPickingPlugin;
+    pub use crate::BevyUiBackend;
 }
 
 /// Adds picking support for [`bevy_ui`](bevy::ui)
-pub struct UiPickingPlugin;
-impl PickingBackend for UiPickingPlugin {}
-impl PluginGroup for UiPickingPlugin {
+pub struct BevyUiBackend;
+impl PickingBackend for BevyUiBackend {}
+impl PluginGroup for BevyUiBackend {
     fn build(&mut self, group: &mut bevy::app::PluginGroupBuilder) {
         group.add(Self);
     }
 }
-impl Plugin for UiPickingPlugin {
+impl Plugin for BevyUiBackend {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
             CoreStage::PreUpdate,
