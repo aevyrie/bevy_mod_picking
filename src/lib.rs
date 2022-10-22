@@ -296,7 +296,10 @@ impl Plugin for DebugEventsPlugin {
                     )
                     .with_system(core::debug::print::<output::PointerDragEnd>)
                     .with_system(core::debug::print::<output::PointerDragEnter>)
-                    .with_system(core::debug::print::<output::PointerDragOver>)
+                    .with_system(
+                        core::debug::print::<output::PointerDragOver>
+                            .with_run_criteria(move || should_run),
+                    )
                     .with_system(core::debug::print::<output::PointerDragLeave>)
                     .with_system(core::debug::print::<output::PointerDrop>)
                     .label("PointerOutputDebug"),
