@@ -12,7 +12,7 @@ use crate::{
 use bevy::{
     ecs::{event::Event, system::EntityCommands},
     prelude::*,
-    utils::HashMap,
+    utils::{HashMap, HashSet},
 };
 
 /// Holds a map of entities this pointer is currently interacting with.
@@ -643,7 +643,7 @@ pub fn send_drag_over_events(
     mut pointer_out: EventReader<PointerOut>,
     mut pointer_drag_end: EventReader<PointerDragEnd>,
     // Local
-    mut drag_over_map: Local<HashMap<PointerId, Option<Entity>>>,
+    mut drag_over_map: Local<HashMap<PointerId, HashSet<Entity>>>,
     // Output
     mut pointer_drag_enter: EventWriter<PointerDragEnter>,
     mut pointer_drag_over: EventWriter<PointerDragOver>,
@@ -654,7 +654,8 @@ pub fn send_drag_over_events(
     for over_event in pointer_over.iter() {
         if let Some(&Some(dragged)) = drag_map.get(&over_event.pointer_id()) {
             if over_event.target() != dragged {
-                drag_over_map.insert(over_event.pointer_id(), Some(over_event.target()));
+                let drag_entry = drag_over_map.entry(over_event.pointer_id()).or_default();
+                drag_entry.insert(over_event.target());
                 pointer_drag_enter.send(PointerDragEnter::new(
                     &over_event.pointer_id(),
                     &over_event.target(),
@@ -677,9 +678,8 @@ pub fn send_drag_over_events(
     }
     // Fire PointerDragLeave and PointerDrop events when the pointer stops dragging.
     for drag_end_event in pointer_drag_end.iter() {
-        if let Some(maybe_dragged_over) = drag_over_map.get_mut(&drag_end_event.pointer_id()) {
-            if let Some(dragged_over) = *maybe_dragged_over {
-                *maybe_dragged_over = None;
+        if let Some(drag_over_set) = drag_over_map.get_mut(&drag_end_event.pointer_id()) {
+            for dragged_over in drag_over_set.drain() {
                 pointer_drag_leave.send(PointerDragLeave::new(
                     &drag_end_event.pointer_id(),
                     &dragged_over,
@@ -699,13 +699,14 @@ pub fn send_drag_over_events(
     }
     // Fire PointerDragLeave events when the pointer goes out of the target.
     for out_event in pointer_out.iter() {
-        if let Some(dragged_over) = drag_over_map.get_mut(&out_event.pointer_id()) {
-            if Some(out_event.target()) == *dragged_over {
-                *dragged_over = None;
-                if let Some(&Some(dragged)) = drag_map.get(&out_event.pointer_id()) {
+        let out_pointer = &out_event.pointer_id();
+        let out_target = &out_event.target();
+        if let Some(dragged_over) = drag_over_map.get_mut(out_pointer) {
+            if dragged_over.take(out_target).is_some() {
+                if let Some(&Some(dragged)) = drag_map.get(out_pointer) {
                     pointer_drag_leave.send(PointerDragLeave::new(
-                        &out_event.pointer_id(),
-                        &out_event.target(),
+                        out_pointer,
+                        out_target,
                         DragLeave { dragged },
                     ))
                 }
