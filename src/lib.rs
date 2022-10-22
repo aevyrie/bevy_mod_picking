@@ -10,11 +10,11 @@
 //!
 //! - How do I highlight things?
 //! - How can I trigger an event when I click/drag/hover/etc over a thing?
-//! - How do I add touch support?
 //! - Is it possible to do all of this across many windows?
+//! - Will this support multi-touch?
 //! - Can I test all of this somehow?
 //!
-//! These are the problems this crate tries to solve.
+//! These are the problems this crate solves.
 //!
 //! # Getting Started
 //!
