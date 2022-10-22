@@ -217,7 +217,7 @@ pub trait IsPointerEvent: Send + Sync + Display + Clone + 'static {
     /// Get the target entity of this event.
     fn target(&self) -> Entity;
     /// Get the inner event entity of this event.
-    fn event_type(&self) -> Self::InnerEventType;
+    fn event_data(&self) -> Self::InnerEventType;
 }
 
 /// Stores the common data needed for all `PointerEvent`s.
@@ -248,7 +248,7 @@ impl<E: Clone + Send + Sync + std::fmt::Debug + Reflect + 'static> IsPointerEven
         self.target
     }
 
-    fn event_type(&self) -> Self::InnerEventType {
+    fn event_data(&self) -> Self::InnerEventType {
         self.event.to_owned()
     }
 }
