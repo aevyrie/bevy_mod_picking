@@ -5,7 +5,6 @@ use bevy_mod_picking::prelude::{
     backends::raycast::{PickRaycastSource, PickRaycastTarget, RaycastBackend},
     *,
 };
-use bevy_rapier3d::na::ComplexField;
 
 fn main() {
     App::new()
