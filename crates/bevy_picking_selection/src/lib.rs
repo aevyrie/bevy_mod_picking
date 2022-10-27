@@ -108,7 +108,7 @@ pub fn send_selection_events(
             .unwrap_or(false);
         let target_can_deselect = no_deselect.get(down.target()).is_err();
         // Deselect everything
-        if !dbg!(multiselect) && target_can_deselect {
+        if !multiselect && target_can_deselect {
             for (entity, selection) in selectables.iter() {
                 let not_click_target = down.target() != entity;
                 if selection.is_selected && not_click_target {

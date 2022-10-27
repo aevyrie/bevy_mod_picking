@@ -11,6 +11,7 @@ use bevy_mod_picking::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_plugins(DefaultPickingPlugins::build(RaycastBackend))
         .add_startup_system(setup)
         .add_system(SpecificEvent::handle_events)

@@ -13,7 +13,7 @@ fn main() {
         .add_plugins_with(DefaultPickingPlugins::build(RaycastBackend), |group| {
             group.disable::<CustomHighlightingPlugin<ColorMaterial>>()
         })
-        .add_plugin(DebugEventsPlugin::default())
+        .add_plugin(DebugPickingPlugin::default())
         .insert_resource(WindowDescriptor {
             present_mode: bevy::window::PresentMode::AutoNoVsync,
             ..Default::default()

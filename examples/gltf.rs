@@ -8,8 +8,9 @@ fn main() {
             brightness: 0.2,
         })
         .add_plugins(DefaultPlugins)
+        .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_plugins(DefaultPickingPlugins::build(RaycastBackend))
-        .add_plugin(DebugEventsPlugin::default())
+        .add_plugin(DebugPickingPlugin::default())
         .add_startup_system(setup)
         .add_system(make_pickable)
         .add_system(HelmetClicked::handle_events)

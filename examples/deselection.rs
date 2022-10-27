@@ -1,17 +1,14 @@
-use bevy::{prelude::*, window::PresentMode};
+use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 /// This example is identical to the minimal example, except a cube has been added, that when
 /// clicked on, won't deselect everything else you have selected.
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            present_mode: PresentMode::AutoNoVsync, // Reduce input latency
-            ..Default::default()
-        })
         .add_plugins(DefaultPlugins)
+        .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_plugins(DefaultPickingPlugins::build(RaycastBackend))
-        .add_plugin(DebugEventsPlugin::default())
+        .add_plugin(DebugPickingPlugin::default())
         .add_startup_system(setup)
         .run();
 }

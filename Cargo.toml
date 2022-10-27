@@ -36,6 +36,7 @@ bevy = { version = "0.8", default-features = false, features = [
 ] }
 bevy_rapier3d = "0.17"
 bevy_framepace = "0.7"
+bevy_mod_picking = { path = "", features = ["all"] }
 
 [features]
 default = [
@@ -61,3 +62,11 @@ backend_raycast = ["bevy_picking_raycast"]
 backend_rapier = ["bevy_picking_rapier"]
 backend_shader = ["bevy_picking_shader"]
 backend_bevy_ui = ["bevy_picking_ui"]
+
+[[example]]
+name = "bevy_ui"
+path = "examples/backends/bevy_ui.rs"
+
+[[example]]
+name = "rapier"
+path = "examples/backends/rapier.rs"

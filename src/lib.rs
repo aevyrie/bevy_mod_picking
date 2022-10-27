@@ -96,8 +96,10 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
+use bevy::{app::PluginGroupBuilder, prelude::*, ui::FocusPolicy};
 use bevy_picking_core::backend::PickingBackend;
+
+pub mod debug;
 
 // Re-exports
 pub use bevy_picking_core::{self as core, backend, focus, output, pointer};
@@ -125,6 +127,7 @@ pub mod backends {
 /// Common imports
 pub mod prelude {
     pub use crate::{
+        debug::DebugPickingPlugin,
         output::{
             EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerClick, PointerDown,
             PointerDrag, PointerDragEnd, PointerDragEnter, PointerDragLeave, PointerDragOver,
@@ -132,7 +135,7 @@ pub mod prelude {
             PointerUp,
         },
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
-        DebugEventsPlugin, DefaultPickingPlugins, PickableBundle,
+        DefaultPickingPlugins, PickableBundle,
     };
 
     #[cfg(feature = "highlight")]
@@ -252,65 +255,5 @@ impl PointerBundle {
             #[cfg(feature = "selection")]
             multi_select: selection::PointerMultiselect::default(),
         }
-    }
-}
-
-/// Logs events for debugging
-#[derive(Debug, Default, Clone)]
-pub struct DebugEventsPlugin {
-    /// Suppresses noisy events like `Move` and `Drag` when set to `false`
-    pub noisy: bool,
-}
-impl Plugin for DebugEventsPlugin {
-    fn build(&self, app: &mut App) {
-        let should_run = if self.noisy {
-            ShouldRun::Yes
-        } else {
-            ShouldRun::No
-        };
-
-        app.init_resource::<core::debug::Frame>()
-            .add_system_to_stage(CoreStage::First, core::debug::increment_frame)
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
-                input::debug::print
-                    .before(core::PickStage::Backend)
-                    .with_run_criteria(move || should_run),
-            )
-            .add_system_set_to_stage(
-                CoreStage::Update,
-                SystemSet::new()
-                    .with_system(core::debug::print::<output::PointerOver>)
-                    .with_system(core::debug::print::<output::PointerOut>)
-                    .with_system(core::debug::print::<output::PointerDown>)
-                    .with_system(core::debug::print::<output::PointerUp>)
-                    .with_system(core::debug::print::<output::PointerClick>)
-                    .with_system(
-                        core::debug::print::<output::PointerMove>
-                            .with_run_criteria(move || should_run),
-                    )
-                    .with_system(core::debug::print::<output::PointerDragStart>)
-                    .with_system(
-                        core::debug::print::<output::PointerDrag>
-                            .with_run_criteria(move || should_run),
-                    )
-                    .with_system(core::debug::print::<output::PointerDragEnd>)
-                    .with_system(core::debug::print::<output::PointerDragEnter>)
-                    .with_system(
-                        core::debug::print::<output::PointerDragOver>
-                            .with_run_criteria(move || should_run),
-                    )
-                    .with_system(core::debug::print::<output::PointerDragLeave>)
-                    .with_system(core::debug::print::<output::PointerDrop>)
-                    .label("PointerOutputDebug"),
-            );
-
-        #[cfg(feature = "selection")]
-        app.add_system_set_to_stage(
-            CoreStage::Update,
-            SystemSet::new()
-                .with_system(core::debug::print::<selection::PointerSelect>)
-                .with_system(core::debug::print::<selection::PointerDeselect>),
-        );
     }
 }
