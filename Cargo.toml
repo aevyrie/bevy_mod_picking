@@ -17,7 +17,7 @@ members = ["crates/*", "backends/*"]
 bevy = { version = "0.8", default-features = false, features = ["bevy_render"] }
 # Local
 bevy_picking_core = { path = "crates/bevy_picking_core" }
-bevy_picking_input = { optional = true, path = "crates/bevy_picking_input" }
+bevy_picking_input = { optional = true, path = "crates/bevy_picking_input", default-features = false }
 bevy_picking_selection = { optional = true, path = "crates/bevy_picking_selection" }
 bevy_picking_highlight = { optional = true, path = "crates/bevy_picking_highlight" }
 bevy_picking_raycast = { optional = true, path = "backends/bevy_picking_raycast" }
@@ -56,7 +56,7 @@ all = [
 ]
 input = ["bevy_picking_input"]
 highlight = ["bevy_picking_highlight"]
-selection = ["bevy_picking_selection"]
+selection = ["bevy_picking_selection", "bevy_picking_input/selection"]
 backend_raycast = ["bevy_picking_raycast"]
 backend_rapier = ["bevy_picking_rapier"]
 backend_shader = ["bevy_picking_shader"]

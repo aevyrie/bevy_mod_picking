@@ -12,7 +12,10 @@ use bevy_picking_core::{
 
 /// Spawns the default mouse pointer.
 pub fn spawn_mouse_pointer(mut commands: Commands) {
-    commands.spawn_bundle(PointerCoreBundle::new(PointerId::Mouse));
+    let mut entity = commands.spawn();
+    entity.insert_bundle(PointerCoreBundle::new(PointerId::Mouse));
+    #[cfg(feature = "selection")]
+    entity.insert(bevy_picking_selection::PointerMultiselect::default());
 }
 
 /// Sends mouse pointer events to be processed by the core plugin

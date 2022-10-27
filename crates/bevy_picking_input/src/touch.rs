@@ -67,10 +67,13 @@ pub fn touch_pick_events(world: &mut World) {
             };
             match touch.phase {
                 TouchPhase::Started => {
+                    let mut entity = commands.spawn();
                     let pointer_bundle =
                         PointerCoreBundle::new(pointer).with_location(location.clone());
                     debug!("Spawning pointer {:?}", pointer_bundle.id);
-                    commands.spawn_bundle(pointer_bundle);
+                    entity.insert_bundle(pointer_bundle);
+                    #[cfg(feature = "selection")]
+                    entity.insert(bevy_picking_selection::PointerMultiselect::default());
 
                     input_moves.send(InputMove::new(pointer, location));
                     input_presses.send(InputPress::new_down(pointer, PointerButton::Primary));

@@ -104,11 +104,11 @@ pub fn send_selection_events(
     for down in pointer_down.iter() {
         let multiselect = pointers
             .iter()
-            .find_map(|(id, multi)| id.eq(&down.pointer_id()).then_some(multi.is_pressed))
+            .find_map(|(id, multi)| (id == &down.pointer_id()).then_some(multi.is_pressed))
             .unwrap_or(false);
-        let target_should_deselect = no_deselect.get(down.target()).is_err();
+        let target_can_deselect = no_deselect.get(down.target()).is_err();
         // Deselect everything
-        if !multiselect && target_should_deselect {
+        if !dbg!(multiselect) && target_can_deselect {
             for (entity, selection) in selectables.iter() {
                 let not_click_target = down.target() != entity;
                 if selection.is_selected && not_click_target {
