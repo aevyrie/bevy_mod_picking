@@ -98,7 +98,7 @@ fn debug_draw(
                     interaction.iter()
                 ),
                 TextStyle {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font: asset_server.load("fonts/FiraMono-Medium.ttf"),
                     font_size: 12.0,
                     color: Color::WHITE,
                 },
