@@ -14,7 +14,7 @@ pub use crate::{
     mouse::update_pick_source_positions,
     selection::{mesh_selection, NoDeselect, Selection},
 };
-pub use bevy_mod_raycast::{Primitive3d, RayCastSource};
+pub use bevy_mod_raycast::{Primitive3d, RayCastSource, RayCastMesh};
 
 use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
 use highlight::{get_initial_mesh_highlight_asset, ColorMaterialHighlight, Highlight};
@@ -33,9 +33,9 @@ pub enum PickingSystem {
 }
 
 /// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
-pub type PickableMesh = bevy_mod_raycast::RayCastMesh<PickingRaycastSet>;
+pub type PickableMesh = RayCastMesh<PickingRaycastSet>;
 /// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
-pub type PickingCamera = bevy_mod_raycast::RayCastSource<PickingRaycastSet>;
+pub type PickingCamera = RayCastSource<PickingRaycastSet>;
 
 /// This unit struct is used to tag the generic ray casting types `RayCastMesh` and
 /// `RayCastSource`. This means that all Picking ray casts are of the same type. Consequently, any
@@ -91,10 +91,10 @@ impl Default for UpdatePicks {
 pub struct DefaultPickingPlugins;
 
 impl PluginGroup for DefaultPickingPlugins {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(PickingPlugin);
-        group.add(InteractablePickingPlugin);
-        HighlightablePickingPlugins.build(group);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
+            .add(PickingPlugin)
+            .add(InteractablePickingPlugin)
     }
 }
 
@@ -168,9 +168,10 @@ impl Plugin for InteractablePickingPlugin {
 
 pub struct HighlightablePickingPlugins;
 impl PluginGroup for HighlightablePickingPlugins {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(CustomHighlightPlugin(StandardMaterialHighlight));
-        group.add(CustomHighlightPlugin(ColorMaterialHighlight));
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
+            .add(CustomHighlightPlugin(StandardMaterialHighlight))
+            .add(CustomHighlightPlugin(ColorMaterialHighlight))
     }
 }
 
