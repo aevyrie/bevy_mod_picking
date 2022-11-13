@@ -4,20 +4,19 @@ pub mod highlight;
 pub mod mouse;
 pub mod selection;
 
+use std::marker::PhantomData;
+
 pub use crate::{
     events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
     focus::{mesh_focus, pause_for_picking_blockers, Hover, PickingBlocker},
-    highlight::{
-        mesh_highlighting, DefaultHighlighting, Highlightable, Highlighting,
-        StandardMaterialHighlight,
-    },
+    highlight::{mesh_highlighting, DefaultHighlighting, Highlightable, Highlighting},
     mouse::update_pick_source_positions,
     selection::{mesh_selection, NoDeselect, Selection},
 };
 pub use bevy_mod_raycast::{Primitive3d, RaycastMesh, RaycastSource};
 
 use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
-use highlight::{get_initial_mesh_highlight_asset, ColorMaterialHighlight, Highlight};
+use highlight::{get_initial_mesh_highlight_asset, Highlight};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
 pub enum PickingSystem {
@@ -95,8 +94,8 @@ impl PluginGroup for DefaultPickingPlugins {
         PluginGroupBuilder::start::<Self>()
             .add(PickingPlugin)
             .add(InteractablePickingPlugin)
-            .add(CustomHighlightPlugin(StandardMaterialHighlight))
-            .add(CustomHighlightPlugin(ColorMaterialHighlight))
+            .add(CustomHighlightPlugin::<StandardMaterial>::default())
+            .add(CustomHighlightPlugin::<ColorMaterial>::default())
     }
 }
 
@@ -171,7 +170,7 @@ impl Plugin for InteractablePickingPlugin {
 /// A highlighting plugin, generic over any asset that might be used for rendering the different
 /// highlighting states.
 #[derive(Default)]
-pub struct CustomHighlightPlugin<T: 'static + Highlightable + Sync + Send>(pub T);
+pub struct CustomHighlightPlugin<T: 'static + Highlightable + Sync + Send>(PhantomData<T>);
 
 impl<T> Plugin for CustomHighlightPlugin<T>
 where
@@ -186,7 +185,7 @@ where
                         simple_criteria(state.enable_highlighting)
                     })
                     .with_system(
-                        get_initial_mesh_highlight_asset::<T::HighlightAsset>
+                        get_initial_mesh_highlight_asset::<T>
                             .after(PickingSystem::UpdateIntersections)
                             .before(PickingSystem::Highlighting),
                     )
