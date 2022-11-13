@@ -14,7 +14,7 @@ pub use crate::{
     mouse::update_pick_source_positions,
     selection::{mesh_selection, NoDeselect, Selection},
 };
-pub use bevy_mod_raycast::{Primitive3d, RayCastSource, RayCastMesh};
+pub use bevy_mod_raycast::{Primitive3d, RaycastMesh, RaycastSource};
 
 use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
 use highlight::{get_initial_mesh_highlight_asset, ColorMaterialHighlight, Highlight};
@@ -32,16 +32,16 @@ pub enum PickingSystem {
     Events,
 }
 
-/// A type alias for the concrete [RayCastMesh](bevy_mod_raycast::RayCastMesh) type used for Picking.
-pub type PickableMesh = RayCastMesh<PickingRaycastSet>;
-/// A type alias for the concrete [RayCastSource](bevy_mod_raycast::RayCastSource) type used for Picking.
-pub type PickingCamera = RayCastSource<PickingRaycastSet>;
+/// A type alias for the concrete [RaycastMesh](bevy_mod_raycast::RaycastMesh) type used for Picking.
+pub type PickableMesh = RaycastMesh<PickingRaycastSet>;
+/// A type alias for the concrete [RaycastSource](bevy_mod_raycast::RaycastSource) type used for Picking.
+pub type PickingCamera = RaycastSource<PickingRaycastSet>;
 
-/// This unit struct is used to tag the generic ray casting types `RayCastMesh` and
-/// `RayCastSource`. This means that all Picking ray casts are of the same type. Consequently, any
+/// This unit struct is used to tag the generic ray casting types `RaycastMesh` and
+/// `RaycastSource`. This means that all Picking ray casts are of the same type. Consequently, any
 /// meshes or ray sources that are being used by the picking plugin can be used by other ray
-/// casting systems because they will have distinct types, e.g.: `RayCastMesh<PickingRaycastSet>`
-/// vs. `RayCastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
+/// casting systems because they will have distinct types, e.g.: `RaycastMesh<PickingRaycastSet>`
+/// vs. `RaycastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
 pub struct PickingRaycastSet;
 
 #[derive(Clone, Debug, Resource)]

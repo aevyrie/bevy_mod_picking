@@ -1,5 +1,8 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
-use bevy_mod_picking::{DebugEventsPickingPlugin, HighlightablePickingPlugins, DefaultPickingPlugins, PickableBundle, PickingCameraBundle};
+use bevy_mod_picking::{
+    DebugEventsPickingPlugin, DefaultPickingPlugins, HighlightablePickingPlugins, PickableBundle,
+    PickingCameraBundle,
+};
 
 fn main() {
     App::new()
@@ -17,16 +20,17 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    commands
-        .spawn(MaterialMesh2dBundle {
+    commands.spawn((
+        MaterialMesh2dBundle {
             mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
             transform: Transform::default().with_scale(Vec3::splat(128.)),
             material: materials.add(ColorMaterial::from(Color::PURPLE)),
             ..default()
-        })
-        .insert(PickableBundle::default()); // <- Makes the mesh pickable.
-                                                   // camera
-    commands
-        .spawn(Camera2dBundle::default())
-        .insert(PickingCameraBundle::default()); // <- Sets the camera to use for picking.
+        },
+        PickableBundle::default(), // <- Makes the mesh pickable.
+    ));
+    // camera
+    commands.spawn(
+        (Camera2dBundle::default(), PickingCameraBundle::default()), // <- Sets the camera to use for picking.
+    );
 }

@@ -50,20 +50,21 @@ fn setup(
     });
 
     // Camera
-    commands
-        .spawn(Camera3dBundle {
+    commands.spawn((
+        Camera3dBundle {
             transform: Transform::from_xyz(half_width as f32, half_width as f32, half_width as f32)
                 .looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
-        })
-        .insert(PickingCameraBundle::default());
+        },
+        PickingCameraBundle::default(),
+    ));
 
     // Spawn a cube of spheres.
     for x in -half_width..half_width {
         for y in -half_width..half_width {
             for z in -half_width..half_width {
-                commands
-                    .spawn(PbrBundle {
+                commands.spawn((
+                    PbrBundle {
                         mesh: mesh_handle.clone(),
                         material: matl_handle.clone(),
                         transform: Transform::from_translation(Vec3::new(
@@ -72,8 +73,9 @@ fn setup(
                             z as f32,
                         )),
                         ..Default::default()
-                    })
-                    .insert(PickableBundle::default());
+                    },
+                    PickableBundle::default(),
+                ));
             }
         }
     }

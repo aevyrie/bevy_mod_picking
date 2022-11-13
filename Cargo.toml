@@ -11,14 +11,12 @@ categories = ["game-engines", "rendering"]
 resolver = "2"
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
-    "render",
-] }
+bevy = { version = "0.9", default-features = false, features = ["render"] }
 
-bevy_mod_raycast = { git = "https://github.com/olegomon/bevy_mod_raycast", branch = "main", default-features = false }
+bevy_mod_raycast = "0.7"
 
 [dev-dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
+bevy = { version = "0.9", default-features = false, features = [
     "bevy_pbr",
     "bevy_winit",
     "bevy_ui",
