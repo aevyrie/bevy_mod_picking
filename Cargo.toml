@@ -1,6 +1,6 @@
 [package]
 name = "bevy_mod_picking"
-version = "0.6.0"
+version = "0.9.0"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 edition = "2021"
 license = "MIT"
@@ -14,10 +14,20 @@ resolver = "2"
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
     "render",
 ] }
-bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "main" }
+
+bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", branch = "main", default-features = false }
 
 [dev-dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
+    "bevy_pbr",
     "bevy_winit",
+    "bevy_ui",
+    "bevy_core_pipeline",
+    "bevy_text",
     "x11",
 ] }
+
+[features]
+default = ["2d", "debug"]
+2d = ["bevy_mod_raycast/2d"]
+debug = ["bevy_mod_raycast/debug"]
