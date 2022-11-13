@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
     render::camera::{Camera, RenderTarget},
 };
-use bevy_mod_raycast::RayCastMethod;
+use bevy_mod_raycast::RaycastMethod;
 
 /// Update Screenspace ray cast sources with the current mouse position
 pub fn update_pick_source_positions(
@@ -29,15 +29,15 @@ pub fn update_pick_source_positions(
             UpdatePicks::EveryFrame(cached_cursor_pos) => {
                 match cursor_latest {
                     Some(cursor_moved) => {
-                        pick_source.cast_method = RayCastMethod::Screenspace(cursor_moved);
+                        pick_source.cast_method = RaycastMethod::Screenspace(cursor_moved);
                         *update_picks = UpdatePicks::EveryFrame(cursor_moved);
                     }
-                    None => pick_source.cast_method = RayCastMethod::Screenspace(cached_cursor_pos),
+                    None => pick_source.cast_method = RaycastMethod::Screenspace(cached_cursor_pos),
                 };
             }
             UpdatePicks::OnMouseEvent => match cursor_latest {
                 Some(cursor_moved) => {
-                    pick_source.cast_method = RayCastMethod::Screenspace(cursor_moved)
+                    pick_source.cast_method = RaycastMethod::Screenspace(cursor_moved)
                 }
                 None => continue,
             },
