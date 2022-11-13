@@ -23,7 +23,7 @@ pub fn update_pick_source_positions(
             &touches_input,
         ) {
             Some(value) => value,
-            None => return,
+            None => continue,
         };
         match *update_picks {
             UpdatePicks::EveryFrame(cached_cursor_pos) => {
