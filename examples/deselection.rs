@@ -5,12 +5,14 @@ use bevy_mod_picking::{DefaultPickingPlugins, NoDeselect, PickableBundle, Pickin
 /// clicked on, won't deselect everything else you have selected.
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            present_mode: PresentMode::AutoNoVsync, // Reduce input latency
-            ..Default::default()
-        })
-        .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                present_mode: PresentMode::AutoNoVsync, // Reduce input latency
+                ..default()
+            },
+            ..default()
+        }))
+        .add_plugins(DefaultPickingPlugins) // <- Adds picking, interaction, and highlighting
         .add_startup_system(setup)
         .run();
 }
@@ -22,35 +24,38 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // plane
-    commands
-        .spawn_bundle(PbrBundle {
+    commands.spawn((
+        PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
-        })
-        .insert_bundle(PickableBundle::default());
+        },
+        PickableBundle::default(),
+    ));
 
     // cube
-    commands
-        .spawn_bundle(PbrBundle {
+    commands.spawn((
+        PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            material: materials.add(Color::rgb(0.0, 0.7, 0.6).into()),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
-        })
-        .insert_bundle(PickableBundle::default());
+        },
+        PickableBundle::default(),
+    ));
     // cube with NoDeselect
-    commands
-        .spawn_bundle(PbrBundle {
+    commands.spawn((
+        PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            material: materials.add(Color::rgb(1.8, 0.7, 0.6).into()),
             transform: Transform::from_xyz(1.5, 0.5, 0.0),
             ..Default::default()
-        })
-        .insert_bundle(PickableBundle::default())
-        .insert(NoDeselect);
+        },
+        PickableBundle::default(),
+        NoDeselect,
+    ));
     // light
-    commands.spawn_bundle(PointLightBundle {
+    commands.spawn(PointLightBundle {
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         point_light: PointLight {
             intensity: 1500.0,
@@ -60,10 +65,11 @@ fn setup(
         ..Default::default()
     });
     // camera
-    commands
-        .spawn_bundle(Camera3dBundle {
+    commands.spawn((
+        Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
-        })
-        .insert_bundle(PickingCameraBundle::default());
+        },
+        PickingCameraBundle::default(),
+    ));
 }

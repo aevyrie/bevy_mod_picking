@@ -96,28 +96,25 @@ pub fn mesh_focus(
     let mouse_clicked = mouse_button_input.just_pressed(MouseButton::Left)
         || touches_input.iter_just_pressed().next().is_some();
     for pick_source in pick_source_query.iter() {
-        // There is at least one entity under the cursor
-        if let Some(picks) = pick_source.intersect_list() {
-            for (topmost_entity, _intersection) in picks.iter() {
-                if let Ok((mut interaction, _hover, focus_policy, _entity)) =
-                    interactions.get_mut(*topmost_entity)
-                {
-                    if mouse_clicked {
-                        if *interaction != Interaction::Clicked {
-                            *interaction = Interaction::Clicked;
-                        }
-                    } else if *interaction == Interaction::None {
-                        *interaction = Interaction::Hovered;
+        for (topmost_entity, _intersection) in pick_source.intersections().iter() {
+            if let Ok((mut interaction, _hover, focus_policy, _entity)) =
+                interactions.get_mut(*topmost_entity)
+            {
+                if mouse_clicked {
+                    if *interaction != Interaction::Clicked {
+                        *interaction = Interaction::Clicked;
                     }
+                } else if *interaction == Interaction::None {
+                    *interaction = Interaction::Hovered;
+                }
 
-                    hovered_entity = Some(*topmost_entity);
+                hovered_entity = Some(*topmost_entity);
 
-                    match focus_policy.cloned().unwrap_or(FocusPolicy::Block) {
-                        FocusPolicy::Block => {
-                            break;
-                        }
-                        FocusPolicy::Pass => { /* allow the next node to be hovered/clicked */ }
+                match focus_policy.cloned().unwrap_or(FocusPolicy::Block) {
+                    FocusPolicy::Block => {
+                        break;
                     }
+                    FocusPolicy::Pass => { /* allow the next node to be hovered/clicked */ }
                 }
             }
         }
