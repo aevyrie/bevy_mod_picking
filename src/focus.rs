@@ -6,7 +6,8 @@ use bevy::{prelude::*, ui::FocusPolicy};
 /// # Requirements
 ///
 /// An entity with the `Hover` component must also have an [Interaction] component.
-#[derive(Component, Debug, Default, Copy, Clone)]
+#[derive(Component, Debug, Default, Copy, Clone, Reflect)]
+#[reflect(Component, Default)]
 pub struct Hover {
     hovered: bool,
 }
@@ -20,7 +21,8 @@ impl Hover {
 /// Marker component for entities that, whenever their [Interaction] component is anything other
 /// than `None`, will suspend highlighting and selecting [PickableMesh]s. Bevy UI [Node]s have this
 /// behavior by default.
-#[derive(Component)]
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
 pub struct PickingBlocker;
 
 #[allow(clippy::type_complexity)]
