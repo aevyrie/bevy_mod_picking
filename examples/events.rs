@@ -1,10 +1,11 @@
 use bevy::prelude::*;
+
 use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle, PickingCameraBundle, PickingEvent};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction, and Highlighting plugins.
+        .add_plugins(DefaultPickingPlugins) // <- Adds picking, interaction, and highlighting
         .add_startup_system(setup)
         .add_system_to_stage(CoreStage::PostUpdate, print_events)
         .run();
@@ -25,22 +26,24 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands
-        .spawn_bundle(PbrBundle {
+    commands.spawn((
+        PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
-        })
-        .insert_bundle(PickableBundle::default()); // <- Makes the mesh pickable.
-    commands
-        .spawn_bundle(PbrBundle {
+        },
+        PickableBundle::default(), // <- Makes the mesh pickable.
+    ));
+    commands.spawn((
+        PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
-        })
-        .insert_bundle(PickableBundle::default()); // <- Makes the mesh pickable.
-    commands.spawn_bundle(PointLightBundle {
+        },
+        PickableBundle::default(), // <- Makes the mesh pickable.
+    ));
+    commands.spawn(PointLightBundle {
         point_light: PointLight {
             intensity: 1500.0,
             shadows_enabled: true,
@@ -49,10 +52,11 @@ fn setup(
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..Default::default()
     });
-    commands
-        .spawn_bundle(Camera3dBundle {
+    commands.spawn((
+        Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
-        })
-        .insert_bundle(PickingCameraBundle::default()); // <- Sets the camera to use for picking.
+        },
+        PickingCameraBundle::default(), // <- Sets the camera to use for picking.
+    ));
 }
