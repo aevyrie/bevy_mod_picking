@@ -17,8 +17,7 @@ fn main() {
             },
             ..default()
         }))
-        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction plugins.
-        .add_plugins(HighlightablePickingPlugins) // <- Adds Highlighting plugins.
+        .add_plugins(DefaultPickingPlugins) // <- Adds picking, interaction, and highlighting
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_startup_system(setup)

@@ -1,8 +1,8 @@
 use bevy::{prelude::*, window::PresentMode};
 
 use bevy_mod_picking::{
-    DebugCursorPickingPlugin, DebugEventsPickingPlugin, DefaultPickingPlugins,
-    HighlightablePickingPlugins, PickableBundle, PickingCameraBundle,
+    DebugCursorPickingPlugin, DebugEventsPickingPlugin, DefaultPickingPlugins, PickableBundle,
+    PickingCameraBundle,
 };
 
 fn main() {
@@ -14,10 +14,9 @@ fn main() {
             },
             ..default()
         }))
-        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction plugins.
-        .add_plugins(HighlightablePickingPlugins) // <- Adds Highlighting plugins.
-        .add_plugin(DebugCursorPickingPlugin) // <- Adds the debug cursor.
-        .add_plugin(DebugEventsPickingPlugin) // <- Adds debug event logging.
+        .add_plugins(DefaultPickingPlugins) // <- Adds picking, interaction, and highlighting
+        .add_plugin(DebugCursorPickingPlugin) // <- Adds the debug cursor (optional)
+        .add_plugin(DebugEventsPickingPlugin) // <- Adds debug event logging (optional)
         .add_startup_system(setup)
         .run();
 }

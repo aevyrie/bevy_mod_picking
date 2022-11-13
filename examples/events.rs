@@ -1,15 +1,11 @@
 use bevy::prelude::*;
 
-use bevy_mod_picking::{
-    DefaultPickingPlugins, HighlightablePickingPlugins, PickableBundle, PickingCameraBundle,
-    PickingEvent,
-};
+use bevy_mod_picking::{DefaultPickingPlugins, PickableBundle, PickingCameraBundle, PickingEvent};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction plugins.
-        .add_plugins(HighlightablePickingPlugins) // <- Adds Highlighting plugins.
+        .add_plugins(DefaultPickingPlugins) // <- Adds picking, interaction, and highlighting
         .add_startup_system(setup)
         .add_system_to_stage(CoreStage::PostUpdate, print_events)
         .run();

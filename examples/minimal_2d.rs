@@ -1,14 +1,12 @@
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::{
-    DebugEventsPickingPlugin, DefaultPickingPlugins, HighlightablePickingPlugins, PickableBundle,
-    PickingCameraBundle,
+    DebugEventsPickingPlugin, DefaultPickingPlugins, PickableBundle, PickingCameraBundle,
 };
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction plugins.
-        .add_plugins(HighlightablePickingPlugins) // <- Adds Highlighting plugins.
+        .add_plugins(DefaultPickingPlugins) // <- Adds picking, interaction, and highlighting
         .add_plugin(DebugEventsPickingPlugin) // <- Adds debug event logging.
         .add_startup_system(setup)
         .run();

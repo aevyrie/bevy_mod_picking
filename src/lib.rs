@@ -95,6 +95,8 @@ impl PluginGroup for DefaultPickingPlugins {
         PluginGroupBuilder::start::<Self>()
             .add(PickingPlugin)
             .add(InteractablePickingPlugin)
+            .add(CustomHighlightPlugin(StandardMaterialHighlight))
+            .add(CustomHighlightPlugin(ColorMaterialHighlight))
     }
 }
 
@@ -163,15 +165,6 @@ impl Plugin for InteractablePickingPlugin {
                             .after(PickingSystem::Selection),
                     ),
             );
-    }
-}
-
-pub struct HighlightablePickingPlugins;
-impl PluginGroup for HighlightablePickingPlugins {
-    fn build(self) -> PluginGroupBuilder {
-        PluginGroupBuilder::start::<Self>()
-            .add(CustomHighlightPlugin(StandardMaterialHighlight))
-            .add(CustomHighlightPlugin(ColorMaterialHighlight))
     }
 }
 

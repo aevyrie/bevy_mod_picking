@@ -1,8 +1,5 @@
 use bevy::{prelude::*, window::PresentMode};
-use bevy_mod_picking::{
-    DefaultPickingPlugins, HighlightablePickingPlugins, NoDeselect, PickableBundle,
-    PickingCameraBundle,
-};
+use bevy_mod_picking::{DefaultPickingPlugins, NoDeselect, PickableBundle, PickingCameraBundle};
 
 /// This example is identical to the 3d_scene example, except a cube has been added, that when
 /// clicked on, won't deselect everything else you have selected.
@@ -15,8 +12,7 @@ fn main() {
             },
             ..default()
         }))
-        .add_plugins(DefaultPickingPlugins) // <- Adds Picking, Interaction plugins.
-        .add_plugins(HighlightablePickingPlugins) // <- Adds Highlighting plugins.
+        .add_plugins(DefaultPickingPlugins) // <- Adds picking, interaction, and highlighting
         .add_startup_system(setup)
         .run();
 }
