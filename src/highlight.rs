@@ -3,12 +3,13 @@ use crate::PausedForBlockers;
 use bevy::{asset::Asset, prelude::*, render::color::Color};
 
 /// Marker component to flag an entity as highlightable
-#[derive(Component, Clone, Debug, Default)]
+#[derive(Component, Clone, Debug, Default, Reflect)]
+#[reflect(Component)]
 pub struct Highlight;
 
 /// Component used to track the initial asset of a highlightable object, as well as for overriding
 /// the default highlight materials.
-#[derive(Component, Clone, Debug)]
+#[derive(Component, Clone, Debug, Reflect)]
 pub struct Highlighting<T: Asset> {
     pub initial: Handle<T>,
     pub hovered: Option<Handle<T>>,
