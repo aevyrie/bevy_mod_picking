@@ -21,33 +21,24 @@ pub struct Highlighting<T: Asset> {
 /// with the [`Highlighting`] component.
 #[derive(Clone, Debug, Resource)]
 pub struct DefaultHighlighting<T: Highlightable + ?Sized> {
-    pub hovered: Handle<T::HighlightAsset>,
-    pub pressed: Handle<T::HighlightAsset>,
-    pub selected: Handle<T::HighlightAsset>,
+    pub hovered: Handle<T>,
+    pub pressed: Handle<T>,
+    pub selected: Handle<T>,
 }
 
 /// This trait makes it possible for highlighting to be generic over any type of asset.
-pub trait Highlightable: Default {
+pub trait Highlightable: Default + Asset {
     /// The asset used to highlight the picked object. For a 3D mesh, this would probably be [`StandardMaterial`].
-    type HighlightAsset: Asset;
-    fn highlight_defaults(
-        materials: Mut<Assets<Self::HighlightAsset>>,
-    ) -> DefaultHighlighting<Self>;
-    fn materials(world: &mut World) -> Mut<Assets<Self::HighlightAsset>> {
+    fn highlight_defaults(materials: Mut<Assets<Self>>) -> DefaultHighlighting<Self>;
+    fn materials(world: &mut World) -> Mut<Assets<Self>> {
         world
-            .get_resource_mut::<Assets<Self::HighlightAsset>>()
+            .get_resource_mut::<Assets<Self>>()
             .expect("Failed to get resource")
     }
 }
 
-#[derive(Default)]
-pub struct StandardMaterialHighlight;
-impl Highlightable for StandardMaterialHighlight {
-    type HighlightAsset = StandardMaterial;
-
-    fn highlight_defaults(
-        mut materials: Mut<Assets<Self::HighlightAsset>>,
-    ) -> DefaultHighlighting<Self> {
+impl Highlightable for StandardMaterial {
+    fn highlight_defaults(mut materials: Mut<Assets<Self>>) -> DefaultHighlighting<Self> {
         DefaultHighlighting {
             hovered: materials.add(Color::rgb(0.35, 0.35, 0.35).into()),
             pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
@@ -56,14 +47,8 @@ impl Highlightable for StandardMaterialHighlight {
     }
 }
 
-#[derive(Default)]
-pub struct ColorMaterialHighlight;
-impl Highlightable for ColorMaterialHighlight {
-    type HighlightAsset = ColorMaterial;
-
-    fn highlight_defaults(
-        mut materials: Mut<Assets<Self::HighlightAsset>>,
-    ) -> DefaultHighlighting<Self> {
+impl Highlightable for ColorMaterial {
+    fn highlight_defaults(mut materials: Mut<Assets<Self>>) -> DefaultHighlighting<Self> {
         DefaultHighlighting {
             hovered: materials.add(Color::rgb(0.35, 0.35, 0.35).into()),
             pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
@@ -107,9 +92,9 @@ pub fn mesh_highlighting<T: 'static + Highlightable + Send + Sync>(
     mut interaction_query: Query<
         (
             &Interaction,
-            &mut Handle<T::HighlightAsset>,
+            &mut Handle<T>,
             Option<&Selection>,
-            &Highlighting<T::HighlightAsset>,
+            &Highlighting<T>,
         ),
         Or<(Changed<Interaction>, Changed<Selection>)>,
     >,
