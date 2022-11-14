@@ -8,9 +8,8 @@ fn main() {
             brightness: 0.2,
         })
         .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPickingPlugins::start().with_backend(RaycastBackend))
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
-        .add_plugins(DefaultPickingPlugins::build(RaycastBackend))
-        .add_plugin(DebugPickingPlugin::default())
         .add_startup_system(setup)
         .add_system(make_pickable)
         .add_system(HelmetClicked::handle_events)
@@ -18,19 +17,20 @@ fn main() {
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands
-        .spawn_bundle(Camera3dBundle {
+    commands.spawn((
+        Camera3dBundle {
             transform: Transform::from_xyz(0.7, 0.7, 1.0)
                 .looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
             ..default()
-        })
-        .insert(PickRaycastSource::default()); // <- Sets the camera to use for picking.;
-    commands.spawn_bundle(DirectionalLightBundle {
+        },
+        PickRaycastSource::default(), // <- Sets the camera to use for picking.;
+    ));
+    commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight { ..default() },
         ..default()
     });
     commands
-        .spawn_bundle(SceneBundle {
+        .spawn(SceneBundle {
             scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
             ..default()
         })
@@ -67,7 +67,6 @@ fn make_pickable(
     for entity in meshes.iter() {
         commands
             .entity(entity)
-            .insert_bundle(PickableBundle::default())
-            .insert(PickRaycastTarget::default());
+            .insert((PickableBundle::default(), PickRaycastTarget::default()));
     }
 }

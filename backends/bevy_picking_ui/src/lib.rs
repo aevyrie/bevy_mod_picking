@@ -14,13 +14,9 @@ pub mod prelude {
 }
 
 /// Adds picking support for [`bevy_ui`](bevy::ui)
+#[derive(Clone)]
 pub struct BevyUiBackend;
 impl PickingBackend for BevyUiBackend {}
-impl PluginGroup for BevyUiBackend {
-    fn build(&mut self, group: &mut bevy::app::PluginGroupBuilder) {
-        group.add(Self);
-    }
-}
 impl Plugin for BevyUiBackend {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
@@ -51,7 +47,7 @@ pub fn ui_picking(
             .filter_map(|(entity, node, global_transform, clip)| {
                 let position = global_transform.translation();
                 let ui_position = position.truncate();
-                let extents = node.size / 2.0;
+                let extents = node.size() / 2.0;
                 let mut min = ui_position - extents;
                 let mut max = ui_position + extents;
                 if let Some(clip) = clip {

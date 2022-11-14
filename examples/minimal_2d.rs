@@ -4,9 +4,8 @@ use bevy_mod_picking::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPickingPlugins::start().with_backend(RaycastBackend))
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
-        .add_plugins(DefaultPickingPlugins::build(RaycastBackend))
-        .add_plugin(DebugPickingPlugin::default())
         .add_startup_system(setup)
         .run();
 }
@@ -17,17 +16,16 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    commands
-        .spawn_bundle(MaterialMesh2dBundle {
+    commands.spawn((
+        MaterialMesh2dBundle {
             mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
             transform: Transform::default().with_scale(Vec3::splat(128.)),
             material: materials.add(ColorMaterial::from(Color::PURPLE)),
             ..default()
-        })
-        .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
-        .insert(PickRaycastTarget::default()); // <- Needed for the raycast backend.
+        },
+        PickableBundle::default(),    // <- Makes the mesh pickable.
+        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+    ));
 
-    commands
-        .spawn_bundle(Camera2dBundle::default())
-        .insert(PickRaycastSource::default()); // <- Sets the camera to use for picking.
+    commands.spawn((Camera2dBundle::default(), PickRaycastSource::default())); // <- Sets the camera to use for picking.
 }

@@ -544,7 +544,7 @@ fn update_interactions<E: Clone + Send + Sync + Reflect>(
 }
 
 /// Maps pointers to the entities they are dragging.
-#[derive(Debug, Deref, DerefMut, Default)]
+#[derive(Debug, Deref, DerefMut, Default, Resource)]
 pub struct DragMap(pub HashMap<PointerId, Option<Entity>>);
 
 /// Uses pointer events to determine when click and drag events occur.

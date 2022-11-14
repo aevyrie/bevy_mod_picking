@@ -39,18 +39,18 @@ use bevy_mod_picking::*;
 
 3. Add the plugin to your app:
 ```rs
-.add_plugins(DefaultPickingPlugins);
+.add_plugin(DefaultPickingPlugin);
 ```
 
 4. Mark your camera as the picking source with the `PickingSourceBundle` component:
 ```rs
-.insert_bundle(PickingSourceBundle::default());
+.insert((PickingSourceBundle::default());
 ```
 
 
 4. Add the `PickableBundle` component to any meshes you want to make pickable:
 ```rs
-.insert_bundle(PickableBundle::default())
+.insert((PickableBundle::default())
 ```
 
 That's all there is to it! Read [the docs](https://docs.rs/bevy_mod_picking) and look at the provided examples to learn more.

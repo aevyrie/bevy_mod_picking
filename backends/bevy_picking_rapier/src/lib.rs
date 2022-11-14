@@ -14,13 +14,9 @@ pub mod prelude {
 }
 
 /// Adds the `rapier` raycasting picking backend to your app.
+#[derive(Clone)]
 pub struct RapierBackend;
 impl PickingBackend for RapierBackend {}
-impl PluginGroup for RapierBackend {
-    fn build(&mut self, group: &mut bevy::app::PluginGroupBuilder) {
-        group.add(Self);
-    }
-}
 impl Plugin for RapierBackend {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(CoreStage::First, build_rays_from_pointers)

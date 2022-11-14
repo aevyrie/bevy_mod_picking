@@ -27,7 +27,13 @@ pub mod prelude {
 }
 
 /// Implement this trait for a group of plugins to make them useable as a picking backend.
-pub trait PickingBackend: bevy::app::PluginGroup {}
+pub trait PickingBackend: bevy::app::Plugin {}
+
+impl Plugin for Box<dyn PickingBackend> {
+    fn build(&self, app: &mut App) {
+        (**self).build(app);
+    }
+}
 
 /// An event produced by a picking backend, describing the entities under a pointer in an unordered
 /// list.

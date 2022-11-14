@@ -5,7 +5,7 @@
 #![deny(missing_docs)]
 
 use bevy::prelude::*;
-use bevy_mod_raycast::{Ray3d, RayCastSource};
+use bevy_mod_raycast::{Ray3d, RaycastSource};
 use bevy_picking_core::backend::{prelude::*, PickingBackend};
 
 /// Commonly used imports for the [`bevy_picking_raycast`](crate) crate.
@@ -14,13 +14,9 @@ pub mod prelude {
 }
 
 /// Adds the raycasting picking backend to your app.
+#[derive(Clone)]
 pub struct RaycastBackend;
 impl PickingBackend for RaycastBackend {}
-impl PluginGroup for RaycastBackend {
-    fn build(&mut self, group: &mut bevy::app::PluginGroupBuilder) {
-        group.add(RaycastBackend);
-    }
-}
 impl Plugin for RaycastBackend {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(CoreStage::First, build_rays_from_pointers)
@@ -37,21 +33,21 @@ impl Plugin for RaycastBackend {
 }
 
 /// Marks an entity that should be pickable with [`bevy_mod_raycast`] ray casts.
-pub type PickRaycastTarget = bevy_mod_raycast::RayCastMesh<RaycastPickingSet>;
+pub type PickRaycastTarget = bevy_mod_raycast::RaycastMesh<RaycastPickingSet>;
 
 /// Marks a camera that should be used for [`bevy_mod_raycast`] picking.
 #[derive(Debug, Default, Clone, Component)]
 pub struct PickRaycastSource;
 
 /// This unit struct is used to tag the generic ray casting types
-/// [`RayCastMesh`](bevy_mod_raycast::RayCastMesh) and [`RayCastSource`].
+/// [`RaycastMesh`](bevy_mod_raycast::RaycastMesh) and [`RaycastSource`].
 pub struct RaycastPickingSet;
 
 /// Builds rays and updates raycasting [`PickRaycastSource`]s from [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
     pointers: Query<(Entity, &PointerLocation)>,
     mut commands: Commands,
-    mut sources: Query<&mut RayCastSource<RaycastPickingSet>>,
+    mut sources: Query<&mut RaycastSource<RaycastPickingSet>>,
     cameras: Query<(&Camera, &GlobalTransform), With<PickRaycastSource>>,
 ) {
     sources.iter_mut().for_each(|mut source| {
@@ -72,7 +68,7 @@ pub fn build_rays_from_pointers(
                 if let Ok(mut source) = sources.get_mut(entity) {
                     source.ray = ray;
                 } else {
-                    let mut source = RayCastSource::<RaycastPickingSet>::default();
+                    let mut source = RaycastSource::<RaycastPickingSet>::default();
                     source.ray = ray;
                     commands.entity(entity).insert(source);
                 }
@@ -82,18 +78,16 @@ pub fn build_rays_from_pointers(
 
 /// Produces [`EntitiesUnderPointer`]s from [`PickRaycastSource`] intersections.
 fn update_hits(
-    mut sources: Query<(&RayCastSource<RaycastPickingSet>, &PointerId)>,
+    mut sources: Query<(&RaycastSource<RaycastPickingSet>, &PointerId)>,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
     for (source, &id) in &mut sources {
         let under_cursor: Vec<EntityDepth> = source
-            .intersect_list()
+            .intersections()
             .iter()
-            .flat_map(|inner| {
-                inner.iter().map(|(entity, intersection)| EntityDepth {
-                    entity: *entity,
-                    depth: intersection.distance(),
-                })
+            .map(|(entity, intersection)| EntityDepth {
+                entity: *entity,
+                depth: intersection.distance(),
             })
             .collect();
 

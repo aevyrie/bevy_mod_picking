@@ -41,7 +41,7 @@
 //! # ) {
 //! commands
 //!     .spawn()
-//!     .insert_bundle(PickableBundle::default())       // Make the entity pickable
+//!     .insert((PickableBundle::default())       // Make the entity pickable
 //!     .insert(PickRaycastTarget::default())           // Marker for the `mod_picking` backend
 //! # }
 //! ```
@@ -96,21 +96,13 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{app::PluginGroupBuilder, prelude::*, ui::FocusPolicy};
-use bevy_picking_core::backend::PickingBackend;
+pub use bevy_picking_core::{self as core, backend, focus, output, pointer};
+pub use bevy_picking_highlight as highlight;
+pub use bevy_picking_input::{self as input};
+pub use bevy_picking_selection as selection;
 
 pub mod debug;
-
-// Re-exports
-pub use bevy_picking_core::{self as core, backend, focus, output, pointer};
-
-// Optional, feature-gated exports
-#[cfg(feature = "highlight")]
-pub use bevy_picking_highlight as highlight;
-#[cfg(feature = "input")]
-pub use bevy_picking_input::{self as input};
-#[cfg(feature = "selection")]
-pub use bevy_picking_selection as selection;
+pub mod plugins;
 
 /// Picking backend exports, feature-gated.
 pub mod backends {
@@ -127,133 +119,31 @@ pub mod backends {
 /// Common imports
 pub mod prelude {
     pub use crate::{
+        backends,
         debug::DebugPickingPlugin,
+        highlight::{
+            CustomHighlightingPlugin, DefaultHighlighting, HighlightOverride, Highlightable,
+            HighlightingPlugin, PickHighlight,
+        },
         output::{
             EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerClick, PointerDown,
             PointerDrag, PointerDragEnd, PointerDragEnter, PointerDragLeave, PointerDragOver,
             PointerDragStart, PointerDrop, PointerEventData, PointerMove, PointerOut, PointerOver,
             PointerUp,
         },
+        plugins::{DefaultPickingPlugins, PickableBundle},
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
-        DefaultPickingPlugins, PickableBundle,
+        selection::{
+            NoDeselect, PickSelection, PointerDeselect, PointerMultiselect, PointerSelect,
+            SelectionPlugin,
+        },
     };
-
-    #[cfg(feature = "highlight")]
-    pub use crate::highlight::{
-        CustomHighlightingPlugin, DefaultHighlighting, HighlightOverride, Highlightable,
-        HighlightingPlugins, PickHighlight,
-    };
-
-    #[cfg(feature = "selection")]
-    pub use crate::selection::{
-        NoDeselect, PickSelection, PointerDeselect, PointerMultiselect, PointerSelect,
-        SelectionPlugin,
-    };
-
-    pub use crate::backends;
     #[cfg(feature = "backend_bevy_ui")]
-    pub use crate::backends::bevy_ui::prelude::*;
+    pub use backends::bevy_ui::prelude::*;
     #[cfg(feature = "backend_rapier")]
-    pub use crate::backends::rapier::prelude::*;
+    pub use backends::rapier::prelude::*;
     #[cfg(feature = "backend_raycast")]
-    pub use crate::backends::raycast::prelude::*;
+    pub use backends::raycast::prelude::*;
     #[cfg(feature = "backend_shader")]
-    pub use crate::backends::shader::prelude::*;
-}
-
-/// A "batteries-included" set of plugins that adds everything needed for picking, highlighting, and
-/// multiselect.
-///
-/// You will need to add at least one backend to construct this plugin group.
-pub struct DefaultPickingPlugins;
-impl DefaultPickingPlugins {
-    /// Construct a set of picking plugins with the supplied backend.
-    pub fn build(backend: impl PickingBackend + 'static) -> DefaultPickingPluginsBuilder {
-        let mut result = DefaultPickingPluginsBuilder {
-            backends: Vec::new(),
-        };
-        result.backends.push(Box::new(backend));
-        result
-    }
-}
-
-/// A type that facilitates building picking plugin groups correctly. [`DefaultPickingPlugins`] does
-/// not implement [`PluginGroup`], so it cannot be added to a bevy app with `.add_plugins()`. The
-/// type [`DefaultPickingPluginsBuilder`] *does* implement `PluginGroups` but can only be created
-/// using the `with_backend()` functions. This ensures that when a user is adding this plugin, the
-/// type system will guarantee thy have added at least one picking backend.
-pub struct DefaultPickingPluginsBuilder {
-    backends: Vec<Box<dyn PickingBackend>>,
-}
-
-impl DefaultPickingPluginsBuilder {
-    /// Adds a backend
-    pub fn with_backend(
-        mut self,
-        backend: impl PickingBackend + 'static,
-    ) -> DefaultPickingPluginsBuilder {
-        self.backends.push(Box::new(backend));
-        self
-    }
-}
-
-impl PluginGroup for DefaultPickingPluginsBuilder {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group
-            .add(core::CorePlugin)
-            .add(core::InteractionPlugin)
-            .add(input::InputPlugin);
-
-        // Optional
-        #[cfg(feature = "selection")]
-        group.add(selection::SelectionPlugin);
-        #[cfg(feature = "highlight")]
-        highlight::HighlightingPlugins.build(group);
-
-        for mut backend in self.backends.drain(..) {
-            backend.build(group);
-        }
-    }
-}
-
-/// Makes an entity pickable.
-#[derive(Bundle, Default)]
-pub struct PickableBundle {
-    /// Tracks entity [`Interaction`] state.
-    pub interaction: Interaction,
-    /// The entity's configurable [`FocusPolicy`]
-    pub focus_policy: FocusPolicy,
-    #[cfg(feature = "selection")]
-    /// Tracks entity [`PickSelection`](selection::PickSelection) state.
-    pub selection: selection::PickSelection,
-    #[cfg(feature = "highlight")]
-    /// Tracks entity [`PickHighlight`](highlight::PickHighlight) state.
-    pub highlight: highlight::PickHighlight,
-}
-
-/// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
-/// being an entity.
-///
-/// `Mouse` and `Touch` pointers are automatically spawned as needed. Use this bundle if you are
-/// spawning a custom `PointerId::Custom` pointer, either for testing, or as a software controlled
-/// pointer, or if you are replacing or extending the default touch and mouse inputs.
-#[derive(Bundle)]
-pub struct PointerBundle {
-    #[bundle]
-    /// The core pointer components bundle
-    pub core: core::PointerCoreBundle,
-    #[cfg(feature = "selection")]
-    /// Tracks whether the pointer's multiselect is active.
-    pub multi_select: selection::PointerMultiselect,
-}
-
-impl PointerBundle {
-    /// Create a new pointer with the provided [`PointerId`](pointer::PointerId).
-    pub fn new(id: pointer::PointerId) -> Self {
-        PointerBundle {
-            core: core::PointerCoreBundle::new(id),
-            #[cfg(feature = "selection")]
-            multi_select: selection::PointerMultiselect::default(),
-        }
-    }
+    pub use backends::shader::prelude::*;
 }

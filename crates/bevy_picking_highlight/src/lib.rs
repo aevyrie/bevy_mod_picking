@@ -7,16 +7,16 @@
 
 use std::marker::PhantomData;
 
-use bevy::{app::PluginGroupBuilder, asset::Asset, prelude::*, render::color::Color};
+use bevy::{asset::Asset, prelude::*, render::color::Color};
 use bevy_picking_core::PickStage;
 use bevy_picking_selection::PickSelection;
 
 /// Adds pick highlighting functionality to your app.
-pub struct HighlightingPlugins;
-impl PluginGroup for HighlightingPlugins {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(CustomHighlightingPlugin::<StandardMaterial>::default());
-        group.add(CustomHighlightingPlugin::<ColorMaterial>::default());
+pub struct HighlightingPlugin;
+impl Plugin for HighlightingPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugin(CustomHighlightingPlugin::<StandardMaterial>::default())
+            .add_plugin(CustomHighlightingPlugin::<ColorMaterial>::default());
     }
 }
 
@@ -80,6 +80,7 @@ pub struct InitialHighlight<T: Asset> {
 
 /// Resource that defines the default highlighting assets to use. This can be overridden per-entity
 /// with the [`HighlightOverride`] component.
+#[derive(Resource)]
 pub struct DefaultHighlighting<T: Highlightable + ?Sized> {
     /// Default asset handle to use for hovered entities without a [`HighlightOverride`].
     pub hovered: Handle<T>,
@@ -92,28 +93,22 @@ pub struct DefaultHighlighting<T: Highlightable + ?Sized> {
 impl<T: Highlightable> DefaultHighlighting<T> {
     /// Returns the hovered highlight override if it exists, falling back to the default.
     pub fn hovered(&self, h_override: &Option<&HighlightOverride<T>>) -> Handle<T> {
-        if let Some(h_override) = h_override.and_then(|h| h.hovered.as_ref()) {
-            h_override.to_owned()
-        } else {
-            self.hovered.clone()
-        }
+        h_override
+            .and_then(|h| h.hovered.to_owned())
+            .unwrap_or_else(|| self.hovered.clone())
     }
 
     /// Returns the pressed highlight override if it exists, falling back to the default.
     pub fn pressed(&self, h_override: &Option<&HighlightOverride<T>>) -> Handle<T> {
-        if let Some(h_override) = h_override.and_then(|h| h.pressed.as_ref()) {
-            h_override.to_owned()
-        } else {
-            self.pressed.clone()
-        }
+        h_override
+            .and_then(|h| h.pressed.to_owned())
+            .unwrap_or_else(|| self.pressed.clone())
     }
     /// Returns the selected highlight override if it exists, falling back to the default.
     pub fn selected(&self, h_override: &Option<&HighlightOverride<T>>) -> Handle<T> {
-        if let Some(h_override) = h_override.and_then(|h| h.selected.as_ref()) {
-            h_override.to_owned()
-        } else {
-            self.selected.clone()
-        }
+        h_override
+            .and_then(|h| h.selected.to_owned())
+            .unwrap_or_else(|| self.selected.clone())
     }
 }
 

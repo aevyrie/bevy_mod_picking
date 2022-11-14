@@ -1,6 +1,6 @@
 [package]
 name = "bevy_mod_picking"
-version = "0.6.0"
+version = "0.11.0"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -14,12 +14,15 @@ resolver = "2"
 members = ["crates/*", "backends/*"]
 
 [dependencies]
-bevy = { version = "0.8", default-features = false, features = ["bevy_render"] }
+bevy = { version = "0.9", default-features = false, features = [
+    "bevy_render",
+    "bevy_ui",
+] }
 # Local
 bevy_picking_core = { path = "crates/bevy_picking_core" }
-bevy_picking_input = { optional = true, path = "crates/bevy_picking_input", default-features = false }
-bevy_picking_selection = { optional = true, path = "crates/bevy_picking_selection" }
-bevy_picking_highlight = { optional = true, path = "crates/bevy_picking_highlight" }
+bevy_picking_input = { path = "crates/bevy_picking_input" }
+bevy_picking_selection = { path = "crates/bevy_picking_selection" }
+bevy_picking_highlight = { path = "crates/bevy_picking_highlight" }
 bevy_picking_raycast = { optional = true, path = "backends/bevy_picking_raycast" }
 bevy_picking_ui = { optional = true, path = "backends/bevy_picking_ui" }
 bevy_picking_rapier = { optional = true, path = "backends/bevy_picking_rapier" }
@@ -27,46 +30,21 @@ bevy_picking_shader = { optional = true, path = "backends/bevy_picking_shader" }
 
 
 [dev-dependencies]
-bevy = { version = "0.8", default-features = false, features = [
-  "bevy_winit",
-  "x11",
-  "bevy_gltf",
-  "bevy_scene",
-  "png",
+bevy = { version = "0.9", default-features = false, features = [
+    "bevy_winit",
+    "x11",
+    "bevy_gltf",
+    "bevy_scene",
+    "png",
 ] }
-bevy_rapier3d = "0.17"
-bevy_framepace = "0.7"
+bevy_framepace = "0.9.1"
+bevy_rapier3d = { git = "https://github.com/devil-ira/bevy_rapier", branch = "bevy-0.9" }
 bevy_mod_picking = { path = "", features = ["all"] }
 
 [features]
-default = [
-  "input",
-  "highlight",
-  "selection",
-  "backend_raycast",
-  "backend_bevy_ui",
-]
-all = [
-  "input",
-  "highlight",
-  "selection",
-  "backend_raycast",
-  "backend_bevy_ui",
-  "backend_rapier",
-  "backend_shader",
-]
-input = ["bevy_picking_input"]
-highlight = ["bevy_picking_highlight"]
-selection = ["bevy_picking_selection", "bevy_picking_input/selection"]
+default = ["backend_raycast", "backend_bevy_ui"]
+all = ["backend_raycast", "backend_bevy_ui", "backend_rapier", "backend_shader"]
 backend_raycast = ["bevy_picking_raycast"]
 backend_rapier = ["bevy_picking_rapier"]
 backend_shader = ["bevy_picking_shader"]
 backend_bevy_ui = ["bevy_picking_ui"]
-
-[[example]]
-name = "bevy_ui"
-path = "examples/backends/bevy_ui.rs"
-
-[[example]]
-name = "rapier"
-path = "examples/backends/rapier.rs"

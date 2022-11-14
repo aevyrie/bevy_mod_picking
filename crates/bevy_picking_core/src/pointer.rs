@@ -1,6 +1,6 @@
 //! Types and systems for pointer inputs, such as position and buttons.
 
-use bevy::{prelude::*, reflect::Uuid, render::camera::RenderTarget, utils::HashMap};
+use bevy::{prelude::*, render::camera::RenderTarget, utils::HashMap};
 use std::fmt::Debug;
 
 /// Identifies a unique pointer entity. `Mouse` and `Touch` pointers are automatically spawned.
@@ -12,7 +12,7 @@ pub enum PointerId {
     Mouse,
     /// A custom, uniquely identified pointer. Useful for mocking inputs or implementing a software
     /// controlled cursor.
-    Custom(Uuid),
+    Custom([u8; 16]),
 }
 impl PointerId {
     /// Returns true if the pointer is a touch input.
@@ -38,7 +38,7 @@ impl PointerId {
 }
 
 /// Maps pointers to their entity for easy lookups.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Resource)]
 pub struct PointerMap {
     inner: HashMap<PointerId, Entity>,
 }

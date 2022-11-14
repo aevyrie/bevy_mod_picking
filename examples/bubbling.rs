@@ -23,9 +23,8 @@ use bevy_mod_picking::prelude::{
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPickingPlugins::start().with_backend(RaycastBackend))
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
-        .add_plugins(DefaultPickingPlugins::build(RaycastBackend))
-        .add_plugin(DebugPickingPlugin::default())
         .add_startup_system(setup)
         .add_system(DeleteMe::handle_events)
         .add_system(GreetMe::handle_events)
@@ -83,33 +82,36 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::WHITE.into()),
-            ..Default::default()
-        })
-        .insert_bundle(PickableBundle::default())
-        .insert(PickRaycastTarget::default())
+        .spawn((
+            PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                material: materials.add(Color::WHITE.into()),
+                ..Default::default()
+            },
+            PickableBundle::default(),
+            PickRaycastTarget::default(),
+        ))
         // Because event forwarding can rely on event bubbling, events that target children of the
         // parent cube will bubble up to this level and will fire off a `GreetMe` or `DeleteMe`
         // event, depending on the event that bubbled up:
         .forward_events::<PointerClick, DeleteMe>()
         .forward_events::<PointerOver, GreetMe>()
         .with_children(|parent| {
-            parent
-                .spawn_bundle(PbrBundle {
+            parent.spawn((
+                PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::Cube { size: 0.4 })),
                     material: materials.add(Color::RED.into()),
                     transform: Transform::from_xyz(0.0, 1.0, 0.0),
                     ..Default::default()
-                })
+                },
                 // As noted above, we are adding a child here but we don't need to add an
                 // event listener. Events on this child will bubble up to the parent!
-                .insert_bundle(PickableBundle::default())
-                .insert(PickRaycastTarget::default());
+                PickableBundle::default(),
+                PickRaycastTarget::default(),
+            ));
         });
 
-    commands.spawn_bundle(PointLightBundle {
+    commands.spawn(PointLightBundle {
         point_light: PointLight {
             intensity: 1500.0,
             shadows_enabled: true,
@@ -118,10 +120,11 @@ fn setup(
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..Default::default()
     });
-    commands
-        .spawn_bundle(Camera3dBundle {
+    commands.spawn((
+        Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
-        })
-        .insert(PickRaycastSource::default());
+        },
+        PickRaycastSource::default(),
+    ));
 }

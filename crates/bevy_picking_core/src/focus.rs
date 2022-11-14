@@ -26,11 +26,11 @@ type OverMap = HashMap<PointerId, LayerMap>;
 /// specifically, a pointer is "over" an entity if it is within the bounds of that entity, whereas a
 /// pointer is "hovering" an entity only if the mouse is "over" the entity AND it is the topmost
 /// entity(s) according to `FocusPolicy` and `RenderLayer`.
-#[derive(Debug, Deref, DerefMut, Default)]
+#[derive(Debug, Deref, DerefMut, Default, Resource)]
 pub struct HoverMap(pub HashMap<PointerId, HashSet<Entity>>);
 
 /// The previous state of the hover map, used to track changes to hover state.
-#[derive(Debug, Deref, DerefMut, Default)]
+#[derive(Debug, Deref, DerefMut, Default, Resource)]
 pub struct PreviousHoverMap(pub HashMap<PointerId, HashSet<Entity>>);
 
 /// Coalesces all data from inputs and backends to generate a map of the currently hovered entities.

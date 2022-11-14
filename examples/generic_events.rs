@@ -11,8 +11,8 @@ use bevy_mod_picking::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPickingPlugins::start().with_backend(RaycastBackend))
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
-        .add_plugins(DefaultPickingPlugins::build(RaycastBackend))
         .add_startup_system(setup)
         .add_system(SpecificEvent::handle_events)
         .add_system(GeneralEvent::handle_events)
@@ -80,32 +80,35 @@ fn setup(
 ) {
     // cube
     commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::WHITE.into()),
-            ..Default::default()
-        })
-        .insert_bundle(PickableBundle::default())
-        .insert(PickRaycastTarget::default())
+        .spawn((
+            PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                material: materials.add(Color::WHITE.into()),
+                ..Default::default()
+            },
+            PickableBundle::default(),
+            PickRaycastTarget::default(),
+        ))
         // Because event forwarding can rely on event bubbling, events that target children of the
         // parent cube will also bubble up to this parent level and will fire off an event:
         .forward_events::<PointerOver, SpecificEvent>()
         .forward_events::<PointerOut, SpecificEvent>()
         .forward_events::<PointerDown, GeneralEvent>()
         .with_children(|parent| {
-            parent
-                .spawn_bundle(PbrBundle {
+            parent.spawn((
+                PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::Cube { size: 0.4 })),
                     material: materials.add(Color::RED.into()),
                     transform: Transform::from_xyz(0.0, 1.0, 0.0),
                     ..Default::default()
-                })
-                .insert_bundle(PickableBundle::default())
-                .insert(PickRaycastTarget::default());
+                },
+                PickableBundle::default(),
+                PickRaycastTarget::default(),
+            ));
         });
 
     // light
-    commands.spawn_bundle(PointLightBundle {
+    commands.spawn(PointLightBundle {
         point_light: PointLight {
             intensity: 1500.0,
             shadows_enabled: true,
@@ -116,10 +119,11 @@ fn setup(
     });
 
     // camera
-    commands
-        .spawn_bundle(Camera3dBundle {
+    commands.spawn((
+        Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
-        })
-        .insert(PickRaycastSource::default()); // <- Sets the camera to use for picking.
+        },
+        PickRaycastSource::default(),
+    )); // <- Sets the camera to use for picking.
 }

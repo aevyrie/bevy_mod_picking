@@ -9,15 +9,13 @@ use bevy_mod_picking::prelude::{
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(
+            DefaultPickingPlugins::start()
+                .with_backend(RaycastBackend)
+                .build()
+                .disable::<HighlightingPlugin>(),
+        )
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
-        .add_plugins_with(DefaultPickingPlugins::build(RaycastBackend), |group| {
-            group.disable::<CustomHighlightingPlugin<ColorMaterial>>()
-        })
-        .add_plugin(DebugPickingPlugin::default())
-        .insert_resource(WindowDescriptor {
-            present_mode: bevy::window::PresentMode::AutoNoVsync,
-            ..Default::default()
-        })
         .add_startup_system(setup)
         .add_system(drag_squares)
         .add_system(drag_over_squares)
@@ -33,22 +31,21 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for x in -2..=2 {
-        commands
-            .spawn_bundle(MaterialMesh2dBundle {
+        commands.spawn((
+            MaterialMesh2dBundle {
                 mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
                 transform: Transform::from_xyz(x as f32 * 200.0, 0.0, 0.0)
                     .with_scale(Vec3::splat(100.)),
                 material: materials.add(ColorMaterial::from(Color::WHITE)),
                 ..Default::default()
-            })
-            .insert_bundle(PickableBundle::default()) // <- Makes the mesh pickable.
-            .insert(PickRaycastTarget::default()) // <- Needed for the raycast backend.
-            .insert(SpinMe(0.0));
+            },
+            PickableBundle::default(),    // <- Makes the mesh pickable.
+            PickRaycastTarget::default(), // <- Needed for the raycast backend.
+            SpinMe(0.0),
+        ));
     }
 
-    commands
-        .spawn_bundle(Camera2dBundle::default())
-        .insert(PickRaycastSource::default()); // <- Sets the camera to use for picking.
+    commands.spawn((Camera2dBundle::default(), PickRaycastSource::default())); // <- Sets the camera to use for picking.
 }
 
 fn drag_squares(

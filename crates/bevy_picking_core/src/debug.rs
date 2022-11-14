@@ -12,7 +12,7 @@ pub fn print<E: IsPointerEvent>(mut pointer_events: EventReader<E>) {
 }
 
 /// Tracks frame number for diagnostics.
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, Resource)]
 pub struct Frame(pub usize);
 
 /// Increments frame number for diagnostics.

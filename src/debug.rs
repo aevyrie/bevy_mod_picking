@@ -1,6 +1,7 @@
 //! Text and on-screen debugging tools
 
 use crate::*;
+use bevy::prelude::*;
 
 /// Logs events for debugging
 #[derive(Debug, Default, Clone)]
@@ -53,7 +54,6 @@ impl Plugin for DebugPickingPlugin {
             )
             .add_system(debug_draw);
 
-        #[cfg(feature = "selection")]
         app.add_system_set_to_stage(
             CoreStage::Update,
             SystemSet::new()
@@ -85,7 +85,7 @@ fn debug_draw(
         let x = window_width - location.x;
         let y = location.y;
 
-        commands.entity(entity).insert_bundle(
+        commands.entity(entity).insert(
             TextBundle::from_section(
                 format!("ID: {:?}\nLocation: x{} y{}\nPress Primary: {}\nPress Secondary: {}\nPress Middle: {}\nMultiselect: {}\nInteractions: {:?}",
                     id,

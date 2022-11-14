@@ -28,16 +28,22 @@ struct TouchState<'w, 's> {
     cancel_events: EventWriter<'w, 's, PointerCancel>,
 }
 
+#[derive(Resource, Deref, DerefMut)]
+struct CachedSystemState<T: SystemParam + 'static>(SystemState<T>);
+
 /// Sends touch pointer events to be consumed by the core plugin
 ///
 /// This is an exclusive event because we need spawning to happen immediately to prevent issues with
 /// missed events needed for drag and drop.
 pub fn touch_pick_events(world: &mut World) {
-    if world.get_resource::<SystemState<TouchState>>().is_none() {
-        let state = SystemState::new(world);
-        world.insert_resource::<SystemState<TouchState>>(state);
+    if world
+        .get_resource::<CachedSystemState<TouchState>>()
+        .is_none()
+    {
+        let state = SystemState::<TouchState>::new(world);
+        world.insert_resource(CachedSystemState(state));
     }
-    world.resource_scope(|world, mut state: Mut<SystemState<TouchState>>| {
+    world.resource_scope(|world, mut state: Mut<CachedSystemState<TouchState>>| {
         let TouchState {
             // Input
             mut touches,
@@ -67,13 +73,11 @@ pub fn touch_pick_events(world: &mut World) {
             };
             match touch.phase {
                 TouchPhase::Started => {
-                    let mut entity = commands.spawn();
-                    let pointer_bundle =
-                        PointerCoreBundle::new(pointer).with_location(location.clone());
-                    debug!("Spawning pointer {:?}", pointer_bundle.id);
-                    entity.insert_bundle(pointer_bundle);
-                    #[cfg(feature = "selection")]
-                    entity.insert(bevy_picking_selection::PointerMultiselect::default());
+                    info!("Spawning pointer {:?}", pointer);
+                    commands.spawn((
+                        PointerCoreBundle::new(pointer).with_location(location.clone()),
+                        bevy_picking_selection::PointerMultiselect::default(),
+                    ));
 
                     input_moves.send(InputMove::new(pointer, location));
                     input_presses.send(InputPress::new_down(pointer, PointerButton::Primary));

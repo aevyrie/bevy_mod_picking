@@ -33,7 +33,6 @@ impl Plugin for InputPlugin {
                     .label(PickStage::Input)
                     .with_system(
                         touch::touch_pick_events
-                            .exclusive_system()
                             .at_start()
                             .with_run_criteria(run_if_touch),
                     )
@@ -44,6 +43,7 @@ impl Plugin for InputPlugin {
 }
 
 /// Settings for the input plugin to allow enabling or disabling mouse or touch inputs at runtime.
+#[derive(Resource)]
 pub struct InputPluginSettings {
     run_mouse: bool,
     run_touch: bool,
