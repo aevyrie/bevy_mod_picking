@@ -58,7 +58,7 @@ I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
 
 | bevy | bevy_mod_picking |
 | ---- | ---------------- |
-| 0.9  | 0.10             |
+| 0.9  | 0.10, 0.11       |
 | 0.8  | 0.8, 0.9         |
 | 0.7  | 0.6, 0.7         |
 | 0.6  | 0.5              |
