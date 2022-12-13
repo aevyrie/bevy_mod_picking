@@ -182,7 +182,7 @@ impl Plugin for InteractablePickingPlugin {
 /// A highlighting plugin, generic over any asset that might be used for rendering the different
 /// highlighting states.
 pub struct CustomHighlightPlugin<T: 'static + Asset + Sync + Send> {
-    highlighting_default: fn(ResMut<Assets<T>>) -> DefaultHighlighting<T>,
+    pub highlighting_default: fn(ResMut<Assets<T>>) -> DefaultHighlighting<T>,
 }
 
 impl<T> Plugin for CustomHighlightPlugin<T>
