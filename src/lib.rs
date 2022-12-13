@@ -4,18 +4,18 @@ pub mod highlight;
 pub mod mouse;
 pub mod selection;
 
-use std::marker::PhantomData;
-
 pub use crate::{
     events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
     focus::{mesh_focus, pause_for_picking_blockers, Hover, PickingBlocker},
-    highlight::{mesh_highlighting, DefaultHighlighting, Highlightable, Highlighting},
+    highlight::{mesh_highlighting, DefaultHighlighting, Highlighting},
     mouse::update_pick_source_positions,
     selection::{mesh_selection, NoDeselect, Selection},
 };
 pub use bevy_mod_raycast::{Primitive3d, RaycastMesh, RaycastSource};
 
-use bevy::{app::PluginGroupBuilder, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy};
+use bevy::{
+    app::PluginGroupBuilder, asset::Asset, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy,
+};
 use highlight::{get_initial_mesh_highlight_asset, Highlight};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
@@ -94,8 +94,20 @@ impl PluginGroup for DefaultPickingPlugins {
         PluginGroupBuilder::start::<Self>()
             .add(PickingPlugin)
             .add(InteractablePickingPlugin)
-            .add(CustomHighlightPlugin::<StandardMaterial>::default())
-            .add(CustomHighlightPlugin::<ColorMaterial>::default())
+            .add(CustomHighlightPlugin::<StandardMaterial> {
+                highlighting_default: |mut assets| DefaultHighlighting {
+                    hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
+                    pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
+                    selected: assets.add(Color::rgb(0.35, 0.35, 0.75).into()),
+                },
+            })
+            .add(CustomHighlightPlugin::<ColorMaterial> {
+                highlighting_default: |mut assets| DefaultHighlighting {
+                    hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
+                    pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
+                    selected: assets.add(Color::rgb(0.35, 0.35, 0.75).into()),
+                },
+            })
     }
 }
 
@@ -104,7 +116,7 @@ impl Plugin for PickingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PickingPluginsState>()
             .add_system_set_to_stage(
-                CoreStage::First,
+                CoreStage::PreUpdate,
                 SystemSet::new()
                     .with_run_criteria(|state: Res<PickingPluginsState>| {
                         simple_criteria(state.enable_picking)
@@ -138,7 +150,7 @@ impl Plugin for InteractablePickingPlugin {
         app.init_resource::<PausedForBlockers>()
             .add_event::<PickingEvent>()
             .add_system_set_to_stage(
-                CoreStage::First,
+                CoreStage::PreUpdate,
                 SystemSet::new()
                     .with_run_criteria(|state: Res<PickingPluginsState>| {
                         simple_criteria(state.enable_interacting)
@@ -169,32 +181,36 @@ impl Plugin for InteractablePickingPlugin {
 
 /// A highlighting plugin, generic over any asset that might be used for rendering the different
 /// highlighting states.
-#[derive(Default)]
-pub struct CustomHighlightPlugin<T: 'static + Highlightable + Sync + Send>(PhantomData<T>);
+pub struct CustomHighlightPlugin<T: 'static + Asset + Sync + Send> {
+    highlighting_default: fn(ResMut<Assets<T>>) -> DefaultHighlighting<T>,
+}
 
 impl<T> Plugin for CustomHighlightPlugin<T>
 where
-    T: 'static + Highlightable + Sync + Send,
+    T: 'static + Asset + Sync + Send,
 {
     fn build(&self, app: &mut App) {
-        app.init_resource::<DefaultHighlighting<T>>()
-            .add_system_set_to_stage(
-                CoreStage::First,
-                SystemSet::new()
-                    .with_run_criteria(|state: Res<PickingPluginsState>| {
-                        simple_criteria(state.enable_highlighting)
-                    })
-                    .with_system(
-                        get_initial_mesh_highlight_asset::<T>
-                            .after(PickingSystem::UpdateIntersections)
-                            .before(PickingSystem::Highlighting),
-                    )
-                    .with_system(
-                        mesh_highlighting::<T>
-                            .label(PickingSystem::Highlighting)
-                            .before(PickingSystem::Events),
-                    ),
-            );
+        let highlighting_default = self.highlighting_default;
+        app.add_startup_system(move |mut commands: Commands, assets: ResMut<Assets<T>>| {
+            commands.insert_resource(highlighting_default(assets));
+        })
+        .add_system_set_to_stage(
+            CoreStage::PreUpdate,
+            SystemSet::new()
+                .with_run_criteria(|state: Res<PickingPluginsState>| {
+                    simple_criteria(state.enable_highlighting)
+                })
+                .with_system(
+                    get_initial_mesh_highlight_asset::<T>
+                        .after(PickingSystem::UpdateIntersections)
+                        .before(PickingSystem::Highlighting),
+                )
+                .with_system(
+                    mesh_highlighting::<T>
+                        .label(PickingSystem::Highlighting)
+                        .before(PickingSystem::Events),
+                ),
+        );
     }
 }
 
@@ -202,7 +218,7 @@ pub struct DebugCursorPickingPlugin;
 impl Plugin for DebugCursorPickingPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(
-            CoreStage::First,
+            CoreStage::PreUpdate,
             bevy_mod_raycast::update_debug_cursor::<PickingRaycastSet>
                 .after(PickingSystem::UpdateIntersections),
         );
@@ -213,7 +229,7 @@ pub struct DebugEventsPickingPlugin;
 impl Plugin for DebugEventsPickingPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(
-            CoreStage::First,
+            CoreStage::PreUpdate,
             event_debug_system.after(PickingSystem::Events),
         );
     }
