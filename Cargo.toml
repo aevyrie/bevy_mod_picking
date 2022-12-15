@@ -3,29 +3,56 @@ name = "bevy_mod_picking"
 version = "0.11.0"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 edition = "2021"
-license = "MIT"
-description = "A 3D mouse picking and raycasting plugin for Bevy."
+license = "MIT OR Apache-2.0"
+description = "A modular picking plugin for Bevy."
 repository = "https://github.com/aevyrie/bevy_mod_picking/"
-keywords = ["gamedev", "picking", "bevy", "raycast"]
+keywords = ["gamedev", "picking", "bevy", "raycast", "input"]
 categories = ["game-engines", "rendering"]
 resolver = "2"
 
-[dependencies]
-bevy = { version = "0.9", default-features = false, features = ["render"] }
+[workspace]
+members = ["crates/*", "backends/*"]
 
-bevy_mod_raycast = "0.7"
+[dependencies]
+bevy = { version = "0.9", default-features = false, features = [
+    "bevy_render",
+    "bevy_ui",
+] }
+# Local
+bevy_picking_core = { path = "crates/bevy_picking_core" }
+bevy_picking_input = { path = "crates/bevy_picking_input" }
+bevy_picking_selection = { path = "crates/bevy_picking_selection" }
+bevy_picking_highlight = { path = "crates/bevy_picking_highlight" }
+bevy_picking_raycast = { optional = true, path = "backends/bevy_picking_raycast" }
+bevy_picking_ui = { optional = true, path = "backends/bevy_picking_ui" }
+bevy_picking_rapier = { optional = true, path = "backends/bevy_picking_rapier" }
+bevy_picking_shader = { optional = true, path = "backends/bevy_picking_shader" }
+bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite" }
 
 [dev-dependencies]
 bevy = { version = "0.9", default-features = false, features = [
-    "bevy_pbr",
     "bevy_winit",
-    "bevy_ui",
-    "bevy_core_pipeline",
-    "bevy_text",
     "x11",
+    "bevy_gltf",
+    "bevy_scene",
+    "png",
 ] }
+bevy_framepace = "0.9.1"
+bevy_rapier3d = { git = "https://github.com/devil-ira/bevy_rapier", branch = "bevy-0.9" }
+bevy_mod_picking = { path = "", features = ["all"] }
 
 [features]
-default = ["2d", "debug"]
-2d = ["bevy_mod_raycast/2d"]
-debug = ["bevy_mod_raycast/debug"]
+default = ["backend_raycast", "backend_bevy_ui", "debug"]
+all = [
+    "backend_raycast",
+    "backend_bevy_ui",
+    "backend_rapier",
+    "backend_shader",
+    "backend_sprite",
+]
+debug = ["bevy/bevy_text"]
+backend_raycast = ["bevy_picking_raycast"]
+backend_rapier = ["bevy_picking_rapier"]
+backend_shader = ["bevy_picking_shader"]
+backend_sprite = ["bevy_picking_sprite"]
+backend_bevy_ui = ["bevy_picking_ui"]

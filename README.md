@@ -7,7 +7,7 @@
 [![CI](https://github.com/aevyrie/bevy_mod_picking/workflows/CI/badge.svg?branch=master)](https://github.com/aevyrie/bevy_mod_picking/actions?query=workflow%3A%22CI%22+branch%3Amaster)
 [![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 
-![picking_demo](https://user-images.githubusercontent.com/2632925/201516335-9ee66106-b2d8-4eb5-bc32-18da072999a2.gif)
+![picking_demo](https://user-images.githubusercontent.com/2632925/114128723-d8de1b00-98b1-11eb-9b25-812fcf6664e2.gif)
 
 A [Bevy](https://github.com/bevyengine/bevy) plugin for picking, making it easy to interact
 with meshes in Bevy. Built with [`bevy_mod_raycast`](https://github.com/aevyrie/bevy_mod_raycast).
@@ -19,7 +19,7 @@ with meshes in Bevy. Built with [`bevy_mod_raycast`](https://github.com/aevyrie/
 * Mouseover and mouseclick events
 * Configurable highlighting
 * Selection state management
-* 3D debug cursor
+* 3D debug pointer
 * Touch support
 * Common keybindings (Ctrl+A, Ctrl+Click multi-select)
 
@@ -27,26 +27,37 @@ with meshes in Bevy. Built with [`bevy_mod_raycast`](https://github.com/aevyrie/
 
 It only takes a few lines to get mouse picking working in your Bevy application using this plugin.
 
-1. Add the plugin to your app:
-```rs
-.add_plugins(DefaultPickingPlugins);
+1. Add the crate to your dependencies in `Cargo.toml`:
+```toml
+bevy_mod_picking = "0.6"
 ```
 
-2. Mark your camera as the picking source with the `PickingCameraBundle` component:
+2. Import the plugin:
 ```rs
-.insert_bundle(PickingCameraBundle::default());
+use bevy_mod_picking::*;
 ```
 
-3. Add the `PickableBundle` component to any meshes you want to make pickable:
+3. Add the plugin to your app:
 ```rs
-.insert_bundle(PickableBundle::default())
+.add_plugin(DefaultPickingPlugin);
+```
+
+4. Mark your camera as the picking source with the `PickingSourceBundle` component:
+```rs
+.insert((PickingSourceBundle::default());
+```
+
+
+4. Add the `PickableBundle` component to any meshes you want to make pickable:
+```rs
+.insert((PickableBundle::default())
 ```
 
 That's all there is to it! Read [the docs](https://docs.rs/bevy_mod_picking) and look at the provided examples to learn more.
 
 # Demo
 
-To run a minimal demo, clone this repository and run:
+To run a minimal demo of picking features, clone this repository and run:
 
 ```console
 cargo run --example minimal 
@@ -56,10 +67,9 @@ cargo run --example minimal
 
 I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
 
+
 | bevy | bevy_mod_picking |
 | ---- | ---------------- |
-| 0.9  | 0.10, 0.11       |
-| 0.8  | 0.8, 0.9         |
 | 0.7  | 0.6, 0.7         |
 | 0.6  | 0.5              |
 | 0.5  | 0.4              |

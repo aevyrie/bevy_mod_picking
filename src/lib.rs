@@ -1,261 +1,175 @@
-pub mod events;
-pub mod focus;
-pub mod highlight;
-pub mod mouse;
-pub mod selection;
+//! A flexible set of plugins that add picking functionality to your [`bevy`] app, with a focus on
+//! ergonomics, expressiveness, and ease of use.
+//!
+//! # About
+//!
+//! What is "picking"? Picking is the act of interacting with objects on your screen with a pointer.
+//! That pointer might be a mouse cursor, a touch input, or a custom software cursor (such as a game
+//! UI cursor controlled with a gamepad). As you make an application interactive, whether it's a
+//! traditional 2D UI, or 3D objects, you will run into some recurring challenges:
+//!
+//! - How do I highlight things?
+//! - How can I trigger an event when I click/drag/hover/etc over a thing?
+//! - Is it possible to do all of this across many windows?
+//! - Will this support multi-touch?
+//! - Can I test all of this somehow?
+//!
+//! These are the problems this crate solves.
+//!
+//! # Getting Started
+//!
+//! Making objects pickable is pretty straightforward. In the most minimal cases, it's as simple as:
+//!
+//! ```
+//! # use bevy::prelude::*;
+//! use bevy_mod_picking::prelude::*;
+//!
+//! # struct DeleteMe(Entity);
+//! # impl<E: IsPointerEvent> ForwardedEvent<E> for DeleteMe {
+//! #     fn from_data(event_data: &PointerEventData<E>) -> DeleteMe {
+//! #         Self(event_data.target())
+//! #     }
+//! # }
+//! # struct GreetMe(Entity);
+//! # impl<E: IsPointerEvent> ForwardedEvent<E> for GreetMe {
+//! #     fn from_data(event_data: &PointerEventData<E>) -> GreetMe {
+//! #         Self(event_data.target())
+//! #     }
+//! # }
+//! # fn setup(
+//! #     mut commands: Commands,
+//! # ) {
+//! commands
+//!     .spawn((PickableBundle::default(),  // Make the entity pickable
+//!         PickRaycastTarget::default()));   // Marker for the `mod_picking` backend
+//! # }
+//! ```
+//!
+//! # The Picking Pipeline
+//!
+//! This plugin is designed to be extremely modular. To do so, it works in well-defined stages that
+//! form a pipeline, where events are used to pass data between each stage. All the types needed for
+//! the pipeline are defined in the [`bevy_picking_core`] crate.
+//!
+//! ## Input ([`bevy_picking_input`])
+//!
+//! The first stage of the pipeline is to gather inputs and create pointers. This stage is
+//! ultimately responsible for generating [`InputMove`](bevy_picking_core::pointer::InputMove) and
+//! [`InputPress`](bevy_picking_core::pointer::InputPress) events. The provided crate does this
+//! automatically for mouse, touch, and pen inputs. If you wanted to implement your own pointer,
+//! controlled by some other input, you can do that here.
+//!
+//! Because pointer positions and presses are driven by these events, you can use them to mock
+//! inputs for testing.
+//!
+//! ## Backend ([`bevy_picking_core::backend`])
+//!
+//! The job of a backend is extremely simple: given the location of a pointer (from the input
+//! stage), return a list of all entities under that pointer.
+//!
+//! You will eventually need to choose which picking backend(s) you want to use. This plugin uses
+//! `bevy_mod_raycast` by default; it works with bevy `Mesh`es out of the box and requires no extra
+//! dependencies. These qualities make it useful when prototyping, however it is not particularly
+//! performant for large meshes. You can consider switching to the rapier backends if performance
+//! becomes a problem. For simple or low-poly games, it may never be an issue.
+//!
+//! However, it's important to understand that you can mix and match backends! This crate provides
+//! some backends out of the box, but you can even write your own. It's been made as easy as
+//! possible intentionally; the entire `bevy_mod_raycast` backend is less than 100 lines of code.
+//! For example, you might have a backend for your UI, and one for the 3d scene, with each being
+//! specialized for their purpose.
+//!
+//! ## Focus ([`bevy_picking_core::focus`])
+//!
+//! The final step is to use the data from the previous stages, combine and sort the results, and
+//! determine what each cursor is hovering over. With this information, high-level pointer events
+//! are generated, such as events that trigger when a pointer enters an entity, or when a pointer
+//! drags and drops one entity onto another.
+//!
+//! From here, these high-level events are used for highlighting, selection, event bubbling, and all
+//! the other features this crate provides. Because it is completely agnostic to the the earlier
+//! stages of the pipeline, you can easily extend the plugin with arbitrary backends and input
+//! methods.
 
-pub use crate::{
-    events::{event_debug_system, mesh_events_system, HoverEvent, PickingEvent, SelectionEvent},
-    focus::{mesh_focus, pause_for_picking_blockers, Hover, PickingBlocker},
-    highlight::{mesh_highlighting, DefaultHighlighting, Highlighting},
-    mouse::update_pick_source_positions,
-    selection::{mesh_selection, NoDeselect, Selection},
-};
-pub use bevy_mod_raycast::{Primitive3d, RaycastMesh, RaycastSource};
+#![allow(clippy::type_complexity)]
+#![allow(clippy::too_many_arguments)]
+#![deny(missing_docs)]
 
-use bevy::{
-    app::PluginGroupBuilder, asset::Asset, ecs::schedule::ShouldRun, prelude::*, ui::FocusPolicy,
-};
-use highlight::{get_initial_mesh_highlight_asset, Highlight};
+use bevy_picking_core::PointerCoreBundle;
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-pub enum PickingSystem {
-    UpdatePickSourcePositions,
-    BuildRays,
-    UpdateRaycast,
-    UpdateIntersections,
-    Highlighting,
-    Selection,
-    PauseForBlockers,
-    Focus,
-    Events,
+use bevy::prelude::Bundle;
+pub use bevy_picking_core::{self as core, backend, focus, output, pointer};
+pub use bevy_picking_highlight as highlight;
+pub use bevy_picking_input::{self as input};
+pub use bevy_picking_selection as selection;
+use selection::PointerMultiselect;
+
+pub mod debug;
+pub mod plugins;
+
+/// Picking backend exports, feature-gated.
+pub mod backends {
+    #[cfg(feature = "backend_rapier")]
+    pub use bevy_picking_rapier as rapier;
+    #[cfg(feature = "backend_raycast")]
+    pub use bevy_picking_raycast as raycast;
+    #[cfg(feature = "backend_shader")]
+    pub use bevy_picking_shader as shader;
+    #[cfg(feature = "backend_sprite")]
+    pub use bevy_picking_sprite as sprite;
+    #[cfg(feature = "backend_bevy_ui")]
+    pub use bevy_picking_ui as bevy_ui;
 }
 
-/// A type alias for the concrete [RaycastMesh](bevy_mod_raycast::RaycastMesh) type used for Picking.
-pub type PickableMesh = RaycastMesh<PickingRaycastSet>;
-/// A type alias for the concrete [RaycastSource](bevy_mod_raycast::RaycastSource) type used for Picking.
-pub type PickingCamera = RaycastSource<PickingRaycastSet>;
-
-/// This unit struct is used to tag the generic ray casting types `RaycastMesh` and
-/// `RaycastSource`. This means that all Picking ray casts are of the same type. Consequently, any
-/// meshes or ray sources that are being used by the picking plugin can be used by other ray
-/// casting systems because they will have distinct types, e.g.: `RaycastMesh<PickingRaycastSet>`
-/// vs. `RaycastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
-pub struct PickingRaycastSet;
-
-#[derive(Clone, Debug, Resource)]
-pub struct PickingPluginsState {
-    pub enable_picking: bool,
-    pub enable_highlighting: bool,
-    pub enable_interacting: bool,
+/// Common imports
+pub mod prelude {
+    #[cfg(feature = "debug")]
+    pub use crate::debug::DebugPickingPlugin;
+    pub use crate::{
+        backends,
+        highlight::{
+            CustomHighlightPlugin, DefaultHighlighting, HighlightOverride, HighlightingPlugin,
+            PickHighlight,
+        },
+        output::{
+            EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerClick, PointerDown,
+            PointerDrag, PointerDragEnd, PointerDragEnter, PointerDragLeave, PointerDragOver,
+            PointerDragStart, PointerDrop, PointerEventData, PointerMove, PointerOut, PointerOver,
+            PointerUp,
+        },
+        plugins::{DefaultPickingPlugins, PickableBundle},
+        pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
+        selection::{
+            NoDeselect, PickSelection, PointerDeselect, PointerMultiselect, PointerSelect,
+            SelectionPlugin,
+        },
+        *,
+    };
+    #[cfg(feature = "backend_bevy_ui")]
+    pub use backends::bevy_ui::prelude::*;
+    #[cfg(feature = "backend_rapier")]
+    pub use backends::rapier::prelude::*;
+    #[cfg(feature = "backend_raycast")]
+    pub use backends::raycast::prelude::*;
+    #[cfg(feature = "backend_shader")]
+    pub use backends::shader::prelude::*;
+    #[cfg(feature = "backend_sprite")]
+    pub use backends::sprite::prelude::*;
 }
 
-impl Default for PickingPluginsState {
-    fn default() -> Self {
-        Self {
-            enable_picking: true,
-            enable_highlighting: true,
-            enable_interacting: true,
-        }
-    }
-}
-
-fn simple_criteria(flag: bool) -> ShouldRun {
-    if flag {
-        ShouldRun::Yes
-    } else {
-        ShouldRun::No
-    }
-}
-
-#[derive(Default, Resource)]
-pub struct PausedForBlockers(pub(crate) bool);
-impl PausedForBlockers {
-    pub fn is_paused(&self) -> bool {
-        self.0
-    }
-}
-
-#[derive(Component, Debug, Clone, Copy, Reflect)]
-pub enum UpdatePicks {
-    EveryFrame(Vec2),
-    OnMouseEvent,
-}
-impl Default for UpdatePicks {
-    fn default() -> Self {
-        UpdatePicks::EveryFrame(Vec2::ZERO)
-    }
-}
-
-pub struct DefaultPickingPlugins;
-
-impl PluginGroup for DefaultPickingPlugins {
-    fn build(self) -> PluginGroupBuilder {
-        PluginGroupBuilder::start::<Self>()
-            .add(PickingPlugin)
-            .add(InteractablePickingPlugin)
-            .add(CustomHighlightPlugin::<StandardMaterial> {
-                highlighting_default: |mut assets| DefaultHighlighting {
-                    hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
-                    pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
-                    selected: assets.add(Color::rgb(0.35, 0.35, 0.75).into()),
-                },
-            })
-            .add(CustomHighlightPlugin::<ColorMaterial> {
-                highlighting_default: |mut assets| DefaultHighlighting {
-                    hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
-                    pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
-                    selected: assets.add(Color::rgb(0.35, 0.35, 0.75).into()),
-                },
-            })
-    }
-}
-
-pub struct PickingPlugin;
-impl Plugin for PickingPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<PickingPluginsState>()
-            .add_system_set_to_stage(
-                CoreStage::PreUpdate,
-                SystemSet::new()
-                    .with_run_criteria(|state: Res<PickingPluginsState>| {
-                        simple_criteria(state.enable_picking)
-                    })
-                    .with_system(
-                        update_pick_source_positions
-                            .label(PickingSystem::UpdatePickSourcePositions)
-                            .before(PickingSystem::BuildRays),
-                    )
-                    .with_system(
-                        bevy_mod_raycast::build_rays::<PickingRaycastSet>
-                            .label(PickingSystem::BuildRays)
-                            .before(PickingSystem::UpdateRaycast),
-                    )
-                    .with_system(
-                        bevy_mod_raycast::update_raycast::<PickingRaycastSet>
-                            .label(PickingSystem::UpdateRaycast)
-                            .before(PickingSystem::UpdateIntersections),
-                    )
-                    .with_system(
-                        bevy_mod_raycast::update_intersections::<PickingRaycastSet>
-                            .label(PickingSystem::UpdateIntersections),
-                    ),
-            );
-    }
-}
-
-pub struct InteractablePickingPlugin;
-impl Plugin for InteractablePickingPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<PausedForBlockers>()
-            .add_event::<PickingEvent>()
-            .add_system_set_to_stage(
-                CoreStage::PreUpdate,
-                SystemSet::new()
-                    .with_run_criteria(|state: Res<PickingPluginsState>| {
-                        simple_criteria(state.enable_interacting)
-                    })
-                    .with_system(
-                        pause_for_picking_blockers
-                            .label(PickingSystem::PauseForBlockers)
-                            .after(PickingSystem::UpdateIntersections),
-                    )
-                    .with_system(
-                        mesh_focus
-                            .label(PickingSystem::Focus)
-                            .after(PickingSystem::PauseForBlockers),
-                    )
-                    .with_system(
-                        mesh_selection
-                            .label(PickingSystem::Selection)
-                            .after(PickingSystem::Focus),
-                    )
-                    .with_system(
-                        mesh_events_system
-                            .label(PickingSystem::Events)
-                            .after(PickingSystem::Selection),
-                    ),
-            );
-    }
-}
-
-/// A highlighting plugin, generic over any asset that might be used for rendering the different
-/// highlighting states.
-pub struct CustomHighlightPlugin<T: 'static + Asset + Sync + Send> {
-    pub highlighting_default: fn(ResMut<Assets<T>>) -> DefaultHighlighting<T>,
-}
-
-impl<T> Plugin for CustomHighlightPlugin<T>
-where
-    T: 'static + Asset + Sync + Send,
-{
-    fn build(&self, app: &mut App) {
-        let highlighting_default = self.highlighting_default;
-        app.add_startup_system(move |mut commands: Commands, assets: ResMut<Assets<T>>| {
-            commands.insert_resource(highlighting_default(assets));
-        })
-        .add_system_set_to_stage(
-            CoreStage::PreUpdate,
-            SystemSet::new()
-                .with_run_criteria(|state: Res<PickingPluginsState>| {
-                    simple_criteria(state.enable_highlighting)
-                })
-                .with_system(
-                    get_initial_mesh_highlight_asset::<T>
-                        .after(PickingSystem::UpdateIntersections)
-                        .before(PickingSystem::Highlighting),
-                )
-                .with_system(
-                    mesh_highlighting::<T>
-                        .label(PickingSystem::Highlighting)
-                        .before(PickingSystem::Events),
-                ),
-        );
-    }
-}
-
-pub struct DebugCursorPickingPlugin;
-impl Plugin for DebugCursorPickingPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            CoreStage::PreUpdate,
-            bevy_mod_raycast::update_debug_cursor::<PickingRaycastSet>
-                .after(PickingSystem::UpdateIntersections),
-        );
-    }
-}
-
-pub struct DebugEventsPickingPlugin;
-impl Plugin for DebugEventsPickingPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            CoreStage::PreUpdate,
-            event_debug_system.after(PickingSystem::Events),
-        );
-    }
-}
-
+/// Bundle of components needed for a fully-featured pointer.
 #[derive(Bundle)]
-pub struct PickingCameraBundle {
-    pub source: PickingCamera,
-    pub update: UpdatePicks,
+pub struct PointerBundle {
+    #[bundle]
+    core: PointerCoreBundle,
+    selection: PointerMultiselect,
 }
-
-impl Default for PickingCameraBundle {
-    fn default() -> Self {
-        PickingCameraBundle {
-            source: PickingCamera::new(),
-            update: UpdatePicks::default(),
+impl PointerBundle {
+    /// Build a new `PointerBundle` with the supplied [`PointerId`].
+    pub fn new(id: pointer::PointerId) -> PointerBundle {
+        PointerBundle {
+            core: PointerCoreBundle::new(id),
+            selection: PointerMultiselect::default(),
         }
     }
-}
-
-#[derive(Bundle, Default)]
-pub struct PickableBundle {
-    pub pickable_mesh: PickableMesh,
-    pub interaction: Interaction,
-    pub focus_policy: FocusPolicy,
-    pub highlight: Highlight,
-    pub selection: Selection,
-    pub hover: Hover,
 }

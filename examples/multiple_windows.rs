@@ -1,4 +1,8 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    render::camera::RenderTarget,
+    window::{CreateWindow, PresentMode, WindowId},
+};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -7,14 +11,16 @@ fn main() {
         .add_plugins(DefaultPickingPlugins::start().with_backend(RaycastBackend))
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup)
+        .add_system(bevy::window::close_on_esc)
+        .add_system(make_pickable)
         .run();
 }
 
-/// set up a simple 3D scene
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut create_window_events: EventWriter<CreateWindow>,
 ) {
     // plane
     commands.spawn((
@@ -50,18 +56,50 @@ fn setup(
         ..Default::default()
     });
 
-    // camera
+    // main camera
     commands.spawn((
         Camera3dBundle {
             transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-            // Uncomment the following lines to try out orthographic projection:
-            //
-            // projection: bevy::render::camera::Projection::Orthographic(OrthographicProjection {
-            //     scale: 0.01,
-            //     ..Default::default()
-            // }),
             ..Default::default()
         },
         PickRaycastSource::default(), // <- Enable picking for this camera
     ));
+
+    let window_id = WindowId::new();
+
+    // sends out a "CreateWindow" event, which will be received by the windowing backend
+    create_window_events.send(CreateWindow {
+        id: window_id,
+        descriptor: WindowDescriptor {
+            width: 800.,
+            height: 600.,
+            present_mode: PresentMode::AutoNoVsync,
+            title: "Second window".to_string(),
+            ..default()
+        },
+    });
+
+    // second window camera
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(4.0, 4.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
+            camera: Camera {
+                target: RenderTarget::Window(window_id),
+                ..default()
+            },
+            ..default()
+        },
+        PickRaycastSource::default(),
+    ));
+}
+
+fn make_pickable(
+    mut commands: Commands,
+    meshes: Query<Entity, (With<Handle<Mesh>>, Without<PickRaycastTarget>)>,
+) {
+    for entity in meshes.iter() {
+        commands
+            .entity(entity)
+            .insert((PickableBundle::default(), PickRaycastTarget::default()));
+    }
 }

@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::Uuid, window::WindowId};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -7,7 +7,29 @@ fn main() {
         .add_plugins(DefaultPickingPlugins::start().with_backend(RaycastBackend))
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup)
+        .add_system(move_virtual_pointer)
         .run();
+}
+
+#[derive(Component)]
+pub struct VirtualPointer;
+
+fn move_virtual_pointer(
+    time: Res<Time>,
+    mut pointer: Query<&mut PointerLocation, With<VirtualPointer>>,
+    windows: ResMut<Windows>,
+) {
+    for mut pointer in &mut pointer {
+        let w = windows.primary().width();
+        let h = windows.primary().height();
+        pointer.location = Some(pointer::Location {
+            target: bevy::render::camera::RenderTarget::Window(WindowId::primary()),
+            position: Vec2 {
+                x: w * (0.5 + 0.25 * time.elapsed_seconds().sin()),
+                y: h * (0.5 + 0.25 * (time.elapsed_seconds() * 2.0).sin()),
+            },
+        });
+    }
 }
 
 /// set up a simple 3D scene
@@ -16,6 +38,12 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    // Create a new pointer. This is our "virtual" pointer we can control manually.
+    commands.spawn((
+        VirtualPointer,
+        PointerBundle::new(PointerId::Custom(Uuid::new_v4())),
+    ));
+
     // plane
     commands.spawn((
         PbrBundle {

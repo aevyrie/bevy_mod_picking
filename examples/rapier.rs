@@ -1,11 +1,19 @@
+//! Demonstrates how to use the rapier picking backend.
+//!
+//! You must enable the `backend_rapier` or `all` features.
+
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
+use bevy_picking_rapier::RapierPickTarget;
+use bevy_rapier3d::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins::start().with_backend(RaycastBackend))
+        .add_plugins(DefaultPickingPlugins::start().with_backend(RapierBackend))
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugin(RapierDebugRenderPlugin::default())
         .add_startup_system(setup)
         .run();
 }
@@ -23,8 +31,9 @@ fn setup(
             material: materials.add(Color::WHITE.into()),
             ..Default::default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        Collider::cuboid(2.5, 0.01, 2.5),
+        PickableBundle::default(),   // <- Makes the collider pickable.
+        RapierPickTarget::default(), // <- Needed for the rapier picking backend
     ));
 
     // cube
@@ -35,8 +44,9 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        Collider::cuboid(0.5, 0.5, 0.5),
+        PickableBundle::default(),   // <- Makes the collider pickable.
+        RapierPickTarget::default(), // <- Needed for the rapier picking backend
     ));
 
     // light
@@ -46,14 +56,14 @@ fn setup(
             shadows_enabled: true,
             ..Default::default()
         },
-        transform: Transform::from_xyz(4.0, 8.0, -4.0),
+        transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..Default::default()
     });
 
     // camera
     commands.spawn((
         Camera3dBundle {
-            transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             // Uncomment the following lines to try out orthographic projection:
             //
             // projection: bevy::render::camera::Projection::Orthographic(OrthographicProjection {
@@ -62,6 +72,6 @@ fn setup(
             // }),
             ..Default::default()
         },
-        PickRaycastSource::default(), // <- Enable picking for this camera
+        RapierPickSource::default(), // <- Sets the camera to use for picking.
     ));
 }
