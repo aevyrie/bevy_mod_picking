@@ -102,7 +102,7 @@ fn debug_draw(
                 press.is_primary_pressed(),
                 press.is_secondary_pressed(),
                 press.is_middle_pressed(),
-                selection.and_then (|f| Some(format!("{}", f.is_pressed))).unwrap_or(String::from("disabled")),
+                selection.map (|f| format!("{}", f.is_pressed)).unwrap_or_else(|| String::from("disabled")),
                 interaction.iter()
             ),
             TextStyle {

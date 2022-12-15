@@ -40,9 +40,8 @@
 //! #     mut commands: Commands,
 //! # ) {
 //! commands
-//!     .spawn()
-//!     .insert((PickableBundle::default())       // Make the entity pickable
-//!     .insert(PickRaycastTarget::default())           // Marker for the `mod_picking` backend
+//!     .spawn((PickableBundle::default(),  // Make the entity pickable
+//!         PickRaycastTarget::default()));   // Marker for the `mod_picking` backend
 //! # }
 //! ```
 //!
