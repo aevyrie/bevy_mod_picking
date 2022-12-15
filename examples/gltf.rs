@@ -36,17 +36,18 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         })
         // Check out this neat trick!
         //
-        // Because event forwarding can rely on event bubbling, events that target children of the
-        // scene will bubble up to this level and will fire off a `HelmetClicked` event.
+        // Because event forwarding uses event bubbling, events that target children of the scene
+        // will bubble up to this level and will fire off a `HelmetClicked` event.
         .forward_events::<PointerClick, HelmetClicked>();
 }
 
 struct HelmetClicked(Entity);
 impl<E: IsPointerEvent> ForwardedEvent<E> for HelmetClicked {
     fn from_data(event_data: &PointerEventData<E>) -> Self {
-        // Note that we forward the target, not the entity! The target is the child that the event
+        // Note that we forward the target, not the listener! The target is the child that the event
         // was originally called on, whereas the listener is the parent entity that was listening
-        // for the event that bubbled up from the target.
+        // for the event that bubbled up from the target. This is what allows us to add a listener
+        // to the parent scene, yet still know exactly what child entity was interacted with.
         Self(event_data.target())
     }
 }

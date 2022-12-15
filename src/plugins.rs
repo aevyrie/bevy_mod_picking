@@ -8,7 +8,7 @@
 #![deny(missing_docs)]
 
 use crate::*;
-use bevy::{prelude::*, ui::FocusPolicy};
+use bevy::prelude::*;
 use bevy_picking_core::backend::PickingBackend;
 
 /// A "batteries-included" set of plugins that adds everything needed for picking, highlighting, and
@@ -70,8 +70,6 @@ impl PluginGroup for DefaultPickingPluginsBuilder {
 pub struct PickableBundle {
     /// Tracks entity [`Interaction`] state.
     pub interaction: Interaction,
-    /// The entity's configurable [`FocusPolicy`]
-    pub focus_policy: FocusPolicy,
     /// Tracks entity [`PickSelection`](selection::PickSelection) state.
     pub selection: selection::PickSelection,
     /// Tracks entity [`PickHighlight`](highlight::PickHighlight) state.

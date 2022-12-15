@@ -5,9 +5,9 @@
 //! The Big Idea here is to make it easy to couple interaction events with specific entities. In
 //! other words, it allows you to easily implement "If entity X is hovered/clicked/dragged, do Y".
 //!
-//! The `forward_events` function might feel like magic, but it's pretty straightforward under the
-//! hood. It simply adds an [`EventListener`](bevy_picking::output::EventListener) component to the
-//! entity. When the event bubbling system encounters this `EventListener`, it uses the
+//! The `forward_events` function might seem like magic, but it's pretty straightforward under the
+//! hood. It simply adds an [`EventListener`](bevy_picking_core::output::EventListener) component to
+//! the entity. When the event bubbling system encounters this `EventListener`, it uses the
 //! [`ForwardedEvent`] trait you implemented on your custom event to convert the `PointerEvent` into
 //! your custom event.
 //!
@@ -91,9 +91,9 @@ fn setup(
             PickableBundle::default(),
             PickRaycastTarget::default(),
         ))
-        // Because event forwarding can rely on event bubbling, events that target children of the
-        // parent cube will bubble up to this level and will fire off a `GreetMe` or `DeleteMe`
-        // event, depending on the event that bubbled up:
+        // Because event forwarding uses bubbling, events that target children of the parent cube
+        // will bubble up to this level and will fire off a `GreetMe` or `DeleteMe` event, depending
+        // on the event that bubbled up:
         .forward_events::<PointerClick, DeleteMe>()
         .forward_events::<PointerOver, GreetMe>()
         .with_children(|parent| {

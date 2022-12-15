@@ -1,21 +1,35 @@
-//! Demonstrates how to use the rapier picking backend.
-//!
-//! You must enable the `backend_rapier` or `all` features.
-
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::Uuid, window::WindowId};
 use bevy_mod_picking::prelude::*;
-use bevy_picking_rapier::RapierPickTarget;
-use bevy_rapier3d::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins::start().with_backend(RapierBackend))
+        .add_plugins(DefaultPickingPlugins::start().with_backend(RaycastBackend))
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
         .add_startup_system(setup)
+        .add_system(move_virtual_pointer)
         .run();
+}
+
+#[derive(Component)]
+pub struct VirtualPointer;
+
+fn move_virtual_pointer(
+    time: Res<Time>,
+    mut pointer: Query<&mut PointerLocation, With<VirtualPointer>>,
+    windows: ResMut<Windows>,
+) {
+    for mut pointer in &mut pointer {
+        let w = windows.primary().width();
+        let h = windows.primary().height();
+        pointer.location = Some(pointer::Location {
+            target: bevy::render::camera::RenderTarget::Window(WindowId::primary()),
+            position: Vec2 {
+                x: w * (0.5 + 0.25 * time.elapsed_seconds().sin()),
+                y: h * (0.5 + 0.25 * (time.elapsed_seconds() * 2.0).sin()),
+            },
+        });
+    }
 }
 
 /// set up a simple 3D scene
@@ -24,6 +38,12 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    // Create a new pointer. This is our "virtual" pointer we can control manually.
+    commands.spawn((
+        VirtualPointer,
+        PointerBundle::new(PointerId::Custom(Uuid::new_v4())),
+    ));
+
     // plane
     commands.spawn((
         PbrBundle {
@@ -31,9 +51,8 @@ fn setup(
             material: materials.add(Color::WHITE.into()),
             ..Default::default()
         },
-        Collider::cuboid(2.5, 0.01, 2.5),
-        PickableBundle::default(),   // <- Makes the collider pickable.
-        RapierPickTarget::default(), // <- Needed for the rapier picking backend
+        PickableBundle::default(),    // <- Makes the mesh pickable.
+        PickRaycastTarget::default(), // <- Needed for the raycast backend.
     ));
 
     // cube
@@ -44,9 +63,8 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         },
-        Collider::cuboid(0.5, 0.5, 0.5),
-        PickableBundle::default(),   // <- Makes the collider pickable.
-        RapierPickTarget::default(), // <- Needed for the rapier picking backend
+        PickableBundle::default(),    // <- Makes the mesh pickable.
+        PickRaycastTarget::default(), // <- Needed for the raycast backend.
     ));
 
     // light
@@ -56,14 +74,14 @@ fn setup(
             shadows_enabled: true,
             ..Default::default()
         },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
+        transform: Transform::from_xyz(4.0, 8.0, -4.0),
         ..Default::default()
     });
 
     // camera
     commands.spawn((
         Camera3dBundle {
-            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
             // Uncomment the following lines to try out orthographic projection:
             //
             // projection: bevy::render::camera::Projection::Orthographic(OrthographicProjection {
@@ -72,6 +90,6 @@ fn setup(
             // }),
             ..Default::default()
         },
-        RapierPickSource::default(), // <- Sets the camera to use for picking.
+        PickRaycastSource::default(), // <- Enable picking for this camera
     ));
 }

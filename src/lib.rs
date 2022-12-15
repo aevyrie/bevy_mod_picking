@@ -96,10 +96,14 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
+use bevy_picking_core::PointerCoreBundle;
+
+use bevy::prelude::Bundle;
 pub use bevy_picking_core::{self as core, backend, focus, output, pointer};
 pub use bevy_picking_highlight as highlight;
 pub use bevy_picking_input::{self as input};
 pub use bevy_picking_selection as selection;
+use selection::PointerMultiselect;
 
 pub mod debug;
 pub mod plugins;
@@ -112,18 +116,21 @@ pub mod backends {
     pub use bevy_picking_raycast as raycast;
     #[cfg(feature = "backend_shader")]
     pub use bevy_picking_shader as shader;
+    #[cfg(feature = "backend_sprite")]
+    pub use bevy_picking_sprite as sprite;
     #[cfg(feature = "backend_bevy_ui")]
     pub use bevy_picking_ui as bevy_ui;
 }
 
 /// Common imports
 pub mod prelude {
+    #[cfg(feature = "debug")]
+    pub use crate::debug::DebugPickingPlugin;
     pub use crate::{
         backends,
-        debug::DebugPickingPlugin,
         highlight::{
-            CustomHighlightingPlugin, DefaultHighlighting, HighlightOverride, Highlightable,
-            HighlightingPlugin, PickHighlight,
+            CustomHighlightPlugin, DefaultHighlighting, HighlightOverride, HighlightingPlugin,
+            PickHighlight,
         },
         output::{
             EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerClick, PointerDown,
@@ -137,6 +144,7 @@ pub mod prelude {
             NoDeselect, PickSelection, PointerDeselect, PointerMultiselect, PointerSelect,
             SelectionPlugin,
         },
+        *,
     };
     #[cfg(feature = "backend_bevy_ui")]
     pub use backends::bevy_ui::prelude::*;
@@ -146,4 +154,23 @@ pub mod prelude {
     pub use backends::raycast::prelude::*;
     #[cfg(feature = "backend_shader")]
     pub use backends::shader::prelude::*;
+    #[cfg(feature = "backend_sprite")]
+    pub use backends::sprite::prelude::*;
+}
+
+/// Bundle of components needed for a fully-featured pointer.
+#[derive(Bundle)]
+pub struct PointerBundle {
+    #[bundle]
+    core: PointerCoreBundle,
+    selection: PointerMultiselect,
+}
+impl PointerBundle {
+    /// Build a new `PointerBundle` with the supplied [`PointerId`].
+    pub fn new(id: pointer::PointerId) -> PointerBundle {
+        PointerBundle {
+            core: PointerCoreBundle::new(id),
+            selection: PointerMultiselect::default(),
+        }
+    }
 }

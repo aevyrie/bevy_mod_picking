@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 bevy_picking_core = { path = "../bevy_picking_core" }
-bevy = { version = "0.9", default-features = false, features = ["render"] }
+bevy = { version = "0.9", default-features = false, features = ["bevy_render"] }

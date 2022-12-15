@@ -17,6 +17,45 @@ use output::{
     send_drag_over_events,
 };
 
+/// Used to globally toggle picking features at runtime.
+#[derive(Clone, Debug, Resource)]
+pub struct PickingPluginsSettings {
+    /// Enables and disables all picking features.
+    pub enable: bool,
+    /// Enables and disables input collection.
+    pub enable_input: bool,
+    /// Enables and disables entity highlighting.
+    pub enable_highlighting: bool,
+    /// Enables and disables updating interaction states of entities.
+    pub enable_interacting: bool,
+}
+
+impl PickingPluginsSettings {
+    /// Whether or not input collection systems should be running.
+    pub fn input_should_run(state: Res<Self>) -> ShouldRun {
+        (state.enable_input && state.enable).into()
+    }
+    /// Whether or not entity highlighting systems should be running.
+    pub fn highlighting_should_run(state: Res<Self>) -> ShouldRun {
+        (state.enable_highlighting && state.enable).into()
+    }
+    /// Whether or not systems updating entities' [`Interaction`] component should be running.
+    pub fn interaction_should_run(state: Res<Self>) -> ShouldRun {
+        (state.enable_highlighting && state.enable).into()
+    }
+}
+
+impl Default for PickingPluginsSettings {
+    fn default() -> Self {
+        Self {
+            enable: true,
+            enable_input: true,
+            enable_highlighting: true,
+            enable_interacting: true,
+        }
+    }
+}
+
 /// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
 /// being an entity.
 ///
@@ -73,10 +112,11 @@ pub enum PickStage {
 pub struct CorePlugin;
 impl Plugin for CorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<pointer::InputPress>()
+        app.init_resource::<PickingPluginsSettings>()
+            .init_resource::<pointer::PointerMap>()
+            .add_event::<pointer::InputPress>()
             .add_event::<pointer::InputMove>()
             .add_event::<backend::EntitiesUnderPointer>()
-            .init_resource::<pointer::PointerMap>()
             .add_system_to_stage(CoreStage::First, pointer::update_pointer_map)
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
@@ -112,8 +152,9 @@ impl Plugin for InteractionPlugin {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .after(PickStage::Backend)
                     .label(PickStage::Focus)
+                    .after(PickStage::Backend)
+                    .with_run_criteria(PickingPluginsSettings::interaction_should_run)
                     // Focus
                     .with_system(update_focus)
                     .with_system(pointer_events.after(update_focus))
@@ -125,8 +166,9 @@ impl Plugin for InteractionPlugin {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .after(PickStage::Focus)
                     .label(PickStage::EventListeners)
+                    .after(PickStage::Focus)
+                    .with_run_criteria(PickingPluginsSettings::interaction_should_run)
                     .with_system(event_bubbling::<output::Over>)
                     .with_system(event_bubbling::<output::Out>)
                     .with_system(event_bubbling::<output::Down>)

@@ -27,7 +27,7 @@ bevy_picking_raycast = { optional = true, path = "backends/bevy_picking_raycast"
 bevy_picking_ui = { optional = true, path = "backends/bevy_picking_ui" }
 bevy_picking_rapier = { optional = true, path = "backends/bevy_picking_rapier" }
 bevy_picking_shader = { optional = true, path = "backends/bevy_picking_shader" }
-
+bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite" }
 
 [dev-dependencies]
 bevy = { version = "0.9", default-features = false, features = [
@@ -42,9 +42,17 @@ bevy_rapier3d = { git = "https://github.com/devil-ira/bevy_rapier", branch = "be
 bevy_mod_picking = { path = "", features = ["all"] }
 
 [features]
-default = ["backend_raycast", "backend_bevy_ui"]
-all = ["backend_raycast", "backend_bevy_ui", "backend_rapier", "backend_shader"]
+default = ["backend_raycast", "backend_bevy_ui", "debug"]
+all = [
+    "backend_raycast",
+    "backend_bevy_ui",
+    "backend_rapier",
+    "backend_shader",
+    "backend_sprite",
+]
+debug = ["bevy/bevy_text"]
 backend_raycast = ["bevy_picking_raycast"]
 backend_rapier = ["bevy_picking_rapier"]
 backend_shader = ["bevy_picking_shader"]
+backend_sprite = ["bevy_picking_sprite"]
 backend_bevy_ui = ["bevy_picking_ui"]

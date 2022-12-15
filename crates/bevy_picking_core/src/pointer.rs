@@ -1,10 +1,14 @@
 //! Types and systems for pointer inputs, such as position and buttons.
 
-use bevy::{prelude::*, render::camera::RenderTarget, utils::HashMap};
+use bevy::{
+    prelude::*,
+    render::camera::RenderTarget,
+    utils::{HashMap, Uuid},
+};
 use std::fmt::Debug;
 
 /// Identifies a unique pointer entity. `Mouse` and `Touch` pointers are automatically spawned.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component)]
 pub enum PointerId {
     /// A touch input, normally numbered by incoming window touch events from `winit`.
     Touch(u64),
@@ -12,7 +16,7 @@ pub enum PointerId {
     Mouse,
     /// A custom, uniquely identified pointer. Useful for mocking inputs or implementing a software
     /// controlled cursor.
-    Custom([u8; 16]),
+    Custom(Uuid),
 }
 impl PointerId {
     /// Returns true if the pointer is a touch input.
@@ -59,7 +63,7 @@ pub fn update_pointer_map(pointers: Query<(Entity, &PointerId)>, mut map: ResMut
 }
 
 /// Tracks the state of the pointer's buttons in response to [`InputPress`]s.
-#[derive(Debug, Default, Clone, Component, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Component, Reflect, PartialEq, Eq)]
 pub struct PointerPress {
     primary: bool,
     secondary: bool,
@@ -181,10 +185,12 @@ pub enum PointerButton {
     Middle,
 }
 
-/// Component that tracks a pointer's current location.
-#[derive(Debug, Default, Clone, Component, PartialEq)]
+/// Component that tracks a pointer's current [`Location`].
+#[derive(Debug, Default, Clone, Component, Reflect, PartialEq)]
 pub struct PointerLocation {
-    pub(crate) location: Option<Location>,
+    /// The [`Location`] of the pointer. Note that a location is both the target, and the position
+    /// on the target.
+    pub location: Option<Location>,
 }
 impl PointerLocation {
     /// Returns `Some(&`[`Location`]`)` if the pointer is active, or `None` if the pointer is
@@ -238,9 +244,10 @@ impl InputMove {
 /// pointer on this render target.
 ///
 /// Note that a pointer can move freely between render targets.
-#[derive(Debug, Clone, Component, PartialEq)]
+#[derive(Debug, Clone, Component, Reflect, FromReflect, PartialEq)]
 pub struct Location {
     /// The [`RenderTarget`] associated with the pointer, usually a window.
+    #[reflect(ignore)]
     pub target: RenderTarget,
     /// The position of the pointer in the `target`.
     pub position: Vec2,

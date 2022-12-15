@@ -1,5 +1,5 @@
 [package]
-name = "bevy_picking_ui"
+name = "bevy_picking_sprite"
 version = "0.1.0"
 edition = "2021"
 resolver = "2"

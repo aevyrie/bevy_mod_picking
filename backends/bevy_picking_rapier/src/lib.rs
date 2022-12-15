@@ -25,11 +25,18 @@ impl Plugin for RapierBackend {
 }
 
 /// Marks a camera that should be used for rapier raycast picking.
-#[derive(Debug, Clone, Default, Component)]
+#[derive(Debug, Clone, Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct RapierPickSource;
 
+/// Marks an entity that should be considered for picking raycasts.
+#[derive(Debug, Clone, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct RapierPickTarget;
+
 /// Component to allow pointers to raycast for picking using rapier.
-#[derive(Debug, Clone, Default, Component)]
+#[derive(Debug, Clone, Default, Component, Reflect)]
+#[reflect(Component, Default)]
 pub struct RapierPickRay {
     /// A ray may not exist if the pointer is not active
     pub ray: Option<Ray>,
@@ -70,6 +77,7 @@ fn update_hits(
     rapier_context: Res<RapierContext>,
     sources: Query<(&RapierPickRay, &PointerId)>,
     mut output: EventWriter<EntitiesUnderPointer>,
+    targets: Query<With<RapierPickTarget>>,
 ) {
     sources
         .iter()
@@ -81,7 +89,7 @@ fn update_hits(
                     ray.direction,
                     f32::MAX,
                     true,
-                    QueryFilter::new(),
+                    QueryFilter::new().predicate(&|entity| targets.contains(entity)),
                 )
                 .map(|hit| (hit.0, hit.1, id))
         })
@@ -114,7 +122,7 @@ pub fn ray_from_screenspace(
 }
 
 /// A ray used for raycasting
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone, Reflect, FromReflect)]
 pub struct Ray {
     /// A point that the ray passes through
     pub origin: Vec3,

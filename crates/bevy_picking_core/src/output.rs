@@ -43,9 +43,10 @@ pub trait ForwardedEvent<E: IsPointerEvent>: Event {
 /// An `EventListener` marks an entity, informing the [`event_bubbling`] system to run the
 /// `callback` function when an event of type `E` is being bubbled up the hierarchy and reaches this
 /// entity.
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Reflect)]
 pub struct EventListener<E: IsPointerEvent> {
-    /// A collection of functions that are called when the event listener is triggered.
+    #[reflect(ignore)]
+    /// A function that is called when the event listener is triggered.
     callback: fn(&mut Commands, &PointerEventData<E>, &mut Bubble),
 }
 
@@ -221,7 +222,7 @@ pub trait IsPointerEvent: Send + Sync + Display + Clone + 'static {
 }
 
 /// Stores the common data needed for all `PointerEvent`s.
-#[derive(Clone, Eq, PartialEq, Debug, Reflect)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct PointerEvent<E: Send + Sync + Clone + Reflect> {
     pointer_id: PointerId,
     target: Entity,
@@ -313,6 +314,7 @@ impl<E: Clone + Send + Sync + Reflect> std::fmt::Display for PointerEvent<E> {
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct PointerCancel {
     /// ID of the pointer that was cancelled.
+    #[reflect(ignore)]
     pub pointer_id: PointerId,
 }
 
@@ -404,7 +406,7 @@ pub type PointerDrop = PointerEvent<Drop>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Drop {
     /// The entity that was dropped onto the `target` entity.
-    pub dropped: Entity,
+    pub dropped_entity: Entity,
 }
 
 /// Generates pointer events from input data
@@ -691,7 +693,7 @@ pub fn send_drag_over_events(
                     &drag_end_event.pointer_id(),
                     &dragged_over,
                     Drop {
-                        dropped: drag_end_event.target(),
+                        dropped_entity: drag_end_event.target(),
                     },
                 ));
             }

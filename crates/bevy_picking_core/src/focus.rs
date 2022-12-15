@@ -138,6 +138,9 @@ fn build_hover_map(
                     if let Ok(FocusPolicy::Block) = focus.get(*entity) {
                         break;
                     }
+                    if focus.get(*entity).is_err() {
+                        break;
+                    }
                 }
             }
         }

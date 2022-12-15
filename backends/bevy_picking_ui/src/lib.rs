@@ -4,7 +4,7 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::ui;
+use bevy::ui::{self, FocusPolicy};
 use bevy::{prelude::*, render::camera::RenderTarget, window::WindowId};
 use bevy_picking_core::backend::prelude::*;
 
@@ -31,7 +31,16 @@ impl Plugin for BevyUiBackend {
 /// Computes the UI node entities under each pointer
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    mut node_query: Query<(Entity, &ui::Node, &GlobalTransform, Option<&CalculatedClip>)>,
+    mut node_query: Query<
+        (
+            Entity,
+            &ui::Node,
+            &GlobalTransform,
+            &FocusPolicy,
+            Option<&CalculatedClip>,
+        ),
+        Without<PointerId>,
+    >,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
     for (pointer, position) in pointers.iter().filter_map(|(pointer, pointer_location)| {
@@ -42,9 +51,17 @@ pub fn ui_picking(
             .map(|loc| (pointer, loc.position))
     }) {
         let cursor_position = position;
+        let mut blocked = false;
+
         let over_list = node_query
             .iter_mut()
-            .filter_map(|(entity, node, global_transform, clip)| {
+            .filter_map(|(entity, node, global_transform, focus, clip)| {
+                if blocked {
+                    return None;
+                }
+
+                blocked = *focus == FocusPolicy::Block;
+
                 let position = global_transform.translation();
                 let ui_position = position.truncate();
                 let extents = node.size() / 2.0;

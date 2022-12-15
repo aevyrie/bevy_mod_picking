@@ -49,7 +49,7 @@ pub struct PointerMultiselect {
 }
 
 /// Tracks the current selection state of the entity.
-#[derive(Component, Debug, Default, Clone)]
+#[derive(Component, Debug, Default, Clone, Reflect)]
 pub struct PickSelection {
     /// `true` if this entity is selected.
     pub is_selected: bool,
@@ -69,7 +69,7 @@ pub struct Deselect;
 
 /// Marker struct used to mark pickable entities for which you don't want to trigger a deselection
 /// event when picked. This is useful for gizmos or other pickable UI entities.
-#[derive(Component, Debug, Copy, Clone)]
+#[derive(Component, Debug, Copy, Clone, Reflect)]
 pub struct NoDeselect;
 
 /// Unsurprising default multiselect inputs: both  control and shift keys.

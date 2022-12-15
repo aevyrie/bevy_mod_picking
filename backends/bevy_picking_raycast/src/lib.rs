@@ -36,7 +36,7 @@ impl Plugin for RaycastBackend {
 pub type PickRaycastTarget = bevy_mod_raycast::RaycastMesh<RaycastPickingSet>;
 
 /// Marks a camera that should be used for [`bevy_mod_raycast`] picking.
-#[derive(Debug, Default, Clone, Component)]
+#[derive(Debug, Default, Clone, Component, Reflect)]
 pub struct PickRaycastSource;
 
 /// This unit struct is used to tag the generic ray casting types

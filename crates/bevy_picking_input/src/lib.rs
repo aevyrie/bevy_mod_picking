@@ -15,7 +15,7 @@
 #![deny(missing_docs)]
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_picking_core::PickStage;
+use bevy_picking_core::{PickStage, PickingPluginsSettings};
 
 pub mod debug;
 pub mod mouse;
@@ -28,7 +28,7 @@ impl Plugin for InputPlugin {
         app.init_resource::<InputPluginSettings>()
             .add_startup_system(mouse::spawn_mouse_pointer)
             .add_system_set_to_stage(
-                CoreStage::First,
+                CoreStage::PreUpdate,
                 SystemSet::new()
                     .label(PickStage::Input)
                     .with_system(
@@ -36,9 +36,18 @@ impl Plugin for InputPlugin {
                             .at_start()
                             .with_run_criteria(run_if_touch),
                     )
-                    .with_system(mouse::mouse_pick_events.with_run_criteria(run_if_mouse)),
+                    .with_system(
+                        mouse::mouse_pick_events
+                            .before(PickStage::Backend)
+                            .with_run_criteria(run_if_mouse),
+                    ),
             )
-            .add_system_to_stage(CoreStage::Last, touch::deactivate_pointers);
+            .add_system_set_to_stage(
+                CoreStage::Last,
+                SystemSet::new()
+                    .with_run_criteria(PickingPluginsSettings::input_should_run)
+                    .with_system(touch::deactivate_pointers),
+            );
     }
 }
 
@@ -57,24 +66,15 @@ impl Default for InputPluginSettings {
     }
 }
 
-fn run_if_touch(settings: Res<InputPluginSettings>) -> ShouldRun {
-    settings.run_touch.should_run()
+fn run_if_touch(
+    settings: Res<InputPluginSettings>,
+    state: Res<PickingPluginsSettings>,
+) -> ShouldRun {
+    (state.enable && state.enable_input && settings.run_touch).into()
 }
-fn run_if_mouse(settings: Res<InputPluginSettings>) -> ShouldRun {
-    settings.run_mouse.should_run()
-}
-
-/// Simple trait used to convert a boolean to a run criteria.
-trait IntoShouldRun {
-    /// Converts `self` into [`ShouldRun`].
-    fn should_run(&self) -> ShouldRun;
-}
-impl IntoShouldRun for bool {
-    fn should_run(&self) -> ShouldRun {
-        if *self {
-            ShouldRun::Yes
-        } else {
-            ShouldRun::No
-        }
-    }
+fn run_if_mouse(
+    settings: Res<InputPluginSettings>,
+    state: Res<PickingPluginsSettings>,
+) -> ShouldRun {
+    (state.enable && state.enable_input && settings.run_mouse).into()
 }

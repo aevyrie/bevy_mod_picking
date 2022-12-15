@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::{prelude::*, sprite::MaterialMesh2dBundle, ui::FocusPolicy};
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::prelude::{
     backends::raycast::{PickRaycastSource, PickRaycastTarget, RaycastBackend},
     *,
@@ -9,16 +9,10 @@ use bevy_mod_picking::prelude::{
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(
-            DefaultPickingPlugins::start()
-                .with_backend(RaycastBackend)
-                .build()
-                .disable::<HighlightingPlugin>(),
-        )
+        .add_plugins(DefaultPickingPlugins::start().with_backend(RaycastBackend))
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup)
         .add_system(drag_squares)
-        .add_system(drag_over_squares)
         .add_system(drop_squares)
         .add_system(spin)
         .run();
@@ -31,12 +25,13 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for x in -2..=2 {
+        let z = 0.5 + x as f32 * 0.1;
         commands.spawn((
             MaterialMesh2dBundle {
                 mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
-                transform: Transform::from_xyz(x as f32 * 200.0, 0.0, 0.0)
+                transform: Transform::from_xyz(x as f32 * 200.0, 0.0, z)
                     .with_scale(Vec3::splat(100.)),
-                material: materials.add(ColorMaterial::from(Color::WHITE)),
+                material: materials.add(ColorMaterial::from(Color::hsl(0.0, 1.0, z))),
                 ..Default::default()
             },
             PickableBundle::default(),    // <- Makes the mesh pickable.
@@ -49,71 +44,59 @@ fn setup(
 }
 
 fn drag_squares(
+    mut commands: Commands,
     // Pointer Events
-    mut drag_start: EventReader<PointerDragStart>,
-    mut drags: EventReader<PointerDrag>,
-    mut drag_end: EventReader<PointerDragEnd>,
+    mut drag_start_events: EventReader<PointerDragStart>,
+    mut drag_events: EventReader<PointerDrag>,
+    mut drag_end_events: EventReader<PointerDragEnd>,
     // Inputs
-    map: Res<PointerMap>,
+    pointers: Res<PointerMap>,
     windows: Res<Windows>,
+    images: Res<Assets<Image>>,
     locations: Query<&PointerLocation>,
     // Outputs
-    mut square: Query<(&mut Transform, &mut Handle<ColorMaterial>, &mut FocusPolicy)>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut square: Query<(Entity, &mut Transform)>,
 ) {
-    for start in drag_start.iter() {
-        let (_, mut square_matl, mut policy) = square.get_mut(start.target()).unwrap();
-        *square_matl = materials.add(ColorMaterial::from(Color::YELLOW_GREEN));
-        *policy = FocusPolicy::Pass;
+    // When we start dragging a square, we need to change the focus policy so that picking passes
+    // through it. Because the square will be locked to the cursor, it will block the pointer and we
+    // won't be able to tell what we are dropping it onto unless we do this.
+    for drag_start in drag_start_events.iter() {
+        let (entity, _) = square.get_mut(drag_start.target()).unwrap();
+        commands.entity(entity).remove::<PickRaycastTarget>();
     }
 
-    for drag in drags.iter() {
-        let pointer_entity = map.get_entity(drag.pointer_id()).unwrap();
-        let pointer_location = locations.get(pointer_entity).unwrap().location();
-        let pointer_position = pointer_location.unwrap().position;
-        let window = windows.get_primary().unwrap();
-        let window_size = Vec2::new(window.width(), window.height());
-        let (mut square_transform, _, _) = square.get_mut(drag.target()).unwrap();
-        square_transform.translation = (pointer_position - (window_size / 2.0)).extend(1.0);
+    // While being dragged, update the position of the square to be under the pointer.
+    for dragging in drag_events.iter() {
+        let pointer_entity = pointers.get_entity(dragging.pointer_id()).unwrap();
+        let pointer_location = locations.get(pointer_entity).unwrap().location().unwrap();
+        let pointer_position = pointer_location.position;
+        let target_size = pointer_location
+            .target
+            .get_render_target_info(&windows, &images)
+            .unwrap()
+            .physical_size
+            .as_vec2();
+
+        let (_, mut square_transform) = square.get_mut(dragging.target()).unwrap();
+        let z = square_transform.translation.z;
+        square_transform.translation = (pointer_position - (target_size / 2.0)).extend(z);
     }
 
-    for end in drag_end.iter() {
-        let (mut square_transform, mut square_matl, mut policy) =
-            square.get_mut(end.target()).unwrap();
-        square_transform.translation.z = 0.0;
-        *square_matl = materials.add(ColorMaterial::from(Color::WHITE));
-        *policy = FocusPolicy::Block;
+    //
+    for drag_end in drag_end_events.iter() {
+        let (entity, _) = square.get_mut(drag_end.target()).unwrap();
+        commands.entity(entity).insert(PickRaycastTarget::default());
     }
 }
 
-fn drag_over_squares(
-    // Pointer Events
-    mut drag_enter: EventReader<PointerDragEnter>,
-    mut drag_leave: EventReader<PointerDragLeave>,
-    // Outputs
-    mut square: Query<&mut Handle<ColorMaterial>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    for enter in drag_enter.iter() {
-        if let Ok(mut square_matl) = square.get_mut(enter.target()) {
-            *square_matl = materials.add(ColorMaterial::from(Color::BLUE));
-        }
-    }
-    for leave in drag_leave.iter() {
-        if let Ok(mut square_matl) = square.get_mut(leave.target()) {
-            *square_matl = materials.add(ColorMaterial::from(Color::WHITE));
-        }
-    }
-}
-
-fn drop_squares(mut drop: EventReader<PointerDrop>, mut square: Query<&mut SpinMe>) {
-    for drop in drop.iter() {
-        if let Ok(mut spin) = square.get_mut(drop.target()) {
+fn drop_squares(mut drop_events: EventReader<PointerDrop>, mut square_spin: Query<&mut SpinMe>) {
+    for dropped in drop_events.iter() {
+        if let Ok(mut spin) = square_spin.get_mut(dropped.target()) {
             if spin.0.abs() <= 0.01 {
                 spin.0 = 0.5 * PI;
             }
         }
-        if let Ok(mut spin) = square.get_mut(drop.event_data().dropped) {
+        if let Ok(mut spin) = square_spin.get_mut(dropped.event_data().dropped_entity) {
             if spin.0.abs() <= 0.01 {
                 spin.0 = -0.5 * PI;
             }

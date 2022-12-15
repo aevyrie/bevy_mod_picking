@@ -72,48 +72,59 @@ fn debug_draw(
         &pointer::PointerLocation,
         &pointer::PointerPress,
         &output::PointerInteraction,
-        &selection::PointerMultiselect,
+        Option<&selection::PointerMultiselect>,
     )>,
     windows: Res<Windows>,
 ) {
-    let window_width = windows.primary().width();
     for (entity, id, location, press, interaction, selection) in pointers.iter() {
         let location = match location.location() {
             Some(l) => l.position,
             None => continue,
         };
-        let x = window_width - location.x;
-        let y = location.y;
+        let x = windows.primary().width() - location.x;
+        let y = windows.primary().height() - location.y;
 
-        commands.entity(entity).insert(
-            TextBundle::from_section(
-                format!("ID: {:?}\nLocation: x{} y{}\nPress Primary: {}\nPress Secondary: {}\nPress Middle: {}\nMultiselect: {}\nInteractions: {:?}",
-                    id,
-                    location.x,
-                    location.y,
-                    press.is_primary_pressed(),
-                    press.is_secondary_pressed(),
-                    press.is_middle_pressed(),
-                    selection.is_pressed,
-                    interaction.iter()
-                ),
-                TextStyle {
-                    font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                    font_size: 12.0,
-                    color: Color::WHITE,
-                },
-            )
-            .with_text_alignment(TextAlignment::TOP_RIGHT)
-            .with_style(Style {
+        let font = asset_server.load("fonts/FiraMono-Medium.ttf");
+
+        let mut text = Text::from_section(
+            ".\n",
+            TextStyle {
+                font: font.clone(),
+                font_size: 42.0,
+                color: Color::RED,
+            },
+        );
+        text.sections.push(TextSection::new(
+            format!("ID: {:?}\nLocation: x{} y{}\nPress (Primary, Secondary, Middle): ({}, {}, {})\nMultiselect: {}\nInteractions: {:?}\n",
+                id,
+                location.x,
+                location.y,
+                press.is_primary_pressed(),
+                press.is_secondary_pressed(),
+                press.is_middle_pressed(),
+                selection.and_then (|f| Some(format!("{}", f.is_pressed))).unwrap_or(String::from("disabled")),
+                interaction.iter()
+            ),
+            TextStyle {
+                font,
+                font_size: 12.0,
+                color: Color::WHITE,
+            },
+        ));
+        text.alignment = TextAlignment::TOP_RIGHT;
+
+        commands.entity(entity).insert(TextBundle {
+            text,
+            style: Style {
                 position_type: PositionType::Absolute,
                 position: UiRect {
-                    right: Val::Px(x),
-                    bottom: Val::Px(y),
+                    right: Val::Px(x - 8.0),
+                    top: Val::Px(y - 31.0),
                     ..default()
                 },
                 ..default()
-            })
-            ,
-        );
+            },
+            ..default()
+        });
     }
 }
