@@ -119,11 +119,12 @@ pub trait EventListenerCommands {
     /// # }
     /// # fn my_func(mut commands: Commands){
     /// commands
-    ///     .spawn()
+    ///     .spawn(())
     ///     .forward_events::<PointerClick, MyForwardedEvent>();
     /// # }
     /// ```
     fn forward_events<In: IsPointerEvent, Out: ForwardedEvent<In>>(&mut self) -> &mut Self;
+
     /// Listens for events of type `In`. When found, an event of type `Out` will be sent. Finally,
     /// bubbling will be halted. See [`event_bubbling`] for details on how bubbling works.
     ///

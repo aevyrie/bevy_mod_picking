@@ -64,7 +64,7 @@ pub fn sprite_picking(
 
                     let extents = sprite
                         .custom_size
-                        .or_else(|| images.get(image).and_then(|f| Some(f.size())))
+                        .or_else(|| images.get(image).map(|f| f.size()))
                         .map(|size| size / 2.0)?;
 
                     let anchor_offset = sprite.anchor.as_vec() * extents;

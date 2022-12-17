@@ -43,6 +43,7 @@ fn setup(
     commands.spawn((Camera2dBundle::default(), PickRaycastSource::default())); // <- Sets the camera to use for picking.
 }
 
+#[allow(clippy::too_many_arguments)]
 fn drag_squares(
     mut commands: Commands,
     // Pointer Events

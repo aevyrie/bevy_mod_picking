@@ -1,7 +1,7 @@
 //! Text and on-screen debugging tools
 
 use crate::*;
-use bevy::{prelude::*, render::camera::RenderTarget};
+use bevy::prelude::*;
 
 /// Logs events for debugging
 #[derive(Debug, Default, Clone)]
@@ -65,6 +65,7 @@ impl Plugin for DebugPickingPlugin {
 }
 
 /// Draw an egui window on each cursor with debug info
+#[cfg(feature = "backend_egui")]
 pub fn debug_draw_egui(
     commands: Commands,
     asset_server: Res<AssetServer>,
@@ -101,7 +102,7 @@ pub fn debug_draw_egui(
         };
         let position = location.position;
 
-        let window_id = if let RenderTarget::Window(id) = location.target {
+        let window_id = if let bevy::render::camera::RenderTarget::Window(id) = location.target {
             id
         } else {
             continue;
@@ -116,6 +117,14 @@ pub fn debug_draw_egui(
 
         let near_border =
             window.width() - x < 300.0 || x < 300.0 || window.height() - y < 150.0 || y < 150.0;
+
+        fn bool_to_icon(from: &bool) -> &str {
+            if *from {
+                "☑"
+            } else {
+                "☐"
+            }
+        }
 
         #[cfg(feature = "selection")]
         let selection = selection
@@ -176,14 +185,6 @@ pub fn debug_draw_egui(
             egui::FontId::monospace(12.0),
             egui::Color32::WHITE,
         );
-    }
-}
-
-fn bool_to_icon<'a>(from: &'a bool) -> &'a str {
-    if *from {
-        "☑"
-    } else {
-        "☐"
     }
 }
 
