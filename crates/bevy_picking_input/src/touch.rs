@@ -76,6 +76,7 @@ pub fn touch_pick_events(world: &mut World) {
                     info!("Spawning pointer {:?}", pointer);
                     commands.spawn((
                         PointerCoreBundle::new(pointer).with_location(location.clone()),
+                        #[cfg(feature = "selection")]
                         bevy_picking_selection::PointerMultiselect::default(),
                     ));
 

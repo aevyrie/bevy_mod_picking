@@ -71,12 +71,11 @@ fn drag_squares(
         let pointer_entity = pointers.get_entity(dragging.pointer_id()).unwrap();
         let pointer_location = locations.get(pointer_entity).unwrap().location().unwrap();
         let pointer_position = pointer_location.position;
-        let target_size = pointer_location
+        let target = pointer_location
             .target
             .get_render_target_info(&windows, &images)
-            .unwrap()
-            .physical_size
-            .as_vec2();
+            .unwrap();
+        let target_size = target.physical_size.as_vec2() / target.scale_factor as f32;
 
         let (_, mut square_transform) = square.get_mut(dragging.target()).unwrap();
         let z = square_transform.translation.z;

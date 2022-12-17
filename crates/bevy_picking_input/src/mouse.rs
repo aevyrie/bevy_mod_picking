@@ -14,6 +14,7 @@ use bevy_picking_core::{
 pub fn spawn_mouse_pointer(mut commands: Commands) {
     commands.spawn((
         PointerCoreBundle::new(PointerId::Mouse),
+        #[cfg(feature = "selection")]
         bevy_picking_selection::PointerMultiselect::default(),
     ));
 }

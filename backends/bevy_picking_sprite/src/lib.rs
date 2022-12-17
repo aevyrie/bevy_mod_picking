@@ -72,7 +72,7 @@ pub fn sprite_picking(
                     let target = if let Some(t) =
                         location.target.get_render_target_info(&windows, &images)
                     {
-                        t.physical_size.as_vec2() * t.scale_factor as f32
+                        t.physical_size.as_vec2() / t.scale_factor as f32
                     } else {
                         return None;
                     };

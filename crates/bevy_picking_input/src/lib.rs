@@ -28,7 +28,7 @@ impl Plugin for InputPlugin {
         app.init_resource::<InputPluginSettings>()
             .add_startup_system(mouse::spawn_mouse_pointer)
             .add_system_set_to_stage(
-                CoreStage::PreUpdate,
+                CoreStage::First,
                 SystemSet::new()
                     .label(PickStage::Input)
                     .with_system(
@@ -37,9 +37,7 @@ impl Plugin for InputPlugin {
                             .with_run_criteria(run_if_touch),
                     )
                     .with_system(
-                        mouse::mouse_pick_events
-                            .with_run_criteria(run_if_mouse)
-                            .before(PickStage::Backend),
+                        mouse::mouse_pick_events.with_run_criteria(run_if_mouse), // .before(PickStage::Backend),
                     ),
             )
             .add_system_set_to_stage(
