@@ -37,10 +37,8 @@ pub mod prelude {
 
 /// Adds support for shader picking to `bevy_mod_picking`.
 #[derive(Clone)]
-pub struct ShaderPlugin;
-impl PickingBackend for ShaderPlugin {}
-impl Plugin for ShaderPlugin {
-    fn build(&self, _app: &mut App) {
-        unimplemented!();
-    }
+pub struct ShaderBackend;
+impl PickingBackend for ShaderBackend {}
+impl Plugin for ShaderBackend {
+    fn build(&self, _app: &mut App) {}
 }

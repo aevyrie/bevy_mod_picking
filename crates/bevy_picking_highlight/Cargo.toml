@@ -8,8 +8,11 @@ edition = "2021"
 [dependencies]
 bevy_picking_core = { path = "../bevy_picking_core" }
 bevy_picking_input = { path = "../bevy_picking_input" }
-bevy_picking_selection = { path = "../bevy_picking_selection" }
+bevy_picking_selection = { optional = true, path = "../bevy_picking_selection" }
 bevy = { version = "0.9", default-features = false, features = [
     "bevy_render",
     "bevy_asset",
 ] }
+
+[features]
+selection = ["bevy_picking_selection"]

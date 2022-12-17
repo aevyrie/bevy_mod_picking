@@ -94,8 +94,8 @@ impl PointerPress {
 pub struct InputPress {
     /// ID of the pointer for this event.
     pointer_id: PointerId,
-    /// Stage of the button press.
-    press: PressStage,
+    /// Direction of the button press.
+    press: PressDirection,
     /// Identifies the pointer button changing in this event.
     button: PointerButton,
 }
@@ -104,7 +104,7 @@ impl InputPress {
     pub fn new_down(id: PointerId, button: PointerButton) -> InputPress {
         Self {
             pointer_id: id,
-            press: PressStage::Down,
+            press: PressDirection::Down,
             button,
         }
     }
@@ -113,21 +113,21 @@ impl InputPress {
     pub fn new_up(id: PointerId, button: PointerButton) -> InputPress {
         Self {
             pointer_id: id,
-            press: PressStage::Up,
+            press: PressDirection::Up,
             button,
         }
     }
 
-    /// Returns true if the `button` of the pointer `id` was just pressed.
+    /// Returns true if the `button` of this pointer was just pressed.
     #[inline]
-    pub fn is_just_down(&self, id: &PointerId, button: PointerButton) -> bool {
-        *self == Self::new_down(*id, button)
+    pub fn is_just_down(&self, button: PointerButton) -> bool {
+        self.button == button && self.press == PressDirection::Down
     }
 
-    /// Returns true if the `button` of the pointer `id` was just released.
+    /// Returns true if the `button` of this pointer was just released.
     #[inline]
-    pub fn is_just_up(&self, id: &PointerId, button: PointerButton) -> bool {
-        *self == Self::new_up(*id, button)
+    pub fn is_just_up(&self, button: PointerButton) -> bool {
+        self.button == button && self.press == PressDirection::Up
     }
 
     /// Receives [`InputPress`] events and updates corresponding [`PointerPress`] components.
@@ -138,7 +138,7 @@ impl InputPress {
         for input_press_event in events.iter() {
             pointers.for_each_mut(|(pointer_id, mut pointer)| {
                 if *pointer_id == input_press_event.pointer_id {
-                    let is_down = input_press_event.press == PressStage::Down;
+                    let is_down = input_press_event.press == PressDirection::Down;
                     match input_press_event.button {
                         PointerButton::Primary => pointer.primary = is_down,
                         PointerButton::Secondary => pointer.secondary = is_down,
@@ -154,8 +154,8 @@ impl InputPress {
         self.pointer_id
     }
 
-    /// Gets the [`PressStage`] of the event.
-    pub fn press(&self) -> PressStage {
+    /// Gets the [`PressDirection`] of the event.
+    pub fn direction(&self) -> PressDirection {
         self.press
     }
 
@@ -167,7 +167,7 @@ impl InputPress {
 
 /// The stage of the pointer button press event
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PressStage {
+pub enum PressDirection {
     /// The pointer button was just pressed
     Down,
     /// The pointer button was just released

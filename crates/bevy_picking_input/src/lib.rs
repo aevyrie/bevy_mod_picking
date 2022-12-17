@@ -31,16 +31,13 @@ impl Plugin for InputPlugin {
                 CoreStage::PreUpdate,
                 SystemSet::new()
                     .label(PickStage::Input)
+                    .before(PickStage::Backend)
                     .with_system(
                         touch::touch_pick_events
                             .at_start()
                             .with_run_criteria(run_if_touch),
                     )
-                    .with_system(
-                        mouse::mouse_pick_events
-                            .before(PickStage::Backend)
-                            .with_run_criteria(run_if_mouse),
-                    ),
+                    .with_system(mouse::mouse_pick_events.with_run_criteria(run_if_mouse)),
             )
             .add_system_set_to_stage(
                 CoreStage::Last,

@@ -1,20 +1,25 @@
 use bevy::{
     prelude::*,
-    render::camera::RenderTarget,
-    window::{CreateWindow, PresentMode, WindowId},
+    render::camera::{RenderTarget, Viewport},
+    window::{CreateWindow, PresentMode, WindowId, WindowResized},
 };
 use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins::start().with_backend(RaycastBackend))
+        .add_plugins(DefaultPickingPlugins)
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
+        .add_plugin(bevy_egui::EguiPlugin)
         .add_startup_system(setup)
         .add_system(bevy::window::close_on_esc)
         .add_system(make_pickable)
+        .add_system(set_camera_viewport)
         .run();
 }
+
+#[derive(Component)]
+struct ViewportCamera;
 
 fn setup(
     mut commands: Commands,
@@ -63,6 +68,7 @@ fn setup(
             ..Default::default()
         },
         PickRaycastSource::default(), // <- Enable picking for this camera
+        ViewportCamera,
     ));
 
     let window_id = WindowId::new();
@@ -101,5 +107,29 @@ fn make_pickable(
         commands
             .entity(entity)
             .insert((PickableBundle::default(), PickRaycastTarget::default()));
+    }
+}
+
+fn set_camera_viewport(
+    windows: Res<Windows>,
+    mut resize_events: EventReader<WindowResized>,
+    mut viewport_camera: Query<&mut Camera, With<ViewportCamera>>,
+) {
+    // We need to dynamically resize the camera's viewports whenever the window size changes
+    // so then each camera always takes up half the screen.
+    // A resize_event is sent when the window is first created, allowing us to reuse this system for initial setup.
+    for resize_event in resize_events.iter() {
+        if resize_event.id == WindowId::primary() {
+            let window = windows.primary();
+            let mut left_camera = viewport_camera.single_mut();
+            left_camera.viewport = Some(Viewport {
+                physical_position: UVec2::new(window.physical_width() / 4, 0),
+                physical_size: UVec2::new(
+                    window.physical_width() / 2,
+                    window.physical_height() / 2,
+                ),
+                ..default()
+            });
+        }
     }
 }

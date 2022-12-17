@@ -7,18 +7,33 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::hashbrown::HashSet};
 use bevy_picking_core::{
     output::{IsPointerEvent, PointerEvent},
-    pointer::PointerId,
+    pointer::{PointerButton, PointerId},
     PickStage,
 };
+
+/// Runtime settings for the `bevy_picking_selection` plugin.
+#[derive(Debug, Resource)]
+pub struct SelectionSettings {
+    /// A pointer clicks and nothing is beneath it, should everything be deselected?
+    pub click_nothing_deselect_all: bool,
+}
+impl Default for SelectionSettings {
+    fn default() -> Self {
+        Self {
+            click_nothing_deselect_all: true,
+        }
+    }
+}
 
 /// Adds multiselect picking support to your app.
 pub struct SelectionPlugin;
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PointerSelect>()
+        app.init_resource::<SelectionSettings>()
+            .add_event::<PointerSelect>()
             .add_event::<PointerDeselect>()
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
@@ -92,7 +107,9 @@ pub fn multiselect_events(
 /// Determines which entities have been selected or deselected, and sends [`PointerSelect`] and
 /// [`PointerDeselect`] events corresponding to these state changes.
 pub fn send_selection_events(
+    settings: Res<SelectionSettings>,
     mut pointer_down: EventReader<bevy_picking_core::output::PointerDown>,
+    mut presses: EventReader<bevy_picking_core::pointer::InputPress>,
     mut pointer_click: EventReader<bevy_picking_core::output::PointerClick>,
     pointers: Query<(&PointerId, &PointerMultiselect)>,
     no_deselect: Query<&NoDeselect>,
@@ -101,7 +118,11 @@ pub fn send_selection_events(
     mut selections: EventWriter<PointerSelect>,
     mut deselections: EventWriter<PointerDeselect>,
 ) {
+    // Pointers that have clicked on something.
+    let mut pointer_down_list = HashSet::new();
+
     for down in pointer_down.iter() {
+        pointer_down_list.insert(down.pointer_id());
         let multiselect = pointers
             .iter()
             .find_map(|(id, multi)| (id == &down.pointer_id()).then_some(multi.is_pressed))
@@ -113,6 +134,28 @@ pub fn send_selection_events(
                 let not_click_target = down.target() != entity;
                 if selection.is_selected && not_click_target {
                     deselections.send(PointerDeselect::new(&down.pointer_id(), &entity, Deselect))
+                }
+            }
+        }
+    }
+
+    // If a pointer has pressed, but did not press on anything, this means it clicked on nothing. If
+    // so, and the setting is enabled, deselect everything.
+    if settings.click_nothing_deselect_all {
+        for press in presses
+            .iter()
+            .filter(|p| p.is_just_down(PointerButton::Primary))
+        {
+            let id = &press.pointer_id();
+            let multiselect = pointers
+                .iter()
+                .find_map(|(this_id, multi)| (this_id == id).then_some(multi.is_pressed))
+                .unwrap_or(false);
+            if !pointer_down_list.contains(id) && !multiselect {
+                for (entity, selection) in selectables.iter() {
+                    if selection.is_selected {
+                        deselections.send(PointerDeselect::new(id, &entity, Deselect))
+                    }
                 }
             }
         }

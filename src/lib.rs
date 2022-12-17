@@ -99,16 +99,21 @@ use bevy_picking_core::PointerCoreBundle;
 
 use bevy::prelude::Bundle;
 pub use bevy_picking_core::{self as core, backend, focus, output, pointer};
-pub use bevy_picking_highlight as highlight;
 pub use bevy_picking_input::{self as input};
-pub use bevy_picking_selection as selection;
-use selection::PointerMultiselect;
 
+#[cfg(feature = "highlight")]
+pub use bevy_picking_highlight as highlight;
+#[cfg(feature = "selection")]
+pub use bevy_picking_selection as selection;
+#[cfg(feature = "debug")]
 pub mod debug;
+
 pub mod plugins;
 
 /// Picking backend exports, feature-gated.
 pub mod backends {
+    #[cfg(feature = "backend_egui")]
+    pub use bevy_picking_egui as egui;
     #[cfg(feature = "backend_rapier")]
     pub use bevy_picking_rapier as rapier;
     #[cfg(feature = "backend_raycast")]
@@ -127,10 +132,6 @@ pub mod prelude {
     pub use crate::debug::DebugPickingPlugin;
     pub use crate::{
         backends,
-        highlight::{
-            CustomHighlightPlugin, DefaultHighlighting, HighlightOverride, HighlightingPlugin,
-            PickHighlight,
-        },
         output::{
             EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerClick, PointerDown,
             PointerDrag, PointerDragEnd, PointerDragEnter, PointerDragLeave, PointerDragOver,
@@ -139,14 +140,25 @@ pub mod prelude {
         },
         plugins::{DefaultPickingPlugins, PickableBundle},
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
-        selection::{
-            NoDeselect, PickSelection, PointerDeselect, PointerMultiselect, PointerSelect,
-            SelectionPlugin,
-        },
         *,
     };
+
+    #[cfg(feature = "highlight")]
+    pub use crate::highlight::{
+        CustomHighlightPlugin, DefaultHighlighting, HighlightOverride, HighlightingPlugin,
+        PickHighlight,
+    };
+
+    #[cfg(feature = "selection")]
+    pub use crate::selection::{
+        NoDeselect, PickSelection, PointerDeselect, PointerMultiselect, PointerSelect,
+        SelectionPlugin,
+    };
+
     #[cfg(feature = "backend_bevy_ui")]
     pub use backends::bevy_ui::prelude::*;
+    #[cfg(feature = "backend_egui")]
+    pub use backends::egui::prelude::*;
     #[cfg(feature = "backend_rapier")]
     pub use backends::rapier::prelude::*;
     #[cfg(feature = "backend_raycast")]
@@ -162,14 +174,16 @@ pub mod prelude {
 pub struct PointerBundle {
     #[bundle]
     core: PointerCoreBundle,
-    selection: PointerMultiselect,
+    #[cfg(feature = "selection")]
+    selection: selection::PointerMultiselect,
 }
 impl PointerBundle {
     /// Build a new `PointerBundle` with the supplied [`PointerId`].
     pub fn new(id: pointer::PointerId) -> PointerBundle {
         PointerBundle {
             core: PointerCoreBundle::new(id),
-            selection: PointerMultiselect::default(),
+            #[cfg(feature = "selection")]
+            selection: selection::PointerMultiselect::default(),
         }
     }
 }

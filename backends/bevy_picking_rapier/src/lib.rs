@@ -74,11 +74,16 @@ pub fn build_rays_from_pointers(
 
 /// Produces [`EntitiesUnderPointer`]s from [`RapierPickRay`] intersections.
 fn update_hits(
-    rapier_context: Res<RapierContext>,
+    rapier_context: Option<Res<RapierContext>>,
     sources: Query<(&RapierPickRay, &PointerId)>,
     mut output: EventWriter<EntitiesUnderPointer>,
     targets: Query<With<RapierPickTarget>>,
 ) {
+    let rapier_context = match rapier_context {
+        Some(c) => c,
+        None => return,
+    };
+
     sources
         .iter()
         .filter_map(|(source, id)| source.ray.as_ref().map(|ray| (id, ray)))

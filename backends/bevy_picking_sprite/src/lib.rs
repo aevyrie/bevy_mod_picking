@@ -8,12 +8,12 @@ use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 use bevy_picking_core::backend::prelude::*;
 
-/// Commonly used imports for the [`bevy_picking_ui`](crate) crate.
+/// Commonly used imports for the [`bevy_picking_sprite`](crate) crate.
 pub mod prelude {
     pub use crate::SpriteBackend;
 }
 
-/// Adds picking support for [`bevy_ui`](bevy::ui)
+/// Adds picking support for [`bevy_sprite`](bevy::sprite)
 #[derive(Clone)]
 pub struct SpriteBackend;
 impl PickingBackend for SpriteBackend {}
@@ -28,7 +28,7 @@ impl Plugin for SpriteBackend {
     }
 }
 
-/// Computes the UI node entities under each pointer
+/// Checks if any sprite entities are under each pointer
 pub fn sprite_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
     images: Res<Assets<Image>>,

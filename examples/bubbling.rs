@@ -16,14 +16,14 @@
 
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::{
-    backends::raycast::{PickRaycastSource, PickRaycastTarget, RaycastBackend},
+    backends::raycast::{PickRaycastSource, PickRaycastTarget},
     *,
 };
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins::start().with_backend(RaycastBackend))
+        .add_plugins(DefaultPickingPlugins)
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup)
         .add_system(DeleteMe::handle_events)

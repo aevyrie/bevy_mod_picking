@@ -5,25 +5,32 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
+#[allow(unused_imports)]
 use bevy::{asset::Asset, prelude::*, render::color::Color};
-use bevy_picking_core::PickingPluginsSettings;
+use bevy_picking_core::{PickStage, PickingPluginsSettings};
+#[cfg(feature = "selection")]
 use bevy_picking_selection::PickSelection;
 
 /// Adds pick highlighting functionality to your app.
 pub struct HighlightingPlugin;
 impl Plugin for HighlightingPlugin {
+    #[allow(unused_variables)]
     fn build(&self, app: &mut App) {
         app.add_plugin(CustomHighlightPlugin::<StandardMaterial> {
             highlighting_default: |mut assets| DefaultHighlighting {
                 hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
                 pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
+                #[cfg(feature = "selection")]
                 selected: assets.add(Color::rgb(0.35, 0.35, 0.75).into()),
             },
-        })
-        .add_plugin(CustomHighlightPlugin::<ColorMaterial> {
+        });
+
+        #[cfg(feature = "bevy/bevy_sprite")]
+        app.add_plugin(CustomHighlightPlugin::<bevy::sprite::ColorMaterial> {
             highlighting_default: |mut assets| DefaultHighlighting {
                 hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
                 pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
+                #[cfg(feature = "selection")]
                 selected: assets.add(Color::rgb(0.35, 0.35, 0.75).into()),
             },
         });
@@ -52,6 +59,7 @@ pub struct HighlightOverride<T: Asset> {
     /// Overrides this asset's global default appearance when pressed
     pub pressed: Option<Handle<T>>,
     /// Overrides this asset's global default appearance when selected
+    #[cfg(feature = "selection")]
     pub selected: Option<Handle<T>>,
 }
 
@@ -69,6 +77,7 @@ where
 {
     fn build(&self, app: &mut App) {
         let highlighting_default = self.highlighting_default;
+
         app.add_startup_system(move |mut commands: Commands, assets: ResMut<Assets<T>>| {
             commands.insert_resource(highlighting_default(assets));
         })
@@ -76,11 +85,15 @@ where
             CoreStage::PreUpdate,
             SystemSet::new()
                 .with_run_criteria(PickingPluginsSettings::highlighting_should_run)
-                .with_system(get_initial_highlight_asset::<T>)
+                .with_system(get_initial_highlight_asset::<T>.before(update_highlight_assets::<T>))
+                .with_system(update_highlight_assets::<T>.after(PickStage::Focus))
                 .with_system(
-                    update_highlight_assets::<T>
-                        .after(get_initial_highlight_asset::<T>)
-                        .after(bevy_picking_selection::send_selection_events),
+                    #[cfg(feature = "selection")]
+                    update_selection::<T>
+                        .after(bevy_picking_selection::send_selection_events)
+                        .after(update_highlight_assets::<T>),
+                    #[cfg(not(feature = "selection"))]
+                    || {},
                 ),
         );
     }
@@ -103,6 +116,7 @@ pub struct DefaultHighlighting<T: Asset> {
     /// Default asset handle to use for pressed entities without a [`HighlightOverride`].
     pub pressed: Handle<T>,
     /// Default asset handle to use for selected entities without a [`HighlightOverride`].
+    #[cfg(feature = "selection")]
     pub selected: Handle<T>,
 }
 
@@ -121,6 +135,7 @@ impl<T: Asset> DefaultHighlighting<T> {
             .unwrap_or_else(|| self.pressed.clone())
     }
     /// Returns the selected highlight override if it exists, falling back to the default.
+    #[cfg(feature = "selection")]
     pub fn selected(&self, h_override: &Option<&HighlightOverride<T>>) -> Handle<T> {
         h_override
             .and_then(|h| h.selected.to_owned())
@@ -153,24 +168,42 @@ pub fn update_highlight_assets<T: Asset>(
         (
             &mut Handle<T>,
             &Interaction,
-            Option<&PickSelection>,
             &InitialHighlight<T>,
             Option<&HighlightOverride<T>>,
         ),
-        Or<(Changed<Interaction>, Changed<PickSelection>)>,
+        Changed<Interaction>,
+    >,
+) {
+    for (mut asset, interaction, init_highlight, h_override) in &mut interaction_query {
+        *asset = match interaction {
+            Interaction::Clicked => global_defaults.pressed(&h_override),
+            Interaction::Hovered => global_defaults.hovered(&h_override),
+            Interaction::None => init_highlight.initial.to_owned(),
+        }
+    }
+}
+
+#[cfg(feature = "selection")]
+/// If the interaction state of a selected entity is `None`, set the highlight color to `selected`.
+pub fn update_selection<T: Asset>(
+    global_defaults: Res<DefaultHighlighting<T>>,
+    mut interaction_query: Query<
+        (
+            &mut Handle<T>,
+            &Interaction,
+            &PickSelection,
+            &InitialHighlight<T>,
+            Option<&HighlightOverride<T>>,
+        ),
+        Or<(Changed<PickSelection>, Changed<Interaction>)>,
     >,
 ) {
     for (mut asset, interaction, selection, init_highlight, h_override) in &mut interaction_query {
-        match interaction {
-            Interaction::Clicked => *asset = global_defaults.pressed(&h_override),
-            Interaction::Hovered => *asset = global_defaults.hovered(&h_override),
-            Interaction::None => {
-                *asset = match selection {
-                    Some(PickSelection { is_selected: true }) => {
-                        global_defaults.selected(&h_override)
-                    }
-                    _ => init_highlight.initial.to_owned(),
-                }
+        if let Interaction::None = interaction {
+            *asset = if selection.is_selected {
+                global_defaults.selected(&h_override)
+            } else {
+                init_highlight.initial.to_owned()
             }
         }
     }

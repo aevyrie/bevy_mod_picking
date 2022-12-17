@@ -9,6 +9,10 @@ pub fn print(mut moves: EventReader<InputMove>, mut presses: EventReader<InputPr
         info!("Input Move: {:?}", event.pointer_id());
     }
     for event in presses.iter() {
-        info!("Input Press: {:?}, {:?}", event.pointer_id(), event.press());
+        info!(
+            "Input Press: {:?}, {:?}",
+            event.pointer_id(),
+            event.direction()
+        );
     }
 }

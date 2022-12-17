@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     focus::{HoverMap, PreviousHoverMap},
-    pointer::{self, InputMove, InputPress, PointerId, PressStage},
+    pointer::{self, InputMove, InputPress, PointerId, PressDirection},
 };
 use bevy::{
     ecs::{event::Event, system::EntityCommands},
@@ -446,7 +446,7 @@ pub fn pointer_events(
             .iter()
             .flat_map(|h| h.iter())
         {
-            if let PressStage::Up = press_event.press() {
+            if let PressDirection::Up = press_event.direction() {
                 pointer_up.send(PointerUp::new(
                     &press_event.pointer_id(),
                     hovered_entity,
@@ -459,7 +459,7 @@ pub fn pointer_events(
             .iter()
             .flat_map(|h| h.iter())
         {
-            if let PressStage::Down = press_event.press() {
+            if let PressDirection::Down = press_event.direction() {
                 pointer_down.send(PointerDown::new(
                     &press_event.pointer_id(),
                     hovered_entity,
@@ -623,7 +623,7 @@ pub fn send_click_and_drag_events(
     }
 
     for press in input_presses.iter() {
-        if press.press() == pointer::PressStage::Up {
+        if press.direction() == pointer::PressDirection::Up {
             if let Some(Some(drag_entity)) = drag_map.insert(press.pointer_id(), None) {
                 pointer_drag_end.send(PointerDragEnd::new(
                     &press.pointer_id(),

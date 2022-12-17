@@ -1,7 +1,7 @@
 //! Text and on-screen debugging tools
 
 use crate::*;
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::RenderTarget};
 
 /// Logs events for debugging
 #[derive(Debug, Default, Clone)]
@@ -11,11 +11,7 @@ pub struct DebugPickingPlugin {
 }
 impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut App) {
-        let should_run = if self.noisy {
-            bevy::ecs::schedule::ShouldRun::Yes
-        } else {
-            bevy::ecs::schedule::ShouldRun::No
-        };
+        let should_run = self.noisy.into();
 
         app.init_resource::<core::debug::Frame>()
             .add_system_to_stage(CoreStage::First, core::debug::increment_frame)
@@ -51,9 +47,14 @@ impl Plugin for DebugPickingPlugin {
                     .with_system(core::debug::print::<output::PointerDragLeave>)
                     .with_system(core::debug::print::<output::PointerDrop>)
                     .label("PointerOutputDebug"),
-            )
-            .add_system(debug_draw);
+            );
 
+        #[cfg(not(feature = "backend_egui"))]
+        app.add_system(debug_draw);
+        #[cfg(feature = "backend_egui")]
+        app.add_system(debug_draw_egui);
+
+        #[cfg(feature = "selection")]
         app.add_system_set_to_stage(
             CoreStage::Update,
             SystemSet::new()
@@ -63,7 +64,124 @@ impl Plugin for DebugPickingPlugin {
     }
 }
 
-fn debug_draw(
+/// Draw an egui window on each cursor with debug info
+pub fn debug_draw_egui(
+    commands: Commands,
+    asset_server: Res<AssetServer>,
+    egui: Option<ResMut<bevy_egui::EguiContext>>,
+    pointers: Query<(
+        Entity,
+        &pointer::PointerId,
+        &pointer::PointerLocation,
+        &pointer::PointerPress,
+        &output::PointerInteraction,
+    )>,
+    #[cfg(feature = "selection")] selection: Query<Option<&selection::PointerMultiselect>>,
+    windows: Res<Windows>,
+    mut alignment: Local<Option<bevy_egui::egui::Align2>>,
+) {
+    let mut egui = if let Some(e) = egui {
+        e
+    } else {
+        debug_draw(
+            commands,
+            asset_server,
+            pointers,
+            #[cfg(feature = "selection")]
+            selection,
+            windows,
+        );
+        return;
+    };
+
+    for (entity, id, location, press, interaction) in pointers.iter() {
+        let location = match location.location() {
+            Some(l) => l,
+            None => continue,
+        };
+        let position = location.position;
+
+        let window_id = if let RenderTarget::Window(id) = location.target {
+            id
+        } else {
+            continue;
+        };
+        let ctx = egui.ctx_for_window_mut(window_id);
+        let window = windows.get(window_id).unwrap();
+        let x = position.x;
+        let y = window.height() - position.y;
+
+        let left = x > window.width() / 2.0;
+        let top = y > window.height() / 2.0;
+
+        let near_border =
+            window.width() - x < 300.0 || x < 300.0 || window.height() - y < 150.0 || y < 150.0;
+
+        #[cfg(feature = "selection")]
+        let selection = selection
+            .get(entity)
+            .ok()
+            .flatten()
+            .map(|f| format!("Multiselect: {}\n", bool_to_icon(&f.is_pressed)))
+            .unwrap_or_else(|| String::from("Multiselect: pointer disabled\n"));
+        #[cfg(not(feature = "selection"))]
+        let selection = String::new();
+
+        let text = format!("ID: {:?}\nLocation: x{} y{}\nPress Primary: {}, Secondary: {}, Middle: {}\n{}Interactions: {:?}\n",
+                id,
+                position.x,
+                position.y,
+                bool_to_icon(&press.is_primary_pressed()),
+                bool_to_icon(&press.is_secondary_pressed()),
+                bool_to_icon(&press.is_middle_pressed()),
+                selection,
+                interaction.iter()
+            );
+        use bevy_egui::egui;
+
+        let center = egui::pos2(x, y);
+
+        let dbg_painter = ctx.layer_painter(egui::LayerId::debug());
+        dbg_painter.circle(
+            center,
+            20.0,
+            egui::Color32::TRANSPARENT,
+            egui::Stroke::new(3.0, egui::Color32::RED),
+        );
+
+        let new_alignment = match (left, top) {
+            (true, true) => egui::Align2::RIGHT_BOTTOM,
+            (true, false) => egui::Align2::RIGHT_TOP,
+            (false, true) => egui::Align2::LEFT_BOTTOM,
+            (false, false) => egui::Align2::LEFT_TOP,
+        };
+
+        dbg_painter.text(
+            center,
+            match (alignment.to_owned(), near_border) {
+                (Some(cached), false) => cached,
+                _ => {
+                    *alignment = Some(new_alignment);
+                    new_alignment
+                }
+            },
+            text,
+            egui::FontId::monospace(12.0),
+            egui::Color32::WHITE,
+        );
+    }
+}
+
+fn bool_to_icon<'a>(from: &'a bool) -> &'a str {
+    if *from {
+        "☑"
+    } else {
+        "☐"
+    }
+}
+
+/// Draw an text on each cursor with debug info
+pub fn debug_draw(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     pointers: Query<(
@@ -72,19 +190,19 @@ fn debug_draw(
         &pointer::PointerLocation,
         &pointer::PointerPress,
         &output::PointerInteraction,
-        Option<&selection::PointerMultiselect>,
     )>,
+    #[cfg(feature = "selection")] selection: Query<Option<&selection::PointerMultiselect>>,
     windows: Res<Windows>,
 ) {
-    for (entity, id, location, press, interaction, selection) in pointers.iter() {
+    let font = asset_server.load("fonts/FiraMono-Medium.ttf");
+
+    for (entity, id, location, press, interaction) in pointers.iter() {
         let location = match location.location() {
             Some(l) => l.position,
             None => continue,
         };
         let x = windows.primary().width() - location.x;
         let y = windows.primary().height() - location.y;
-
-        let font = asset_server.load("fonts/FiraMono-Medium.ttf");
 
         let mut text = Text::from_section(
             ".\n",
@@ -94,19 +212,30 @@ fn debug_draw(
                 color: Color::RED,
             },
         );
+
+        #[cfg(feature = "selection")]
+        let selection = selection
+            .get(entity)
+            .ok()
+            .flatten()
+            .map(|f| format!("Multiselect: {}\n", f.is_pressed))
+            .unwrap_or_else(|| String::from("Multiselect: pointer disabled\n"));
+        #[cfg(not(feature = "selection"))]
+        let selection = String::new();
+
         text.sections.push(TextSection::new(
-            format!("ID: {:?}\nLocation: x{} y{}\nPress (Primary, Secondary, Middle): ({}, {}, {})\nMultiselect: {}\nInteractions: {:?}\n",
+            format!("ID: {:?}\nLocation: x{} y{}\nPress (Primary, Secondary, Middle): ({}, {}, {})\n{}Interactions: {:?}\n",
                 id,
                 location.x,
                 location.y,
                 press.is_primary_pressed(),
                 press.is_secondary_pressed(),
                 press.is_middle_pressed(),
-                selection.map (|f| format!("{}", f.is_pressed)).unwrap_or_else(|| String::from("disabled")),
+                selection,
                 interaction.iter()
             ),
             TextStyle {
-                font,
+                font: font.clone(),
                 font_size: 12.0,
                 color: Color::WHITE,
             },

@@ -9,56 +9,58 @@
 
 use crate::*;
 use bevy::prelude::*;
-use bevy_picking_core::backend::PickingBackend;
 
 /// A "batteries-included" set of plugins that adds everything needed for picking, highlighting, and
-/// multiselect.
-///
-/// You will need to add at least one backend to construct this plugin group.
-pub struct DefaultPickingPlugins(std::marker::PhantomData<()>);
-impl DefaultPickingPlugins {
-    /// Create a ndw picking plugin builder
-    pub fn start() -> DefaultPickingPluginsBuilder {
-        DefaultPickingPluginsBuilder {
-            backends: Vec::new(),
-        }
-    }
-}
+/// multiselect. Backends are automatically added if their corresponding feature is enabled.
+pub struct DefaultPickingPlugins;
 
-/// A type that facilitates building picking plugin groups correctly. [`DefaultPickingPlugins`] does
-/// not implement [`PluginGroup`], so it cannot be added to a bevy app with `.add_plugins()`. This
-/// type *does* implement `PluginGroups` but can only be created using the `with_backend()`
-/// functions. This ensures that when a user is adding this plugin, the type system will guarantee
-/// thy have added at least one picking backend.
-pub struct DefaultPickingPluginsBuilder {
-    backends: Vec<Box<dyn PickingBackend>>,
-}
-
-impl DefaultPickingPluginsBuilder {
-    /// Adds a backend
-    pub fn with_backend(
-        mut self,
-        backend: impl PickingBackend + 'static,
-    ) -> DefaultPickingPluginsBuilder {
-        self.backends.push(Box::new(backend));
-        self
-    }
-}
-
-impl PluginGroup for DefaultPickingPluginsBuilder {
-    fn build(mut self) -> bevy::app::PluginGroupBuilder {
+impl PluginGroup for DefaultPickingPlugins {
+    fn build(self) -> bevy::app::PluginGroupBuilder {
         let mut builder = bevy::app::PluginGroupBuilder::start::<Self>();
 
         builder = builder
             .add(core::CorePlugin)
             .add(core::InteractionPlugin)
-            .add(input::InputPlugin)
-            .add(selection::SelectionPlugin)
-            .add(highlight::HighlightingPlugin)
-            .add(debug::DebugPickingPlugin::default());
+            .add(input::InputPlugin);
 
-        for backend in self.backends.drain(..) {
-            builder = builder.add(backend);
+        #[cfg(feature = "debug")]
+        {
+            builder = builder.add(debug::DebugPickingPlugin::default());
+        }
+
+        #[cfg(feature = "highlight")]
+        {
+            builder = builder.add(highlight::HighlightingPlugin);
+        }
+
+        #[cfg(feature = "selection")]
+        {
+            builder = builder.add(selection::SelectionPlugin);
+        }
+
+        #[cfg(feature = "backend_raycast")]
+        {
+            builder = builder.add(bevy_picking_raycast::RaycastBackend);
+        }
+        #[cfg(feature = "backend_bevy_ui")]
+        {
+            builder = builder.add(bevy_picking_ui::BevyUiBackend);
+        }
+        #[cfg(feature = "backend_rapier")]
+        {
+            builder = builder.add(bevy_picking_rapier::RapierBackend);
+        }
+        #[cfg(feature = "backend_shader")]
+        {
+            builder = builder.add(bevy_picking_shader::ShaderBackend);
+        }
+        #[cfg(feature = "backend_sprite")]
+        {
+            builder = builder.add(bevy_picking_sprite::SpriteBackend);
+        }
+        #[cfg(feature = "backend_egui")]
+        {
+            builder = builder.add(bevy_picking_egui::EguiBackend);
         }
 
         builder
@@ -71,7 +73,9 @@ pub struct PickableBundle {
     /// Tracks entity [`Interaction`] state.
     pub interaction: Interaction,
     /// Tracks entity [`PickSelection`](selection::PickSelection) state.
+    #[cfg(feature = "selection")]
     pub selection: selection::PickSelection,
     /// Tracks entity [`PickHighlight`](highlight::PickHighlight) state.
+    #[cfg(feature = "highlight")]
     pub highlight: highlight::PickHighlight,
 }

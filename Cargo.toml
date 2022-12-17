@@ -18,16 +18,20 @@ bevy = { version = "0.9", default-features = false, features = [
     "bevy_render",
     "bevy_ui",
 ] }
+bevy_egui = { optional = true, version = "0.18.0" }
+bevy_rapier3d = { optional = true, git = "https://github.com/devil-ira/bevy_rapier", branch = "bevy-0.9" }
+
 # Local
 bevy_picking_core = { path = "crates/bevy_picking_core" }
 bevy_picking_input = { path = "crates/bevy_picking_input" }
-bevy_picking_selection = { path = "crates/bevy_picking_selection" }
-bevy_picking_highlight = { path = "crates/bevy_picking_highlight" }
+bevy_picking_selection = { optional = true, path = "crates/bevy_picking_selection" }
+bevy_picking_highlight = { optional = true, path = "crates/bevy_picking_highlight" }
 bevy_picking_raycast = { optional = true, path = "backends/bevy_picking_raycast" }
 bevy_picking_ui = { optional = true, path = "backends/bevy_picking_ui" }
 bevy_picking_rapier = { optional = true, path = "backends/bevy_picking_rapier" }
 bevy_picking_shader = { optional = true, path = "backends/bevy_picking_shader" }
 bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite" }
+bevy_picking_egui = { optional = true, path = "backends/bevy_picking_egui" }
 
 [dev-dependencies]
 bevy = { version = "0.9", default-features = false, features = [
@@ -38,21 +42,37 @@ bevy = { version = "0.9", default-features = false, features = [
     "png",
 ] }
 bevy_framepace = "0.9.1"
-bevy_rapier3d = { git = "https://github.com/devil-ira/bevy_rapier", branch = "bevy-0.9" }
 bevy_mod_picking = { path = "", features = ["all"] }
 
 [features]
-default = ["backend_raycast", "backend_bevy_ui", "debug"]
 all = [
+    "selection",
+    "highlight",
+    "debug",
     "backend_raycast",
     "backend_bevy_ui",
     "backend_rapier",
     "backend_shader",
     "backend_sprite",
+    "backend_egui",
 ]
-debug = ["bevy/bevy_text"]
+default = [
+    "backend_raycast",
+    "backend_bevy_ui",
+    "debug",
+    "selection",
+    "highlight",
+]
+selection = [
+    "bevy_picking_selection",
+    "bevy_picking_highlight/selection",
+    "bevy_picking_egui/selection",
+]
+highlight = ["bevy_picking_highlight"]
+debug = ["bevy/bevy_text", "bevy/bevy_sprite"]
 backend_raycast = ["bevy_picking_raycast"]
-backend_rapier = ["bevy_picking_rapier"]
+backend_rapier = ["bevy_picking_rapier", "bevy_rapier3d"]
 backend_shader = ["bevy_picking_shader"]
 backend_sprite = ["bevy_picking_sprite"]
 backend_bevy_ui = ["bevy_picking_ui"]
+backend_egui = ["bevy_picking_egui", "bevy_egui"]
