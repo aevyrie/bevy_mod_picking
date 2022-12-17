@@ -108,7 +108,13 @@ pub fn debug_draw_egui(
             continue;
         };
         let ctx = egui.ctx_for_window_mut(window_id);
-        let window = windows.get(window_id).unwrap();
+
+        let window = if let Some(w) = windows.get(window_id) {
+            w
+        } else {
+            continue;
+        };
+
         let x = position.x;
         let y = window.height() - position.y;
 

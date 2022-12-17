@@ -5,17 +5,37 @@ use bevy::{
 };
 use bevy_mod_picking::prelude::*;
 
+static SECOND_WINDOW_ID: bevy::render::once_cell::sync::Lazy<WindowId> =
+    bevy::render::once_cell::sync::Lazy::new(WindowId::new);
+const SECONDARY_EGUI_PASS: &str = "secondary_egui_pass";
+
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
+    let mut app = App::new();
+
+    app.add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins)
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_plugin(bevy_egui::EguiPlugin)
         .add_startup_system(setup)
         .add_system(bevy::window::close_on_esc)
         .add_system(make_pickable)
-        .add_system(set_camera_viewport)
-        .run();
+        .add_system(set_camera_viewport);
+
+    let render_app = app.sub_app_mut(bevy::render::RenderApp);
+    let mut graph = render_app
+        .world
+        .get_resource_mut::<bevy::render::render_graph::RenderGraph>()
+        .unwrap();
+
+    bevy_egui::setup_pipeline(
+        &mut graph,
+        bevy_egui::RenderGraphConfig {
+            window_id: *SECOND_WINDOW_ID,
+            egui_pass: SECONDARY_EGUI_PASS,
+        },
+    );
+
+    app.run();
 }
 
 #[derive(Component)]
@@ -71,11 +91,9 @@ fn setup(
         ViewportCamera,
     ));
 
-    let window_id = WindowId::new();
-
     // sends out a "CreateWindow" event, which will be received by the windowing backend
     create_window_events.send(CreateWindow {
-        id: window_id,
+        id: *SECOND_WINDOW_ID,
         descriptor: WindowDescriptor {
             width: 800.,
             height: 600.,
@@ -90,7 +108,7 @@ fn setup(
         Camera3dBundle {
             transform: Transform::from_xyz(4.0, 4.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
             camera: Camera {
-                target: RenderTarget::Window(window_id),
+                target: RenderTarget::Window(*SECOND_WINDOW_ID),
                 ..default()
             },
             ..default()

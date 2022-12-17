@@ -121,7 +121,6 @@ impl Plugin for CorePlugin {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .after(PickStage::Input)
                     .before(PickStage::Backend)
                     .with_system(pointer::InputMove::receive)
                     .with_system(pointer::InputPress::receive),
