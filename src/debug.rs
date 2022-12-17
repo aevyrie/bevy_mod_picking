@@ -146,7 +146,14 @@ pub fn debug_draw_egui(
             center,
             20.0,
             egui::Color32::TRANSPARENT,
-            egui::Stroke::new(3.0, egui::Color32::RED),
+            egui::Stroke::new(
+                3.0,
+                if press.is_any_pressed() {
+                    egui::Color32::GREEN
+                } else {
+                    egui::Color32::RED
+                },
+            ),
         );
 
         let new_alignment = match (left, top) {
@@ -157,7 +164,7 @@ pub fn debug_draw_egui(
         };
 
         dbg_painter.text(
-            center,
+            (center.to_vec2() - new_alignment.to_sign() * egui::vec2(20.0, 20.0)).to_pos2(),
             match (alignment.to_owned(), near_border) {
                 (Some(cached), false) => cached,
                 _ => {

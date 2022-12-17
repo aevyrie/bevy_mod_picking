@@ -123,10 +123,10 @@ fn set_camera_viewport(
             let window = windows.primary();
             let mut left_camera = viewport_camera.single_mut();
             left_camera.viewport = Some(Viewport {
-                physical_position: UVec2::new(window.physical_width() / 4, 0),
+                physical_position: UVec2::new(0, 0),
                 physical_size: UVec2::new(
                     window.physical_width() / 2,
-                    window.physical_height() / 2,
+                    window.physical_height() / 3,
                 ),
                 ..default()
             });

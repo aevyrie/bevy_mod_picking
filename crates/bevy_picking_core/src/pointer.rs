@@ -87,6 +87,12 @@ impl PointerPress {
     pub fn is_middle_pressed(&self) -> bool {
         self.middle
     }
+
+    /// Returns true if any pointer button is pressed.
+    #[inline]
+    pub fn is_any_pressed(&self) -> bool {
+        self.primary || self.middle || self.secondary
+    }
 }
 
 /// Pointer input event for button presses. Fires when a pointer button changes state.
@@ -257,15 +263,27 @@ impl Location {
     ///
     /// Note this returns `false` if the location and camera have different [`RenderTarget`]s.
     #[inline]
-    pub fn is_in_viewport(&self, camera: &Camera) -> bool {
+    pub fn is_in_viewport(&self, camera: &Camera, windows: &Windows) -> bool {
         if !self.is_same_target(camera) {
             return false;
         }
+
+        let window = if let RenderTarget::Window(id) = self.target {
+            if let Some(w) = windows.get(id) {
+                w
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        };
+
+        let position = Vec2::new(self.position.x, window.height() - self.position.y);
+
         camera
             .logical_viewport_rect()
             .map(|(min, max)| {
-                (self.position - min).min_element() >= 0.0
-                    && (self.position - max).max_element() <= 0.0
+                (position - min).min_element() >= 0.0 && (position - max).max_element() <= 0.0
             })
             .unwrap_or(false)
     }

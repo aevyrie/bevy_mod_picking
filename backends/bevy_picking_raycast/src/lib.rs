@@ -46,6 +46,7 @@ pub struct RaycastPickingSet;
 /// Builds rays and updates raycasting [`PickRaycastSource`]s from [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
     pointers: Query<(Entity, &PointerLocation)>,
+    windows: Res<Windows>,
     mut commands: Commands,
     mut sources: Query<&mut RaycastSource<RaycastPickingSet>>,
     cameras: Query<(&Camera, &GlobalTransform), With<PickRaycastSource>>,
@@ -62,7 +63,7 @@ pub fn build_rays_from_pointers(
         };
         cameras
             .iter()
-            .filter(|(camera, _)| pointer_location.is_in_viewport(camera))
+            .filter(|(camera, _)| pointer_location.is_in_viewport(camera, &windows))
             .for_each(|(camera, transform)| {
                 let ray = Ray3d::from_screenspace(pointer_location.position, camera, transform);
                 if let Ok(mut source) = sources.get_mut(entity) {

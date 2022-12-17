@@ -45,6 +45,7 @@ pub struct RapierPickRay {
 /// Updates all picking [`Ray`]s with [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
     pointers: Query<(Entity, &PointerLocation)>,
+    windows: Res<Windows>,
     mut commands: Commands,
     mut sources: Query<&mut RapierPickRay>,
     cameras: Query<(&Camera, &GlobalTransform), With<RapierPickSource>>,
@@ -60,7 +61,7 @@ pub fn build_rays_from_pointers(
         };
         cameras
             .iter()
-            .filter(|(camera, _)| pointer_location.is_in_viewport(camera))
+            .filter(|(camera, _)| pointer_location.is_in_viewport(camera, &windows))
             .for_each(|(camera, transform)| {
                 let ray = ray_from_screenspace(pointer_location.position, camera, transform);
                 if let Ok(mut source) = sources.get_mut(entity) {
