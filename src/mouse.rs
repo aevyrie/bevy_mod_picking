@@ -68,8 +68,8 @@ fn get_inputs<'a>(
         }
         None => touches_input.iter().last().map(|touch| {
             Vec2::new(
-                touch.position().x as f32,
-                height - touch.position().y as f32,
+                touch.position().x,
+                height - touch.position().y,
             )
         }),
     };
