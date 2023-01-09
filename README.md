@@ -34,12 +34,12 @@ It only takes a few lines to get mouse picking working in your Bevy application 
 
 2. Mark your camera as the picking source with the `PickingCameraBundle` component:
 ```rs
-.insert_bundle(PickingCameraBundle::default());
+.insert(PickingCameraBundle::default());
 ```
 
 3. Add the `PickableBundle` component to any meshes you want to make pickable:
 ```rs
-.insert_bundle(PickableBundle::default())
+.insert(PickableBundle::default())
 ```
 
 That's all there is to it! Read [the docs](https://docs.rs/bevy_mod_picking) and look at the provided examples to learn more.
