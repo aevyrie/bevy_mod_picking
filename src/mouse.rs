@@ -66,12 +66,10 @@ fn get_inputs<'a>(
                 None
             }
         }
-        None => touches_input.iter().last().map(|touch| {
-            Vec2::new(
-                touch.position().x,
-                height - touch.position().y,
-            )
-        }),
+        None => touches_input
+            .iter()
+            .last()
+            .map(|touch| Vec2::new(touch.position().x, height - touch.position().y)),
     };
     Some((update_picks, cursor_latest))
 }
