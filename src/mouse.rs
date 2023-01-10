@@ -56,14 +56,17 @@ fn get_inputs<'a>(
     let height = camera.logical_target_size()?.y;
     let cursor_latest = match cursor.iter().last() {
         Some(cursor_moved) => {
-            if let RenderTarget::Window(window) = camera.target {
-                if cursor_moved.id == window {
-                    Some(cursor_moved.position)
-                } else {
-                    None
+            match camera.target {
+                RenderTarget::Window(window) => {
+                    if cursor_moved.id == window {
+                        Some(cursor_moved.position)
+                    } else {
+                        None
+                    }
+                },
+                RenderTarget::Image(_) => {
+                        Some(cursor_moved.position)
                 }
-            } else {
-                None
             }
         }
         None => touches_input
