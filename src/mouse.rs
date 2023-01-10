@@ -55,20 +55,16 @@ fn get_inputs<'a>(
     let update_picks = option_update_picks?;
     let height = camera.logical_target_size()?.y;
     let cursor_latest = match cursor.iter().last() {
-        Some(cursor_moved) => {
-            match camera.target {
-                RenderTarget::Window(window) => {
-                    if cursor_moved.id == window {
-                        Some(cursor_moved.position)
-                    } else {
-                        None
-                    }
-                },
-                RenderTarget::Image(_) => {
-                        Some(cursor_moved.position)
+        Some(cursor_moved) => match camera.target {
+            RenderTarget::Window(window) => {
+                if cursor_moved.id == window {
+                    Some(cursor_moved.position)
+                } else {
+                    None
                 }
             }
-        }
+            RenderTarget::Image(_) => Some(cursor_moved.position),
+        },
         None => touches_input
             .iter()
             .last()
