@@ -75,8 +75,8 @@ fn get_inputs<'a>(
                 match (window, image) {
                     (Some(window), Some(image)) => {
                         // Convert screen space to texture space
-                        let width = window.physical_width() as f32;
-                        let height = window.physical_height() as f32;
+                        let width = window.width() as f32;
+                        let height = window.height() as f32;
                         let x01 = cursor_moved.position.x / width;
                         let y01 = cursor_moved.position.y / height;
                         let size = image.size();
