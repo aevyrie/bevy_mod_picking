@@ -33,8 +33,8 @@ fn setup(
 ) {
     let window = windows.primary();
     let scale_factor = window.scale_factor() as f32;
-    let window_width = window.physical_width() as f32;
-    let window_height = window.physical_height() as f32;
+    let window_width = window.width() as f32;
+    let window_height = window.height() as f32;
     let size = Extent3d {
         width: (window_width * scale_factor) as u32,
         height: (window_height * scale_factor) as u32,
