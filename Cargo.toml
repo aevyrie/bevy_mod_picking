@@ -41,7 +41,7 @@ bevy = { version = "0.9", default-features = false, features = [
     "bevy_scene",
     "png",
 ] }
-bevy_framepace = "0.9.1"
+bevy_framepace = { version = "0.10", default-features = false }
 bevy_mod_picking = { path = "", features = ["all"] }
 
 [features]

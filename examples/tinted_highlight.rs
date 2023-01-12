@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
+use highlight::HighlightKind;
 
 fn main() {
     App::new()
@@ -15,28 +16,61 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
 ) {
+    let tinted_highlight = HighlightOverride::<StandardMaterial> {
+        hovered: Some(HighlightKind::new_dynamic(|i| {
+            let [r, g, b, a] = i.base_color.as_rgba_f32();
+            StandardMaterial {
+                base_color: Color::rgba(r - 0.2, g - 0.2, b + 0.4, a),
+                ..i.to_owned()
+            }
+        })),
+        pressed: Some(HighlightKind::new_dynamic(|i| {
+            let [r, g, b, a] = i.base_color.as_rgba_f32();
+            StandardMaterial {
+                base_color: Color::rgba(r - 0.3, g - 0.3, b + 0.5, a),
+                ..i.to_owned()
+            }
+        })),
+        selected: Some(HighlightKind::new_dynamic(|i| {
+            let [r, g, b, a] = i.base_color.as_rgba_f32();
+            StandardMaterial {
+                base_color: Color::rgba(r - 0.3, g + 0.3, b - 0.3, a),
+                ..i.to_owned()
+            }
+        })),
+    };
+
     // plane
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            material: materials.add(StandardMaterial {
+                base_color_texture: Some(asset_server.load("images/bavy.png")),
+                ..Default::default()
+            }),
             ..Default::default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
         PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        tinted_highlight.clone(),
     ));
 
     // cube
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            material: materials.add(StandardMaterial {
+                base_color_texture: Some(asset_server.load("images/bavy.png")),
+                ..Default::default()
+            }),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
         PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        tinted_highlight.clone(),
     ));
 
     // light

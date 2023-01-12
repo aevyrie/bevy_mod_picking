@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
+use highlight::HighlightKind;
 
 fn main() {
     App::new()
@@ -66,8 +67,34 @@ fn make_pickable(
     meshes: Query<Entity, (With<Handle<Mesh>>, Without<PickRaycastTarget>)>,
 ) {
     for entity in meshes.iter() {
-        commands
-            .entity(entity)
-            .insert((PickableBundle::default(), PickRaycastTarget::default()));
+        commands.entity(entity).insert((
+            PickableBundle::default(),
+            PickRaycastTarget::default(),
+            HIGHLIGHT_OVERRIDE.clone(),
+        ));
     }
 }
+
+const HIGHLIGHT_OVERRIDE: HighlightOverride<StandardMaterial> = HighlightOverride {
+    hovered: Some(HighlightKind::new_dynamic(|i| {
+        let [r, g, b, a] = i.base_color.as_rgba_f32();
+        StandardMaterial {
+            base_color: Color::rgba(r - 0.2, g - 0.2, b + 0.4, a),
+            ..i.to_owned()
+        }
+    })),
+    pressed: Some(HighlightKind::new_dynamic(|i| {
+        let [r, g, b, a] = i.base_color.as_rgba_f32();
+        StandardMaterial {
+            base_color: Color::rgba(r - 0.3, g - 0.3, b + 0.5, a),
+            ..i.to_owned()
+        }
+    })),
+    selected: Some(HighlightKind::new_dynamic(|i| {
+        let [r, g, b, a] = i.base_color.as_rgba_f32();
+        StandardMaterial {
+            base_color: Color::rgba(r - 0.3, g + 0.3, b - 0.3, a),
+            ..i.to_owned()
+        }
+    })),
+};
