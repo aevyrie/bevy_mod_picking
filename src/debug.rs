@@ -2,6 +2,7 @@
 
 use crate::*;
 use bevy::prelude::*;
+use std::fmt;
 
 /// Logs events for debugging
 #[derive(Debug, Default, Clone)]
@@ -70,6 +71,7 @@ pub fn debug_draw_egui(
     commands: Commands,
     asset_server: Res<AssetServer>,
     egui: Option<ResMut<bevy_egui::EguiContext>>,
+    names: Query<&Name>,
     pointers: Query<(
         Entity,
         &pointer::PointerId,
@@ -142,6 +144,16 @@ pub fn debug_draw_egui(
         #[cfg(not(feature = "selection"))]
         let selection = String::new();
 
+        let interaction = interaction.iter()
+        .map(|(entity, interaction)| {
+            let debug = match names.get(*entity) {
+                Ok(name) => InteractionDebug::Name(name.clone(), *entity),
+                _ => InteractionDebug::Entity(*entity)
+            };
+
+            (debug, interaction)
+        }).collect::<Vec<_>>();
+
         let text = format!("ID: {:?}\nLocation: x{} y{}\nPress Primary: {}, Secondary: {}, Middle: {}\n{}Interactions: {:?}",
                 id,
                 position.x,
@@ -150,7 +162,7 @@ pub fn debug_draw_egui(
                 bool_to_icon(&press.is_secondary_pressed()),
                 bool_to_icon(&press.is_middle_pressed()),
                 selection,
-                interaction.iter()
+                interaction,
             );
         use bevy_egui::egui;
 
@@ -190,6 +202,20 @@ pub fn debug_draw_egui(
             egui::Color32::WHITE,
             text,
         );
+    }
+}
+
+enum InteractionDebug {
+    Name(Name, Entity),
+    Entity(Entity),
+}
+
+impl fmt::Debug for InteractionDebug {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Name(name, entity) => write!(f, "{} ({:?})", name.as_str(), entity),
+            Self::Entity(entity) => write!(f, "{:?}", entity),
+        }
     }
 }
 
