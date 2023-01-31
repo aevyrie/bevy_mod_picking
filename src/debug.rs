@@ -144,15 +144,17 @@ pub fn debug_draw_egui(
         #[cfg(not(feature = "selection"))]
         let selection = String::new();
 
-        let interaction = interaction.iter()
-        .map(|(entity, interaction)| {
-            let debug = match names.get(*entity) {
-                Ok(name) => InteractionDebug::Name(name.clone(), *entity),
-                _ => InteractionDebug::Entity(*entity)
-            };
+        let interaction = interaction
+            .iter()
+            .map(|(entity, interaction)| {
+                let debug = match names.get(*entity) {
+                    Ok(name) => InteractionDebug::Name(name.clone(), *entity),
+                    _ => InteractionDebug::Entity(*entity),
+                };
 
-            (debug, interaction)
-        }).collect::<Vec<_>>();
+                (debug, interaction)
+            })
+            .collect::<Vec<_>>();
 
         let text = format!("ID: {:?}\nLocation: x{} y{}\nPress Primary: {}, Secondary: {}, Middle: {}\n{}Interactions: {:?}",
                 id,
