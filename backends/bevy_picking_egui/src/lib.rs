@@ -45,6 +45,7 @@ fn spawn_egui_entity(mut commands: Commands) {
             EguiPointer,
             #[cfg(feature = "selection")]
             bevy_picking_selection::NoDeselect,
+            Name::new("egui"),
         ))
         .id();
     commands.insert_resource(EguiEntity(id));
