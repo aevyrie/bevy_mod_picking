@@ -207,16 +207,18 @@ pub fn debug_draw_egui(
     }
 }
 
+#[cfg(feature = "backend_egui")]
 enum InteractionDebug {
     Name(Name, Entity),
     Entity(Entity),
 }
 
+#[cfg(feature = "backend_egui")]
 impl fmt::Debug for InteractionDebug {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Name(name, entity) => write!(f, "{} ({:?})", name.as_str(), entity),
-            Self::Entity(entity) => write!(f, "{:?}", entity),
+            Self::Entity(entity) => write!(f, "{entity:?}"),
         }
     }
 }
