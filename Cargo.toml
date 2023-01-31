@@ -18,8 +18,8 @@ bevy = { version = "0.9", default-features = false, features = [
     "bevy_render",
     "bevy_ui",
 ] }
-bevy_egui = { optional = true, version = "0.19.0" }
-bevy_rapier3d = { optional = true, git = "https://github.com/devil-ira/bevy_rapier", branch = "bevy-0.9" }
+bevy_egui = { optional = true, version = "0.19" }
+bevy_rapier3d = { optional = true, version = "0.20" }
 
 # Local
 bevy_picking_core = { path = "crates/bevy_picking_core" }
