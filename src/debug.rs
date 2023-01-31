@@ -142,7 +142,7 @@ pub fn debug_draw_egui(
         #[cfg(not(feature = "selection"))]
         let selection = String::new();
 
-        let text = format!("ID: {:?}\nLocation: x{} y{}\nPress Primary: {}, Secondary: {}, Middle: {}\n{}Interactions: {:?}\n",
+        let text = format!("ID: {:?}\nLocation: x{} y{}\nPress Primary: {}, Secondary: {}, Middle: {}\n{}Interactions: {:?}",
                 id,
                 position.x,
                 position.y,
@@ -178,7 +178,7 @@ pub fn debug_draw_egui(
             (false, false) => egui::Align2::LEFT_TOP,
         };
 
-        dbg_painter.text(
+        dbg_painter.debug_text(
             (center.to_vec2() - new_alignment.to_sign() * egui::vec2(20.0, 20.0)).to_pos2(),
             match (alignment.to_owned(), near_border) {
                 (Some(cached), false) => cached,
@@ -187,9 +187,8 @@ pub fn debug_draw_egui(
                     new_alignment
                 }
             },
-            text,
-            egui::FontId::monospace(12.0),
             egui::Color32::WHITE,
+            text,
         );
     }
 }
