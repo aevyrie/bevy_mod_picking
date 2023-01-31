@@ -2,7 +2,6 @@
 
 use crate::*;
 use bevy::prelude::*;
-use std::fmt;
 
 /// Logs events for debugging
 #[derive(Debug, Default, Clone)]
@@ -214,8 +213,8 @@ enum InteractionDebug {
 }
 
 #[cfg(feature = "backend_egui")]
-impl fmt::Debug for InteractionDebug {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Debug for InteractionDebug {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::Name(name, entity) => write!(f, "{} ({:?})", name.as_str(), entity),
             Self::Entity(entity) => write!(f, "{entity:?}"),
