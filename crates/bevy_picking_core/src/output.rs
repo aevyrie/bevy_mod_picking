@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     focus::{HoverMap, PreviousHoverMap},
-    pointer::{self, InputMove, InputPress, PointerId, PressDirection, PointerButton},
+    pointer::{self, InputMove, InputPress, PointerButton, PointerId, PressDirection},
 };
 use bevy::{
     ecs::{event::Event, system::EntityCommands},
