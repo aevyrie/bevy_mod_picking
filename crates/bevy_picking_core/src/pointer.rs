@@ -181,7 +181,7 @@ pub enum PressDirection {
 }
 
 /// The button that was just pressed or released
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
 pub enum PointerButton {
     /// The primary pointer button
     Primary,
@@ -189,6 +189,13 @@ pub enum PointerButton {
     Secondary,
     /// The tertiary pointer button
     Middle,
+}
+
+impl PointerButton {
+    /// Iterator over all buttons that a pointer can have.
+    pub fn all_buttons() -> impl Iterator<Item = PointerButton> {
+        [Self::Primary, Self::Secondary, Self::Middle].into_iter()
+    }
 }
 
 /// Component that tracks a pointer's current [`Location`].
