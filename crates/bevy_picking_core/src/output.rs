@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     focus::{HoverMap, PreviousHoverMap},
-    pointer::{self, InputMove, InputPress, PointerId, PressDirection},
+    pointer::{self, InputMove, InputPress, PointerId, PressDirection, PointerButton},
 };
 use bevy::{
     ecs::{event::Event, system::EntityCommands},
@@ -335,20 +335,29 @@ pub struct Out;
 pub type PointerDown = PointerEvent<Down>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 /// The inner [`PointerEvent`] type for [`PointerDown`].
-pub struct Down;
+pub struct Down {
+    /// Pointer button pressed to trigger this event.
+    pub button: PointerButton,
+}
 
 /// Fires when a the pointer primary button is released over the `target` entity.
 pub type PointerUp = PointerEvent<Up>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 /// The inner [`PointerEvent`] type for [`PointerUp`].
-pub struct Up;
+pub struct Up {
+    /// Pointer button lifted to trigger this event.
+    pub button: PointerButton,
+}
 
 /// Fires when a pointer sends a pointer down event followed by a pointer up event, with the same
 /// `target` entity for both events.
 pub type PointerClick = PointerEvent<Click>;
 /// The inner [`PointerEvent`] type for [`PointerClick`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Click;
+pub struct Click {
+    /// Pointer button pressed and lifted to trigger this event.
+    pub button: PointerButton,
+}
 
 /// Fires while a pointer is moving over the `target` entity.
 pub type PointerMove = PointerEvent<Move>;
@@ -451,7 +460,9 @@ pub fn pointer_events(
                 pointer_up.send(PointerUp::new(
                     &press_event.pointer_id(),
                     hovered_entity,
-                    Up,
+                    Up {
+                        button: press_event.button(),
+                    },
                 ))
             }
         }
@@ -464,7 +475,9 @@ pub fn pointer_events(
                 pointer_down.send(PointerDown::new(
                     &press_event.pointer_id(),
                     hovered_entity,
-                    Down,
+                    Down {
+                        button: press_event.button(),
+                    },
                 ))
             }
         }
@@ -604,7 +617,9 @@ pub fn send_click_and_drag_events(
                 pointer_click.send(PointerClick::new(
                     &event.pointer_id(),
                     &event.target(),
-                    Click,
+                    Click {
+                        button: event.event.button,
+                    },
                 ));
             }
             if let Some(Some(drag_entity)) = drag_map.get(&event.pointer_id()) {
