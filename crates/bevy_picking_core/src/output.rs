@@ -600,20 +600,22 @@ pub fn send_click_and_drag_events(
     // Only triggers when over an entity
     for move_event in pointer_move.iter() {
         for button in PointerButton::all_buttons() {
-            let moving_pointer_is_down =
-                matches!(down_map.get(&(move_event.pointer_id(), button)), Some(Some(_)));
+            let moving_pointer_is_down = matches!(
+                down_map.get(&(move_event.pointer_id(), button)),
+                Some(Some(_))
+            );
 
-            let pointer_not_in_drag_map =
-                matches!(drag_map.get(&(move_event.pointer_id(), button)), Some(None) | None);
+            let pointer_not_in_drag_map = matches!(
+                drag_map.get(&(move_event.pointer_id(), button)),
+                Some(None) | None
+            );
 
             if moving_pointer_is_down && pointer_not_in_drag_map {
                 drag_map.insert((move_event.pointer_id(), button), Some(move_event.target()));
                 pointer_drag_start.send(PointerDragStart::new(
                     &move_event.pointer_id(),
                     &move_event.target(),
-                        DragStart {
-                            button: button,
-                        },
+                    DragStart { button: button },
                 ))
             }
         }
@@ -622,18 +624,16 @@ pub fn send_click_and_drag_events(
     // Triggers during movement even if not over an entity
     for move_event in input_move.iter() {
         for button in PointerButton::all_buttons() {
-        if let Some(Some(_)) = down_map.get(&(move_event.pointer_id(), button)) {
-            if let Some(Some(drag_entity)) = drag_map.get(&(move_event.pointer_id(), button)) {
-                pointer_drag.send(PointerDrag::new(
-                    &move_event.pointer_id(),
-                    drag_entity,
-                    Drag {
-                        button,
-                    },
-                ))
+            if let Some(Some(_)) = down_map.get(&(move_event.pointer_id(), button)) {
+                if let Some(Some(drag_entity)) = drag_map.get(&(move_event.pointer_id(), button)) {
+                    pointer_drag.send(PointerDrag::new(
+                        &move_event.pointer_id(),
+                        drag_entity,
+                        Drag { button },
+                    ))
+                }
             }
         }
-    }
     }
 
     for event in pointer_up.iter() {
@@ -644,18 +644,14 @@ pub fn send_click_and_drag_events(
                 pointer_click.send(PointerClick::new(
                     &event.pointer_id(),
                     &event.target(),
-                    Click {
-                        button,
-                    },
+                    Click { button },
                 ));
             }
             if let Some(Some(drag_entity)) = drag_map.get(&(event.pointer_id(), button)) {
                 pointer_drag_end.send(PointerDragEnd::new(
                     &event.pointer_id(),
                     drag_entity,
-                    DragEnd {
-                        button,
-                    },
+                    DragEnd { button },
                 ));
             }
             drag_map.insert((event.pointer_id(), button), None);
@@ -670,7 +666,9 @@ pub fn send_click_and_drag_events(
 
     for press in input_presses.iter() {
         if press.direction() == pointer::PressDirection::Up {
-            if let Some(Some(drag_entity)) = drag_map.insert((press.pointer_id(), press.button()), None) {
+            if let Some(Some(drag_entity)) =
+                drag_map.insert((press.pointer_id(), press.button()), None)
+            {
                 pointer_drag_end.send(PointerDragEnd::new(
                     &press.pointer_id(),
                     &drag_entity,
@@ -703,34 +701,35 @@ pub fn send_drag_over_events(
 ) {
     // Fire PointerDragEnter events.
     for over_event in pointer_over.iter() {
-
         for button in PointerButton::all_buttons() {
-        if let Some(&Some(dragged)) = drag_map.get(&(over_event.pointer_id(), button)) {
-            if over_event.target() != dragged {
-                let drag_entry = drag_over_map.entry((over_event.pointer_id(), button)).or_default();
-                drag_entry.insert(over_event.target());
-                pointer_drag_enter.send(PointerDragEnter::new(
-                    &over_event.pointer_id(),
-                    &over_event.target(),
-                    DragEnter { button, dragged },
-                ))
+            if let Some(&Some(dragged)) = drag_map.get(&(over_event.pointer_id(), button)) {
+                if over_event.target() != dragged {
+                    let drag_entry = drag_over_map
+                        .entry((over_event.pointer_id(), button))
+                        .or_default();
+                    drag_entry.insert(over_event.target());
+                    pointer_drag_enter.send(PointerDragEnter::new(
+                        &over_event.pointer_id(),
+                        &over_event.target(),
+                        DragEnter { button, dragged },
+                    ))
+                }
             }
         }
-    }
     }
     // Fire PointerDragOver events.
     for move_event in pointer_move.iter() {
         for button in PointerButton::all_buttons() {
-        if let Some(&Some(dragged)) = drag_map.get(&(move_event.pointer_id(), button)) {
-            if move_event.target() != dragged {
-                pointer_drag_over.send(PointerDragOver::new(
-                    &move_event.pointer_id(),
-                    &move_event.target(),
-                    DragOver { button, dragged },
-                ))
+            if let Some(&Some(dragged)) = drag_map.get(&(move_event.pointer_id(), button)) {
+                if move_event.target() != dragged {
+                    pointer_drag_over.send(PointerDragOver::new(
+                        &move_event.pointer_id(),
+                        &move_event.target(),
+                        DragOver { button, dragged },
+                    ))
+                }
             }
         }
-    }
     }
     // Fire PointerDragLeave and PointerDrop events when the pointer stops dragging.
     for drag_end_event in pointer_drag_end.iter() {
@@ -762,17 +761,17 @@ pub fn send_drag_over_events(
         let out_pointer = out_event.pointer_id();
         let out_target = &out_event.target();
         for button in PointerButton::all_buttons() {
-        if let Some(dragged_over) = drag_over_map.get_mut(&(out_pointer, button)) {
-            if dragged_over.take(out_target).is_some() {
-                if let Some(&Some(dragged)) = drag_map.get(&(out_pointer, button)) {
-                    pointer_drag_leave.send(PointerDragLeave::new(
-                        &out_pointer,
-                        out_target,
-                        DragLeave { button, dragged },
-                    ))
+            if let Some(dragged_over) = drag_over_map.get_mut(&(out_pointer, button)) {
+                if dragged_over.take(out_target).is_some() {
+                    if let Some(&Some(dragged)) = drag_map.get(&(out_pointer, button)) {
+                        pointer_drag_leave.send(PointerDragLeave::new(
+                            &out_pointer,
+                            out_target,
+                            DragLeave { button, dragged },
+                        ))
+                    }
                 }
             }
         }
-    }
     }
 }
