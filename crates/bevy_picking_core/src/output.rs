@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     focus::{HoverMap, PreviousHoverMap},
-    pointer::{self, InputMove, InputPress, PointerId, PressDirection},
+    pointer::{self, InputMove, InputPress, PointerButton, PointerId, PressDirection},
 };
 use bevy::{
     ecs::{event::Event, system::EntityCommands},
@@ -331,24 +331,33 @@ pub type PointerOut = PointerEvent<Out>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Out;
 
-/// Fires when a the pointer primary button is pressed over the `target` entity.
+/// Fires when a pointer button is pressed over the `target` entity.
 pub type PointerDown = PointerEvent<Down>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 /// The inner [`PointerEvent`] type for [`PointerDown`].
-pub struct Down;
+pub struct Down {
+    /// Pointer button pressed to trigger this event.
+    pub button: PointerButton,
+}
 
-/// Fires when a the pointer primary button is released over the `target` entity.
+/// Fires when a pointer button is released over the `target` entity.
 pub type PointerUp = PointerEvent<Up>;
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 /// The inner [`PointerEvent`] type for [`PointerUp`].
-pub struct Up;
+pub struct Up {
+    /// Pointer button lifted to trigger this event.
+    pub button: PointerButton,
+}
 
 /// Fires when a pointer sends a pointer down event followed by a pointer up event, with the same
 /// `target` entity for both events.
 pub type PointerClick = PointerEvent<Click>;
 /// The inner [`PointerEvent`] type for [`PointerClick`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Click;
+pub struct Click {
+    /// Pointer button pressed and lifted to trigger this event.
+    pub button: PointerButton,
+}
 
 /// Fires while a pointer is moving over the `target` entity.
 pub type PointerMove = PointerEvent<Move>;
@@ -360,25 +369,36 @@ pub struct Move;
 pub type PointerDragStart = PointerEvent<DragStart>;
 /// The inner [`PointerEvent`] type for [`PointerDragStart`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct DragStart;
+pub struct DragStart {
+    /// Pointer button pressed and moved to trigger this event.
+    pub button: PointerButton,
+}
 
 /// Fires while the `target` entity is being dragged.
 pub type PointerDrag = PointerEvent<Drag>;
 /// The inner [`PointerEvent`] type for [`PointerDrag`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct Drag;
+pub struct Drag {
+    /// Pointer button pressed and moved to trigger this event.
+    pub button: PointerButton,
+}
 
 /// Fires when a pointer is dragging the `target` entity and a pointer up event is received.
 pub type PointerDragEnd = PointerEvent<DragEnd>;
 /// The inner [`PointerEvent`] type for [`PointerDragEnd`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
-pub struct DragEnd;
+pub struct DragEnd {
+    /// Pointer button pressed, moved, and lifted to trigger this event.
+    pub button: PointerButton,
+}
 
 /// Fires when a pointer dragging the `dragged` entity enters the `target` entity.
 pub type PointerDragEnter = PointerEvent<DragEnter>;
 /// The inner [`PointerEvent`] type for [`PointerDragEnter`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct DragEnter {
+    /// Pointer button pressed to enter drag.
+    pub button: PointerButton,
     /// The entity that was being dragged when the pointer entered the `target` entity.
     pub dragged: Entity,
 }
@@ -388,6 +408,8 @@ pub type PointerDragOver = PointerEvent<DragOver>;
 /// The inner [`PointerEvent`] type for [`PointerDragOver`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct DragOver {
+    /// Pointer button pressed while dragging over.
+    pub button: PointerButton,
     /// The entity that was being dragged when the pointer was over the `target` entity.
     pub dragged: Entity,
 }
@@ -397,6 +419,8 @@ pub type PointerDragLeave = PointerEvent<DragLeave>;
 /// The inner [`PointerEvent`] type for [`PointerDragLeave`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct DragLeave {
+    /// Pointer button pressed while leaving drag.
+    pub button: PointerButton,
     /// The entity that was being dragged when the pointer left the `target` entity.
     pub dragged: Entity,
 }
@@ -406,6 +430,8 @@ pub type PointerDrop = PointerEvent<Drop>;
 /// The inner [`PointerEvent`] type for [`PointerDrop`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Drop {
+    /// Pointer button lifted to drop.
+    pub button: PointerButton,
     /// The entity that was dropped onto the `target` entity.
     pub dropped_entity: Entity,
 }
@@ -451,7 +477,9 @@ pub fn pointer_events(
                 pointer_up.send(PointerUp::new(
                     &press_event.pointer_id(),
                     hovered_entity,
-                    Up,
+                    Up {
+                        button: press_event.button(),
+                    },
                 ))
             }
         }
@@ -464,7 +492,9 @@ pub fn pointer_events(
                 pointer_down.send(PointerDown::new(
                     &press_event.pointer_id(),
                     hovered_entity,
-                    Down,
+                    Down {
+                        button: press_event.button(),
+                    },
                 ))
             }
         }
@@ -548,7 +578,7 @@ fn update_interactions<E: Clone + Send + Sync + Reflect>(
 
 /// Maps pointers to the entities they are dragging.
 #[derive(Debug, Deref, DerefMut, Default, Resource)]
-pub struct DragMap(pub HashMap<PointerId, Option<Entity>>);
+pub struct DragMap(pub HashMap<(PointerId, PointerButton), Option<Entity>>);
 
 /// Uses pointer events to determine when click and drag events occur.
 pub fn send_click_and_drag_events(
@@ -559,7 +589,7 @@ pub fn send_click_and_drag_events(
     mut input_move: EventReader<InputMove>,
     mut input_presses: EventReader<InputPress>,
     // Locals
-    mut down_map: Local<HashMap<PointerId, Option<Entity>>>,
+    mut down_map: Local<HashMap<(PointerId, PointerButton), Option<Entity>>>,
     // Output
     mut drag_map: ResMut<DragMap>,
     mut pointer_click: EventWriter<PointerClick>,
@@ -569,70 +599,85 @@ pub fn send_click_and_drag_events(
 ) {
     // Only triggers when over an entity
     for move_event in pointer_move.iter() {
-        let moving_pointer_is_down =
-            matches!(down_map.get(&move_event.pointer_id()), Some(Some(_)));
+        for button in PointerButton::iter() {
+            let moving_pointer_is_down = matches!(
+                down_map.get(&(move_event.pointer_id(), button)),
+                Some(Some(_))
+            );
 
-        let pointer_not_in_drag_map =
-            matches!(drag_map.get(&move_event.pointer_id()), Some(None) | None);
+            let pointer_not_in_drag_map = matches!(
+                drag_map.get(&(move_event.pointer_id(), button)),
+                Some(None) | None
+            );
 
-        if moving_pointer_is_down && pointer_not_in_drag_map {
-            drag_map.insert(move_event.pointer_id(), Some(move_event.target()));
-            pointer_drag_start.send(PointerDragStart::new(
-                &move_event.pointer_id(),
-                &move_event.target(),
-                DragStart,
-            ))
-        }
-    }
-
-    // Triggers during movement even if not over an entity
-    for move_event in input_move.iter() {
-        if let Some(Some(_)) = down_map.get(&move_event.pointer_id()) {
-            if let Some(Some(drag_entity)) = drag_map.get(&move_event.pointer_id()) {
-                pointer_drag.send(PointerDrag::new(
+            if moving_pointer_is_down && pointer_not_in_drag_map {
+                drag_map.insert((move_event.pointer_id(), button), Some(move_event.target()));
+                pointer_drag_start.send(PointerDragStart::new(
                     &move_event.pointer_id(),
-                    drag_entity,
-                    Drag,
+                    &move_event.target(),
+                    DragStart { button },
                 ))
             }
         }
     }
 
+    // Triggers during movement even if not over an entity
+    for move_event in input_move.iter() {
+        for button in PointerButton::iter() {
+            if let Some(Some(_)) = down_map.get(&(move_event.pointer_id(), button)) {
+                if let Some(Some(drag_entity)) = drag_map.get(&(move_event.pointer_id(), button)) {
+                    pointer_drag.send(PointerDrag::new(
+                        &move_event.pointer_id(),
+                        drag_entity,
+                        Drag { button },
+                    ))
+                }
+            }
+        }
+    }
+
     for event in pointer_up.iter() {
-        if let Some(Some(down_entity)) = down_map.get(&event.pointer_id()) {
+        let button = event.event.button;
+
+        if let Some(Some(down_entity)) = down_map.get(&(event.pointer_id(), button)) {
             if *down_entity == event.target() {
                 pointer_click.send(PointerClick::new(
                     &event.pointer_id(),
                     &event.target(),
-                    Click,
+                    Click { button },
                 ));
             }
-            if let Some(Some(drag_entity)) = drag_map.get(&event.pointer_id()) {
+            if let Some(Some(drag_entity)) = drag_map.get(&(event.pointer_id(), button)) {
                 pointer_drag_end.send(PointerDragEnd::new(
                     &event.pointer_id(),
                     drag_entity,
-                    DragEnd,
+                    DragEnd { button },
                 ));
             }
-            drag_map.insert(event.pointer_id(), None);
+            drag_map.insert((event.pointer_id(), button), None);
         }
-        down_map.insert(event.pointer_id(), None);
+        down_map.insert((event.pointer_id(), button), None);
     }
 
     for event in pointer_down.iter() {
-        down_map.insert(event.pointer_id(), Some(event.target()));
+        let button = event.event.button;
+        down_map.insert((event.pointer_id(), button), Some(event.target()));
     }
 
     for press in input_presses.iter() {
         if press.direction() == pointer::PressDirection::Up {
-            if let Some(Some(drag_entity)) = drag_map.insert(press.pointer_id(), None) {
+            if let Some(Some(drag_entity)) =
+                drag_map.insert((press.pointer_id(), press.button()), None)
+            {
                 pointer_drag_end.send(PointerDragEnd::new(
                     &press.pointer_id(),
                     &drag_entity,
-                    DragEnd,
+                    DragEnd {
+                        button: press.button(),
+                    },
                 ));
             }
-            down_map.insert(press.pointer_id(), None);
+            down_map.insert((press.pointer_id(), press.button()), None);
         }
     }
 }
@@ -646,7 +691,8 @@ pub fn send_drag_over_events(
     mut pointer_out: EventReader<PointerOut>,
     mut pointer_drag_end: EventReader<PointerDragEnd>,
     // Local
-    mut drag_over_map: Local<HashMap<PointerId, HashSet<Entity>>>,
+    mut drag_over_map: Local<HashMap<(PointerId, PointerButton), HashSet<Entity>>>,
+
     // Output
     mut pointer_drag_enter: EventWriter<PointerDragEnter>,
     mut pointer_drag_over: EventWriter<PointerDragOver>,
@@ -655,38 +701,47 @@ pub fn send_drag_over_events(
 ) {
     // Fire PointerDragEnter events.
     for over_event in pointer_over.iter() {
-        if let Some(&Some(dragged)) = drag_map.get(&over_event.pointer_id()) {
-            if over_event.target() != dragged {
-                let drag_entry = drag_over_map.entry(over_event.pointer_id()).or_default();
-                drag_entry.insert(over_event.target());
-                pointer_drag_enter.send(PointerDragEnter::new(
-                    &over_event.pointer_id(),
-                    &over_event.target(),
-                    DragEnter { dragged },
-                ))
+        for button in PointerButton::iter() {
+            if let Some(&Some(dragged)) = drag_map.get(&(over_event.pointer_id(), button)) {
+                if over_event.target() != dragged {
+                    let drag_entry = drag_over_map
+                        .entry((over_event.pointer_id(), button))
+                        .or_default();
+                    drag_entry.insert(over_event.target());
+                    pointer_drag_enter.send(PointerDragEnter::new(
+                        &over_event.pointer_id(),
+                        &over_event.target(),
+                        DragEnter { button, dragged },
+                    ))
+                }
             }
         }
     }
     // Fire PointerDragOver events.
     for move_event in pointer_move.iter() {
-        if let Some(&Some(dragged)) = drag_map.get(&move_event.pointer_id()) {
-            if move_event.target() != dragged {
-                pointer_drag_over.send(PointerDragOver::new(
-                    &move_event.pointer_id(),
-                    &move_event.target(),
-                    DragOver { dragged },
-                ))
+        for button in PointerButton::iter() {
+            if let Some(&Some(dragged)) = drag_map.get(&(move_event.pointer_id(), button)) {
+                if move_event.target() != dragged {
+                    pointer_drag_over.send(PointerDragOver::new(
+                        &move_event.pointer_id(),
+                        &move_event.target(),
+                        DragOver { button, dragged },
+                    ))
+                }
             }
         }
     }
     // Fire PointerDragLeave and PointerDrop events when the pointer stops dragging.
     for drag_end_event in pointer_drag_end.iter() {
-        if let Some(drag_over_set) = drag_over_map.get_mut(&drag_end_event.pointer_id()) {
+        let button = drag_end_event.event.button;
+
+        if let Some(drag_over_set) = drag_over_map.get_mut(&(drag_end_event.pointer_id(), button)) {
             for dragged_over in drag_over_set.drain() {
                 pointer_drag_leave.send(PointerDragLeave::new(
                     &drag_end_event.pointer_id(),
                     &dragged_over,
                     DragLeave {
+                        button,
                         dragged: drag_end_event.target(),
                     },
                 ));
@@ -694,6 +749,7 @@ pub fn send_drag_over_events(
                     &drag_end_event.pointer_id(),
                     &dragged_over,
                     Drop {
+                        button,
                         dropped_entity: drag_end_event.target(),
                     },
                 ));
@@ -702,16 +758,18 @@ pub fn send_drag_over_events(
     }
     // Fire PointerDragLeave events when the pointer goes out of the target.
     for out_event in pointer_out.iter() {
-        let out_pointer = &out_event.pointer_id();
+        let out_pointer = out_event.pointer_id();
         let out_target = &out_event.target();
-        if let Some(dragged_over) = drag_over_map.get_mut(out_pointer) {
-            if dragged_over.take(out_target).is_some() {
-                if let Some(&Some(dragged)) = drag_map.get(out_pointer) {
-                    pointer_drag_leave.send(PointerDragLeave::new(
-                        out_pointer,
-                        out_target,
-                        DragLeave { dragged },
-                    ))
+        for button in PointerButton::iter() {
+            if let Some(dragged_over) = drag_over_map.get_mut(&(out_pointer, button)) {
+                if dragged_over.take(out_target).is_some() {
+                    if let Some(&Some(dragged)) = drag_map.get(&(out_pointer, button)) {
+                        pointer_drag_leave.send(PointerDragLeave::new(
+                            &out_pointer,
+                            out_target,
+                            DragLeave { button, dragged },
+                        ))
+                    }
                 }
             }
         }
