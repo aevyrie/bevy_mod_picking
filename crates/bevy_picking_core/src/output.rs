@@ -615,7 +615,7 @@ pub fn send_click_and_drag_events(
                 pointer_drag_start.send(PointerDragStart::new(
                     &move_event.pointer_id(),
                     &move_event.target(),
-                    DragStart { button: button },
+                    DragStart { button },
                 ))
             }
         }
