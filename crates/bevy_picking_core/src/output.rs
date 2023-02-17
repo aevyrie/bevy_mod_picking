@@ -599,7 +599,7 @@ pub fn send_click_and_drag_events(
 ) {
     // Only triggers when over an entity
     for move_event in pointer_move.iter() {
-        for button in PointerButton::all_buttons() {
+        for button in PointerButton::iter() {
             let moving_pointer_is_down = matches!(
                 down_map.get(&(move_event.pointer_id(), button)),
                 Some(Some(_))
@@ -623,7 +623,7 @@ pub fn send_click_and_drag_events(
 
     // Triggers during movement even if not over an entity
     for move_event in input_move.iter() {
-        for button in PointerButton::all_buttons() {
+        for button in PointerButton::iter() {
             if let Some(Some(_)) = down_map.get(&(move_event.pointer_id(), button)) {
                 if let Some(Some(drag_entity)) = drag_map.get(&(move_event.pointer_id(), button)) {
                     pointer_drag.send(PointerDrag::new(
@@ -701,7 +701,7 @@ pub fn send_drag_over_events(
 ) {
     // Fire PointerDragEnter events.
     for over_event in pointer_over.iter() {
-        for button in PointerButton::all_buttons() {
+        for button in PointerButton::iter() {
             if let Some(&Some(dragged)) = drag_map.get(&(over_event.pointer_id(), button)) {
                 if over_event.target() != dragged {
                     let drag_entry = drag_over_map
@@ -719,7 +719,7 @@ pub fn send_drag_over_events(
     }
     // Fire PointerDragOver events.
     for move_event in pointer_move.iter() {
-        for button in PointerButton::all_buttons() {
+        for button in PointerButton::iter() {
             if let Some(&Some(dragged)) = drag_map.get(&(move_event.pointer_id(), button)) {
                 if move_event.target() != dragged {
                     pointer_drag_over.send(PointerDragOver::new(
@@ -760,7 +760,7 @@ pub fn send_drag_over_events(
     for out_event in pointer_out.iter() {
         let out_pointer = out_event.pointer_id();
         let out_target = &out_event.target();
-        for button in PointerButton::all_buttons() {
+        for button in PointerButton::iter() {
             if let Some(dragged_over) = drag_over_map.get_mut(&(out_pointer, button)) {
                 if dragged_over.take(out_target).is_some() {
                     if let Some(&Some(dragged)) = drag_map.get(&(out_pointer, button)) {

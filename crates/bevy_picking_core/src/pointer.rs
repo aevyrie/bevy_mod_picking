@@ -193,7 +193,7 @@ pub enum PointerButton {
 
 impl PointerButton {
     /// Iterator over all buttons that a pointer can have.
-    pub fn all_buttons() -> impl Iterator<Item = PointerButton> {
+    pub fn iter() -> impl Iterator<Item = PointerButton> {
         [Self::Primary, Self::Secondary, Self::Middle].into_iter()
     }
 }
