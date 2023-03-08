@@ -211,7 +211,7 @@ impl Default for PickingCameraBundle {
     }
 }
 
-#[derive(Bundle, Default)]
+#[derive(Bundle)]
 pub struct PickableBundle {
     pub pickable_mesh: PickableMesh,
     pub interaction: Interaction,
@@ -219,4 +219,17 @@ pub struct PickableBundle {
     pub highlight: Highlight,
     pub selection: Selection,
     pub hover: Hover,
+}
+
+impl Default for PickableBundle {
+    fn default() -> Self {
+        Self {
+            pickable_mesh: default(),
+            interaction: default(),
+            focus_policy: FocusPolicy::Block,
+            highlight: default(),
+            selection: default(),
+            hover: default(),
+        }
+    }
 }
