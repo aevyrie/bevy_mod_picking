@@ -2,7 +2,7 @@ use crate::{PickingCamera, UpdatePicks};
 use bevy::{
     prelude::*,
     render::camera::{Camera, RenderTarget},
-    window::{PrimaryWindow, WindowRef},
+    window::PrimaryWindow,
 };
 use bevy_mod_raycast::RaycastMethod;
 
