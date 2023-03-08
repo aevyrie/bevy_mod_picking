@@ -7,7 +7,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins) // <- Adds picking, interaction, and highlighting
         .add_startup_system(setup)
-        .add_system_to_stage(CoreStage::PostUpdate, print_events)
+        .add_system(print_events.in_base_set(CoreSet::PreUpdate))
         .run();
 }
 
@@ -28,7 +28,7 @@ fn setup(
 ) {
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
+            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
         },

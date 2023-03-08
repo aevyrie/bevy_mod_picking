@@ -2,6 +2,7 @@ use crate::{PickingCamera, UpdatePicks};
 use bevy::{
     prelude::*,
     render::camera::{Camera, RenderTarget},
+    window::WindowRef,
 };
 use bevy_mod_raycast::RaycastMethod;
 
@@ -57,8 +58,12 @@ fn get_inputs<'a>(
     let cursor_latest = match cursor.iter().last() {
         Some(cursor_moved) => {
             if let RenderTarget::Window(window) = camera.target {
-                if cursor_moved.id == window {
-                    Some(cursor_moved.position)
+                if let WindowRef::Entity(camera_entity) = window {
+                    if cursor_moved.window == camera_entity {
+                        Some(cursor_moved.position)
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }
