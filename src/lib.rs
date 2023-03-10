@@ -18,9 +18,18 @@ use highlight::{get_initial_mesh_highlight_asset, Highlight};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum PickingSystem {
+    UpdatePickSourcePositions,
+    BuildRays,
+    UpdateRaycast,
     UpdateIntersections,
+    Highlighting,
+    Selection,
+    PauseForBlockers,
+    Focus,
     Events,
-    MeshHighlighting,
+    PickingSet,
+    InteractableSet,
+    CustomHighlightSet,
 }
 
 /// A type alias for the concrete [RaycastMesh](bevy_mod_raycast::RaycastMesh) type used for Picking.
@@ -101,16 +110,19 @@ impl Plugin for PickingPlugin {
         app.init_resource::<PickingPluginsState>()
             .add_systems(
                 (
-                    update_pick_source_positions,
-                    bevy_mod_raycast::build_rays::<PickingRaycastSet>,
-                    bevy_mod_raycast::update_raycast::<PickingRaycastSet>,
-                    bevy_mod_raycast::update_intersections::<PickingRaycastSet>,
+                    update_pick_source_positions.in_set(PickingSystem::UpdatePickSourcePositions),
+                    bevy_mod_raycast::build_rays::<PickingRaycastSet>
+                        .in_set(PickingSystem::BuildRays),
+                    bevy_mod_raycast::update_raycast::<PickingRaycastSet>
+                        .in_set(PickingSystem::UpdateRaycast),
+                    bevy_mod_raycast::update_intersections::<PickingRaycastSet>
+                        .in_set(PickingSystem::UpdateIntersections),
                 )
                     .chain()
-                    .in_set(PickingSystem::UpdateIntersections),
+                    .in_set(PickingSystem::PickingSet),
             )
             .configure_set(
-                PickingSystem::UpdateIntersections
+                PickingSystem::PickingSet
                     .run_if(|state: Res<PickingPluginsState>| state.enable_picking)
                     .in_base_set(CoreSet::PreUpdate),
             );
@@ -124,16 +136,16 @@ impl Plugin for InteractablePickingPlugin {
             .add_event::<PickingEvent>()
             .add_systems(
                 (
-                    pause_for_picking_blockers,
-                    mesh_focus,
-                    mesh_selection,
-                    mesh_events_system,
+                    pause_for_picking_blockers.in_set(PickingSystem::PauseForBlockers),
+                    mesh_focus.in_set(PickingSystem::Focus),
+                    mesh_selection.in_set(PickingSystem::Selection),
+                    mesh_events_system.in_set(PickingSystem::Events),
                 )
                     .chain()
-                    .in_set(PickingSystem::Events),
+                    .in_set(PickingSystem::InteractableSet),
             )
             .configure_set(
-                PickingSystem::Events
+                PickingSystem::InteractableSet
                     .run_if(|state: Res<PickingPluginsState>| state.enable_interacting)
                     .in_base_set(CoreSet::PreUpdate)
                     .after(PickingSystem::UpdateIntersections),
@@ -159,13 +171,13 @@ where
         .add_systems(
             (
                 get_initial_mesh_highlight_asset::<T>,
-                mesh_highlighting::<T>,
+                mesh_highlighting::<T>.in_set(PickingSystem::Highlighting),
             )
                 .chain()
-                .in_set(PickingSystem::MeshHighlighting),
+                .in_set(PickingSystem::CustomHighlightSet),
         )
         .configure_set(
-            PickingSystem::MeshHighlighting
+            PickingSystem::CustomHighlightSet
                 .run_if(|state: Res<PickingPluginsState>| state.enable_highlighting)
                 .in_base_set(CoreSet::PreUpdate)
                 .before(PickingSystem::Events)
