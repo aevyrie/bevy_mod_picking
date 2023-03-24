@@ -7,7 +7,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(DefaultPickingPlugins) // <- Adds picking, interaction, and highlighting
         .add_startup_system(setup)
-        .add_system(print_events.in_base_set(CoreSet::PreUpdate))
+        .add_system(print_events.in_base_set(CoreSet::PostUpdate))
         .run();
 }
 
