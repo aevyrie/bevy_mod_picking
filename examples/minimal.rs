@@ -8,10 +8,10 @@ use bevy_mod_picking::{
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
+            primary_window: Some(Window {
                 present_mode: PresentMode::AutoNoVsync, // Reduce input latency
                 ..default()
-            },
+            }),
             ..default()
         }))
         .add_plugins(DefaultPickingPlugins) // <- Adds picking, interaction, and highlighting
@@ -29,7 +29,7 @@ fn setup(
 ) {
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
+            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
         },

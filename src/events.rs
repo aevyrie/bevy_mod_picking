@@ -29,18 +29,12 @@ pub fn mesh_events_system(
     mouse_button_input: Res<Input<MouseButton>>,
     touches_input: Res<Touches>,
     mut picking_events: EventWriter<PickingEvent>,
-    hover_query: Query<
-        (Entity, &Hover, ChangeTrackers<Hover>),
-        (Changed<Hover>, With<PickableMesh>),
-    >,
-    selection_query: Query<
-        (Entity, &Selection, ChangeTrackers<Selection>),
-        (Changed<Selection>, With<PickableMesh>),
-    >,
+    hover_query: Query<(Entity, Ref<Hover>), (Changed<Hover>, With<PickableMesh>)>,
+    selection_query: Query<(Entity, Ref<Selection>), (Changed<Selection>, With<PickableMesh>)>,
     click_query: Query<(Entity, &Hover)>,
 ) {
-    for (entity, hover, hover_change) in hover_query.iter() {
-        if hover_change.is_added() {
+    for (entity, hover) in hover_query.iter() {
+        if hover.is_added() {
             continue; // Avoid a false change detection when a component is added.
         }
         if hover.hovered() {
@@ -49,8 +43,8 @@ pub fn mesh_events_system(
             picking_events.send(PickingEvent::Hover(HoverEvent::JustLeft(entity)));
         }
     }
-    for (entity, selection, selection_change) in selection_query.iter() {
-        if selection_change.is_added() {
+    for (entity, selection) in selection_query.iter() {
+        if selection.is_added() {
             continue; // Avoid a false change detection when a component is added.
         }
         if selection.selected() {

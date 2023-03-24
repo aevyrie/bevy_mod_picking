@@ -2,6 +2,7 @@ use crate::{PickingCamera, UpdatePicks};
 use bevy::{
     prelude::*,
     render::camera::{Camera, RenderTarget},
+    window::PrimaryWindow,
 };
 use bevy_mod_raycast::RaycastMethod;
 
@@ -14,13 +15,17 @@ pub fn update_pick_source_positions(
         Option<&mut UpdatePicks>,
         Option<&Camera>,
     )>,
+    primary_window: Query<Entity, With<PrimaryWindow>>,
 ) {
+    let primary_window = primary_window.get_single().ok();
+
     for (mut pick_source, option_update_picks, option_camera) in &mut pick_source_query.iter_mut() {
         let (mut update_picks, cursor_latest) = match get_inputs(
             option_camera,
             option_update_picks,
             &mut cursor,
             &touches_input,
+            &primary_window,
         ) {
             Some(value) => value,
             None => continue,
@@ -50,6 +55,7 @@ fn get_inputs<'a>(
     option_update_picks: Option<Mut<'a, UpdatePicks>>,
     cursor: &mut EventReader<CursorMoved>,
     touches_input: &Res<Touches>,
+    primary_window: &Option<Entity>,
 ) -> Option<(Mut<'a, UpdatePicks>, Option<Vec2>)> {
     let camera = option_camera?;
     let update_picks = option_update_picks?;
@@ -57,7 +63,9 @@ fn get_inputs<'a>(
     let cursor_latest = match cursor.iter().last() {
         Some(cursor_moved) => {
             if let RenderTarget::Window(window) = camera.target {
-                if cursor_moved.id == window {
+                let window_entity = window.normalize(*primary_window)?.entity();
+
+                if cursor_moved.window == window_entity {
                     Some(cursor_moved.position)
                 } else {
                     None

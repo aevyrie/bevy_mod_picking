@@ -11,12 +11,15 @@ categories = ["game-engines", "rendering"]
 resolver = "2"
 
 [dependencies]
-bevy = { version = "0.9", default-features = false, features = ["render"] }
+bevy = { version = "0.10.0", default-features = false, features = [
+    "bevy_render",
+    "bevy_ui",
+] }
 
-bevy_mod_raycast = "0.7"
+bevy_mod_raycast = "0.8"
 
 [dev-dependencies]
-bevy = { version = "0.9", default-features = false, features = [
+bevy = { version = "0.10.0", default-features = false, features = [
     "bevy_pbr",
     "bevy_winit",
     "bevy_ui",
