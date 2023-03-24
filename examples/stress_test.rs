@@ -35,10 +35,13 @@ fn setup(
     let tris_total = tris_sphere * (half_width as usize * 2).pow(3);
     info!("Total tris: {}, Tris per mesh: {}", tris_total, tris_sphere);
 
-    let mesh_handle = meshes.add(Mesh::try_from(shape::Icosphere {
-        radius: 0.2,
-        subdivisions,
-    }).unwrap());
+    let mesh_handle = meshes.add(
+        Mesh::try_from(shape::Icosphere {
+            radius: 0.2,
+            subdivisions,
+        })
+        .unwrap(),
+    );
 
     let matl_handle = materials.add(StandardMaterial {
         perceptual_roughness: 0.5,
