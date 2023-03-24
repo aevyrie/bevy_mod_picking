@@ -22,7 +22,7 @@ impl Plugin for BevyUiBackend {
         app.add_system_set_to_stage(
             CoreStage::PreUpdate,
             SystemSet::new()
-                .label(PickStage::Backend)
+                .label(PickSet::Backend)
                 .with_system(ui_picking),
         );
     }

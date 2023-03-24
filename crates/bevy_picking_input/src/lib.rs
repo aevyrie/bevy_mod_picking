@@ -15,7 +15,7 @@
 #![deny(missing_docs)]
 
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_picking_core::{PickStage, PickingPluginsSettings};
+use bevy_picking_core::{PickSet, PickingPluginsSettings};
 
 pub mod debug;
 pub mod mouse;
@@ -30,7 +30,7 @@ impl Plugin for InputPlugin {
             .add_system_set_to_stage(
                 CoreStage::First,
                 SystemSet::new()
-                    .label(PickStage::Input)
+                    .label(PickSet::Input)
                     .with_system(
                         touch::touch_pick_events
                             .at_start()

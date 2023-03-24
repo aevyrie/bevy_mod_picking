@@ -4,6 +4,8 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
+use std::cmp::Ordering;
+
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 use bevy_picking_core::backend::prelude::*;
@@ -22,7 +24,7 @@ impl Plugin for SpriteBackend {
         app.add_system_set_to_stage(
             CoreStage::PreUpdate,
             SystemSet::new()
-                .label(PickStage::Backend)
+                .label(PickSet::Backend)
                 .with_system(sprite_picking),
         );
     }
@@ -43,14 +45,22 @@ pub fn sprite_picking(
     )>,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
+    let mut sorted_sprites: Vec<_> = sprite_query.iter().collect();
+    sorted_sprites.sort_by(|a, b| {
+        (b.3.translation().z)
+            .partial_cmp(&a.3.translation().z)
+            .unwrap_or(Ordering::Equal)
+    });
+
     for (pointer, location) in pointers.iter().filter_map(|(pointer, pointer_location)| {
         pointer_location.location().map(|loc| (pointer, loc))
     }) {
         let cursor_position = location.position;
         let mut blocked = false;
 
-        let over_list = sprite_query
+        let over_list = sorted_sprites
             .iter()
+            .map(|a| *a)
             .filter_map(
                 |(entity, sprite, image, global_transform, visibility, focus)| {
                     if blocked || !visibility.is_visible() {

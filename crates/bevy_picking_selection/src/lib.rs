@@ -11,7 +11,7 @@ use bevy::{prelude::*, utils::hashbrown::HashSet};
 use bevy_picking_core::{
     output::{IsPointerEvent, PointerEvent},
     pointer::{PointerButton, PointerId},
-    PickStage,
+    PickSet,
 };
 
 /// Runtime settings for the `bevy_picking_selection` plugin.
@@ -38,8 +38,8 @@ impl Plugin for SelectionPlugin {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .after(PickStage::Focus)
-                    .before(PickStage::EventListeners)
+                    .after(PickSet::Focus)
+                    .before(PickSet::EventListeners)
                     .with_system(multiselect_events)
                     .with_system(send_selection_events.after(multiselect_events))
                     .with_system(update_state_from_events.after(send_selection_events)),
@@ -47,8 +47,8 @@ impl Plugin for SelectionPlugin {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .after(PickStage::Focus)
-                    .label(PickStage::EventListeners)
+                    .after(PickSet::Focus)
+                    .label(PickSet::EventListeners)
                     .with_system(bevy_picking_core::output::event_bubbling::<Select>)
                     .with_system(bevy_picking_core::output::event_bubbling::<Deselect>),
             );

@@ -10,7 +10,7 @@ pub mod focus;
 pub mod output;
 pub mod pointer;
 
-use bevy::{ecs::schedule::ShouldRun, prelude::*};
+use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
 use focus::update_focus;
 use output::{
     event_bubbling, interactions_from_events, pointer_events, send_click_and_drag_events,
@@ -32,16 +32,16 @@ pub struct PickingPluginsSettings {
 
 impl PickingPluginsSettings {
     /// Whether or not input collection systems should be running.
-    pub fn input_should_run(state: Res<Self>) -> ShouldRun {
-        (state.enable_input && state.enable).into()
+    pub fn input_should_run(state: Res<Self>) -> bool {
+        state.enable_input && state.enable
     }
     /// Whether or not entity highlighting systems should be running.
-    pub fn highlighting_should_run(state: Res<Self>) -> ShouldRun {
-        (state.enable_highlighting && state.enable).into()
+    pub fn highlighting_should_run(state: Res<Self>) -> bool {
+        state.enable_highlighting && state.enable
     }
     /// Whether or not systems updating entities' [`Interaction`] component should be running.
-    pub fn interaction_should_run(state: Res<Self>) -> ShouldRun {
-        (state.enable_highlighting && state.enable).into()
+    pub fn interaction_should_run(state: Res<Self>) -> bool {
+        state.enable_highlighting && state.enable
     }
 }
 
@@ -95,8 +95,8 @@ impl PointerCoreBundle {
 }
 
 /// Groups the stages of the picking process under shared labels.
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-pub enum PickStage {
+#[derive(Debug, Hash, PartialEq, Eq, Clone, ScheduleLabel)]
+pub enum PickSet {
     /// Produces pointer input events.
     Input,
     /// Reads inputs and produces [`backend::EntitiesUnderPointer`]s.
@@ -121,7 +121,7 @@ impl Plugin for CorePlugin {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .before(PickStage::Backend)
+                    .before(PickSet::Backend)
                     .with_system(pointer::InputMove::receive)
                     .with_system(pointer::InputPress::receive),
             );
@@ -152,8 +152,8 @@ impl Plugin for InteractionPlugin {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .label(PickStage::Focus)
-                    .after(PickStage::Backend)
+                    .label(PickSet::Focus)
+                    .after(PickSet::Backend)
                     .with_run_criteria(PickingPluginsSettings::interaction_should_run)
                     // Focus
                     .with_system(update_focus)
@@ -166,8 +166,8 @@ impl Plugin for InteractionPlugin {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .label(PickStage::EventListeners)
-                    .after(PickStage::Focus)
+                    .label(PickSet::EventListeners)
+                    .after(PickSet::Focus)
                     .with_run_criteria(PickingPluginsSettings::interaction_should_run)
                     .with_system(event_bubbling::<output::Over>)
                     .with_system(event_bubbling::<output::Out>)

@@ -20,7 +20,7 @@ impl PickingBackend for RapierBackend {}
 impl Plugin for RapierBackend {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(CoreStage::First, build_rays_from_pointers)
-            .add_system_to_stage(CoreStage::PreUpdate, update_hits.label(PickStage::Backend));
+            .add_system_to_stage(CoreStage::PreUpdate, update_hits.label(PickSet::Backend));
     }
 }
 

@@ -24,7 +24,7 @@ impl Plugin for EguiBackend {
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
-                    .label(PickStage::Backend)
+                    .label(PickSet::Backend)
                     .with_system(egui_picking),
             );
     }

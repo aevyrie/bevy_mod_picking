@@ -1,9 +1,12 @@
-use std::f32::consts::PI;
+use std::f32::consts::FRAC_PI_2;
 
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
-use bevy_mod_picking::prelude::{
-    backends::raycast::{PickRaycastSource, PickRaycastTarget},
-    *,
+use bevy_mod_picking::{
+    output::{Bubble, EventListener},
+    prelude::{
+        backends::raycast::{PickRaycastSource, PickRaycastTarget},
+        *,
+    },
 };
 
 fn main() {
@@ -13,7 +16,6 @@ fn main() {
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup)
         .add_system(drag_squares)
-        .add_system(drop_squares)
         .add_system(spin)
         .run();
 }
@@ -36,21 +38,38 @@ fn setup(
             },
             PickableBundle::default(),    // <- Makes the mesh pickable.
             PickRaycastTarget::default(), // <- Needed for the raycast backend.
-            SpinMe(0.0),
+            EventListener::<PointerDragStart>::callback(make_non_pickable),
+            EventListener::<PointerDragEnd>::callback(make_pickable),
+            EventListener::<PointerDrop>::callback(apply_spin_to_squares),
         ));
     }
 
     commands.spawn((Camera2dBundle::default(), PickRaycastSource::default())); // <- Sets the camera to use for picking.
 }
 
+/// When we start dragging, we don't want this entity to prevent picking squares underneath
+fn make_non_pickable(commands: &mut Commands, event: &EventData<PointerDragStart>, _: &mut Bubble) {
+    commands
+        .entity(event.target())
+        .remove::<PickRaycastTarget>();
+}
+
+fn make_pickable(commands: &mut Commands, event: &EventData<PointerDragEnd>, _: &mut Bubble) {
+    commands
+        .entity(event.target())
+        .insert(PickRaycastTarget::default());
+}
+
+fn apply_spin_to_squares(commands: &mut Commands, event: &EventData<PointerDrop>, _: &mut Bubble) {
+    let dropped = event.event().dropped_entity;
+    commands.entity(dropped).insert(SpinMe(FRAC_PI_2));
+    let onto = event.target();
+    commands.entity(onto).insert(SpinMe(-FRAC_PI_2));
+}
+
 #[allow(clippy::too_many_arguments)]
 fn drag_squares(
-    mut commands: Commands,
-    // Pointer Events
-    mut drag_start_events: EventReader<PointerDragStart>,
     mut drag_events: EventReader<PointerDrag>,
-    mut drag_end_events: EventReader<PointerDragEnd>,
-    // Inputs
     pointers: Res<PointerMap>,
     windows: Res<Windows>,
     images: Res<Assets<Image>>,
@@ -58,14 +77,6 @@ fn drag_squares(
     // Outputs
     mut square: Query<(Entity, &mut Transform)>,
 ) {
-    // When we start dragging a square, we need to change the focus policy so that picking passes
-    // through it. Because the square will be locked to the cursor, it will block the pointer and we
-    // won't be able to tell what we are dropping it onto unless we do this.
-    for drag_start in drag_start_events.iter() {
-        let (entity, _) = square.get_mut(drag_start.target()).unwrap();
-        commands.entity(entity).remove::<PickRaycastTarget>();
-    }
-
     // While being dragged, update the position of the square to be under the pointer.
     for dragging in drag_events.iter() {
         let pointer_entity = pointers.get_entity(dragging.pointer_id()).unwrap();
@@ -80,27 +91,6 @@ fn drag_squares(
         let (_, mut square_transform) = square.get_mut(dragging.target()).unwrap();
         let z = square_transform.translation.z;
         square_transform.translation = (pointer_position - (target_size / 2.0)).extend(z);
-    }
-
-    //
-    for drag_end in drag_end_events.iter() {
-        let (entity, _) = square.get_mut(drag_end.target()).unwrap();
-        commands.entity(entity).insert(PickRaycastTarget::default());
-    }
-}
-
-fn drop_squares(mut drop_events: EventReader<PointerDrop>, mut square_spin: Query<&mut SpinMe>) {
-    for dropped in drop_events.iter() {
-        if let Ok(mut spin) = square_spin.get_mut(dropped.target()) {
-            if spin.0.abs() <= 0.01 {
-                spin.0 = 0.5 * PI;
-            }
-        }
-        if let Ok(mut spin) = square_spin.get_mut(dropped.event_data().dropped_entity) {
-            if spin.0.abs() <= 0.01 {
-                spin.0 = -0.5 * PI;
-            }
-        }
     }
 }
 

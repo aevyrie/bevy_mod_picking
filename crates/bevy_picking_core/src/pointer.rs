@@ -181,7 +181,7 @@ pub enum PressDirection {
 }
 
 /// The button that was just pressed or released
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect)]
 pub enum PointerButton {
     /// The primary pointer button
     Primary,

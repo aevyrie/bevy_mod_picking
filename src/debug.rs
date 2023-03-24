@@ -18,7 +18,7 @@ impl Plugin for DebugPickingPlugin {
             .add_system_to_stage(
                 CoreStage::PreUpdate,
                 input::debug::print
-                    .before(core::PickStage::Backend)
+                    .before(core::PickSet::Backend)
                     .with_run_criteria(move || should_run),
             )
             .add_system_set_to_stage(

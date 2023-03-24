@@ -31,7 +31,7 @@ struct SpecificEvent {
 }
 // Here we are implementing event forwarding only for the `PointerOver` version of our event.
 impl ForwardedEvent<PointerOver> for SpecificEvent {
-    fn from_data(event_data: &PointerEventData<PointerOver>) -> SpecificEvent {
+    fn from_data(event_data: &EventData<PointerOver>) -> SpecificEvent {
         SpecificEvent {
             entity: event_data.target(),
             greeting: "Hello".into(),
@@ -40,7 +40,7 @@ impl ForwardedEvent<PointerOver> for SpecificEvent {
 }
 // Here we are implementing event forwarding only for `PointerOut` version of our event.
 impl ForwardedEvent<PointerOut> for SpecificEvent {
-    fn from_data(event_data: &PointerEventData<PointerOut>) -> SpecificEvent {
+    fn from_data(event_data: &EventData<PointerOut>) -> SpecificEvent {
         SpecificEvent {
             entity: event_data.target(),
             greeting: "Goodbye".into(),
@@ -60,7 +60,7 @@ impl SpecificEvent {
 // behavior in all cases, you can simply ignore the event type.
 struct GeneralEvent;
 impl<E: IsPointerEvent> ForwardedEvent<E> for GeneralEvent {
-    fn from_data(_event_data: &PointerEventData<E>) -> GeneralEvent {
+    fn from_data(_event_data: &EventData<E>) -> GeneralEvent {
         GeneralEvent
     }
 }

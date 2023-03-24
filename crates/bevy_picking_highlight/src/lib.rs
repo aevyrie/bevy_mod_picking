@@ -7,7 +7,7 @@
 
 #[allow(unused_imports)]
 use bevy::{asset::Asset, prelude::*, render::color::Color};
-use bevy_picking_core::{PickStage, PickingPluginsSettings};
+use bevy_picking_core::{PickSet, PickingPluginsSettings};
 #[cfg(feature = "selection")]
 use bevy_picking_selection::PickSelection;
 
@@ -181,7 +181,7 @@ where
                 .with_system(
                     HighlightOverride::<T>::update_dynamic.before(update_highlight_assets::<T>),
                 )
-                .with_system(update_highlight_assets::<T>.after(PickStage::Focus))
+                .with_system(update_highlight_assets::<T>.after(PickSet::Focus))
                 .with_system(
                     #[cfg(feature = "selection")]
                     update_selection::<T>
