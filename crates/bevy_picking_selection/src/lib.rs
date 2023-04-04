@@ -14,16 +14,28 @@ use bevy_picking_core::{
     PickSet,
 };
 
+/// [`SystemSet`]s for the selection plugin.
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub enum SelectionSet {
+    /// Event generation
+    Events,
+    /// Event processing
+    PostEvents,
+}
+
 /// Runtime settings for the `bevy_picking_selection` plugin.
 #[derive(Debug, Resource)]
 pub struct SelectionSettings {
     /// A pointer clicks and nothing is beneath it, should everything be deselected?
     pub click_nothing_deselect_all: bool,
+    /// When true, `Ctrl` and `Shift` inputs will trigger multiselect.
+    pub use_multiselect_default_inputs: bool,
 }
 impl Default for SelectionSettings {
     fn default() -> Self {
         Self {
             click_nothing_deselect_all: true,
+            use_multiselect_default_inputs: true,
         }
     }
 }
@@ -35,22 +47,30 @@ impl Plugin for SelectionPlugin {
         app.init_resource::<SelectionSettings>()
             .add_event::<PointerSelect>()
             .add_event::<PointerDeselect>()
-            .add_system_set_to_stage(
-                CoreStage::PreUpdate,
-                SystemSet::new()
-                    .after(PickSet::Focus)
-                    .before(PickSet::EventListeners)
-                    .with_system(multiselect_events)
-                    .with_system(send_selection_events.after(multiselect_events))
-                    .with_system(update_state_from_events.after(send_selection_events)),
+            .add_systems(
+                (
+                    multiselect_events.run_if(|settings: Res<SelectionSettings>| {
+                        settings.use_multiselect_default_inputs
+                    }),
+                    send_selection_events,
+                )
+                    .chain()
+                    .in_set(SelectionSet::Events),
             )
-            .add_system_set_to_stage(
-                CoreStage::PreUpdate,
-                SystemSet::new()
+            .add_systems(
+                (
+                    bevy_picking_core::output::event_bubbling::<Select>,
+                    bevy_picking_core::output::event_bubbling::<Deselect>,
+                    update_state_from_events,
+                )
+                    .in_set(SelectionSet::PostEvents),
+            )
+            .configure_sets(
+                (SelectionSet::Events, SelectionSet::PostEvents)
+                    .chain()
+                    .in_base_set(CoreSet::PreUpdate)
                     .after(PickSet::Focus)
-                    .label(PickSet::EventListeners)
-                    .with_system(bevy_picking_core::output::event_bubbling::<Select>)
-                    .with_system(bevy_picking_core::output::event_bubbling::<Deselect>),
+                    .before(PickSet::EventListeners),
             );
     }
 }
@@ -87,7 +107,7 @@ pub struct Deselect;
 #[derive(Component, Debug, Copy, Clone, Reflect)]
 pub struct NoDeselect;
 
-/// Unsurprising default multiselect inputs: both  control and shift keys.
+/// Unsurprising default multiselect inputs: both control and shift keys.
 pub fn multiselect_events(
     keyboard: Res<Input<KeyCode>>,
     mut pointer_query: Query<&mut PointerMultiselect>,
