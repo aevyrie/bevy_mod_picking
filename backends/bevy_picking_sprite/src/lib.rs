@@ -55,7 +55,7 @@ pub fn sprite_picking(
 
         let over_list = sorted_sprites
             .iter()
-            .map(|a| *a)
+            .copied()
             .filter_map(
                 |(entity, sprite, image, global_transform, visibility, focus)| {
                     if blocked || !visibility.is_visible() {
@@ -75,7 +75,7 @@ pub fn sprite_picking(
                     let anchor_offset = sprite.anchor.as_vec() * extents;
 
                     let target = if let Some(t) =
-                        location.target.get_render_target_info(&windows, &*images)
+                        location.target.get_render_target_info(&windows, &images)
                     {
                         t.physical_size.as_vec2() / t.scale_factor as f32
                     } else {

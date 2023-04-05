@@ -70,7 +70,7 @@ fn setup(
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
         PickRaycastTarget::default(), // <- Needed for the raycast backend.
-        tinted_highlight.clone(),
+        tinted_highlight,
     ));
 
     // light
