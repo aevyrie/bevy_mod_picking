@@ -10,12 +10,8 @@ pub mod focus;
 pub mod output;
 pub mod pointer;
 
-use bevy::{ecs::schedule::ShouldRun, prelude::*};
+use bevy::prelude::*;
 use focus::update_focus;
-use output::{
-    event_bubbling, interactions_from_events, pointer_events, send_click_and_drag_events,
-    send_drag_over_events,
-};
 
 /// Used to globally toggle picking features at runtime.
 #[derive(Clone, Debug, Resource)]
@@ -32,16 +28,16 @@ pub struct PickingPluginsSettings {
 
 impl PickingPluginsSettings {
     /// Whether or not input collection systems should be running.
-    pub fn input_should_run(state: Res<Self>) -> ShouldRun {
-        (state.enable_input && state.enable).into()
+    pub fn input_enabled(state: Res<Self>) -> bool {
+        state.enable_input && state.enable
     }
     /// Whether or not entity highlighting systems should be running.
-    pub fn highlighting_should_run(state: Res<Self>) -> ShouldRun {
-        (state.enable_highlighting && state.enable).into()
+    pub fn highlighting_should_run(state: Res<Self>) -> bool {
+        state.enable_highlighting && state.enable
     }
     /// Whether or not systems updating entities' [`Interaction`] component should be running.
-    pub fn interaction_should_run(state: Res<Self>) -> ShouldRun {
-        (state.enable_highlighting && state.enable).into()
+    pub fn interaction_should_run(state: Res<Self>) -> bool {
+        state.enable_highlighting && state.enable
     }
 }
 
@@ -95,17 +91,25 @@ impl PointerCoreBundle {
 }
 
 /// Groups the stages of the picking process under shared labels.
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-pub enum PickStage {
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub enum PickSet {
     /// Produces pointer input events.
     Input,
+    /// Runs after input events are generated but before commands are flushed.
+    PostInput,
+    /// Receives and processes pointer input events.
+    ProcessInput,
     /// Reads inputs and produces [`backend::EntitiesUnderPointer`]s.
     Backend,
     /// Reads [`backend::EntitiesUnderPointer`]s, and updates focus, selection, and highlighting
     /// states.
     Focus,
+    /// Runs after all the focus systems are done, before event listeners are triggered.
+    PostFocus,
     /// Updates event listeners and bubbles [`output::PointerEvent`]s
     EventListeners,
+    /// Runs after all other sets
+    Last,
 }
 
 /// Receives input events, and provides the shared types used by other picking plugins.
@@ -117,13 +121,10 @@ impl Plugin for CorePlugin {
             .add_event::<pointer::InputPress>()
             .add_event::<pointer::InputMove>()
             .add_event::<backend::EntitiesUnderPointer>()
-            .add_system_to_stage(CoreStage::First, pointer::update_pointer_map)
-            .add_system_set_to_stage(
-                CoreStage::PreUpdate,
-                SystemSet::new()
-                    .before(PickStage::Backend)
-                    .with_system(pointer::InputMove::receive)
-                    .with_system(pointer::InputPress::receive),
+            .add_system(pointer::update_pointer_map.in_set(PickSet::Input))
+            .add_systems(
+                (pointer::InputMove::receive, pointer::InputPress::receive)
+                    .in_set(PickSet::ProcessInput),
             );
     }
 }
@@ -132,71 +133,75 @@ impl Plugin for CorePlugin {
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
+        use output::*;
+
         app.init_resource::<focus::HoverMap>()
             .init_resource::<focus::PreviousHoverMap>()
-            .init_resource::<output::DragMap>()
-            .add_event::<output::PointerCancel>()
-            .add_event::<output::PointerOver>()
-            .add_event::<output::PointerOut>()
-            .add_event::<output::PointerDown>()
-            .add_event::<output::PointerUp>()
-            .add_event::<output::PointerClick>()
-            .add_event::<output::PointerMove>()
-            .add_event::<output::PointerDragStart>()
-            .add_event::<output::PointerDrag>()
-            .add_event::<output::PointerDragEnd>()
-            .add_event::<output::PointerDragEnter>()
-            .add_event::<output::PointerDragOver>()
-            .add_event::<output::PointerDragLeave>()
-            .add_event::<output::PointerDrop>()
-            .add_system_set_to_stage(
-                CoreStage::PreUpdate,
-                SystemSet::new()
-                    .label(PickStage::Focus)
-                    .after(PickStage::Backend)
-                    .with_run_criteria(PickingPluginsSettings::interaction_should_run)
-                    // Focus
-                    .with_system(update_focus)
-                    .with_system(pointer_events.after(update_focus))
-                    // Output
-                    .with_system(interactions_from_events.after(pointer_events))
-                    .with_system(send_click_and_drag_events.after(pointer_events))
-                    .with_system(send_drag_over_events.after(send_click_and_drag_events)),
+            .init_resource::<DragMap>()
+            .add_event::<PointerCancel>()
+            .add_event::<PointerOver>()
+            .add_event::<PointerOut>()
+            .add_event::<PointerDown>()
+            .add_event::<PointerUp>()
+            .add_event::<PointerClick>()
+            .add_event::<PointerMove>()
+            .add_event::<PointerDragStart>()
+            .add_event::<PointerDrag>()
+            .add_event::<PointerDragEnd>()
+            .add_event::<PointerDragEnter>()
+            .add_event::<PointerDragOver>()
+            .add_event::<PointerDragLeave>()
+            .add_event::<PointerDrop>()
+            .add_systems(
+                (
+                    update_focus,
+                    pointer_events,
+                    interactions_from_events,
+                    send_click_and_drag_events,
+                    send_drag_over_events,
+                )
+                    .chain()
+                    .in_set(PickSet::Focus),
             )
-            .add_system_set_to_stage(
-                CoreStage::PreUpdate,
-                SystemSet::new()
-                    .label(PickStage::EventListeners)
-                    .after(PickStage::Focus)
-                    .with_run_criteria(PickingPluginsSettings::interaction_should_run)
-                    .with_system(event_bubbling::<output::Over>)
-                    .with_system(event_bubbling::<output::Out>)
-                    .with_system(event_bubbling::<output::Down>)
-                    .with_system(event_bubbling::<output::Up>)
-                    .with_system(event_bubbling::<output::Click>)
-                    .with_system(event_bubbling::<output::Move>)
-                    .with_system(event_bubbling::<output::DragStart>)
-                    .with_system(event_bubbling::<output::Drag>)
-                    .with_system(event_bubbling::<output::DragEnd>)
-                    .with_system(event_bubbling::<output::DragEnter>)
-                    .with_system(event_bubbling::<output::DragOver>)
-                    .with_system(event_bubbling::<output::DragLeave>)
-                    .with_system(event_bubbling::<output::Drop>),
-            );
-    }
-}
+            .configure_set(PickSet::Focus.run_if(PickingPluginsSettings::interaction_should_run));
 
-/// Simple trait used to convert a boolean to a run criteria.
-trait IntoShouldRun {
-    /// Converts `self` into [`ShouldRun`].
-    fn should_run(&self) -> ShouldRun;
-}
-impl IntoShouldRun for bool {
-    fn should_run(&self) -> ShouldRun {
-        if *self {
-            ShouldRun::Yes
-        } else {
-            ShouldRun::No
-        }
+        app.add_systems(
+            (
+                event_bubbling::<Over>.run_if(on_event::<PointerEvent<Over>>()),
+                event_bubbling::<Out>.run_if(on_event::<PointerEvent<Out>>()),
+                event_bubbling::<Down>.run_if(on_event::<PointerEvent<Down>>()),
+                event_bubbling::<Up>.run_if(on_event::<PointerEvent<Up>>()),
+                event_bubbling::<Click>.run_if(on_event::<PointerEvent<Click>>()),
+                event_bubbling::<Move>.run_if(on_event::<PointerEvent<Move>>()),
+                event_bubbling::<DragStart>.run_if(on_event::<PointerEvent<DragStart>>()),
+                event_bubbling::<Drag>.run_if(on_event::<PointerEvent<Drag>>()),
+                event_bubbling::<DragEnd>.run_if(on_event::<PointerEvent<DragEnd>>()),
+                event_bubbling::<DragEnter>.run_if(on_event::<PointerEvent<DragEnter>>()),
+                event_bubbling::<DragOver>.run_if(on_event::<PointerEvent<DragOver>>()),
+                event_bubbling::<DragLeave>.run_if(on_event::<PointerEvent<DragLeave>>()),
+                event_bubbling::<Drop>.run_if(on_event::<PointerEvent<Drop>>()),
+            )
+                .in_set(PickSet::EventListeners),
+        )
+        .configure_set(
+            PickSet::EventListeners.run_if(PickingPluginsSettings::interaction_should_run),
+        );
+
+        app.configure_sets(
+            (PickSet::Input, PickSet::PostInput)
+                .chain()
+                .in_base_set(CoreSet::First),
+        )
+        .configure_sets(
+            (
+                PickSet::ProcessInput,
+                PickSet::Backend,
+                PickSet::Focus,
+                PickSet::EventListeners,
+                PickSet::Last,
+            )
+                .chain()
+                .in_base_set(CoreSet::PreUpdate),
+        );
     }
 }

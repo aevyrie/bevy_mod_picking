@@ -44,7 +44,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 struct HelmetClicked(Entity);
 impl<E: IsPointerEvent> ForwardedEvent<E> for HelmetClicked {
-    fn from_data(event_data: &PointerEventData<E>) -> Self {
+    fn from_data(event_data: &EventData<E>) -> Self {
         // Note that we forward the target, not the listener! The target is the child that the event
         // was originally called on, whereas the listener is the parent entity that was listening
         // for the event that bubbled up from the target. This is what allows us to add a listener
@@ -93,7 +93,7 @@ const HIGHLIGHT_OVERRIDE: HighlightOverride<StandardMaterial> = HighlightOverrid
     selected: Some(HighlightKind::new_dynamic(|i| {
         let [r, g, b, a] = i.base_color.as_rgba_f32();
         StandardMaterial {
-            base_color: Color::rgba(r - 0.3, g + 0.3, b - 0.3, a),
+            base_color: Color::rgba(r - 0.3, g + 0.2, b - 0.3, a),
             ..i.to_owned()
         }
     })),

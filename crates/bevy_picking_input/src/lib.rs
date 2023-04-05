@@ -14,8 +14,8 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_picking_core::{PickStage, PickingPluginsSettings};
+use bevy::prelude::*;
+use bevy_picking_core::{PickSet, PickingPluginsSettings};
 
 pub mod debug;
 pub mod mouse;
@@ -27,24 +27,21 @@ impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<InputPluginSettings>()
             .add_startup_system(mouse::spawn_mouse_pointer)
-            .add_system_set_to_stage(
-                CoreStage::First,
-                SystemSet::new()
-                    .label(PickStage::Input)
-                    .with_system(
-                        touch::touch_pick_events
-                            .at_start()
-                            .with_run_criteria(run_if_touch),
-                    )
-                    .with_system(
-                        mouse::mouse_pick_events.with_run_criteria(run_if_mouse), // .before(PickStage::Backend),
-                    ),
+            .add_systems(
+                (
+                    touch::touch_pick_events.run_if(touch_enabled),
+                    mouse::mouse_pick_events.run_if(mouse_enabled),
+                    // IMPORTANT: the commands must be flushed after `touch_pick_events` is run
+                    // because we need pointer spawning to happen immediately to prevent issues with
+                    // missed events during drag and drop.
+                    apply_system_buffers,
+                )
+                    .in_set(PickSet::Input),
             )
-            .add_system_set_to_stage(
-                CoreStage::Last,
-                SystemSet::new()
-                    .with_run_criteria(PickingPluginsSettings::input_should_run)
-                    .with_system(touch::deactivate_pointers),
+            .add_system(
+                touch::deactivate_pointers
+                    .in_base_set(CoreSet::Last)
+                    .run_if(PickingPluginsSettings::input_enabled),
             );
     }
 }
@@ -64,15 +61,9 @@ impl Default for InputPluginSettings {
     }
 }
 
-fn run_if_touch(
-    settings: Res<InputPluginSettings>,
-    state: Res<PickingPluginsSettings>,
-) -> ShouldRun {
-    (state.enable && state.enable_input && settings.run_touch).into()
+fn touch_enabled(settings: Res<InputPluginSettings>, state: Res<PickingPluginsSettings>) -> bool {
+    state.enable && state.enable_input && settings.run_touch
 }
-fn run_if_mouse(
-    settings: Res<InputPluginSettings>,
-    state: Res<PickingPluginsSettings>,
-) -> ShouldRun {
-    (state.enable && state.enable_input && settings.run_mouse).into()
+fn mouse_enabled(settings: Res<InputPluginSettings>, state: Res<PickingPluginsSettings>) -> bool {
+    state.enable && state.enable_input && settings.run_mouse
 }

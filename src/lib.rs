@@ -26,13 +26,13 @@
 //!
 //! # struct DeleteMe(Entity);
 //! # impl<E: IsPointerEvent> ForwardedEvent<E> for DeleteMe {
-//! #     fn from_data(event_data: &PointerEventData<E>) -> DeleteMe {
+//! #     fn from_data(event_data: &EventData<E>) -> DeleteMe {
 //! #         Self(event_data.target())
 //! #     }
 //! # }
 //! # struct GreetMe(Entity);
 //! # impl<E: IsPointerEvent> ForwardedEvent<E> for GreetMe {
-//! #     fn from_data(event_data: &PointerEventData<E>) -> GreetMe {
+//! #     fn from_data(event_data: &EventData<E>) -> GreetMe {
 //! #         Self(event_data.target())
 //! #     }
 //! # }
@@ -133,9 +133,9 @@ pub mod prelude {
     pub use crate::{
         backends,
         output::{
-            EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerClick, PointerDown,
-            PointerDrag, PointerDragEnd, PointerDragEnter, PointerDragLeave, PointerDragOver,
-            PointerDragStart, PointerDrop, PointerEventData, PointerMove, PointerOut, PointerOver,
+            EventData, EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerClick,
+            PointerDown, PointerDrag, PointerDragEnd, PointerDragEnter, PointerDragLeave,
+            PointerDragOver, PointerDragStart, PointerDrop, PointerMove, PointerOut, PointerOver,
             PointerUp,
         },
         plugins::{DefaultPickingPlugins, PickableBundle},

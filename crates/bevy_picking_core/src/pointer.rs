@@ -2,8 +2,9 @@
 
 use bevy::{
     prelude::*,
-    render::camera::RenderTarget,
+    render::camera::NormalizedRenderTarget,
     utils::{HashMap, Uuid},
+    window::PrimaryWindow,
 };
 use std::fmt::Debug;
 
@@ -203,6 +204,7 @@ impl PointerButton {
 pub struct PointerLocation {
     /// The [`Location`] of the pointer. Note that a location is both the target, and the position
     /// on the target.
+    #[reflect(ignore)]
     pub location: Option<Location>,
 }
 impl PointerLocation {
@@ -257,11 +259,10 @@ impl InputMove {
 /// pointer on this render target.
 ///
 /// Note that a pointer can move freely between render targets.
-#[derive(Debug, Clone, Component, Reflect, FromReflect, PartialEq)]
+#[derive(Debug, Clone, Component, Reflect, PartialEq)]
 pub struct Location {
-    /// The [`RenderTarget`] associated with the pointer, usually a window.
-    #[reflect(ignore)]
-    pub target: RenderTarget,
+    /// The [`NormalizedRenderTarget`] associated with the pointer, usually a window.
+    pub target: NormalizedRenderTarget,
     /// The position of the pointer in the `target`.
     pub position: Vec2,
 }
@@ -270,22 +271,38 @@ impl Location {
     ///
     /// Note this returns `false` if the location and camera have different [`RenderTarget`]s.
     #[inline]
-    pub fn is_in_viewport(&self, camera: &Camera, windows: &Windows) -> bool {
-        if !self.is_same_target(camera) {
+    pub fn is_in_viewport(
+        &self,
+        camera: &Camera,
+        windows: &Query<&Window>,
+        primary_window: &Query<Entity, With<PrimaryWindow>>,
+        images: &Res<Assets<Image>>,
+    ) -> bool {
+        if camera
+            .target
+            .normalize(primary_window.get_single().ok())
+            .as_ref()
+            != Some(&self.target)
+        {
             return false;
         }
 
-        let window = if let RenderTarget::Window(id) = self.target {
-            if let Some(w) = windows.get(id) {
-                w
-            } else {
-                return false;
+        let target_height = match &self.target {
+            NormalizedRenderTarget::Window(id) => {
+                let Ok(window) = windows.get(id.entity()) else {
+                    return false;
+                };
+                window.height()
             }
-        } else {
-            return false;
+            NormalizedRenderTarget::Image(handle) => {
+                let Some(image) = images.get(handle) else {
+                return false;
+            };
+                image.size().y
+            }
         };
 
-        let position = Vec2::new(self.position.x, window.height() - self.position.y);
+        let position = Vec2::new(self.position.x, target_height - self.position.y);
 
         camera
             .logical_viewport_rect()
@@ -293,11 +310,5 @@ impl Location {
                 (position - min).min_element() >= 0.0 && (position - max).max_element() <= 0.0
             })
             .unwrap_or(false)
-    }
-
-    /// Returns `true` if this [`Location`] and the [`Camera`] have the same [`RenderTarget`].
-    #[inline]
-    pub fn is_same_target(&self, camera: &Camera) -> bool {
-        self.target == camera.target
     }
 }

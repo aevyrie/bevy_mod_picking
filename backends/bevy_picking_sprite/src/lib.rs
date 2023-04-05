@@ -4,6 +4,8 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
+use std::cmp::Ordering;
+
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 use bevy_picking_core::backend::prelude::*;
@@ -19,20 +21,15 @@ pub struct SpriteBackend;
 impl PickingBackend for SpriteBackend {}
 impl Plugin for SpriteBackend {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            CoreStage::PreUpdate,
-            SystemSet::new()
-                .label(PickStage::Backend)
-                .with_system(sprite_picking),
-        );
+        app.add_system(sprite_picking.in_set(PickSet::Backend));
     }
 }
 
 /// Checks if any sprite entities are under each pointer
 pub fn sprite_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
+    windows: Query<(Entity, &Window)>,
     images: Res<Assets<Image>>,
-    windows: Res<Windows>,
     sprite_query: Query<(
         Entity,
         &Sprite,
@@ -43,14 +40,22 @@ pub fn sprite_picking(
     )>,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
+    let mut sorted_sprites: Vec<_> = sprite_query.iter().collect();
+    sorted_sprites.sort_by(|a, b| {
+        (b.3.translation().z)
+            .partial_cmp(&a.3.translation().z)
+            .unwrap_or(Ordering::Equal)
+    });
+
     for (pointer, location) in pointers.iter().filter_map(|(pointer, pointer_location)| {
         pointer_location.location().map(|loc| (pointer, loc))
     }) {
         let cursor_position = location.position;
         let mut blocked = false;
 
-        let over_list = sprite_query
+        let over_list = sorted_sprites
             .iter()
+            .copied()
             .filter_map(
                 |(entity, sprite, image, global_transform, visibility, focus)| {
                     if blocked || !visibility.is_visible() {

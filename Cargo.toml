@@ -14,12 +14,13 @@ resolver = "2"
 members = ["crates/*", "backends/*"]
 
 [dependencies]
-bevy = { version = "0.9", default-features = false, features = [
+bevy = { version = "0.10", default-features = false, features = [
+    "bevy_core_pipeline",
     "bevy_render",
     "bevy_ui",
 ] }
-bevy_egui = { optional = true, version = "0.19" }
-bevy_rapier3d = { optional = true, version = "0.20" }
+bevy_egui = { optional = true, version = "0.20" }
+bevy_rapier3d = { optional = true, version = "0.21" }
 
 # Local
 bevy_picking_core = { path = "crates/bevy_picking_core" }
@@ -34,15 +35,14 @@ bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite" }
 bevy_picking_egui = { optional = true, path = "backends/bevy_picking_egui" }
 
 [dev-dependencies]
-bevy = { version = "0.9", default-features = false, features = [
+bevy = { version = "0.10", default-features = false, features = [
     "bevy_winit",
     "x11",
     "bevy_gltf",
     "bevy_scene",
     "png",
 ] }
-bevy_framepace = { version = "0.10", default-features = false }
-bevy_mod_picking = { path = "", features = ["all"] }
+bevy_framepace = { version = "0.12", default-features = false }
 
 [features]
 all = [
@@ -59,6 +59,7 @@ all = [
 default = [
     "backend_raycast",
     "backend_bevy_ui",
+    "backend_sprite",
     "debug",
     "selection",
     "highlight",
@@ -67,7 +68,6 @@ selection = [
     "bevy_picking_selection",
     "bevy_picking_input/selection",
     "bevy_picking_highlight/selection",
-    "bevy_picking_egui/selection",
 ]
 highlight = ["bevy_picking_highlight"]
 debug = ["bevy/bevy_text", "bevy/bevy_sprite"]
@@ -77,3 +77,18 @@ backend_shader = ["bevy_picking_shader"]
 backend_sprite = ["bevy_picking_sprite"]
 backend_bevy_ui = ["bevy_picking_ui"]
 backend_egui = ["bevy_picking_egui", "bevy_egui"]
+
+[[example]]
+name = "rapier"
+path = "examples/rapier.rs"
+required-features = ["backend_rapier"]
+
+[[example]]
+name = "egui"
+path = "examples/egui.rs"
+required-features = ["backend_egui"]
+
+[[example]]
+name = "multiple_windows"
+path = "examples/multiple_windows.rs"
+required-features = ["backend_egui"]

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_egui::{
     egui::{self, ScrollArea},
-    EguiContext, EguiPlugin,
+    EguiContexts, EguiPlugin,
 };
 use bevy_mod_picking::prelude::*;
 
@@ -16,8 +16,8 @@ fn main() {
         .run();
 }
 
-fn ui_example(mut egui_context: ResMut<EguiContext>) {
-    egui::Window::new("Hello").show(egui_context.ctx_mut(), |ui| {
+fn ui_example(mut egui_contexts: EguiContexts) {
+    egui::Window::new("Hello").show(egui_contexts.ctx_mut(), |ui| {
         ScrollArea::both().auto_shrink([false; 2]).show(ui, |ui| {
             ui.label("world");
         });
@@ -33,7 +33,7 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
+            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
             material: materials.add(Color::WHITE.into()),
             ..Default::default()
         },

@@ -45,7 +45,7 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
+            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
             material: materials.add(StandardMaterial {
                 base_color_texture: Some(asset_server.load("images/bavy.png")),
                 ..Default::default()

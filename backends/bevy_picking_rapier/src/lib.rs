@@ -4,7 +4,7 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_picking_core::backend::prelude::*;
 use bevy_rapier3d::prelude::*;
 
@@ -19,8 +19,8 @@ pub struct RapierBackend;
 impl PickingBackend for RapierBackend {}
 impl Plugin for RapierBackend {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(CoreStage::First, build_rays_from_pointers)
-            .add_system_to_stage(CoreStage::PreUpdate, update_hits.label(PickStage::Backend));
+        app.add_system(build_rays_from_pointers.in_set(PickSet::PostInput))
+            .add_systems((update_hits,).chain().in_set(PickSet::Backend));
     }
 }
 
@@ -45,7 +45,9 @@ pub struct RapierPickRay {
 /// Updates all picking [`Ray`]s with [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
     pointers: Query<(Entity, &PointerLocation)>,
-    windows: Res<Windows>,
+    windows: Query<&Window>,
+    primary_window: Query<Entity, With<PrimaryWindow>>,
+    images: Res<Assets<Image>>,
     mut commands: Commands,
     mut sources: Query<&mut RapierPickRay>,
     cameras: Query<(&Camera, &GlobalTransform), With<RapierPickSource>>,
@@ -61,7 +63,9 @@ pub fn build_rays_from_pointers(
         };
         cameras
             .iter()
-            .filter(|(camera, _)| pointer_location.is_in_viewport(camera, &windows))
+            .filter(|(camera, _)| {
+                pointer_location.is_in_viewport(camera, &windows, &primary_window, &images)
+            })
             .for_each(|(camera, transform)| {
                 let ray = ray_from_screenspace(pointer_location.position, camera, transform);
                 if let Ok(mut source) = sources.get_mut(entity) {

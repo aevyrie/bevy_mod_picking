@@ -15,9 +15,12 @@
 //! predefined `EventListener` component on your entity.
 
 use bevy::prelude::*;
-use bevy_mod_picking::prelude::{
-    backends::raycast::{PickRaycastSource, PickRaycastTarget},
-    *,
+use bevy_mod_picking::{
+    output::{Bubble, EventListener},
+    prelude::{
+        backends::raycast::{PickRaycastSource, PickRaycastTarget},
+        *,
+    },
 };
 
 fn main() {
@@ -26,50 +29,28 @@ fn main() {
         .add_plugins(DefaultPickingPlugins)
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup)
-        .add_system(DeleteMe::handle_events)
-        .add_system(GreetMe::handle_events)
+        .add_system(Greeting::handle_events)
         .run();
 }
 
-// We want to implement a feature that will allow us to click on a cube to delete it. To do this,
-// we'll start by making an event we can send when we want to delete an entity.
-struct DeleteMe(Entity);
-// We're going to use the event forwarding feature of this crate to send a `DeleteMe` event when the
-// entity is clicked. To be able to forward events, we need to implement the `ForwardedEvent` trait
-// on our custom `DeleteMe` event.
-//
-// All we're doing is defining how to take a pointer event and turn it into our custom event.
-impl ForwardedEvent<PointerClick> for DeleteMe {
-    fn from_data(event_data: &PointerEventData<PointerClick>) -> DeleteMe {
-        // Note that we are using the `target()` entity here, not the listener entity! The target is
-        // the child that the event was originally called on, whereas the listener is the ancestor
-        // that was listening for the event that bubbled up from the target.
-        DeleteMe(event_data.target())
-        // Why is this useful? It allows us to add an event listener once on the parent entity, yet
-        // it can trigger actions specific to the child that was interacted with! Instead of needing
-        // to add an event listener on every child, we can just stick one on the parent, and any
-        // events that happen on the children will bubble up the the parent and be handled there.
-    }
-}
-impl DeleteMe {
-    // Here we will implement the system that does something with our `DeleteMe` events.
-    fn handle_events(mut commands: Commands, mut delete: EventReader<DeleteMe>) {
-        for event in delete.iter() {
-            commands.entity(event.0).despawn_recursive();
-            info!("I deleted the thing!");
-        }
+/// A callback function used with an `EventListener`.
+fn delete_me(commands: &mut Commands, event: &EventData<PointerClick>, _: &mut Bubble) {
+    // We don't want to despawn the parent cube, just the children
+    if event.listener() != event.target() {
+        commands.entity(event.target()).despawn();
+        info!("I deleted the thing!");
     }
 }
 
-// Same concept as the `DeleteMe` event, but just says "Hello!" to the entity.
-struct GreetMe(Entity);
-impl ForwardedEvent<PointerOver> for GreetMe {
-    fn from_data(event_data: &PointerEventData<PointerOver>) -> GreetMe {
-        GreetMe(event_data.target())
+/// A forwarded event, an alternative to using callbacks.
+struct Greeting(Entity);
+impl ForwardedEvent<PointerOver> for Greeting {
+    fn from_data(event_data: &EventData<PointerOver>) -> Greeting {
+        Greeting(event_data.target())
     }
 }
-impl GreetMe {
-    fn handle_events(mut greet: EventReader<GreetMe>) {
+impl Greeting {
+    fn handle_events(mut greet: EventReader<Greeting>) {
         for event in greet.iter() {
             info!("Hello {:?}!", event.0);
         }
@@ -90,25 +71,27 @@ fn setup(
             },
             PickableBundle::default(),
             PickRaycastTarget::default(),
+            // When any of this entity's children are clicked, they will be deleted
+            EventListener::<PointerClick>::callback(delete_me),
         ))
         // Because event forwarding uses bubbling, events that target children of the parent cube
-        // will bubble up to this level and will fire off a `GreetMe` or `DeleteMe` event, depending
-        // on the event that bubbled up:
-        .forward_events::<PointerClick, DeleteMe>()
-        .forward_events::<PointerOver, GreetMe>()
+        // will bubble up to this level and will fire off a `Greeting` event.
+        .forward_events::<PointerOver, Greeting>()
         .with_children(|parent| {
-            parent.spawn((
-                PbrBundle {
-                    mesh: meshes.add(Mesh::from(shape::Cube { size: 0.4 })),
-                    material: materials.add(Color::RED.into()),
-                    transform: Transform::from_xyz(0.0, 1.0, 0.0),
-                    ..Default::default()
-                },
-                // As noted above, we are adding a child here but we don't need to add an
-                // event listener. Events on this child will bubble up to the parent!
-                PickableBundle::default(),
-                PickRaycastTarget::default(),
-            ));
+            for i in 1..=5 {
+                parent.spawn((
+                    // As noted above, we are adding children here but we don't need to add an event
+                    // listener. Events on children will bubble up to the parent!
+                    PbrBundle {
+                        mesh: meshes.add(Mesh::from(shape::Cube { size: 0.4 })),
+                        material: materials.add(Color::RED.into()),
+                        transform: Transform::from_xyz(0.0, 1.0 + 0.5 * i as f32, 0.0),
+                        ..Default::default()
+                    },
+                    PickableBundle::default(),
+                    PickRaycastTarget::default(),
+                ));
+            }
         });
 
     commands.spawn(PointLightBundle {
@@ -122,7 +105,7 @@ fn setup(
     });
     commands.spawn((
         Camera3dBundle {
-            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(-2.0, 4.5, 5.0).looking_at(Vec3::Y * 2.0, Vec3::Y),
             ..Default::default()
         },
         PickRaycastSource::default(),

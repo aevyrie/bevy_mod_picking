@@ -5,7 +5,7 @@
 #![deny(missing_docs)]
 
 use bevy::ui::{self, FocusPolicy};
-use bevy::{prelude::*, render::camera::RenderTarget, window::WindowId};
+use bevy::{prelude::*, render::camera::NormalizedRenderTarget, window::PrimaryWindow};
 use bevy_picking_core::backend::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_ui`](crate) crate.
@@ -19,18 +19,14 @@ pub struct BevyUiBackend;
 impl PickingBackend for BevyUiBackend {}
 impl Plugin for BevyUiBackend {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            CoreStage::PreUpdate,
-            SystemSet::new()
-                .label(PickStage::Backend)
-                .with_system(ui_picking),
-        );
+        app.add_system(ui_picking.in_set(PickSet::Backend));
     }
 }
 
 /// Computes the UI node entities under each pointer
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
+    primary_window: Query<(), With<PrimaryWindow>>,
     mut node_query: Query<
         (
             Entity,
@@ -47,7 +43,14 @@ pub fn ui_picking(
         pointer_location
             .location()
             // TODO: update when proper multi-window UI is implemented
-            .filter(|loc| loc.target == RenderTarget::Window(WindowId::primary()))
+            .filter(|loc| {
+                if let NormalizedRenderTarget::Window(window) = loc.target {
+                    if primary_window.get(window.entity()).is_ok() {
+                        return true;
+                    }
+                }
+                false
+            })
             .map(|loc| (pointer, loc.position))
     }) {
         let cursor_position = position;
