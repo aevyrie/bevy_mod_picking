@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{backend, output::PointerCancel, pointer::PointerId};
+use crate::{backend, events::PointerCancel, pointer::PointerId};
 use bevy::{
     prelude::*,
     render::view::{Layer, RenderLayers},

@@ -104,7 +104,7 @@ pub trait EventListenerCommands {
     ///
     /// ```
     /// # use bevy::prelude::*;
-    /// # use bevy_picking_core::output::*;
+    /// # use bevy_picking_core::events::*;
     /// # struct MyForwardedEvent;
     /// # impl ForwardedEvent<PointerClick> for MyForwardedEvent {
     /// #    fn from_data(event_data: &EventData<PointerClick>) -> Self {

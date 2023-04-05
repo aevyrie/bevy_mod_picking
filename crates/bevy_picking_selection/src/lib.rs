@@ -9,7 +9,7 @@
 
 use bevy::{prelude::*, utils::hashbrown::HashSet};
 use bevy_picking_core::{
-    output::{IsPointerEvent, PointerEvent},
+    events::{IsPointerEvent, PointerEvent},
     pointer::{PointerButton, PointerId},
     PickSet,
 };
@@ -50,8 +50,8 @@ impl Plugin for SelectionPlugin {
             .add_systems(
                 (
                     send_selection_events,
-                    bevy_picking_core::output::event_bubbling::<Select>,
-                    bevy_picking_core::output::event_bubbling::<Deselect>,
+                    bevy_picking_core::events::event_bubbling::<Select>,
+                    bevy_picking_core::events::event_bubbling::<Deselect>,
                     update_state_from_events,
                 )
                     .in_set(PickSet::PostFocus),
@@ -112,9 +112,9 @@ pub fn multiselect_events(
 /// [`PointerDeselect`] events corresponding to these state changes.
 pub fn send_selection_events(
     settings: Res<SelectionSettings>,
-    mut pointer_down: EventReader<bevy_picking_core::output::PointerDown>,
+    mut pointer_down: EventReader<bevy_picking_core::events::PointerDown>,
     mut presses: EventReader<bevy_picking_core::pointer::InputPress>,
-    mut pointer_click: EventReader<bevy_picking_core::output::PointerClick>,
+    mut pointer_click: EventReader<bevy_picking_core::events::PointerClick>,
     pointers: Query<(&PointerId, &PointerMultiselect)>,
     no_deselect: Query<&NoDeselect>,
     selectables: Query<(Entity, &PickSelection)>,

@@ -8,7 +8,7 @@ use bevy::{
     window::{PrimaryWindow, WindowRef},
 };
 use bevy_picking_core::{
-    output::PointerCancel,
+    events::PointerCancel,
     pointer::{InputMove, InputPress, Location, PointerButton, PointerId},
     PointerCoreBundle,
 };

@@ -98,7 +98,7 @@
 use bevy_picking_core::PointerCoreBundle;
 
 use bevy::prelude::Bundle;
-pub use bevy_picking_core::{self as core, backend, focus, output, pointer};
+pub use bevy_picking_core::{self as core, backend, events, focus, pointer};
 pub use bevy_picking_input::{self as input};
 
 #[cfg(feature = "highlight")]
@@ -132,7 +132,7 @@ pub mod prelude {
     pub use crate::debug::DebugPickingPlugin;
     pub use crate::{
         backends,
-        output::{
+        events::{
             EventData, EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerClick,
             PointerDown, PointerDrag, PointerDragEnd, PointerDragEnter, PointerDragLeave,
             PointerDragOver, PointerDragStart, PointerDrop, PointerMove, PointerOut, PointerOver,

@@ -2,7 +2,7 @@ use std::f32::consts::FRAC_PI_2;
 
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::{
-    output::{Bubble, EventListener},
+    events::{Bubble, EventListener},
     prelude::{
         backends::raycast::{PickRaycastSource, PickRaycastTarget},
         *,

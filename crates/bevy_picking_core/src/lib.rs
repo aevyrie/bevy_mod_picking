@@ -6,8 +6,8 @@
 
 pub mod backend;
 pub mod debug;
+pub mod events;
 pub mod focus;
-pub mod output;
 pub mod pointer;
 
 use bevy::prelude::*;
@@ -67,7 +67,7 @@ pub struct PointerCoreBundle {
     /// Tracks the pointer's button press state.
     pub click: pointer::PointerPress,
     /// Tracks the pointer's interaction state.
-    pub interaction: output::PointerInteraction,
+    pub interaction: events::PointerInteraction,
 }
 
 impl PointerCoreBundle {
@@ -85,7 +85,7 @@ impl PointerCoreBundle {
             id,
             location: pointer::PointerLocation::default(),
             click: pointer::PointerPress::default(),
-            interaction: output::PointerInteraction::default(),
+            interaction: events::PointerInteraction::default(),
         }
     }
 }
@@ -106,7 +106,7 @@ pub enum PickSet {
     Focus,
     /// Runs after all the focus systems are done, before event listeners are triggered.
     PostFocus,
-    /// Updates event listeners and bubbles [`output::PointerEvent`]s
+    /// Updates event listeners and bubbles [`events::PointerEvent`]s
     EventListeners,
     /// Runs after all other sets
     Last,
@@ -129,11 +129,11 @@ impl Plugin for CorePlugin {
     }
 }
 
-/// Generates [`PointerEvent`](output::PointerEvent)s and handles event bubbling.
+/// Generates [`PointerEvent`](events::PointerEvent)s and handles event bubbling.
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
-        use output::*;
+        use events::*;
 
         app.init_resource::<focus::HoverMap>()
             .init_resource::<focus::PreviousHoverMap>()
