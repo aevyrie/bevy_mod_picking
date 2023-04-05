@@ -12,10 +12,6 @@ pub mod pointer;
 
 use bevy::prelude::*;
 use focus::update_focus;
-use output::{
-    event_bubbling, interactions_from_events, pointer_events, send_click_and_drag_events,
-    send_drag_over_events,
-};
 
 /// Used to globally toggle picking features at runtime.
 #[derive(Clone, Debug, Resource)]
@@ -137,23 +133,25 @@ impl Plugin for CorePlugin {
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
+        use output::*;
+
         app.init_resource::<focus::HoverMap>()
             .init_resource::<focus::PreviousHoverMap>()
-            .init_resource::<output::DragMap>()
-            .add_event::<output::PointerCancel>()
-            .add_event::<output::PointerOver>()
-            .add_event::<output::PointerOut>()
-            .add_event::<output::PointerDown>()
-            .add_event::<output::PointerUp>()
-            .add_event::<output::PointerClick>()
-            .add_event::<output::PointerMove>()
-            .add_event::<output::PointerDragStart>()
-            .add_event::<output::PointerDrag>()
-            .add_event::<output::PointerDragEnd>()
-            .add_event::<output::PointerDragEnter>()
-            .add_event::<output::PointerDragOver>()
-            .add_event::<output::PointerDragLeave>()
-            .add_event::<output::PointerDrop>()
+            .init_resource::<DragMap>()
+            .add_event::<PointerCancel>()
+            .add_event::<PointerOver>()
+            .add_event::<PointerOut>()
+            .add_event::<PointerDown>()
+            .add_event::<PointerUp>()
+            .add_event::<PointerClick>()
+            .add_event::<PointerMove>()
+            .add_event::<PointerDragStart>()
+            .add_event::<PointerDrag>()
+            .add_event::<PointerDragEnd>()
+            .add_event::<PointerDragEnter>()
+            .add_event::<PointerDragOver>()
+            .add_event::<PointerDragLeave>()
+            .add_event::<PointerDrop>()
             .add_systems(
                 (
                     update_focus,
@@ -169,19 +167,19 @@ impl Plugin for InteractionPlugin {
 
         app.add_systems(
             (
-                event_bubbling::<output::Over>,
-                event_bubbling::<output::Out>,
-                event_bubbling::<output::Down>,
-                event_bubbling::<output::Up>,
-                event_bubbling::<output::Click>,
-                event_bubbling::<output::Move>,
-                event_bubbling::<output::DragStart>,
-                event_bubbling::<output::Drag>,
-                event_bubbling::<output::DragEnd>,
-                event_bubbling::<output::DragEnter>,
-                event_bubbling::<output::DragOver>,
-                event_bubbling::<output::DragLeave>,
-                event_bubbling::<output::Drop>,
+                event_bubbling::<Over>.run_if(on_event::<PointerEvent<Over>>()),
+                event_bubbling::<Out>.run_if(on_event::<PointerEvent<Out>>()),
+                event_bubbling::<Down>.run_if(on_event::<PointerEvent<Down>>()),
+                event_bubbling::<Up>.run_if(on_event::<PointerEvent<Up>>()),
+                event_bubbling::<Click>.run_if(on_event::<PointerEvent<Click>>()),
+                event_bubbling::<Move>.run_if(on_event::<PointerEvent<Move>>()),
+                event_bubbling::<DragStart>.run_if(on_event::<PointerEvent<DragStart>>()),
+                event_bubbling::<Drag>.run_if(on_event::<PointerEvent<Drag>>()),
+                event_bubbling::<DragEnd>.run_if(on_event::<PointerEvent<DragEnd>>()),
+                event_bubbling::<DragEnter>.run_if(on_event::<PointerEvent<DragEnter>>()),
+                event_bubbling::<DragOver>.run_if(on_event::<PointerEvent<DragOver>>()),
+                event_bubbling::<DragLeave>.run_if(on_event::<PointerEvent<DragLeave>>()),
+                event_bubbling::<Drop>.run_if(on_event::<PointerEvent<Drop>>()),
             )
                 .in_set(PickSet::EventListeners),
         )

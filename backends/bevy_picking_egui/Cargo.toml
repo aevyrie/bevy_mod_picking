@@ -11,7 +11,5 @@ bevy = { version = "0.10", default-features = false }
 bevy_egui = "0.20"
 # Local
 bevy_picking_core = { path = "../../crates/bevy_picking_core" }
-bevy_picking_selection = { optional = true, path = "../../crates/bevy_picking_selection" }
 
 [features]
-selection = ["bevy_picking_selection"]

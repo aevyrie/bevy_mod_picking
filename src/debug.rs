@@ -11,14 +11,14 @@ pub struct DebugPickingPlugin {
 }
 impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut App) {
-        let should_run = self.noisy.into();
+        let noisy_debug = self.noisy;
 
         app.init_resource::<core::debug::Frame>()
             .add_system(core::debug::increment_frame.in_base_set(CoreSet::First))
             .add_system(
                 input::debug::print
                     .before(core::PickSet::Backend)
-                    .run_if(move || should_run)
+                    .run_if(move || noisy_debug)
                     .in_base_set(CoreSet::PreUpdate),
             )
             .add_systems((
@@ -27,12 +27,12 @@ impl Plugin for DebugPickingPlugin {
                 core::debug::print::<output::PointerDown>,
                 core::debug::print::<output::PointerUp>,
                 core::debug::print::<output::PointerClick>,
-                core::debug::print::<output::PointerMove>.run_if(move || should_run),
+                core::debug::print::<output::PointerMove>.run_if(move || noisy_debug),
                 core::debug::print::<output::PointerDragStart>,
-                core::debug::print::<output::PointerDrag>.run_if(move || should_run),
+                core::debug::print::<output::PointerDrag>.run_if(move || noisy_debug),
                 core::debug::print::<output::PointerDragEnd>,
                 core::debug::print::<output::PointerDragEnter>,
-                core::debug::print::<output::PointerDragOver>.run_if(move || should_run),
+                core::debug::print::<output::PointerDragOver>.run_if(move || noisy_debug),
                 core::debug::print::<output::PointerDragLeave>,
                 core::debug::print::<output::PointerDrop>,
             ));

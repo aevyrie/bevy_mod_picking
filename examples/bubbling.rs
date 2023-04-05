@@ -29,7 +29,7 @@ fn main() {
         .add_plugins(DefaultPickingPlugins)
         .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup)
-        .add_system(GreetMe::handle_events)
+        .add_system(Greeting::handle_events)
         .run();
 }
 
@@ -43,14 +43,14 @@ fn delete_me(commands: &mut Commands, event: &EventData<PointerClick>, _: &mut B
 }
 
 /// A forwarded event, an alternative to using callbacks.
-struct GreetMe(Entity);
-impl ForwardedEvent<PointerOver> for GreetMe {
-    fn from_data(event_data: &EventData<PointerOver>) -> GreetMe {
-        GreetMe(event_data.target())
+struct Greeting(Entity);
+impl ForwardedEvent<PointerOver> for Greeting {
+    fn from_data(event_data: &EventData<PointerOver>) -> Greeting {
+        Greeting(event_data.target())
     }
 }
-impl GreetMe {
-    fn handle_events(mut greet: EventReader<GreetMe>) {
+impl Greeting {
+    fn handle_events(mut greet: EventReader<Greeting>) {
         for event in greet.iter() {
             info!("Hello {:?}!", event.0);
         }
@@ -75,8 +75,8 @@ fn setup(
             EventListener::<PointerClick>::callback(delete_me),
         ))
         // Because event forwarding uses bubbling, events that target children of the parent cube
-        // will bubble up to this level and will fire off a `GreetMe` event.
-        .forward_events::<PointerOver, GreetMe>()
+        // will bubble up to this level and will fire off a `Greeting` event.
+        .forward_events::<PointerOver, Greeting>()
         .with_children(|parent| {
             for i in 1..=5 {
                 parent.spawn((

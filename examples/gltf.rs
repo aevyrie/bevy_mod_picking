@@ -93,7 +93,7 @@ const HIGHLIGHT_OVERRIDE: HighlightOverride<StandardMaterial> = HighlightOverrid
     selected: Some(HighlightKind::new_dynamic(|i| {
         let [r, g, b, a] = i.base_color.as_rgba_f32();
         StandardMaterial {
-            base_color: Color::rgba(r - 0.3, g + 0.3, b - 0.3, a),
+            base_color: Color::rgba(r - 0.3, g + 0.2, b - 0.3, a),
             ..i.to_owned()
         }
     })),
