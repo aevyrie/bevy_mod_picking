@@ -108,8 +108,12 @@ pub enum PickSet {
     /// Reads [`backend::EntitiesUnderPointer`]s, and updates focus, selection, and highlighting
     /// states.
     Focus,
+    /// Runs after all the focus systems are done, before event listeners are triggered.
+    PostFocus,
     /// Updates event listeners and bubbles [`output::PointerEvent`]s
     EventListeners,
+    /// Runs after all other sets
+    Last,
 }
 
 /// Receives input events, and provides the shared types used by other picking plugins.
@@ -193,9 +197,10 @@ impl Plugin for InteractionPlugin {
         .configure_sets(
             (
                 PickSet::ProcessInput,
-                PickSet::Focus,
                 PickSet::Backend,
+                PickSet::Focus,
                 PickSet::EventListeners,
+                PickSet::Last,
             )
                 .chain()
                 .in_base_set(CoreSet::PreUpdate),

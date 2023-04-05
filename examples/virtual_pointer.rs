@@ -1,4 +1,9 @@
-use bevy::{prelude::*, utils::Uuid, window::WindowId};
+use bevy::{
+    prelude::*,
+    render::camera::RenderTarget,
+    utils::Uuid,
+    window::{PrimaryWindow, WindowRef},
+};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -17,13 +22,15 @@ pub struct VirtualPointer;
 fn move_virtual_pointer(
     time: Res<Time>,
     mut pointer: Query<&mut PointerLocation, With<VirtualPointer>>,
-    windows: ResMut<Windows>,
+    windows: Query<(Entity, &Window), With<PrimaryWindow>>,
 ) {
     for mut pointer in &mut pointer {
-        let w = windows.primary().width();
-        let h = windows.primary().height();
+        let w = windows.single().1.width();
+        let h = windows.single().1.height();
         pointer.location = Some(pointer::Location {
-            target: bevy::render::camera::RenderTarget::Window(WindowId::primary()),
+            target: RenderTarget::Window(WindowRef::Primary)
+                .normalize(windows.get_single().ok().map(|w| w.0))
+                .unwrap(),
             position: Vec2 {
                 x: w * (0.5 + 0.25 * time.elapsed_seconds().sin()),
                 y: h * (0.5 + 0.25 * (time.elapsed_seconds() * 2.0).sin()),
@@ -47,7 +54,7 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
+            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
             material: materials.add(Color::WHITE.into()),
             ..Default::default()
         },

@@ -47,7 +47,7 @@ pub struct RaycastPickingSet;
 pub fn build_rays_from_pointers(
     pointers: Query<(Entity, &PointerLocation)>,
     windows: Query<&Window>,
-    primary_window: Query<(Entity, &Window), With<PrimaryWindow>>,
+    primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
     mut commands: Commands,
     mut sources: Query<&mut RaycastSource<RaycastPickingSet>>,

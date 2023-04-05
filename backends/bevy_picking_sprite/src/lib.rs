@@ -6,8 +6,8 @@
 
 use std::cmp::Ordering;
 
+use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
-use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_picking_core::backend::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_sprite`](crate) crate.
@@ -28,7 +28,6 @@ impl Plugin for SpriteBackend {
 /// Checks if any sprite entities are under each pointer
 pub fn sprite_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    primary_window: Query<Entity, With<PrimaryWindow>>,
     windows: Query<(Entity, &Window)>,
     images: Res<Assets<Image>>,
     sprite_query: Query<(
@@ -75,10 +74,8 @@ pub fn sprite_picking(
 
                     let anchor_offset = sprite.anchor.as_vec() * extents;
 
-                    let target = if let Some(t) = location
-                        .target
-                        .normalize(primary_window.get_single().ok())
-                        .and_then(|target| target.get_render_target_info(&windows, &*images))
+                    let target = if let Some(t) =
+                        location.target.get_render_target_info(&windows, &*images)
                     {
                         t.physical_size.as_vec2() / t.scale_factor as f32
                     } else {

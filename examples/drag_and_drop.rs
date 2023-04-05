@@ -40,7 +40,7 @@ fn setup(
             PickRaycastTarget::default(), // <- Needed for the raycast backend.
             EventListener::<PointerDragStart>::callback(make_non_pickable),
             EventListener::<PointerDragEnd>::callback(make_pickable),
-            EventListener::<PointerDrop>::callback(apply_spin_to_squares),
+            EventListener::<PointerDrop>::callback(spin_me),
         ));
     }
 
@@ -60,7 +60,7 @@ fn make_pickable(commands: &mut Commands, event: &EventData<PointerDragEnd>, _: 
         .insert(PickRaycastTarget::default());
 }
 
-fn apply_spin_to_squares(commands: &mut Commands, event: &EventData<PointerDrop>, _: &mut Bubble) {
+fn spin_me(commands: &mut Commands, event: &EventData<PointerDrop>, _: &mut Bubble) {
     let dropped = event.event().dropped_entity;
     commands.entity(dropped).insert(SpinMe(FRAC_PI_2));
     let onto = event.target();
@@ -71,7 +71,7 @@ fn apply_spin_to_squares(commands: &mut Commands, event: &EventData<PointerDrop>
 fn drag_squares(
     mut drag_events: EventReader<PointerDrag>,
     pointers: Res<PointerMap>,
-    windows: Res<Windows>,
+    windows: Query<(Entity, &Window)>,
     images: Res<Assets<Image>>,
     locations: Query<&PointerLocation>,
     // Outputs

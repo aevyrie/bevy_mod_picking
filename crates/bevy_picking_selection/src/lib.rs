@@ -14,15 +14,6 @@ use bevy_picking_core::{
     PickSet,
 };
 
-/// [`SystemSet`]s for the selection plugin.
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
-pub enum SelectionSet {
-    /// Event generation
-    Events,
-    /// Event processing
-    PostEvents,
-}
-
 /// Runtime settings for the `bevy_picking_selection` plugin.
 #[derive(Debug, Resource)]
 pub struct SelectionSettings {
@@ -52,25 +43,18 @@ impl Plugin for SelectionPlugin {
                     multiselect_events.run_if(|settings: Res<SelectionSettings>| {
                         settings.use_multiselect_default_inputs
                     }),
-                    send_selection_events,
                 )
                     .chain()
-                    .in_set(SelectionSet::Events),
+                    .in_set(PickSet::ProcessInput),
             )
             .add_systems(
                 (
+                    send_selection_events,
                     bevy_picking_core::output::event_bubbling::<Select>,
                     bevy_picking_core::output::event_bubbling::<Deselect>,
                     update_state_from_events,
                 )
-                    .in_set(SelectionSet::PostEvents),
-            )
-            .configure_sets(
-                (SelectionSet::Events, SelectionSet::PostEvents)
-                    .chain()
-                    .in_base_set(CoreSet::PreUpdate)
-                    .after(PickSet::Focus)
-                    .before(PickSet::EventListeners),
+                    .in_set(PickSet::PostFocus),
             );
     }
 }

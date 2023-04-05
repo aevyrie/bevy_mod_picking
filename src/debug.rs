@@ -1,7 +1,7 @@
 //! Text and on-screen debugging tools
 
 use crate::*;
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 
 /// Logs events for debugging
 #[derive(Debug, Default, Clone)]
@@ -14,40 +14,28 @@ impl Plugin for DebugPickingPlugin {
         let should_run = self.noisy.into();
 
         app.init_resource::<core::debug::Frame>()
-            .add_system_to_stage(CoreStage::First, core::debug::increment_frame)
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
+            .add_system(core::debug::increment_frame.in_base_set(CoreSet::First))
+            .add_system(
                 input::debug::print
                     .before(core::PickSet::Backend)
-                    .with_run_criteria(move || should_run),
+                    .run_if(move || should_run)
+                    .in_base_set(CoreSet::PreUpdate),
             )
-            .add_system_set_to_stage(
-                CoreStage::Update,
-                SystemSet::new()
-                    .with_system(core::debug::print::<output::PointerOver>)
-                    .with_system(core::debug::print::<output::PointerOut>)
-                    .with_system(core::debug::print::<output::PointerDown>)
-                    .with_system(core::debug::print::<output::PointerUp>)
-                    .with_system(core::debug::print::<output::PointerClick>)
-                    .with_system(
-                        core::debug::print::<output::PointerMove>
-                            .with_run_criteria(move || should_run),
-                    )
-                    .with_system(core::debug::print::<output::PointerDragStart>)
-                    .with_system(
-                        core::debug::print::<output::PointerDrag>
-                            .with_run_criteria(move || should_run),
-                    )
-                    .with_system(core::debug::print::<output::PointerDragEnd>)
-                    .with_system(core::debug::print::<output::PointerDragEnter>)
-                    .with_system(
-                        core::debug::print::<output::PointerDragOver>
-                            .with_run_criteria(move || should_run),
-                    )
-                    .with_system(core::debug::print::<output::PointerDragLeave>)
-                    .with_system(core::debug::print::<output::PointerDrop>)
-                    .label("PointerOutputDebug"),
-            );
+            .add_systems((
+                core::debug::print::<output::PointerOver>,
+                core::debug::print::<output::PointerOut>,
+                core::debug::print::<output::PointerDown>,
+                core::debug::print::<output::PointerUp>,
+                core::debug::print::<output::PointerClick>,
+                core::debug::print::<output::PointerMove>.run_if(move || should_run),
+                core::debug::print::<output::PointerDragStart>,
+                core::debug::print::<output::PointerDrag>.run_if(move || should_run),
+                core::debug::print::<output::PointerDragEnd>,
+                core::debug::print::<output::PointerDragEnter>,
+                core::debug::print::<output::PointerDragOver>.run_if(move || should_run),
+                core::debug::print::<output::PointerDragLeave>,
+                core::debug::print::<output::PointerDrop>,
+            ));
 
         #[cfg(not(feature = "backend_egui"))]
         app.add_system(debug_draw);
@@ -55,21 +43,17 @@ impl Plugin for DebugPickingPlugin {
         app.add_system(debug_draw_egui);
 
         #[cfg(feature = "selection")]
-        app.add_system_set_to_stage(
-            CoreStage::Update,
-            SystemSet::new()
-                .with_system(core::debug::print::<selection::PointerSelect>)
-                .with_system(core::debug::print::<selection::PointerDeselect>),
-        );
+        app.add_systems((
+            core::debug::print::<selection::PointerSelect>,
+            core::debug::print::<selection::PointerDeselect>,
+        ));
     }
 }
 
 /// Draw an egui window on each cursor with debug info
 #[cfg(feature = "backend_egui")]
 pub fn debug_draw_egui(
-    commands: Commands,
-    asset_server: Res<AssetServer>,
-    egui: Option<ResMut<bevy_egui::EguiContext>>,
+    mut egui: bevy_egui::EguiContexts,
     names: Query<&Name>,
     pointers: Query<(
         Entity,
@@ -79,22 +63,10 @@ pub fn debug_draw_egui(
         &output::PointerInteraction,
     )>,
     #[cfg(feature = "selection")] selection: Query<Option<&selection::PointerMultiselect>>,
-    windows: Res<Windows>,
+    windows: Query<&Window>,
     mut alignment: Local<Option<bevy_egui::egui::Align2>>,
 ) {
-    let mut egui = if let Some(e) = egui {
-        e
-    } else {
-        debug_draw(
-            commands,
-            asset_server,
-            pointers,
-            #[cfg(feature = "selection")]
-            selection,
-            windows,
-        );
-        return;
-    };
+    use bevy::render::camera::NormalizedRenderTarget;
 
     for (entity, id, location, press, interaction) in pointers.iter() {
         let location = match location.location() {
@@ -103,16 +75,13 @@ pub fn debug_draw_egui(
         };
         let position = location.position;
 
-        let window_id = if let bevy::render::camera::RenderTarget::Window(id) = location.target {
-            id
-        } else {
+        let NormalizedRenderTarget::Window(window_ref) = location.target else {
             continue;
         };
-        let ctx = egui.ctx_for_window_mut(window_id);
 
-        let window = if let Some(w) = windows.get(window_id) {
-            w
-        } else {
+        let ctx = egui.ctx_for_window_mut(window_ref.entity());
+
+        let Ok(window) = windows.get(window_ref.entity()) else {
             continue;
         };
 
@@ -222,7 +191,7 @@ impl std::fmt::Debug for InteractionDebug {
     }
 }
 
-/// Draw an text on each cursor with debug info
+/// Draw text on each cursor with debug info
 pub fn debug_draw(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -234,7 +203,7 @@ pub fn debug_draw(
         &output::PointerInteraction,
     )>,
     #[cfg(feature = "selection")] selection: Query<Option<&selection::PointerMultiselect>>,
-    windows: Res<Windows>,
+    primary_window: Query<&Window, With<PrimaryWindow>>,
 ) {
     let font = asset_server.load("fonts/FiraMono-Medium.ttf");
 
@@ -243,8 +212,8 @@ pub fn debug_draw(
             Some(l) => l.position,
             None => continue,
         };
-        let x = windows.primary().width() - location.x;
-        let y = windows.primary().height() - location.y;
+        let x = primary_window.single().width() - location.x;
+        let y = primary_window.single().height() - location.y;
 
         let mut text = Text::from_section(
             ".\n",
@@ -282,7 +251,7 @@ pub fn debug_draw(
                 color: Color::WHITE,
             },
         ));
-        text.alignment = TextAlignment::TOP_RIGHT;
+        text.alignment = TextAlignment::Right;
 
         commands.entity(entity).insert(TextBundle {
             text,

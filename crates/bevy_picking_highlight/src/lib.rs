@@ -7,7 +7,7 @@
 
 #[allow(unused_imports)]
 use bevy::{asset::Asset, prelude::*, render::color::Color};
-use bevy_picking_core::{PickSet, PickingPluginsSettings};
+use bevy_picking_core::PickSet;
 #[cfg(feature = "selection")]
 use bevy_picking_selection::PickSelection;
 
@@ -171,25 +171,16 @@ where
         app.add_startup_system(move |mut commands: Commands, assets: ResMut<Assets<T>>| {
             commands.insert_resource(highlighting_default(assets));
         })
-        .add_system_set_to_stage(
-            CoreStage::PreUpdate,
-            SystemSet::new()
-                .with_run_criteria(PickingPluginsSettings::highlighting_should_run)
-                .with_system(
-                    get_initial_highlight_asset::<T>.before(HighlightOverride::<T>::update_dynamic),
-                )
-                .with_system(
-                    HighlightOverride::<T>::update_dynamic.before(update_highlight_assets::<T>),
-                )
-                .with_system(update_highlight_assets::<T>.after(PickSet::Focus))
-                .with_system(
-                    #[cfg(feature = "selection")]
-                    update_selection::<T>
-                        .after(bevy_picking_selection::send_selection_events)
-                        .after(update_highlight_assets::<T>),
-                    #[cfg(not(feature = "selection"))]
-                    || {},
-                ),
+        .add_systems(
+            (
+                get_initial_highlight_asset::<T>,
+                HighlightOverride::<T>::update_dynamic,
+                update_highlight_assets::<T>,
+                #[cfg(feature = "selection")]
+                update_selection::<T>,
+            )
+                .chain()
+                .in_set(PickSet::Last),
         );
     }
 }
