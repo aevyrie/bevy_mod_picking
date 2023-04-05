@@ -41,7 +41,7 @@ pub type PickingCamera = RaycastSource<PickingRaycastSet>;
 /// `RaycastSource`. This means that all Picking ray casts are of the same type. Consequently, any
 /// meshes or ray sources that are being used by the picking plugin can be used by other ray
 /// casting systems because they will have distinct types, e.g.: `RaycastMesh<PickingRaycastSet>`
-/// vs. `RaycastMesh<MySuperCoolRaycastingType>`, and as such wil not result in collisions.
+/// vs. `RaycastMesh<MySuperCoolRaycastingType>`, and as such will not result in collisions.
 #[derive(Clone, Reflect)]
 pub struct PickingRaycastSet;
 
