@@ -657,9 +657,9 @@ pub fn send_click_and_drag_events(
             continue; // We are only interested in button releases
         }
         let Some(Some(drag_entity)) =
-                drag_map.insert((press.pointer_id(), press.button()), None) else {
-                    continue;
-                };
+            drag_map.insert((press.pointer_id(), press.button()), None) else {
+                continue;
+            };
         pointer_drag_end.send(PointerDragEnd::new(
             &press.pointer_id(),
             &drag_entity,
@@ -729,7 +729,6 @@ pub fn send_drag_over_events(
     // Fire PointerDragLeave and PointerDrop events when the pointer stops dragging.
     for drag_end_event in pointer_drag_end.iter() {
         let button = drag_end_event.event.button;
-
         let Some(drag_over_set) =
             drag_over_map.get_mut(&(drag_end_event.pointer_id(), button)) else {
                 continue;
