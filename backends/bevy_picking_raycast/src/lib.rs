@@ -95,6 +95,7 @@ fn update_hits(
                     *entity,
                     PickData {
                         depth: intersection.distance(),
+                        position: Some(intersection.position()),
                         normal: Some(intersection.normal()),
                     },
                 )

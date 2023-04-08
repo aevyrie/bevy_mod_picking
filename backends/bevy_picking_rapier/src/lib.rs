@@ -101,13 +101,14 @@ fn update_hits(
                     true,
                     QueryFilter::new().predicate(&|entity| targets.contains(entity)),
                 )
-                .map(|hit| (hit.0, hit.1.toi, hit.1.normal, id))
+                .map(|hit| (hit.0, hit.1.toi, hit.1.point, hit.1.normal, id))
         })
-        .for_each(|(entity, depth, normal, &id)| {
+        .for_each(|(entity, depth, position, normal, &id)| {
             let picks = vec![(
                 entity,
                 PickData {
                     depth,
+                    position: Some(position),
                     normal: Some(normal),
                 },
             )];

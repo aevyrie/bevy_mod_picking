@@ -92,6 +92,7 @@ pub fn sprite_picking(
                         entity,
                         PickData {
                             depth: position.z,
+                            position: None,
                             normal: None,
                         },
                     ))

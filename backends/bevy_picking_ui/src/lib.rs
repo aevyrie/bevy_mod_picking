@@ -82,6 +82,7 @@ pub fn ui_picking(
                     entity,
                     PickData {
                         depth: position.z,
+                        position: None,
                         normal: None,
                     },
                 ))

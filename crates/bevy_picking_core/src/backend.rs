@@ -54,6 +54,8 @@ pub struct EntitiesUnderPointer {
 pub struct PickData {
     /// The distance from the pointer to the entity into the screen, or depth.
     pub depth: f32,
-    /// The normal vector of the hit test, if it has one.
+    /// The position of the intersection in the world, if the data is available from the backend.
+    pub position: Option<Vec3>,
+    /// The normal vector of the hit test, if the data is available from the backend.
     pub normal: Option<Vec3>,
 }

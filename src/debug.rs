@@ -1,6 +1,6 @@
 //! Text and on-screen debugging tools
 
-use bevy_picking_core::debug;
+use bevy_picking_core::{debug, focus::HoverMap};
 
 use crate::*;
 use bevy::{prelude::*, window::PrimaryWindow};
@@ -56,6 +56,7 @@ impl Plugin for DebugPickingPlugin {
 #[cfg(feature = "backend_egui")]
 pub fn debug_draw_egui(
     mut egui: bevy_egui::EguiContexts,
+    hover_map: Res<HoverMap>,
     names: Query<&Name>,
     pointers: Query<(
         Entity,
@@ -126,16 +127,21 @@ pub fn debug_draw_egui(
             })
             .collect::<Vec<_>>();
 
-        let text = format!("ID: {:?}\nLocation: x{} y{}\nPress Primary: {}, Secondary: {}, Middle: {}\n{}Interactions: {:?}",
-                id,
-                position.x,
-                position.y,
-                bool_to_icon(&press.is_primary_pressed()),
-                bool_to_icon(&press.is_secondary_pressed()),
-                bool_to_icon(&press.is_middle_pressed()),
-                selection,
-                interaction,
-            );
+        let hover_data = |id| hover_map.get(id).and_then(|h| h.iter().next());
+
+        let text = format!("ID: {:?}\nLocation: x{} y{}\nPress (Primary {}, Secondary {}, Middle {})\n{}Depth: {:0.2?}\nPosition: {:0.2?}\nNormal: {:0.2?}\nInteractions: {:?}\n",
+            id,
+            position.x,
+            position.y,
+            bool_to_icon(&press.is_primary_pressed()),
+            bool_to_icon(&press.is_secondary_pressed()),
+            bool_to_icon(&press.is_middle_pressed()),
+            selection,
+            hover_data(id).map(|h| h.1.depth),
+            hover_data(id).and_then(|h| h.1.position),
+            hover_data(id).and_then(|h| h.1.normal),
+            interaction.iter()
+        );
         use bevy_egui::egui;
 
         let center = egui::pos2(x, y);
@@ -197,6 +203,7 @@ impl std::fmt::Debug for InteractionDebug {
 pub fn debug_draw(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    hover_map: Res<HoverMap>,
     pointers: Query<(
         Entity,
         &pointer::PointerId,
@@ -216,15 +223,7 @@ pub fn debug_draw(
         };
         let x = primary_window.single().width() - location.x;
         let y = primary_window.single().height() - location.y;
-
-        let mut text = Text::from_section(
-            ".\n",
-            TextStyle {
-                font: font.clone(),
-                font_size: 42.0,
-                color: Color::RED,
-            },
-        );
+        let hover_data = |id| hover_map.get(id).and_then(|h| h.iter().next());
 
         #[cfg(feature = "selection")]
         let selection = selection
@@ -236,8 +235,8 @@ pub fn debug_draw(
         #[cfg(not(feature = "selection"))]
         let selection = String::new();
 
-        text.sections.push(TextSection::new(
-            format!("ID: {:?}\nLocation: x{} y{}\nPress (Primary, Secondary, Middle): ({}, {}, {})\n{}Interactions: {:?}\n",
+        let mut text = Text::from_section(
+            format!("ID: {:?}\nLocation: x{} y{}\nPress (Primary, Secondary, Middle): ({}, {}, {})\n{}Depth: {:0.2?}\nPosition: {:0.2?}\nNormal: {:0.2?}\nInteractions: {:?}\n",
                 id,
                 location.x,
                 location.y,
@@ -245,6 +244,9 @@ pub fn debug_draw(
                 press.is_secondary_pressed(),
                 press.is_middle_pressed(),
                 selection,
+                hover_data(id).map(|h| h.1.depth),
+                hover_data(id).and_then(|h| h.1.position),
+                hover_data(id).and_then(|h| h.1.normal),
                 interaction.iter()
             ),
             TextStyle {
@@ -252,16 +254,16 @@ pub fn debug_draw(
                 font_size: 12.0,
                 color: Color::WHITE,
             },
-        ));
-        text.alignment = TextAlignment::Right;
+        );
+        text.alignment = TextAlignment::Left;
 
         commands.entity(entity).insert(TextBundle {
             text,
             style: Style {
                 position_type: PositionType::Absolute,
                 position: UiRect {
-                    right: Val::Px(x - 8.0),
-                    top: Val::Px(y - 31.0),
+                    right: Val::Px(x - 345.0),
+                    top: Val::Px(y - 110.0),
                     ..default()
                 },
                 ..default()

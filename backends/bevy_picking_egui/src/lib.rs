@@ -46,6 +46,7 @@ pub fn egui_picking(
                         entity,
                         PickData {
                             depth: -1.0,
+                            position: None,
                             normal: None,
                         },
                     );
