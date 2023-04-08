@@ -87,8 +87,3 @@ required-features = ["backend_rapier"]
 name = "egui"
 path = "examples/egui.rs"
 required-features = ["backend_egui"]
-
-[[example]]
-name = "multiple_windows"
-path = "examples/multiple_windows.rs"
-required-features = ["backend_egui"]
