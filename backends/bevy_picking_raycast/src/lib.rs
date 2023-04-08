@@ -85,13 +85,11 @@ pub fn build_rays_from_pointers(
 fn update_hits(
     mut sources: Query<(&RaycastSource<RaycastPickingSet>, &PointerId)>,
     mut output: EventWriter<EntitiesUnderPointer>,
-    targets: Query<With<Pickable>>,
 ) {
     for (source, &id) in &mut sources {
         let under_cursor: Vec<(Entity, PickData)> = source
             .intersections()
             .iter()
-            .filter(|(entity, _)| targets.contains(*entity))
             .map(|(entity, intersection)| {
                 (
                     *entity,

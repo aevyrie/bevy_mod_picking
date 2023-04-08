@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
-use bevy_picking_core::backend::{prelude::*};
+use bevy_picking_core::backend::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_sprite`](crate) crate.
 pub mod prelude {
@@ -30,17 +30,14 @@ pub fn sprite_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
     windows: Query<(Entity, &Window)>,
     images: Res<Assets<Image>>,
-    sprite_query: Query<
-        (
-            Entity,
-            &Sprite,
-            &Handle<Image>,
-            &GlobalTransform,
-            &ComputedVisibility,
-            Option<&FocusPolicy>,
-        ),
-        With<Pickable>,
-    >,
+    sprite_query: Query<(
+        Entity,
+        &Sprite,
+        &Handle<Image>,
+        &GlobalTransform,
+        &ComputedVisibility,
+        Option<&FocusPolicy>,
+    )>,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
     let mut sorted_sprites: Vec<_> = sprite_query.iter().collect();

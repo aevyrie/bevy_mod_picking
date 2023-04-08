@@ -22,7 +22,7 @@ pub mod prelude {
     pub use super::{EntitiesUnderPointer, PickData, PickingBackend};
     pub use crate::{
         pointer::{PointerId, PointerLocation},
-        PickSet, Pickable,
+        PickSet,
     };
 }
 

@@ -134,7 +134,6 @@ pub mod prelude {
     pub use crate::debug::DebugPickingPlugin;
     pub use crate::{
         backends,
-        core::Pickable,
         events::{
             Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
             EventListenerCommands, EventListenerData, ForwardedEvent, IsPointerEvent, Move, Out,
@@ -173,8 +172,6 @@ pub mod prelude {
 /// Makes an entity pickable.
 #[derive(Bundle, Default)]
 pub struct PickableBundle {
-    /// Marks an entity as pickable.
-    pub pickable: bevy_picking_core::Pickable,
     /// Tracks entity [`Interaction`] state.
     pub interaction: Interaction,
     /// Tracks entity [`PickSelection`](selection::PickSelection) state.

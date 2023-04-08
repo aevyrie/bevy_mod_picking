@@ -82,7 +82,7 @@ fn update_hits(
     rapier_context: Option<Res<RapierContext>>,
     sources: Query<(&RapierPickRay, &PointerId)>,
     mut output: EventWriter<EntitiesUnderPointer>,
-    targets: Query<(With<RapierPickTarget>, With<Pickable>)>,
+    targets: Query<With<RapierPickTarget>>,
 ) {
     let rapier_context = match rapier_context {
         Some(c) => c,
