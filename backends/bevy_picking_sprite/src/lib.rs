@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
-use bevy_picking_core::backend::prelude::*;
+use bevy_picking_core::backend::{prelude::*};
 
 /// Commonly used imports for the [`bevy_picking_sprite`](crate) crate.
 pub mod prelude {
@@ -30,14 +30,17 @@ pub fn sprite_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
     windows: Query<(Entity, &Window)>,
     images: Res<Assets<Image>>,
-    sprite_query: Query<(
-        Entity,
-        &Sprite,
-        &Handle<Image>,
-        &GlobalTransform,
-        &ComputedVisibility,
-        Option<&FocusPolicy>,
-    )>,
+    sprite_query: Query<
+        (
+            Entity,
+            &Sprite,
+            &Handle<Image>,
+            &GlobalTransform,
+            &ComputedVisibility,
+            Option<&FocusPolicy>,
+        ),
+        With<Pickable>,
+    >,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
     let mut sorted_sprites: Vec<_> = sprite_query.iter().collect();
@@ -88,17 +91,20 @@ pub fn sprite_picking(
                     let contains_cursor = (min.x..max.x).contains(&cursor_position.x)
                         && (min.y..max.y).contains(&cursor_position.y);
 
-                    contains_cursor.then_some(EntityDepth {
+                    contains_cursor.then_some((
                         entity,
-                        depth: position.z,
-                    })
+                        PickData {
+                            depth: position.z,
+                            normal: None,
+                        },
+                    ))
                 },
             )
             .collect::<Vec<_>>();
 
         output.send(EntitiesUnderPointer {
             pointer: *pointer,
-            over_list,
+            picks: over_list,
         })
     }
 }

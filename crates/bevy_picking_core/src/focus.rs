@@ -3,16 +3,20 @@
 
 use std::collections::BTreeMap;
 
-use crate::{backend, events::PointerCancel, pointer::PointerId};
+use crate::{
+    backend::{self, PickData},
+    events::PointerCancel,
+    pointer::PointerId,
+};
 use bevy::{
     prelude::*,
     render::view::{Layer, RenderLayers},
     ui::FocusPolicy,
-    utils::{FloatOrd, HashMap, HashSet},
+    utils::{FloatOrd, HashMap},
 };
 
 /// A map of entities sorted by depth.
-type DepthMap = BTreeMap<FloatOrd, Entity>;
+type DepthMap = BTreeMap<FloatOrd, (Entity, PickData)>;
 
 /// Maps [`RenderLayers`] to the map of entities within that pick layer, sorted by depth.
 type LayerMap = BTreeMap<Layer, DepthMap>;
@@ -27,11 +31,11 @@ type OverMap = HashMap<PointerId, LayerMap>;
 /// pointer is "hovering" an entity only if the mouse is "over" the entity AND it is the topmost
 /// entity(s) according to `FocusPolicy` and `RenderLayer`.
 #[derive(Debug, Deref, DerefMut, Default, Resource)]
-pub struct HoverMap(pub HashMap<PointerId, HashSet<Entity>>);
+pub struct HoverMap(pub HashMap<PointerId, HashMap<Entity, PickData>>);
 
 /// The previous state of the hover map, used to track changes to hover state.
 #[derive(Debug, Deref, DerefMut, Default, Resource)]
-pub struct PreviousHoverMap(pub HashMap<PointerId, HashSet<Entity>>);
+pub struct PreviousHoverMap(pub HashMap<PointerId, HashMap<Entity, PickData>>);
 
 /// Coalesces all data from inputs and backends to generate a map of the currently hovered entities.
 /// This is the final focusing step to determine which entity the pointer is hovering over.
@@ -103,17 +107,18 @@ fn build_over_map(
         .iter()
         .filter(|e| !cancelled_pointers.contains(&e.pointer))
     {
+        let pointer = entities_under_pointer.pointer;
         let layer_map = pointer_over_map
-            .entry(entities_under_pointer.pointer)
+            .entry(pointer)
             .or_insert_with(BTreeMap::new);
-        for over in entities_under_pointer.over_list.iter() {
+        for &(entity, pick_data) in entities_under_pointer.picks.iter() {
             let layer: Layer = render_layers
-                .get(over.entity)
+                .get(entity)
                 .ok()
                 .and_then(|layer| layer.iter().max())
                 .unwrap_or(0);
             let depth_map = layer_map.entry(layer).or_insert_with(BTreeMap::new);
-            depth_map.insert(FloatOrd(over.depth), over.entity);
+            depth_map.insert(FloatOrd(pick_data.depth), (entity, pick_data.clone()));
         }
     }
 }
@@ -129,16 +134,16 @@ fn build_hover_map(
     hover_map: &mut HoverMap,
 ) {
     for pointer_id in pointers.iter() {
-        let pointer_entity_set = hover_map.entry(*pointer_id).or_insert_with(HashSet::new);
+        let pointer_entity_set = hover_map.entry(*pointer_id).or_insert_with(HashMap::new);
         if let Some(layer_map) = over_map.get(pointer_id) {
             // Note we reverse here to start from the highest layer first
             for depth_map in layer_map.values().rev() {
-                for entity in depth_map.values() {
-                    pointer_entity_set.insert(*entity);
-                    if let Ok(FocusPolicy::Block) = focus.get(*entity) {
+                for &(entity, pick_data) in depth_map.values() {
+                    pointer_entity_set.insert(entity, pick_data.clone());
+                    if let Ok(FocusPolicy::Block) = focus.get(entity) {
                         break;
                     }
-                    if focus.get(*entity).is_err() {
+                    if focus.get(entity).is_err() {
                         break;
                     }
                 }

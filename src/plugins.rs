@@ -66,16 +66,3 @@ impl PluginGroup for DefaultPickingPlugins {
         builder
     }
 }
-
-/// Makes an entity pickable.
-#[derive(Bundle, Default)]
-pub struct PickableBundle {
-    /// Tracks entity [`Interaction`] state.
-    pub interaction: Interaction,
-    /// Tracks entity [`PickSelection`](selection::PickSelection) state.
-    #[cfg(feature = "selection")]
-    pub selection: selection::PickSelection,
-    /// Tracks entity [`PickHighlight`](highlight::PickHighlight) state.
-    #[cfg(feature = "highlight")]
-    pub highlight: highlight::PickHighlight,
-}

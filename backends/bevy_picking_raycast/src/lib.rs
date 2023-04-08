@@ -85,21 +85,28 @@ pub fn build_rays_from_pointers(
 fn update_hits(
     mut sources: Query<(&RaycastSource<RaycastPickingSet>, &PointerId)>,
     mut output: EventWriter<EntitiesUnderPointer>,
+    targets: Query<With<Pickable>>,
 ) {
     for (source, &id) in &mut sources {
-        let under_cursor: Vec<EntityDepth> = source
+        let under_cursor: Vec<(Entity, PickData)> = source
             .intersections()
             .iter()
-            .map(|(entity, intersection)| EntityDepth {
-                entity: *entity,
-                depth: intersection.distance(),
+            .filter(|(entity, _)| targets.contains(*entity))
+            .map(|(entity, intersection)| {
+                (
+                    *entity,
+                    PickData {
+                        depth: intersection.distance(),
+                        normal: Some(intersection.normal()),
+                    },
+                )
             })
             .collect();
 
         if !under_cursor.is_empty() {
             output.send(EntitiesUnderPointer {
                 pointer: id,
-                over_list: under_cursor,
+                picks: under_cursor,
             });
         }
     }

@@ -2,12 +2,12 @@
 
 use bevy::prelude::*;
 
-use crate::events::IsPointerEvent;
+use crate::events::{IsPointerEvent, PointerEvent};
 
 /// Listens for pointer events of type `E` and prints them.
-pub fn print<E: IsPointerEvent>(mut pointer_events: EventReader<E>) {
+pub fn print<E: IsPointerEvent + 'static>(mut pointer_events: EventReader<PointerEvent<E>>) {
     for event in pointer_events.iter() {
-        info!("Pointer {:?}, {event}", event.event_data());
+        info!("Pointer {:?}, {event}", event);
     }
 }
 

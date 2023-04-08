@@ -19,10 +19,10 @@ use bevy::prelude::*;
 
 /// Common imports for implementing a picking backend.
 pub mod prelude {
-    pub use super::{EntitiesUnderPointer, EntityDepth, PickingBackend};
+    pub use super::{EntitiesUnderPointer, PickData, PickingBackend};
     pub use crate::{
         pointer::{PointerId, PointerLocation},
-        PickSet,
+        PickSet, Pickable,
     };
 }
 
@@ -46,14 +46,14 @@ pub struct EntitiesUnderPointer {
     /// ID of the pointer this event is for
     pub pointer: prelude::PointerId,
     /// An unordered collection of entities and their distance (depth) from the cursor.
-    pub over_list: Vec<EntityDepth>,
+    pub picks: Vec<(Entity, PickData)>,
 }
 
-/// An entity and its distance from the pointer (depth).
-#[derive(Debug, Clone)]
-pub struct EntityDepth {
-    /// The entity under the pointer
-    pub entity: Entity,
+/// Holds data about a pick intersection.
+#[derive(Clone, Copy, Debug, PartialEq, Reflect)]
+pub struct PickData {
     /// The distance from the pointer to the entity into the screen, or depth.
     pub depth: f32,
+    /// The normal vector of the hit test, if it has one.
+    pub normal: Option<Vec3>,
 }

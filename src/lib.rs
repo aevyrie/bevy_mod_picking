@@ -81,15 +81,17 @@
 //!
 //! ## Focus ([`bevy_picking_core::focus`])
 //!
-//! The final step is to use the data from the previous stages, combine and sort the results, and
-//! determine what each cursor is hovering over. With this information, high-level pointer events
-//! are generated, such as events that trigger when a pointer enters an entity, or when a pointer
-//! drags and drops one entity onto another.
+//! The next step is to use the data from the previous stages, combine and sort the results, and
+//! determine what each cursor is hovering over.
 //!
-//! From here, these high-level events are used for highlighting, selection, event bubbling, and all
-//! the other features this crate provides. Because it is completely agnostic to the the earlier
-//! stages of the pipeline, you can easily extend the plugin with arbitrary backends and input
-//! methods.
+//! ### Events ([`bevy_picking_core::events`])
+//!
+//! In the final step, the high-level pointer events are generated, such as events that trigger when
+//! a pointer hovers or clicks an entity. These simple events are then used to generate more complex
+//! events for dragging and dropping. Once all events have been generated, the event bubbline
+//!
+//!  Because it is completely agnostic to the the earlier stages of the pipeline, you can easily
+//! extend the plugin with arbitrary backends and input methods.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
@@ -97,7 +99,7 @@
 
 use bevy_picking_core::PointerCoreBundle;
 
-use bevy::prelude::Bundle;
+use bevy::{prelude::Bundle, ui::Interaction};
 pub use bevy_picking_core::{self as core, backend, events, focus, pointer};
 pub use bevy_picking_input::{self as input};
 
@@ -132,13 +134,13 @@ pub mod prelude {
     pub use crate::debug::DebugPickingPlugin;
     pub use crate::{
         backends,
+        core::Pickable,
         events::{
-            EventData, EventListenerCommands, ForwardedEvent, IsPointerEvent, PointerClick,
-            PointerDown, PointerDrag, PointerDragEnd, PointerDragEnter, PointerDragLeave,
-            PointerDragOver, PointerDragStart, PointerDrop, PointerMove, PointerOut, PointerOver,
-            PointerUp,
+            Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
+            EventListenerCommands, EventListenerData, ForwardedEvent, IsPointerEvent, Move, Out,
+            Over, Up,
         },
-        plugins::{DefaultPickingPlugins, PickableBundle},
+        plugins::DefaultPickingPlugins,
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
         *,
     };
@@ -151,8 +153,7 @@ pub mod prelude {
 
     #[cfg(feature = "selection")]
     pub use crate::selection::{
-        NoDeselect, PickSelection, PointerDeselect, PointerMultiselect, PointerSelect,
-        SelectionPlugin,
+        Deselect, NoDeselect, PickSelection, PointerMultiselect, Select, SelectionPlugin,
     };
 
     #[cfg(feature = "backend_bevy_ui")]
@@ -167,6 +168,21 @@ pub mod prelude {
     pub use backends::shader::prelude::*;
     #[cfg(feature = "backend_sprite")]
     pub use backends::sprite::prelude::*;
+}
+
+/// Makes an entity pickable.
+#[derive(Bundle, Default)]
+pub struct PickableBundle {
+    /// Marks an entity as pickable.
+    pub pickable: bevy_picking_core::Pickable,
+    /// Tracks entity [`Interaction`] state.
+    pub interaction: Interaction,
+    /// Tracks entity [`PickSelection`](selection::PickSelection) state.
+    #[cfg(feature = "selection")]
+    pub selection: selection::PickSelection,
+    /// Tracks entity [`PickHighlight`](highlight::PickHighlight) state.
+    #[cfg(feature = "highlight")]
+    pub highlight: highlight::PickHighlight,
 }
 
 /// Bundle of components needed for a fully-featured pointer.

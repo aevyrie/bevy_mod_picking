@@ -52,6 +52,10 @@ impl Default for PickingPluginsSettings {
     }
 }
 
+/// A component that marks an entity as pickable.
+#[derive(Clone, Copy, Debug, Default, Component, Reflect)]
+pub struct Pickable;
+
 /// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
 /// being an entity.
 ///
@@ -139,19 +143,19 @@ impl Plugin for InteractionPlugin {
             .init_resource::<focus::PreviousHoverMap>()
             .init_resource::<DragMap>()
             .add_event::<PointerCancel>()
-            .add_event::<PointerOver>()
-            .add_event::<PointerOut>()
-            .add_event::<PointerDown>()
-            .add_event::<PointerUp>()
-            .add_event::<PointerClick>()
-            .add_event::<PointerMove>()
-            .add_event::<PointerDragStart>()
-            .add_event::<PointerDrag>()
-            .add_event::<PointerDragEnd>()
-            .add_event::<PointerDragEnter>()
-            .add_event::<PointerDragOver>()
-            .add_event::<PointerDragLeave>()
-            .add_event::<PointerDrop>()
+            .add_event::<PointerEvent<Over>>()
+            .add_event::<PointerEvent<Out>>()
+            .add_event::<PointerEvent<Down>>()
+            .add_event::<PointerEvent<Up>>()
+            .add_event::<PointerEvent<Click>>()
+            .add_event::<PointerEvent<Move>>()
+            .add_event::<PointerEvent<DragStart>>()
+            .add_event::<PointerEvent<Drag>>()
+            .add_event::<PointerEvent<DragEnd>>()
+            .add_event::<PointerEvent<DragEnter>>()
+            .add_event::<PointerEvent<DragOver>>()
+            .add_event::<PointerEvent<DragLeave>>()
+            .add_event::<PointerEvent<Drop>>()
             .add_systems(
                 (
                     update_focus,

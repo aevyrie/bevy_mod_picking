@@ -82,7 +82,7 @@ fn update_hits(
     rapier_context: Option<Res<RapierContext>>,
     sources: Query<(&RapierPickRay, &PointerId)>,
     mut output: EventWriter<EntitiesUnderPointer>,
-    targets: Query<With<RapierPickTarget>>,
+    targets: Query<(With<RapierPickTarget>, With<Pickable>)>,
 ) {
     let rapier_context = match rapier_context {
         Some(c) => c,
@@ -94,21 +94,24 @@ fn update_hits(
         .filter_map(|(source, id)| source.ray.as_ref().map(|ray| (id, ray)))
         .filter_map(|(id, ray)| {
             rapier_context
-                .cast_ray(
+                .cast_ray_and_get_normal(
                     ray.origin,
                     ray.direction,
                     f32::MAX,
                     true,
                     QueryFilter::new().predicate(&|entity| targets.contains(entity)),
                 )
-                .map(|hit| (hit.0, hit.1, id))
+                .map(|hit| (hit.0, hit.1.toi, hit.1.normal, id))
         })
-        .for_each(|(entity, depth, &id)| {
-            let over_list = vec![EntityDepth { entity, depth }];
-            output.send(EntitiesUnderPointer {
-                pointer: id,
-                over_list,
-            });
+        .for_each(|(entity, depth, normal, &id)| {
+            let picks = vec![(
+                entity,
+                PickData {
+                    depth,
+                    normal: Some(normal),
+                },
+            )];
+            output.send(EntitiesUnderPointer { pointer: id, picks });
         });
 }
 

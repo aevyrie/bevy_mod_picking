@@ -103,7 +103,7 @@ impl<T: Asset> std::fmt::Debug for HighlightKind<T> {
     }
 }
 
-/// Overrides the highlighting appearance of an entity. See [`PickHighlight`].
+/// Overrides the global highlighting material of an entity. See [`PickHighlight`].
 #[derive(Component, Clone, Debug, Default)]
 pub struct HighlightOverride<T: Asset> {
     /// Overrides this asset's global default appearance when hovered

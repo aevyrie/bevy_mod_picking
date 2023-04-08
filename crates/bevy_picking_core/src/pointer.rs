@@ -9,7 +9,8 @@ use bevy::{
 use std::fmt::Debug;
 
 /// Identifies a unique pointer entity. `Mouse` and `Touch` pointers are automatically spawned.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
+#[reflect_value]
 pub enum PointerId {
     /// A touch input, normally numbered by incoming window touch events from `winit`.
     Touch(u64),
@@ -17,6 +18,7 @@ pub enum PointerId {
     Mouse,
     /// A custom, uniquely identified pointer. Useful for mocking inputs or implementing a software
     /// controlled cursor.
+    #[reflect(ignore)]
     Custom(Uuid),
 }
 impl PointerId {

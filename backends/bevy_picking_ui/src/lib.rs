@@ -78,16 +78,19 @@ pub fn ui_picking(
                 let contains_cursor = (min.x..max.x).contains(&cursor_position.x)
                     && (min.y..max.y).contains(&cursor_position.y);
 
-                contains_cursor.then_some(EntityDepth {
+                contains_cursor.then_some((
                     entity,
-                    depth: position.z,
-                })
+                    PickData {
+                        depth: position.z,
+                        normal: None,
+                    },
+                ))
             })
             .collect::<Vec<_>>();
 
         output.send(EntitiesUnderPointer {
             pointer: *pointer,
-            over_list,
+            picks: over_list,
         })
     }
 }

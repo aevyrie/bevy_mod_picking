@@ -2,7 +2,7 @@ use std::f32::consts::FRAC_PI_2;
 
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::{
-    events::{Bubble, EventListener},
+    events::{Bubble, EventListener, PointerEvent},
     prelude::{
         backends::raycast::{PickRaycastSource, PickRaycastTarget},
         *,
@@ -38,9 +38,9 @@ fn setup(
             },
             PickableBundle::default(),    // <- Makes the mesh pickable.
             PickRaycastTarget::default(), // <- Needed for the raycast backend.
-            EventListener::<PointerDragStart>::callback(make_non_pickable),
-            EventListener::<PointerDragEnd>::callback(make_pickable),
-            EventListener::<PointerDrop>::callback(spin_me),
+            EventListener::<DragStart>::callback(make_non_pickable),
+            EventListener::<DragEnd>::callback(make_pickable),
+            EventListener::<Drop>::callback(spin_me),
         ));
     }
 
@@ -48,19 +48,23 @@ fn setup(
 }
 
 /// When we start dragging, we don't want this entity to prevent picking squares underneath
-fn make_non_pickable(commands: &mut Commands, event: &EventData<PointerDragStart>, _: &mut Bubble) {
+fn make_non_pickable(
+    commands: &mut Commands,
+    event: &EventListenerData<DragStart>,
+    _: &mut Bubble,
+) {
     commands
         .entity(event.target())
         .remove::<PickRaycastTarget>();
 }
 
-fn make_pickable(commands: &mut Commands, event: &EventData<PointerDragEnd>, _: &mut Bubble) {
+fn make_pickable(commands: &mut Commands, event: &EventListenerData<DragEnd>, _: &mut Bubble) {
     commands
         .entity(event.target())
         .insert(PickRaycastTarget::default());
 }
 
-fn spin_me(commands: &mut Commands, event: &EventData<PointerDrop>, _: &mut Bubble) {
+fn spin_me(commands: &mut Commands, event: &EventListenerData<Drop>, _: &mut Bubble) {
     let dropped = event.event().dropped_entity;
     commands.entity(dropped).insert(SpinMe(FRAC_PI_2));
     let onto = event.target();
@@ -69,7 +73,7 @@ fn spin_me(commands: &mut Commands, event: &EventData<PointerDrop>, _: &mut Bubb
 
 #[allow(clippy::too_many_arguments)]
 fn drag_squares(
-    mut drag_events: EventReader<PointerDrag>,
+    mut drag_events: EventReader<PointerEvent<Drag>>,
     pointers: Res<PointerMap>,
     windows: Query<(Entity, &Window)>,
     images: Res<Assets<Image>>,

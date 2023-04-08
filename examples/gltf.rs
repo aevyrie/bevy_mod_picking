@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{math::vec4, prelude::*};
 use bevy_mod_picking::prelude::*;
 use highlight::HighlightKind;
 
@@ -39,12 +39,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         //
         // Because event forwarding uses event bubbling, events that target children of the scene
         // will bubble up to this level and will fire off a `HelmetClicked` event.
-        .forward_events::<PointerClick, HelmetClicked>();
+        .forward_events::<Click, HelmetClicked>();
 }
 
 struct HelmetClicked(Entity);
 impl<E: IsPointerEvent> ForwardedEvent<E> for HelmetClicked {
-    fn from_data(event_data: &EventData<E>) -> Self {
+    fn from_data(event_data: &EventListenerData<E>) -> Self {
         // Note that we forward the target, not the listener! The target is the child that the event
         // was originally called on, whereas the listener is the parent entity that was listening
         // for the event that bubbled up from the target. This is what allows us to add a listener
@@ -70,31 +70,22 @@ fn make_pickable(
         commands.entity(entity).insert((
             PickableBundle::default(),
             PickRaycastTarget::default(),
-            HIGHLIGHT_OVERRIDE.clone(),
+            HIGHLIGHT_TINT.clone(),
         ));
     }
 }
 
-const HIGHLIGHT_OVERRIDE: HighlightOverride<StandardMaterial> = HighlightOverride {
-    hovered: Some(HighlightKind::new_dynamic(|i| {
-        let [r, g, b, a] = i.base_color.as_rgba_f32();
-        StandardMaterial {
-            base_color: Color::rgba(r - 0.2, g - 0.2, b + 0.4, a),
-            ..i.to_owned()
-        }
+const HIGHLIGHT_TINT: HighlightOverride<StandardMaterial> = HighlightOverride {
+    hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
+        base_color: matl.base_color + vec4(-0.2, -0.2, 0.4, 0.0),
+        ..matl.to_owned()
     })),
-    pressed: Some(HighlightKind::new_dynamic(|i| {
-        let [r, g, b, a] = i.base_color.as_rgba_f32();
-        StandardMaterial {
-            base_color: Color::rgba(r - 0.3, g - 0.3, b + 0.5, a),
-            ..i.to_owned()
-        }
+    pressed: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
+        base_color: matl.base_color + vec4(-0.3, -0.3, 0.5, 0.0),
+        ..matl.to_owned()
     })),
-    selected: Some(HighlightKind::new_dynamic(|i| {
-        let [r, g, b, a] = i.base_color.as_rgba_f32();
-        StandardMaterial {
-            base_color: Color::rgba(r - 0.3, g + 0.2, b - 0.3, a),
-            ..i.to_owned()
-        }
+    selected: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
+        base_color: matl.base_color + vec4(-0.3, 0.2, -0.3, 0.0),
+        ..matl.to_owned()
     })),
 };

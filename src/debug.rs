@@ -1,5 +1,7 @@
 //! Text and on-screen debugging tools
 
+use bevy_picking_core::debug;
+
 use crate::*;
 use bevy::{prelude::*, window::PrimaryWindow};
 
@@ -13,8 +15,8 @@ impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut App) {
         let noisy_debug = self.noisy;
 
-        app.init_resource::<core::debug::Frame>()
-            .add_system(core::debug::increment_frame.in_base_set(CoreSet::First))
+        app.init_resource::<debug::Frame>()
+            .add_system(debug::increment_frame.in_base_set(CoreSet::First))
             .add_system(
                 input::debug::print
                     .before(core::PickSet::Backend)
@@ -22,19 +24,19 @@ impl Plugin for DebugPickingPlugin {
                     .in_base_set(CoreSet::PreUpdate),
             )
             .add_systems((
-                core::debug::print::<events::PointerOver>,
-                core::debug::print::<events::PointerOut>,
-                core::debug::print::<events::PointerDown>,
-                core::debug::print::<events::PointerUp>,
-                core::debug::print::<events::PointerClick>,
-                core::debug::print::<events::PointerMove>.run_if(move || noisy_debug),
-                core::debug::print::<events::PointerDragStart>,
-                core::debug::print::<events::PointerDrag>.run_if(move || noisy_debug),
-                core::debug::print::<events::PointerDragEnd>,
-                core::debug::print::<events::PointerDragEnter>,
-                core::debug::print::<events::PointerDragOver>.run_if(move || noisy_debug),
-                core::debug::print::<events::PointerDragLeave>,
-                core::debug::print::<events::PointerDrop>,
+                debug::print::<events::Over>,
+                debug::print::<events::Out>,
+                debug::print::<events::Down>,
+                debug::print::<events::Up>,
+                debug::print::<events::Click>,
+                debug::print::<events::Move>.run_if(move || noisy_debug),
+                debug::print::<events::DragStart>,
+                debug::print::<events::Drag>.run_if(move || noisy_debug),
+                debug::print::<events::DragEnd>,
+                debug::print::<events::DragEnter>,
+                debug::print::<events::DragOver>.run_if(move || noisy_debug),
+                debug::print::<events::DragLeave>,
+                debug::print::<events::Drop>,
             ));
 
         #[cfg(not(feature = "backend_egui"))]
@@ -44,8 +46,8 @@ impl Plugin for DebugPickingPlugin {
 
         #[cfg(feature = "selection")]
         app.add_systems((
-            core::debug::print::<selection::PointerSelect>,
-            core::debug::print::<selection::PointerDeselect>,
+            debug::print::<selection::Select>,
+            debug::print::<selection::Deselect>,
         ));
     }
 }

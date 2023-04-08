@@ -30,8 +30,8 @@ struct SpecificEvent {
     greeting: String,
 }
 // Here we are implementing event forwarding only for the `PointerOver` version of our event.
-impl ForwardedEvent<PointerOver> for SpecificEvent {
-    fn from_data(event_data: &EventData<PointerOver>) -> SpecificEvent {
+impl ForwardedEvent<Over> for SpecificEvent {
+    fn from_data(event_data: &EventListenerData<Over>) -> SpecificEvent {
         SpecificEvent {
             entity: event_data.target(),
             greeting: "Hello".into(),
@@ -39,8 +39,8 @@ impl ForwardedEvent<PointerOver> for SpecificEvent {
     }
 }
 // Here we are implementing event forwarding only for `PointerOut` version of our event.
-impl ForwardedEvent<PointerOut> for SpecificEvent {
-    fn from_data(event_data: &EventData<PointerOut>) -> SpecificEvent {
+impl ForwardedEvent<Out> for SpecificEvent {
+    fn from_data(event_data: &EventListenerData<Out>) -> SpecificEvent {
         SpecificEvent {
             entity: event_data.target(),
             greeting: "Goodbye".into(),
@@ -60,7 +60,7 @@ impl SpecificEvent {
 // behavior in all cases, you can simply ignore the event type.
 struct GeneralEvent;
 impl<E: IsPointerEvent> ForwardedEvent<E> for GeneralEvent {
-    fn from_data(_event_data: &EventData<E>) -> GeneralEvent {
+    fn from_data(_event_data: &EventListenerData<E>) -> GeneralEvent {
         GeneralEvent
     }
 }
@@ -91,9 +91,9 @@ fn setup(
         ))
         // Because event forwarding can rely on event bubbling, events that target children of the
         // parent cube will also bubble up to this parent level and will fire off an event:
-        .forward_events::<PointerOver, SpecificEvent>()
-        .forward_events::<PointerOut, SpecificEvent>()
-        .forward_events::<PointerDown, GeneralEvent>()
+        .forward_events::<Over, SpecificEvent>()
+        .forward_events::<Out, SpecificEvent>()
+        .forward_events::<Down, GeneralEvent>()
         .with_children(|parent| {
             parent.spawn((
                 PbrBundle {

@@ -34,7 +34,7 @@ fn main() {
 }
 
 /// A callback function used with an `EventListener`.
-fn delete_me(commands: &mut Commands, event: &EventData<PointerClick>, _: &mut Bubble) {
+fn delete_target(commands: &mut Commands, event: &EventListenerData<Click>, _: &mut Bubble) {
     // We don't want to despawn the parent cube, just the children
     if event.listener() != event.target() {
         commands.entity(event.target()).despawn();
@@ -44,8 +44,8 @@ fn delete_me(commands: &mut Commands, event: &EventData<PointerClick>, _: &mut B
 
 /// A forwarded event, an alternative to using callbacks.
 struct Greeting(Entity);
-impl ForwardedEvent<PointerOver> for Greeting {
-    fn from_data(event_data: &EventData<PointerOver>) -> Greeting {
+impl ForwardedEvent<Over> for Greeting {
+    fn from_data(event_data: &EventListenerData<Over>) -> Greeting {
         Greeting(event_data.target())
     }
 }
@@ -72,11 +72,11 @@ fn setup(
             PickableBundle::default(),
             PickRaycastTarget::default(),
             // When any of this entity's children are clicked, they will be deleted
-            EventListener::<PointerClick>::callback(delete_me),
+            EventListener::<Click>::callback(delete_target),
         ))
         // Because event forwarding uses bubbling, events that target children of the parent cube
         // will bubble up to this level and will fire off a `Greeting` event.
-        .forward_events::<PointerOver, Greeting>()
+        .forward_events::<Over, Greeting>()
         .with_children(|parent| {
             for i in 1..=5 {
                 parent.spawn((

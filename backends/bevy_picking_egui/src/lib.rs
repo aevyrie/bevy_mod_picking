@@ -42,14 +42,17 @@ pub fn egui_picking(
         if let NormalizedRenderTarget::Window(id) = location.target {
             if let Ok((entity, mut ctx)) = egui_context.get_mut(id.entity()) {
                 if ctx.get_mut().is_pointer_over_area() {
-                    let entity = EntityDepth {
+                    let entry = (
                         entity,
-                        depth: -1.0,
-                    };
+                        PickData {
+                            depth: -1.0,
+                            normal: None,
+                        },
+                    );
 
                     output.send(EntitiesUnderPointer {
                         pointer: *pointer,
-                        over_list: Vec::from([entity]),
+                        picks: Vec::from([entry]),
                     })
                 }
             }
