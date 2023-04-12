@@ -101,19 +101,19 @@ impl PointerPress {
 /// Pointer input event for button presses. Fires when a pointer button changes state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InputPress {
-    /// ID of the pointer for this event.
-    pointer_id: PointerId,
+    /// The [`PointerId`] of the pointer that pressed a button.
+    pub pointer_id: PointerId,
     /// Direction of the button press.
-    press: PressDirection,
+    pub direction: PressDirection,
     /// Identifies the pointer button changing in this event.
-    button: PointerButton,
+    pub button: PointerButton,
 }
 impl InputPress {
     /// Create a new pointer button down event.
     pub fn new_down(id: PointerId, button: PointerButton) -> InputPress {
         Self {
             pointer_id: id,
-            press: PressDirection::Down,
+            direction: PressDirection::Down,
             button,
         }
     }
@@ -122,7 +122,7 @@ impl InputPress {
     pub fn new_up(id: PointerId, button: PointerButton) -> InputPress {
         Self {
             pointer_id: id,
-            press: PressDirection::Up,
+            direction: PressDirection::Up,
             button,
         }
     }
@@ -130,13 +130,13 @@ impl InputPress {
     /// Returns true if the `button` of this pointer was just pressed.
     #[inline]
     pub fn is_just_down(&self, button: PointerButton) -> bool {
-        self.button == button && self.press == PressDirection::Down
+        self.button == button && self.direction == PressDirection::Down
     }
 
     /// Returns true if the `button` of this pointer was just released.
     #[inline]
     pub fn is_just_up(&self, button: PointerButton) -> bool {
-        self.button == button && self.press == PressDirection::Up
+        self.button == button && self.direction == PressDirection::Up
     }
 
     /// Receives [`InputPress`] events and updates corresponding [`PointerPress`] components.
@@ -147,7 +147,7 @@ impl InputPress {
         for input_press_event in events.iter() {
             pointers.for_each_mut(|(pointer_id, mut pointer)| {
                 if *pointer_id == input_press_event.pointer_id {
-                    let is_down = input_press_event.press == PressDirection::Down;
+                    let is_down = input_press_event.direction == PressDirection::Down;
                     match input_press_event.button {
                         PointerButton::Primary => pointer.primary = is_down,
                         PointerButton::Secondary => pointer.secondary = is_down,
@@ -156,21 +156,6 @@ impl InputPress {
                 }
             })
         }
-    }
-
-    /// Gets the [`PointerId`] of the event.
-    pub fn pointer_id(&self) -> PointerId {
-        self.pointer_id
-    }
-
-    /// Gets the [`PressDirection`] of the event.
-    pub fn direction(&self) -> PressDirection {
-        self.press
-    }
-
-    /// Gets the [`PointerButton`] of the event.
-    pub fn button(&self) -> PointerButton {
-        self.button
     }
 }
 
@@ -220,8 +205,10 @@ impl PointerLocation {
 /// Pointer input event for pointer moves. Fires when a pointer changes location.
 #[derive(Debug, Clone)]
 pub struct InputMove {
-    pointer_id: PointerId,
-    location: Location,
+    /// The [`PointerId`] of the pointer that is moving.
+    pub pointer_id: PointerId,
+    /// The [`Location`] of the pointer.
+    pub location: Location,
 }
 impl InputMove {
     /// Create a new [`InputMove`] event.
@@ -245,22 +232,16 @@ impl InputMove {
             })
         }
     }
-
-    /// Returns the [`PointerId`] of this event.
-    pub fn pointer_id(&self) -> PointerId {
-        self.pointer_id
-    }
-
-    /// Returns the [`Location`] of this event.
-    pub fn location(&self) -> &Location {
-        &self.location
-    }
 }
 
 /// The location of a pointer, including the current [`RenderTarget`], and the x/y position of the
 /// pointer on this render target.
 ///
-/// Note that a pointer can move freely between render targets.
+/// Note that:
+/// - a pointer can move freely between render targets
+/// - a pointer is not associated with a [`Camera`] because multiple cameras can target the same
+///   render target. It is up to picking backends to associate a Pointer's `Location` with a
+///   specific `Camera`, if any.
 #[derive(Debug, Clone, Component, Reflect, PartialEq)]
 pub struct Location {
     /// The [`NormalizedRenderTarget`] associated with the pointer, usually a window.
@@ -282,7 +263,7 @@ impl Location {
     ) -> bool {
         if camera
             .target
-            .normalize(primary_window.get_single().ok())
+            .normalize(Some(primary_window.single()))
             .as_ref()
             != Some(&self.target)
         {

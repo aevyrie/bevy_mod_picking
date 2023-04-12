@@ -54,7 +54,7 @@ fn setup_scene(
             transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        PickRaycastSource::default(), // <- Enable picking for this camera
+        PickRaycastCamera::default(), // <- Enable picking for this camera
     ));
 
     // Spawn a second window
@@ -75,6 +75,6 @@ fn setup_scene(
             },
             ..default()
         },
-        PickRaycastSource::default(), // <- Enable picking for this camera
+        PickRaycastCamera::default(), // <- Enable picking for this camera
     ));
 }

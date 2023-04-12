@@ -55,6 +55,6 @@ fn setup(
             // }),
             ..Default::default()
         },
-        PickRaycastSource::default(), // <- Enable picking for this camera
+        PickRaycastCamera::default(), // <- Enable picking for this camera
     ));
 }

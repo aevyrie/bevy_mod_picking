@@ -24,7 +24,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
             ..default()
         },
-        PickRaycastSource::default(), // <- Sets the camera to use for picking.;
+        PickRaycastCamera::default(), // <- Sets the camera to use for picking.;
     ));
     commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight { ..default() },

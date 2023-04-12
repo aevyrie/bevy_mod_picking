@@ -27,5 +27,5 @@ fn setup(
         PickRaycastTarget::default(), // <- Needed for the raycast backend.
     ));
 
-    commands.spawn((Camera2dBundle::default(), PickRaycastSource::default())); // <- Sets the camera to use for picking.
+    commands.spawn((Camera2dBundle::default(), PickRaycastCamera::default())); // <- Sets the camera to use for picking.
 }

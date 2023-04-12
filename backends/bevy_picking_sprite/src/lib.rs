@@ -6,8 +6,8 @@
 
 use std::cmp::Ordering;
 
-use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
+use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_picking_core::backend::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_sprite`](crate) crate.
@@ -28,7 +28,9 @@ impl Plugin for SpriteBackend {
 /// Checks if any sprite entities are under each pointer
 pub fn sprite_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
+    cameras: Query<(Entity, &Camera)>,
     windows: Query<(Entity, &Window)>,
+    primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
     sprite_query: Query<(
         Entity,
@@ -53,6 +55,21 @@ pub fn sprite_picking(
         let cursor_position = location.position;
         let mut blocked = false;
 
+        let camera = cameras
+            .iter()
+            .find(|(_entity, camera)| {
+                camera
+                    .target
+                    .normalize(Some(primary_window.single()))
+                    .unwrap()
+                    == location.target
+            })
+            .map(|(entity, _camera)| entity)
+            .expect(&format!(
+                "No camera found associated with pointer {:?}.",
+                pointer
+            ));
+
         let over_list = sorted_sprites
             .iter()
             .copied()
@@ -74,7 +91,7 @@ pub fn sprite_picking(
 
                     let anchor_offset = sprite.anchor.as_vec() * extents;
 
-                    let target = if let Some(t) =
+                    let target_size = if let Some(t) =
                         location.target.get_render_target_info(&windows, &images)
                     {
                         t.physical_size.as_vec2() / t.scale_factor as f32
@@ -82,8 +99,8 @@ pub fn sprite_picking(
                         return None;
                     };
 
-                    let min = sprite_position - extents + anchor_offset + target / 2.0;
-                    let max = sprite_position + extents + anchor_offset + target / 2.0;
+                    let min = sprite_position - extents + anchor_offset + target_size / 2.0;
+                    let max = sprite_position + extents + anchor_offset + target_size / 2.0;
 
                     let contains_cursor = (min.x..max.x).contains(&cursor_position.x)
                         && (min.y..max.y).contains(&cursor_position.y);
@@ -91,6 +108,7 @@ pub fn sprite_picking(
                     contains_cursor.then_some((
                         entity,
                         PickData {
+                            camera,
                             depth: position.z,
                             position: None,
                             normal: None,
@@ -103,6 +121,7 @@ pub fn sprite_picking(
         output.send(EntitiesUnderPointer {
             pointer: *pointer,
             picks: over_list,
+            order: 0,
         })
     }
 }

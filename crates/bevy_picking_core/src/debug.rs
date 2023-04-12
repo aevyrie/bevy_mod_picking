@@ -7,7 +7,7 @@ use crate::events::{IsPointerEvent, PointerEvent};
 /// Listens for pointer events of type `E` and prints them.
 pub fn print<E: IsPointerEvent + 'static>(mut pointer_events: EventReader<PointerEvent<E>>) {
     for event in pointer_events.iter() {
-        info!("Pointer {:?}, {event}", event);
+        info!("{event:.2?}");
     }
 }
 

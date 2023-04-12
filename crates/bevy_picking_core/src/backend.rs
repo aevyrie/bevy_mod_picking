@@ -47,11 +47,23 @@ pub struct EntitiesUnderPointer {
     pub pointer: prelude::PointerId,
     /// An unordered collection of entities and their distance (depth) from the cursor.
     pub picks: Vec<(Entity, PickData)>,
+    /// Used to allow multiple `EntitiesUnderPointer` submitted for the same pointer to be ordered.
+    /// `EntitiesUnderPointer` with a higher `order` will be checked before those with a lower
+    /// `order`, regardless of the depth of each entity pick.
+    ///
+    /// In other words, when pick data is coalesced across all backends, the data is grouped by
+    /// pointer, then sorted by order, and checked sequentially, sorting each `EntitiesUnderPointer`
+    /// by entity depth. Events with a higher `order` are effectively on top of events with a lower
+    /// order.
+    pub order: isize,
 }
 
 /// Holds data about a pick intersection.
 #[derive(Clone, Copy, Debug, PartialEq, Reflect)]
 pub struct PickData {
+    /// The camera entity used to detect this hit. Useful when you need to find the ray that was
+    /// casted for this hit when using a raycasting backend.
+    pub camera: Entity,
     /// The distance from the pointer to the entity into the screen, or depth.
     pub depth: f32,
     /// The position of the intersection in the world, if the data is available from the backend.

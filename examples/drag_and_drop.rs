@@ -4,7 +4,7 @@ use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::{
     events::{Bubble, EventListener, PointerEvent},
     prelude::{
-        backends::raycast::{PickRaycastSource, PickRaycastTarget},
+        backends::raycast::{PickRaycastCamera, PickRaycastTarget},
         *,
     },
 };
@@ -40,11 +40,11 @@ fn setup(
             PickRaycastTarget::default(), // <- Needed for the raycast backend.
             EventListener::<DragStart>::callback(make_non_pickable),
             EventListener::<DragEnd>::callback(make_pickable),
-            EventListener::<Drop>::callback(spin_me),
+            EventListener::<Drop>::callback(spin_target),
         ));
     }
 
-    commands.spawn((Camera2dBundle::default(), PickRaycastSource::default())); // <- Sets the camera to use for picking.
+    commands.spawn((Camera2dBundle::default(), PickRaycastCamera::default())); // <- Sets the camera to use for picking.
 }
 
 /// When we start dragging, we don't want this entity to prevent picking squares underneath
@@ -64,11 +64,11 @@ fn make_pickable(commands: &mut Commands, event: &EventListenerData<DragEnd>, _:
         .insert(PickRaycastTarget::default());
 }
 
-fn spin_me(commands: &mut Commands, event: &EventListenerData<Drop>, _: &mut Bubble) {
+fn spin_target(commands: &mut Commands, event: &EventListenerData<Drop>, _: &mut Bubble) {
     let dropped = event.event().dropped_entity;
-    commands.entity(dropped).insert(SpinMe(FRAC_PI_2));
+    commands.entity(dropped).insert(SpinTarget(FRAC_PI_2));
     let onto = event.target();
-    commands.entity(onto).insert(SpinMe(-FRAC_PI_2));
+    commands.entity(onto).insert(SpinTarget(-FRAC_PI_2));
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -99,9 +99,9 @@ fn drag_squares(
 }
 
 #[derive(Component)]
-struct SpinMe(f32);
+struct SpinTarget(f32);
 
-fn spin(mut square: Query<(&mut SpinMe, &mut Transform)>) {
+fn spin(mut square: Query<(&mut SpinTarget, &mut Transform)>) {
     for (mut spin, mut transform) in square.iter_mut() {
         transform.rotation = Quat::from_rotation_z(spin.0);
         let delta = -spin.0.clamp(-1.0, 1.0) * 0.05;

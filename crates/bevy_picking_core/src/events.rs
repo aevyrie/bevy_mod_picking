@@ -445,12 +445,12 @@ pub fn pointer_events(
 ) {
     for move_event in input_moves.iter() {
         for (hovered_entity, pick_data) in hover_map
-            .get(&move_event.pointer_id())
+            .get(&move_event.pointer_id)
             .iter()
             .flat_map(|h| h.iter())
         {
             pointer_move.send(PointerEvent::new(
-                &move_event.pointer_id(),
+                &move_event.pointer_id,
                 hovered_entity,
                 Move {
                     pick_data: pick_data.clone(),
@@ -464,33 +464,33 @@ pub fn pointer_events(
         // entity. Without this, touch inputs would never send up events because they are lifted up
         // and leave the bounds of the entity at the same time.
         for (hovered_entity, pick_data) in previous_hover_map
-            .get(&press_event.pointer_id())
+            .get(&press_event.pointer_id)
             .iter()
             .flat_map(|h| h.iter())
         {
-            if let PressDirection::Up = press_event.direction() {
-                let pointer_id = &press_event.pointer_id();
+            if let PressDirection::Up = press_event.direction {
+                let pointer_id = &press_event.pointer_id;
                 pointer_up.send(PointerEvent::new(
                     pointer_id,
                     hovered_entity,
                     Up {
-                        button: press_event.button(),
+                        button: press_event.button,
                         pick_data: pick_data.clone(),
                     },
                 ))
             }
         }
         for (hovered_entity, pick_data) in hover_map
-            .get(&press_event.pointer_id())
+            .get(&press_event.pointer_id)
             .iter()
             .flat_map(|h| h.iter())
         {
-            if let PressDirection::Down = press_event.direction() {
+            if let PressDirection::Down = press_event.direction {
                 pointer_down.send(PointerEvent::new(
-                    &press_event.pointer_id(),
+                    &press_event.pointer_id,
                     hovered_entity,
                     Down {
-                        button: press_event.button(),
+                        button: press_event.button,
                         pick_data: pick_data.clone(),
                     },
                 ))
@@ -604,17 +604,17 @@ pub fn send_click_and_drag_events(
     for move_event in pointer_move.iter() {
         for button in PointerButton::iter() {
             let moving_pointer_is_down = matches!(
-                down_map.get(&(move_event.pointer_id(), button)),
+                down_map.get(&(move_event.pointer_id, button)),
                 Some(Some(_))
             );
             let pointer_not_in_drag_map = matches!(
-                drag_map.get(&(move_event.pointer_id(), button)),
+                drag_map.get(&(move_event.pointer_id, button)),
                 Some(None) | None
             );
             if moving_pointer_is_down && pointer_not_in_drag_map {
-                drag_map.insert((move_event.pointer_id(), button), Some(move_event.target()));
+                drag_map.insert((move_event.pointer_id, button), Some(move_event.target()));
                 pointer_drag_start.send(PointerEvent::new(
-                    &move_event.pointer_id(),
+                    &move_event.pointer_id,
                     &move_event.target(),
                     DragStart {
                         button,
@@ -628,14 +628,14 @@ pub fn send_click_and_drag_events(
     // Triggers during movement even if not over an entity
     for move_event in input_move.iter() {
         for button in PointerButton::iter() {
-            let Some(Some(_)) = down_map.get(&(move_event.pointer_id(), button)) else {
+            let Some(Some(_)) = down_map.get(&(move_event.pointer_id, button)) else {
                 continue; // To drag, we have to actually be over an entity
             };
-            let Some(Some(drag_entity)) = drag_map.get(&(move_event.pointer_id(), button)) else {
+            let Some(Some(drag_entity)) = drag_map.get(&(move_event.pointer_id, button)) else {
                 continue; // To fire a drag event, a drag start event must be made first
             };
             pointer_drag.send(PointerEvent::new(
-                &move_event.pointer_id(),
+                &move_event.pointer_id,
                 drag_entity,
                 Drag { button },
             ))
@@ -645,14 +645,14 @@ pub fn send_click_and_drag_events(
     // Triggers when button is released over an entity
     for up_event in pointer_up.iter() {
         let button = up_event.event.button;
-        let Some(Some(down_entity)) = down_map.insert((up_event.pointer_id(), button), None) else {
+        let Some(Some(down_entity)) = down_map.insert((up_event.pointer_id, button), None) else {
             continue; // Can't have a click without the button being pressed down first
         };
         if down_entity != up_event.target() {
             continue; // A click starts and ends on the same target
         }
         pointer_click.send(PointerEvent::new(
-            &up_event.pointer_id(),
+            &up_event.pointer_id,
             &up_event.target(),
             Click {
                 button,
@@ -664,26 +664,26 @@ pub fn send_click_and_drag_events(
     // Triggers when button is pressed over an entity
     for event in pointer_down.iter() {
         let button = event.event.button;
-        down_map.insert((event.pointer_id(), button), Some(event.target()));
+        down_map.insert((event.pointer_id, button), Some(event.target()));
     }
 
     // Triggered for all button presses
     for press in input_presses.iter() {
-        if press.direction() != pointer::PressDirection::Up {
+        if press.direction != pointer::PressDirection::Up {
             continue; // We are only interested in button releases
         }
         let Some(Some(drag_entity)) =
-            drag_map.insert((press.pointer_id(), press.button()), None) else {
+            drag_map.insert((press.pointer_id, press.button), None) else {
                 continue;
             };
         pointer_drag_end.send(PointerEvent::new(
-            &press.pointer_id(),
+            &press.pointer_id,
             &drag_entity,
             DragEnd {
-                button: press.button(),
+                button: press.button,
             },
         ));
-        down_map.insert((press.pointer_id(), press.button()), None);
+        down_map.insert((press.pointer_id, press.button), None);
     }
 }
 
@@ -707,18 +707,18 @@ pub fn send_drag_over_events(
     // Fire PointerDragEnter events.
     for over_event in pointer_over.iter() {
         for button in PointerButton::iter() {
-            let Some(&Some(dragged)) = drag_map.get(&(over_event.pointer_id(), button)) else {
+            let Some(&Some(dragged)) = drag_map.get(&(over_event.pointer_id, button)) else {
                 continue;
             };
             if over_event.target() == dragged {
                 continue; // You can't drag an entity over itself
             }
             let drag_entry = drag_over_map
-                .entry((over_event.pointer_id(), button))
+                .entry((over_event.pointer_id, button))
                 .or_default();
             drag_entry.insert(over_event.target(), over_event.event.pick_data);
             pointer_drag_enter.send(PointerEvent::new(
-                &over_event.pointer_id(),
+                &over_event.pointer_id,
                 &over_event.target(),
                 DragEnter {
                     button,
@@ -732,14 +732,14 @@ pub fn send_drag_over_events(
     // Fire PointerDragOver events.
     for move_event in pointer_move.iter() {
         for button in PointerButton::iter() {
-            let Some(&Some(dragged)) = drag_map.get(&(move_event.pointer_id(), button)) else {
+            let Some(&Some(dragged)) = drag_map.get(&(move_event.pointer_id, button)) else {
                 continue;
             };
             if move_event.target() == dragged {
                 continue; // You can't drag an entity over itself
             }
             pointer_drag_over.send(PointerEvent::new(
-                &move_event.pointer_id(),
+                &move_event.pointer_id,
                 &move_event.target(),
                 DragOver {
                     button,
@@ -754,12 +754,12 @@ pub fn send_drag_over_events(
     for drag_end_event in pointer_drag_end.iter() {
         let button = drag_end_event.event.button;
         let Some(drag_over_set) =
-            drag_over_map.get_mut(&(drag_end_event.pointer_id(), button)) else {
+            drag_over_map.get_mut(&(drag_end_event.pointer_id, button)) else {
                 continue;
             };
         for (dragged_over, pick_data) in drag_over_set.drain() {
             pointer_drag_leave.send(PointerEvent::new(
-                &drag_end_event.pointer_id(),
+                &drag_end_event.pointer_id,
                 &dragged_over,
                 DragLeave {
                     button,
@@ -767,7 +767,7 @@ pub fn send_drag_over_events(
                 },
             ));
             pointer_drop.send(PointerEvent::new(
-                &drag_end_event.pointer_id(),
+                &drag_end_event.pointer_id,
                 &dragged_over,
                 Drop {
                     button,
@@ -780,7 +780,7 @@ pub fn send_drag_over_events(
 
     // Fire PointerDragLeave events when the pointer goes out of the target.
     for out_event in pointer_out.iter() {
-        let out_pointer = out_event.pointer_id();
+        let out_pointer = out_event.pointer_id;
         let out_target = &out_event.target();
         for button in PointerButton::iter() {
             let Some(dragged_over) = drag_over_map.get_mut(&(out_pointer, button)) else {

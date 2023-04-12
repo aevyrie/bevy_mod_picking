@@ -18,7 +18,7 @@ use bevy::prelude::*;
 use bevy_mod_picking::{
     events::{Bubble, EventListener},
     prelude::{
-        backends::raycast::{PickRaycastSource, PickRaycastTarget},
+        backends::raycast::{PickRaycastCamera, PickRaycastTarget},
         *,
     },
 };
@@ -108,6 +108,6 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 4.5, 5.0).looking_at(Vec3::Y * 2.0, Vec3::Y),
             ..Default::default()
         },
-        PickRaycastSource::default(),
+        PickRaycastCamera::default(),
     ));
 }

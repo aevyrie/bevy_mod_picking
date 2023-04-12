@@ -148,7 +148,7 @@ pub fn send_selection_events(
             .iter()
             .filter(|p| p.is_just_down(PointerButton::Primary))
         {
-            let id = &press.pointer_id();
+            let id = &press.pointer_id;
             let multiselect = pointers
                 .iter()
                 .find_map(|(this_id, multi)| (this_id == id).then_some(multi.is_pressed))

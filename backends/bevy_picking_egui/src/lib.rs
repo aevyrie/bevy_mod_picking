@@ -45,7 +45,8 @@ pub fn egui_picking(
                     let entry = (
                         entity,
                         PickData {
-                            depth: -1.0,
+                            camera: entity,
+                            depth: 0.0,
                             position: None,
                             normal: None,
                         },
@@ -54,6 +55,7 @@ pub fn egui_picking(
                     output.send(EntitiesUnderPointer {
                         pointer: *pointer,
                         picks: Vec::from([entry]),
+                        order: 1_000_000, // Assume egui should be on top of everything else.
                     })
                 }
             }

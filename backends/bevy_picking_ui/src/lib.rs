@@ -26,7 +26,8 @@ impl Plugin for BevyUiBackend {
 /// Computes the UI node entities under each pointer
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    primary_window: Query<(), With<PrimaryWindow>>,
+    cameras: Query<(Entity, &Camera)>,
+    primary_window: Query<Entity, With<PrimaryWindow>>,
     mut node_query: Query<
         (
             Entity,
@@ -39,7 +40,7 @@ pub fn ui_picking(
     >,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
-    for (pointer, position) in pointers.iter().filter_map(|(pointer, pointer_location)| {
+    for (pointer, location) in pointers.iter().filter_map(|(pointer, pointer_location)| {
         pointer_location
             .location()
             // TODO: update when proper multi-window UI is implemented
@@ -51,9 +52,24 @@ pub fn ui_picking(
                 }
                 false
             })
-            .map(|loc| (pointer, loc.position))
+            .map(|loc| (pointer, loc))
     }) {
-        let cursor_position = position;
+        let camera = cameras
+            .iter()
+            .find(|(_entity, camera)| {
+                camera
+                    .target
+                    .normalize(Some(primary_window.single()))
+                    .unwrap()
+                    == location.target
+            })
+            .map(|(entity, _camera)| entity)
+            .expect(&format!(
+                "No camera found associated with pointer {:?}.",
+                pointer
+            ));
+
+        let cursor_position = location.position;
         let mut blocked = false;
 
         let over_list = node_query
@@ -81,6 +97,7 @@ pub fn ui_picking(
                 contains_cursor.then_some((
                     entity,
                     PickData {
+                        camera,
                         depth: position.z,
                         position: None,
                         normal: None,
@@ -92,6 +109,7 @@ pub fn ui_picking(
         output.send(EntitiesUnderPointer {
             pointer: *pointer,
             picks: over_list,
+            order: 10,
         })
     }
 }

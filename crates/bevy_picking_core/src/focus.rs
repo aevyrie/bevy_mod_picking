@@ -10,7 +10,6 @@ use crate::{
 };
 use bevy::{
     prelude::*,
-    render::view::{Layer, RenderLayers},
     ui::FocusPolicy,
     utils::{FloatOrd, HashMap},
 };
@@ -18,8 +17,12 @@ use bevy::{
 /// A map of entities sorted by depth.
 type DepthMap = BTreeMap<FloatOrd, (Entity, PickData)>;
 
+/// Events returned from backends can be grouped with an order field. This allows picking to work
+/// with multiple layers of rendered output to the same render target.
+type PickLayer = isize;
+
 /// Maps [`RenderLayers`] to the map of entities within that pick layer, sorted by depth.
-type LayerMap = BTreeMap<Layer, DepthMap>;
+type LayerMap = BTreeMap<PickLayer, DepthMap>;
 
 /// Maps Pointers to a [`LayerMap`]. Note this is much more complex than the [`HoverMap`] because
 /// this data structure is used to sort entities by layer then depth for every pointer.
@@ -42,7 +45,6 @@ pub struct PreviousHoverMap(pub HashMap<PointerId, HashMap<Entity, PickData>>);
 pub fn update_focus(
     // Inputs
     focus: Query<&FocusPolicy>,
-    render_layers: Query<&RenderLayers>,
     pointers: Query<&PointerId>,
     mut under_pointer: EventReader<backend::EntitiesUnderPointer>,
     mut cancellations: EventReader<PointerCancel>,
@@ -58,12 +60,7 @@ pub fn update_focus(
         &mut over_map,
         &pointers,
     );
-    build_over_map(
-        render_layers,
-        &mut under_pointer,
-        &mut over_map,
-        &mut cancellations,
-    );
+    build_over_map(&mut under_pointer, &mut over_map, &mut cancellations);
     build_hover_map(&pointers, focus, &over_map, &mut hover_map);
 }
 
@@ -83,9 +80,7 @@ fn reset_maps(
         entity_set.clear()
     }
     for layer_map in over_map.values_mut() {
-        for depth_map in layer_map.values_mut() {
-            depth_map.clear()
-        }
+        layer_map.clear()
     }
 
     // Clear pointers from the maps if they have been removed.
@@ -96,7 +91,6 @@ fn reset_maps(
 
 /// Build an ordered map of entities that are under each pointer
 fn build_over_map(
-    render_layers: Query<&RenderLayers>,
     backend_events: &mut EventReader<backend::EntitiesUnderPointer>,
     pointer_over_map: &mut Local<OverMap>,
     pointer_cancel: &mut EventReader<PointerCancel>,
@@ -112,11 +106,7 @@ fn build_over_map(
             .entry(pointer)
             .or_insert_with(BTreeMap::new);
         for &(entity, pick_data) in entities_under_pointer.picks.iter() {
-            let layer: Layer = render_layers
-                .get(entity)
-                .ok()
-                .and_then(|layer| layer.iter().max())
-                .unwrap_or(0);
+            let layer = entities_under_pointer.order;
             let depth_map = layer_map.entry(layer).or_insert_with(BTreeMap::new);
             depth_map.insert(FloatOrd(pick_data.depth), (entity, pick_data.clone()));
         }
@@ -136,8 +126,11 @@ fn build_hover_map(
     for pointer_id in pointers.iter() {
         let pointer_entity_set = hover_map.entry(*pointer_id).or_insert_with(HashMap::new);
         if let Some(layer_map) = over_map.get(pointer_id) {
-            // Note we reverse here to start from the highest layer first
-            for depth_map in layer_map.values().rev() {
+            // Note we reverse here to start from the highest layer first.
+            //
+            // In addition, we only look at the topmost layer, because if it exists, it has an
+            // intersection, and higher layers should block lower layers.
+            if let Some(depth_map) = layer_map.values().rev().next() {
                 for &(entity, pick_data) in depth_map.values() {
                     pointer_entity_set.insert(entity, pick_data.clone());
                     if let Ok(FocusPolicy::Block) = focus.get(entity) {

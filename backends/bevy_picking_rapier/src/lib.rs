@@ -4,7 +4,7 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use bevy_picking_core::backend::prelude::*;
 use bevy_rapier3d::prelude::*;
 
@@ -24,55 +24,56 @@ impl Plugin for RapierBackend {
     }
 }
 
-/// Marks a camera that should be used for rapier raycast picking.
-#[derive(Debug, Clone, Default, Component, Reflect)]
-#[reflect(Component)]
-pub struct RapierPickSource;
-
 /// Marks an entity that should be considered for picking raycasts.
 #[derive(Debug, Clone, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct RapierPickTarget;
-
-/// Component to allow pointers to raycast for picking using rapier.
+/// Marks a camera that should be used for rapier raycast picking.
 #[derive(Debug, Clone, Default, Component, Reflect)]
 #[reflect(Component, Default)]
-pub struct RapierPickRay {
+pub struct RapierPickSource {
     /// A ray may not exist if the pointer is not active
-    pub ray: Option<Ray>,
+    pub(crate) ray: Option<Ray>,
 }
+
+impl RapierPickSource {
+    pub fn ray(&self) -> Option<&Ray> {
+        self.ray.as_ref()
+    }
+}
+
+/// Maps ray casting sources to a [`PointerId`]. A
+#[derive(Debug, Clone, Default, Resource)]
+pub struct RaycastMap(HashMap<Entity, PointerId>);
 
 /// Updates all picking [`Ray`]s with [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
-    pointers: Query<(Entity, &PointerLocation)>,
+    pointers: Query<(&PointerId, &PointerLocation)>,
     windows: Query<&Window>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
-    mut commands: Commands,
-    mut sources: Query<&mut RapierPickRay>,
-    cameras: Query<(&Camera, &GlobalTransform), With<RapierPickSource>>,
+    mut cameras: Query<(Entity, &Camera, &GlobalTransform, &mut RapierPickSource)>,
+    mut cast_map: ResMut<RaycastMap>,
 ) {
-    sources.iter_mut().for_each(|mut source| {
+    cameras.iter_mut().for_each(|(_, _, _, mut source)| {
         source.ray = None;
     });
+    cast_map.0.clear();
 
-    for (entity, pointer_location) in &pointers {
+    for (pointer_id, pointer_location) in &pointers {
         let pointer_location = match pointer_location.location() {
             Some(l) => l,
             None => continue,
         };
         cameras
-            .iter()
-            .filter(|(camera, _)| {
+            .iter_mut()
+            .filter(|(_, camera, _, _)| {
                 pointer_location.is_in_viewport(camera, &windows, &primary_window, &images)
             })
-            .for_each(|(camera, transform)| {
+            .for_each(|(cam_entity, camera, transform, mut source)| {
                 let ray = ray_from_screenspace(pointer_location.position, camera, transform);
-                if let Ok(mut source) = sources.get_mut(entity) {
-                    source.ray = ray;
-                } else {
-                    commands.entity(entity).insert(RapierPickRay { ray });
-                }
+                source.ray = ray;
+                cast_map.0.insert(cam_entity, *pointer_id);
             });
     }
 }
@@ -80,19 +81,29 @@ pub fn build_rays_from_pointers(
 /// Produces [`EntitiesUnderPointer`]s from [`RapierPickRay`] intersections.
 fn update_hits(
     rapier_context: Option<Res<RapierContext>>,
-    sources: Query<(&RapierPickRay, &PointerId)>,
-    mut output: EventWriter<EntitiesUnderPointer>,
     targets: Query<With<RapierPickTarget>>,
+    cast_map: Res<RaycastMap>,
+    mut sources: Query<(Entity, &Camera, &RapierPickSource)>,
+    mut output: EventWriter<EntitiesUnderPointer>,
 ) {
     let rapier_context = match rapier_context {
         Some(c) => c,
         None => return,
     };
 
+    todo!("For every camera with a pick source, spawn a pick source for every pointer that uses the same render target as the camera, as children.
+    
+    entity Camera
+        entity pick source for mouse pointer
+        entity pick source for touch pointer 1
+        etc
+
+    ");
+
     sources
         .iter()
-        .filter_map(|(source, id)| source.ray.as_ref().map(|ray| (id, ray)))
-        .filter_map(|(id, ray)| {
+        .filter_map(|(entity, camera, source)| source.ray.as_ref().map(|ray| (entity, camera, ray)))
+        .filter_map(|(entity, camera, ray)| {
             rapier_context
                 .cast_ray_and_get_normal(
                     ray.origin,
@@ -101,19 +112,25 @@ fn update_hits(
                     true,
                     QueryFilter::new().predicate(&|entity| targets.contains(entity)),
                 )
-                .map(|hit| (hit.0, hit.1.toi, hit.1.point, hit.1.normal, id))
+                .map(|hit| (entity, camera, hit.0, hit.1.toi, hit.1.point, hit.1.normal))
         })
-        .for_each(|(entity, depth, position, normal, &id)| {
-            let picks = vec![(
-                entity,
-                PickData {
-                    depth,
-                    position: Some(position),
-                    normal: Some(normal),
-                },
-            )];
-            output.send(EntitiesUnderPointer { pointer: id, picks });
-        });
+        .for_each(
+            |(cam_entity, camera, hit_entity, depth, position, normal)| {
+                let picks = vec![(
+                    hit_entity,
+                    PickData {
+                        depth,
+                        position: Some(position),
+                        normal: Some(normal),
+                    },
+                )];
+                output.send(EntitiesUnderPointer {
+                    pointer: *cast_map.0.get(&cam_entity).unwrap(),
+                    picks,
+                    order: camera.order,
+                });
+            },
+        );
 }
 
 /// Create a [`Ray`] from a camera's screenspace coordinates.
