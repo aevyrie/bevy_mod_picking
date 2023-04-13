@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{math::vec4, prelude::*};
 use bevy_mod_picking::prelude::*;
 use highlight::HighlightKind;
 
@@ -10,6 +10,21 @@ fn main() {
         .run();
 }
 
+const HIGHLIGHT_TINT: HighlightOverride<StandardMaterial> = HighlightOverride {
+    hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
+        base_color: matl.base_color + vec4(-0.2, -0.2, 0.4, 0.0),
+        ..matl.to_owned()
+    })),
+    pressed: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
+        base_color: matl.base_color + vec4(-0.3, -0.3, 0.5, 0.0),
+        ..matl.to_owned()
+    })),
+    selected: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
+        base_color: matl.base_color + vec4(-0.3, 0.2, -0.3, 0.0),
+        ..matl.to_owned()
+    })),
+};
+
 /// set up a simple 3D scene
 fn setup(
     mut commands: Commands,
@@ -17,30 +32,6 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    let tinted_highlight = HighlightOverride::<StandardMaterial> {
-        hovered: Some(HighlightKind::new_dynamic(|i| {
-            let [r, g, b, a] = i.base_color.as_rgba_f32();
-            StandardMaterial {
-                base_color: Color::rgba(r - 0.2, g - 0.2, b + 0.4, a),
-                ..i.to_owned()
-            }
-        })),
-        pressed: Some(HighlightKind::new_dynamic(|i| {
-            let [r, g, b, a] = i.base_color.as_rgba_f32();
-            StandardMaterial {
-                base_color: Color::rgba(r - 0.3, g - 0.3, b + 0.5, a),
-                ..i.to_owned()
-            }
-        })),
-        selected: Some(HighlightKind::new_dynamic(|i| {
-            let [r, g, b, a] = i.base_color.as_rgba_f32();
-            StandardMaterial {
-                base_color: Color::rgba(r - 0.3, g + 0.3, b - 0.3, a),
-                ..i.to_owned()
-            }
-        })),
-    };
-
     // plane
     commands.spawn((
         PbrBundle {
@@ -53,7 +44,7 @@ fn setup(
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
         PickRaycastTarget::default(), // <- Needed for the raycast backend.
-        tinted_highlight.clone(),
+        HIGHLIGHT_TINT.clone(),
     ));
 
     // cube
@@ -69,7 +60,7 @@ fn setup(
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
         PickRaycastTarget::default(), // <- Needed for the raycast backend.
-        tinted_highlight,
+        HIGHLIGHT_TINT,
     ));
 
     // light

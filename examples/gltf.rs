@@ -4,10 +4,6 @@ use highlight::HighlightKind;
 
 fn main() {
     App::new()
-        .insert_resource(AmbientLight {
-            color: Color::WHITE,
-            brightness: 0.2,
-        })
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
         .add_startup_system(setup)
@@ -76,15 +72,15 @@ fn make_pickable(
 
 const HIGHLIGHT_TINT: HighlightOverride<StandardMaterial> = HighlightOverride {
     hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.2, -0.2, 0.4, 0.0),
+        base_color: matl.base_color + vec4(-0.5, -0.3, 0.5, 0.0),
         ..matl.to_owned()
     })),
     pressed: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.3, -0.3, 0.5, 0.0),
+        base_color: matl.base_color + vec4(-0.4, -0.4, 0.6, 0.0),
         ..matl.to_owned()
     })),
     selected: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.3, 0.2, -0.3, 0.0),
+        base_color: matl.base_color + vec4(-0.4, 0.3, -0.4, 0.0),
         ..matl.to_owned()
     })),
 };
