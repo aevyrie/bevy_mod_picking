@@ -37,7 +37,7 @@ fn setup(
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
             material: materials.add(StandardMaterial {
-                base_color_texture: Some(asset_server.load("images/bavy.png")),
+                base_color_texture: Some(asset_server.load("images/boovy.png")),
                 ..Default::default()
             }),
             ..Default::default()
@@ -52,7 +52,7 @@ fn setup(
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(StandardMaterial {
-                base_color_texture: Some(asset_server.load("images/bavy.png")),
+                base_color_texture: Some(asset_server.load("images/boovy.png")),
                 ..Default::default()
             }),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),

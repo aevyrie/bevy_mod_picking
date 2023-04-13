@@ -3,7 +3,16 @@
 use bevy_picking_core::{debug, focus::HoverMap};
 
 use crate::*;
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{asset::load_internal_binary_asset, prelude::*, utils::Uuid, window::PrimaryWindow};
+
+const DEBUG_FONT_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(
+    Uuid::from_u128(200742528088501825055247279035227365784),
+    436509473926038,
+);
+
+fn font_loader(bytes: &[u8]) -> Font {
+    Font::try_from_bytes(bytes.iter().copied().collect()).unwrap()
+}
 
 /// Logs events for debugging
 #[derive(Debug, Default, Clone)]
@@ -14,6 +23,8 @@ pub struct DebugPickingPlugin {
 impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut App) {
         let noisy_debug = self.noisy;
+
+        load_internal_binary_asset!(app, DEBUG_FONT_HANDLE, "FiraMono-Medium.ttf", font_loader);
 
         app.init_resource::<debug::Frame>()
             .add_system(debug::increment_frame.in_base_set(CoreSet::First))
@@ -202,7 +213,6 @@ impl std::fmt::Debug for InteractionDebug {
 /// Draw text on each cursor with debug info
 pub fn debug_draw(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     hover_map: Res<HoverMap>,
     pointers: Query<(
         Entity,
@@ -214,8 +224,6 @@ pub fn debug_draw(
     #[cfg(feature = "selection")] selection: Query<Option<&selection::PointerMultiselect>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let font = asset_server.load("fonts/FiraMono-Medium.ttf");
-
     for (entity, id, location, press, interaction) in pointers.iter() {
         let location = match location.location() {
             Some(l) => l.position,
@@ -250,7 +258,7 @@ pub fn debug_draw(
                 interaction.iter()
             ),
             TextStyle {
-                font: font.clone(),
+                font: DEBUG_FONT_HANDLE.typed::<Font>(),
                 font_size: 12.0,
                 color: Color::WHITE,
             },

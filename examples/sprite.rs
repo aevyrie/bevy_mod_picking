@@ -27,7 +27,7 @@ fn move_sprite(time: Res<Time>, mut sprite: Query<&mut Transform, With<Sprite>>)
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
     commands.spawn(SpriteBundle {
-        texture: asset_server.load("images/bavy.png"),
+        texture: asset_server.load("images/boovy.png"),
         ..default()
     });
 }
