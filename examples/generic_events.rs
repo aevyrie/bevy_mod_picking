@@ -10,9 +10,12 @@ use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins)
-        .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
+        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
+        .add_plugins(
+            DefaultPickingPlugins
+                .build()
+                .disable::<DebugPickingPlugin>(),
+        )
         .add_startup_system(setup)
         .add_system(SpecificEvent::handle_events)
         .add_system(GeneralEvent::handle_events)
@@ -51,7 +54,7 @@ impl ForwardedEvent<Out> for SpecificEvent {
 impl SpecificEvent {
     fn handle_events(mut greet: EventReader<SpecificEvent>) {
         for event in greet.iter() {
-            info!("{} {:?}!", event.greeting, event.entity);
+            info!("Specific: {} {:?}!", event.greeting, event.entity);
         }
     }
 }
@@ -67,7 +70,7 @@ impl<E: IsPointerEvent> ForwardedEvent<E> for GeneralEvent {
 impl GeneralEvent {
     fn handle_events(mut greet: EventReader<GeneralEvent>) {
         for _event in greet.iter() {
-            info!("An event was triggered, but we don't know why.");
+            info!("General: An event was triggered, but we don't know why.");
         }
     }
 }

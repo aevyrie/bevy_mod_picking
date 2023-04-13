@@ -8,9 +8,8 @@ fn main() {
             color: Color::WHITE,
             brightness: 0.2,
         })
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup)
         .add_system(make_pickable)
         .add_system(HelmetClicked::handle_events)

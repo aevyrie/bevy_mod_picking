@@ -5,10 +5,8 @@ use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
-        // By default, a primary window gets spawned by `WindowPlugin`, contained in `DefaultPlugins`
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup_scene)
         .add_system(bevy::window::close_on_esc)
         .run();

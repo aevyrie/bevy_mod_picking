@@ -5,9 +5,8 @@ use bevy_mod_picking::prelude::*;
 /// clicked on, won't deselect everything else you have selected.
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup)
         .run();
 }

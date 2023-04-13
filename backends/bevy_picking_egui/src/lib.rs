@@ -20,13 +20,46 @@ pub struct EguiBackend;
 impl PickingBackend for EguiBackend {}
 impl Plugin for EguiBackend {
     fn build(&self, app: &mut App) {
-        app.add_system(egui_picking.in_set(PickSet::Backend));
+        app.add_system(egui_picking.in_set(PickSet::Backend))
+            .insert_resource(EguiBackendSettings::default());
+
+        #[cfg(feature = "selection")]
+        app.add_system(update_settings.in_base_set(CoreSet::First));
     }
+}
+
+/// Settings for the [`EguiBackend`].
+#[derive(Debug, Default, Resource, Reflect)]
+pub struct EguiBackendSettings {
+    /// When set to true, clicking on egui will deselect other entities
+    #[cfg(feature = "selection")]
+    allow_deselect: bool,
 }
 
 /// Marks the entity used as the pseudo egui pointer.
 #[derive(Component, Reflect)]
 pub struct EguiPointer;
+
+/// Updates backend to match [`EguiBackendSettings`].
+#[cfg(feature = "selection")]
+pub fn update_settings(
+    mut commands: Commands,
+    settings: Res<EguiBackendSettings>,
+    egui_context: Query<Entity, With<EguiContext>>,
+) {
+    if settings.is_added() || settings.is_changed() {
+        for entity in &egui_context {
+            match settings.allow_deselect {
+                true => commands
+                    .entity(entity)
+                    .remove::<bevy_picking_selection::NoDeselect>(),
+                false => commands
+                    .entity(entity)
+                    .insert(bevy_picking_selection::NoDeselect),
+            };
+        }
+    }
+}
 
 /// If egui in the current window is reporting that the pointer is over it, we report that with a
 /// pick depth of -1, so it is on top of all other entities.

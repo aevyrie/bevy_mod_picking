@@ -4,9 +4,8 @@ use highlight::HighlightKind;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup)
         .run();
 }
@@ -88,12 +87,6 @@ fn setup(
     commands.spawn((
         Camera3dBundle {
             transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-            // Uncomment the following lines to try out orthographic projection:
-            //
-            // projection: bevy::render::camera::Projection::Orthographic(OrthographicProjection {
-            //     scale: 0.01,
-            //     ..Default::default()
-            // }),
             ..Default::default()
         },
         PickRaycastCamera::default(), // <- Enable picking for this camera

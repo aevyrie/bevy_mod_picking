@@ -200,3 +200,15 @@ impl PointerBundle {
         }
     }
 }
+
+/// Used for examples to reduce picking latency. Not relevant code for the examples.
+#[allow(dead_code)]
+pub fn low_latency_window_plugin() -> bevy::window::WindowPlugin {
+    bevy::window::WindowPlugin {
+        primary_window: Some(bevy::window::Window {
+            present_mode: bevy::window::PresentMode::Mailbox,
+            ..Default::default()
+        }),
+        ..Default::default()
+    }
+}

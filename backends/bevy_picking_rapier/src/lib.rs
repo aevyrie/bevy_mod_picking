@@ -32,19 +32,11 @@ pub struct RapierPickTarget;
 #[derive(Debug, Clone, Default, Component, Reflect)]
 #[reflect(Component, Default)]
 pub struct RapierPickSource {
-    /// A ray may not exist if the pointer is not active
-    pub(crate) ray: Option<Ray>,
+    #[reflect(ignore)]
+    /// Maps the pointers visible to this [`RapierPickSource`] to their corresponding ray. We need
+    /// to create a map because many pointers may be visible to this camera.
+    ray_map: HashMap<PointerId, Ray>,
 }
-
-impl RapierPickSource {
-    pub fn ray(&self) -> Option<&Ray> {
-        self.ray.as_ref()
-    }
-}
-
-/// Maps ray casting sources to a [`PointerId`]. A
-#[derive(Debug, Clone, Default, Resource)]
-pub struct RaycastMap(HashMap<Entity, PointerId>);
 
 /// Updates all picking [`Ray`]s with [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
@@ -52,28 +44,26 @@ pub fn build_rays_from_pointers(
     windows: Query<&Window>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
-    mut cameras: Query<(Entity, &Camera, &GlobalTransform, &mut RapierPickSource)>,
-    mut cast_map: ResMut<RaycastMap>,
+    mut picking_cameras: Query<(&Camera, &GlobalTransform, &mut RapierPickSource)>,
 ) {
-    cameras.iter_mut().for_each(|(_, _, _, mut source)| {
-        source.ray = None;
+    picking_cameras.iter_mut().for_each(|(_, _, mut pick_cam)| {
+        pick_cam.ray_map.clear();
     });
-    cast_map.0.clear();
-
     for (pointer_id, pointer_location) in &pointers {
         let pointer_location = match pointer_location.location() {
             Some(l) => l,
             None => continue,
         };
-        cameras
+        picking_cameras
             .iter_mut()
-            .filter(|(_, camera, _, _)| {
+            .filter(|(camera, _, _)| {
                 pointer_location.is_in_viewport(camera, &windows, &primary_window, &images)
             })
-            .for_each(|(cam_entity, camera, transform, mut source)| {
-                let ray = ray_from_screenspace(pointer_location.position, camera, transform);
-                source.ray = ray;
-                cast_map.0.insert(cam_entity, *pointer_id);
+            .for_each(|(camera, transform, mut source)| {
+                let pointer_pos = pointer_location.position;
+                if let Some(ray) = ray_from_screenspace(pointer_pos, camera, transform) {
+                    source.ray_map.insert(*pointer_id, ray);
+                }
             });
     }
 }
@@ -82,8 +72,7 @@ pub fn build_rays_from_pointers(
 fn update_hits(
     rapier_context: Option<Res<RapierContext>>,
     targets: Query<With<RapierPickTarget>>,
-    cast_map: Res<RaycastMap>,
-    mut sources: Query<(Entity, &Camera, &RapierPickSource)>,
+    mut sources: Query<(Entity, &Camera, &mut RapierPickSource)>,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
     let rapier_context = match rapier_context {
@@ -91,19 +80,16 @@ fn update_hits(
         None => return,
     };
 
-    todo!("For every camera with a pick source, spawn a pick source for every pointer that uses the same render target as the camera, as children.
-    
-    entity Camera
-        entity pick source for mouse pointer
-        entity pick source for touch pointer 1
-        etc
-
-    ");
-
     sources
-        .iter()
-        .filter_map(|(entity, camera, source)| source.ray.as_ref().map(|ray| (entity, camera, ray)))
-        .filter_map(|(entity, camera, ray)| {
+        .iter_mut()
+        .flat_map(|(entity, camera, mut source)| {
+            source
+                .ray_map
+                .drain()
+                .map(|(pointer, ray)| (entity, camera.order, pointer, ray))
+                .collect::<Vec<_>>()
+        })
+        .filter_map(|(cam_entity, cam_order, pointer, ray)| {
             rapier_context
                 .cast_ray_and_get_normal(
                     ray.origin,
@@ -112,25 +98,23 @@ fn update_hits(
                     true,
                     QueryFilter::new().predicate(&|entity| targets.contains(entity)),
                 )
-                .map(|hit| (entity, camera, hit.0, hit.1.toi, hit.1.point, hit.1.normal))
+                .map(|(target, intersection)| {
+                    (cam_entity, cam_order, pointer, target, intersection)
+                })
         })
-        .for_each(
-            |(cam_entity, camera, hit_entity, depth, position, normal)| {
-                let picks = vec![(
-                    hit_entity,
-                    PickData {
-                        depth,
-                        position: Some(position),
-                        normal: Some(normal),
-                    },
-                )];
-                output.send(EntitiesUnderPointer {
-                    pointer: *cast_map.0.get(&cam_entity).unwrap(),
-                    picks,
-                    order: camera.order,
-                });
-            },
-        );
+        .for_each(|(cam_entity, cam_order, pointer, target, intersection)| {
+            let pick_data = PickData {
+                camera: cam_entity,
+                depth: intersection.toi,
+                position: Some(intersection.point),
+                normal: Some(intersection.normal),
+            };
+            output.send(EntitiesUnderPointer {
+                pointer: pointer,
+                picks: vec![(target, pick_data)],
+                order: cam_order,
+            });
+        });
 }
 
 /// Create a [`Ray`] from a camera's screenspace coordinates.
@@ -149,21 +133,8 @@ pub fn ray_from_screenspace(
     let near = ndc_to_world.project_point3(cursor_ndc.extend(near_ndc));
     let far = ndc_to_world.project_point3(cursor_ndc.extend(far_ndc));
     let ray_direction = far - near;
-    Some(Ray::new(near, ray_direction))
-}
-
-/// A ray used for raycasting
-#[derive(Debug, Default, Clone, Reflect, FromReflect)]
-pub struct Ray {
-    /// A point that the ray passes through
-    pub origin: Vec3,
-    /// A vector that points parallel to the ray
-    pub direction: Vec3,
-}
-
-impl Ray {
-    /// Build a new ray
-    pub fn new(origin: Vec3, direction: Vec3) -> Self {
-        Self { origin, direction }
-    }
+    Some(Ray {
+        origin: near,
+        direction: ray_direction,
+    })
 }

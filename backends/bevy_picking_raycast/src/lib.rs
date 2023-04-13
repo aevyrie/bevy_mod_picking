@@ -49,7 +49,7 @@ pub struct PickRaycastCamera {
     #[reflect(ignore)]
     /// Maps the pointers visible to this [`PickRaycastSource`] to their corresponding ray. We need
     /// to create a map because many pointers may be visible to this camera.
-    pub ray_map: HashMap<PointerId, Ray3d>,
+    ray_map: HashMap<PointerId, Ray3d>,
 }
 
 // --
@@ -70,6 +70,9 @@ pub fn build_rays_from_pointers(
     images: Res<Assets<Image>>,
     mut picking_cameras: Query<(&Camera, &GlobalTransform, &mut PickRaycastCamera)>,
 ) {
+    picking_cameras.iter_mut().for_each(|(_, _, mut pick_cam)| {
+        pick_cam.ray_map.clear();
+    });
     for (pointer_id, pointer_location) in &pointers {
         let pointer_location = match pointer_location.location() {
             Some(l) => l,

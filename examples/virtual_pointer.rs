@@ -8,9 +8,8 @@ use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(bevy_framepace::FramepacePlugin) // significantly reduces input lag
         .add_startup_system(setup)
         .add_system(move_virtual_pointer)
         .run();
@@ -24,6 +23,7 @@ fn move_virtual_pointer(
     mut pointer: Query<&mut PointerLocation, With<VirtualPointer>>,
     windows: Query<(Entity, &Window), With<PrimaryWindow>>,
 ) {
+    let t = time.elapsed_seconds() * 0.5;
     for mut pointer in &mut pointer {
         let w = windows.single().1.width();
         let h = windows.single().1.height();
@@ -32,9 +32,10 @@ fn move_virtual_pointer(
                 .normalize(windows.get_single().ok().map(|w| w.0))
                 .unwrap(),
             position: Vec2 {
-                x: w * (0.5 + 0.25 * time.elapsed_seconds().sin()),
-                y: h * (0.5 + 0.25 * (time.elapsed_seconds() * 2.0).sin()),
-            },
+                x: w * (0.5 + 0.25 * t.sin()),
+                y: h * (0.5 + 0.25 * (t * 2.0).sin()),
+            }
+            .round(),
         });
     }
 }
@@ -89,12 +90,6 @@ fn setup(
     commands.spawn((
         Camera3dBundle {
             transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-            // Uncomment the following lines to try out orthographic projection:
-            //
-            // projection: bevy::render::camera::Projection::Orthographic(OrthographicProjection {
-            //     scale: 0.01,
-            //     ..Default::default()
-            // }),
             ..Default::default()
         },
         PickRaycastCamera::default(), // <- Enable picking for this camera
