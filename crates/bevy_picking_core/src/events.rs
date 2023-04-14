@@ -214,6 +214,16 @@ pub struct PointerEvent<E: IsPointerEvent> {
     target: Entity,
     event: E,
 }
+
+impl<E: IsPointerEvent> std::fmt::Display for PointerEvent<E> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "{:?}, {:?}, {:.1?}",
+            self.pointer_id, self.target, self.event
+        ))
+    }
+}
+
 impl<E: IsPointerEvent + 'static> PointerEvent<E> {
     /// Construct a new `PointerEvent`.
     pub fn new(id: &PointerId, target: &Entity, event: E) -> Self {
@@ -285,15 +295,6 @@ pub fn event_bubbling<E: IsPointerEvent + 'static>(
                 }
             }
         }
-    }
-}
-impl<E: IsPointerEvent> std::fmt::Display for PointerEvent<E> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Target: \x1b[0;1;0m{:?}\x1b[0m, ID: \x1b[0;1;0m{:?}\x1b[0m",
-            self.target, self.pointer_id
-        )
     }
 }
 
@@ -453,7 +454,7 @@ pub fn pointer_events(
                 &move_event.pointer_id,
                 hovered_entity,
                 Move {
-                    pick_data: pick_data.clone(),
+                    pick_data: *pick_data,
                 },
             ))
         }
@@ -475,7 +476,7 @@ pub fn pointer_events(
                     hovered_entity,
                     Up {
                         button: press_event.button,
-                        pick_data: pick_data.clone(),
+                        pick_data: *pick_data,
                     },
                 ))
             }
@@ -491,7 +492,7 @@ pub fn pointer_events(
                     hovered_entity,
                     Down {
                         button: press_event.button,
-                        pick_data: pick_data.clone(),
+                        pick_data: *pick_data,
                     },
                 ))
             }
@@ -513,7 +514,7 @@ pub fn pointer_events(
                 &pointer_id,
                 hovered_entity,
                 Over {
-                    pick_data: pick_data.clone(),
+                    pick_data: *pick_data,
                 },
             ));
         }
@@ -618,7 +619,7 @@ pub fn send_click_and_drag_events(
                     &move_event.target(),
                     DragStart {
                         button,
-                        pick_data: move_event.event.pick_data.clone(),
+                        pick_data: move_event.event.pick_data,
                     },
                 ))
             }
@@ -656,7 +657,7 @@ pub fn send_click_and_drag_events(
             &up_event.target(),
             Click {
                 button,
-                pick_data: up_event.event.pick_data.clone(),
+                pick_data: up_event.event.pick_data,
             },
         ));
     }
@@ -723,7 +724,7 @@ pub fn send_drag_over_events(
                 DragEnter {
                     button,
                     dragged,
-                    pick_data: over_event.event.pick_data.clone(),
+                    pick_data: over_event.event.pick_data,
                 },
             ))
         }
@@ -744,7 +745,7 @@ pub fn send_drag_over_events(
                 DragOver {
                     button,
                     dragged,
-                    pick_data: move_event.event.pick_data.clone(),
+                    pick_data: move_event.event.pick_data,
                 },
             ))
         }

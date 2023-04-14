@@ -64,10 +64,7 @@ pub fn ui_picking(
                     == location.target
             })
             .map(|(entity, _camera)| entity)
-            .expect(&format!(
-                "No camera found associated with pointer {:?}.",
-                pointer
-            ));
+            .unwrap_or_else(|| panic!("No camera found associated with pointer {:?}.", pointer));
 
         let cursor_position = location.position;
         let mut blocked = false;

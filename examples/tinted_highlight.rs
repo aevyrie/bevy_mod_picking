@@ -44,7 +44,7 @@ fn setup(
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
         PickRaycastTarget::default(), // <- Needed for the raycast backend.
-        HIGHLIGHT_TINT.clone(),
+        HIGHLIGHT_TINT,
     ));
 
     // cube

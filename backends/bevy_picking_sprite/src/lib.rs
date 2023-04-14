@@ -65,10 +65,7 @@ pub fn sprite_picking(
                     == location.target
             })
             .map(|(entity, _camera)| entity)
-            .expect(&format!(
-                "No camera found associated with pointer {:?}.",
-                pointer
-            ));
+            .unwrap_or_else(|| panic!("No camera found associated with pointer {:?}.", pointer));
 
         let over_list = sorted_sprites
             .iter()

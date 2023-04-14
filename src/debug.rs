@@ -11,7 +11,7 @@ const DEBUG_FONT_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(
 );
 
 fn font_loader(bytes: &[u8]) -> Font {
-    Font::try_from_bytes(bytes.iter().copied().collect()).unwrap()
+    Font::try_from_bytes(bytes.to_vec()).unwrap()
 }
 
 /// Logs events for debugging

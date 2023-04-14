@@ -108,7 +108,7 @@ fn build_over_map(
         for &(entity, pick_data) in entities_under_pointer.picks.iter() {
             let layer = entities_under_pointer.order;
             let depth_map = layer_map.entry(layer).or_insert_with(BTreeMap::new);
-            depth_map.insert(FloatOrd(pick_data.depth), (entity, pick_data.clone()));
+            depth_map.insert(FloatOrd(pick_data.depth), (entity, pick_data));
         }
     }
 }
@@ -132,7 +132,7 @@ fn build_hover_map(
             // intersection, and higher layers should block lower layers.
             if let Some(depth_map) = layer_map.values().rev().next() {
                 for &(entity, pick_data) in depth_map.values() {
-                    pointer_entity_set.insert(entity, pick_data.clone());
+                    pointer_entity_set.insert(entity, pick_data);
                     if let Ok(FocusPolicy::Block) = focus.get(entity) {
                         break;
                     }

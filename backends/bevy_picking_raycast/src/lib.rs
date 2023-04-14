@@ -110,7 +110,7 @@ pub fn spawn_raycast_sources(
     picking_cameras.iter().for_each(|(entity, pick_cam)| {
         pick_cam.ray_map.iter().for_each(|(pointer, ray)| {
             let mut new_source = RaycastSource::<RaycastPickingSet>::default();
-            new_source.ray = Some(ray.clone());
+            new_source.ray = Some(*ray);
             let pointer_marker = PointerMarker(*pointer);
             let new_child = commands.spawn((new_source, pointer_marker)).id();
             commands.entity(entity).add_child(new_child);
