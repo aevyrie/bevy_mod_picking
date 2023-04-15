@@ -29,7 +29,6 @@ impl Plugin for SpriteBackend {
 pub fn sprite_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
     cameras: Query<(Entity, &Camera)>,
-    windows: Query<(Entity, &Window)>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
     sprite_query: Query<(
@@ -52,10 +51,8 @@ pub fn sprite_picking(
     for (pointer, location) in pointers.iter().filter_map(|(pointer, pointer_location)| {
         pointer_location.location().map(|loc| (pointer, loc))
     }) {
-        let cursor_position = location.position;
         let mut blocked = false;
-
-        let camera = cameras
+        let (cam_entity, camera) = cameras
             .iter()
             .find(|(_entity, camera)| {
                 camera
@@ -64,48 +61,38 @@ pub fn sprite_picking(
                     .unwrap()
                     == location.target
             })
-            .map(|(entity, _camera)| entity)
             .unwrap_or_else(|| panic!("No camera found associated with pointer {:?}.", pointer));
+        let target_half_extents = if let Some(target) = camera.logical_target_size() {
+            target / 2.0
+        } else {
+            continue;
+        };
+        let cursor_position = location.position;
+        let cursor_pos_centered = cursor_position - target_half_extents;
 
-        let over_list = sorted_sprites
+        let picks: Vec<(Entity, PickData)> = sorted_sprites
             .iter()
             .copied()
             .filter_map(
-                |(entity, sprite, image, global_transform, visibility, focus)| {
+                |(entity, sprite, image, sprite_transform, visibility, sprite_focus)| {
                     if blocked || !visibility.is_visible() {
                         return None;
                     }
-
-                    blocked = focus != Some(&FocusPolicy::Pass);
-
-                    let position = global_transform.translation();
-                    let sprite_position = position.truncate();
-
-                    let extents = sprite
+                    let position = sprite_transform.translation();
+                    let half_extents = sprite
                         .custom_size
                         .or_else(|| images.get(image).map(|f| f.size()))
                         .map(|size| size / 2.0)?;
+                    let center = position.truncate() + (sprite.anchor.as_vec() * half_extents);
+                    let rect = Rect::from_center_half_size(center, half_extents);
 
-                    let anchor_offset = sprite.anchor.as_vec() * extents;
+                    let is_cursor_in_sprite = rect.contains(cursor_pos_centered);
+                    blocked = is_cursor_in_sprite && sprite_focus != Some(&FocusPolicy::Pass);
 
-                    let target_size = if let Some(t) =
-                        location.target.get_render_target_info(&windows, &images)
-                    {
-                        t.physical_size.as_vec2() / t.scale_factor as f32
-                    } else {
-                        return None;
-                    };
-
-                    let min = sprite_position - extents + anchor_offset + target_size / 2.0;
-                    let max = sprite_position + extents + anchor_offset + target_size / 2.0;
-
-                    let contains_cursor = (min.x..max.x).contains(&cursor_position.x)
-                        && (min.y..max.y).contains(&cursor_position.y);
-
-                    contains_cursor.then_some((
+                    is_cursor_in_sprite.then_some((
                         entity,
                         PickData {
-                            camera,
+                            camera: cam_entity,
                             depth: position.z,
                             position: None,
                             normal: None,
@@ -113,11 +100,11 @@ pub fn sprite_picking(
                     ))
                 },
             )
-            .collect::<Vec<_>>();
+            .collect();
 
         output.send(EntitiesUnderPointer {
             pointer: *pointer,
-            picks: over_list,
+            picks,
             order: 0,
         })
     }
