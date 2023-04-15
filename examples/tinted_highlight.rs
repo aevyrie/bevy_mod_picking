@@ -1,6 +1,5 @@
 use bevy::{math::vec4, prelude::*};
 use bevy_mod_picking::prelude::*;
-use highlight::HighlightKind;
 
 fn main() {
     App::new()
@@ -10,7 +9,7 @@ fn main() {
         .run();
 }
 
-const HIGHLIGHT_TINT: HighlightOverride<StandardMaterial> = HighlightOverride {
+const HIGHLIGHT_TINT: Highlight<StandardMaterial> = Highlight {
     hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
         base_color: matl.base_color + vec4(-0.2, -0.2, 0.4, 0.0),
         ..matl.to_owned()
@@ -43,7 +42,7 @@ fn setup(
             ..Default::default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
         HIGHLIGHT_TINT,
     ));
 
@@ -59,7 +58,7 @@ fn setup(
             ..Default::default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
         HIGHLIGHT_TINT,
     ));
 
@@ -80,6 +79,6 @@ fn setup(
             transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         },
-        PickRaycastCamera::default(), // <- Enable picking for this camera
+        RaycastPickCamera::default(), // <- Enable picking for this camera
     ));
 }

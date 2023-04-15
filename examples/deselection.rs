@@ -26,7 +26,7 @@ fn setup(
             ..Default::default()
         },
         PickableBundle::default(),
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
 
     // cube with NoDeselect
@@ -39,7 +39,7 @@ fn setup(
                 ..Default::default()
             },
             PickableBundle::default(),
-            PickRaycastTarget::default(), // <- Needed for the raycast backend.
+            RaycastPickTarget::default(), // <- Needed for the raycast backend.
             NoDeselect, // <- When this entity is clicked, other entities won't be deselected.
         ))
         .remove::<PickSelection>(); // <- Removing this removes the entity's ability to be selected.
@@ -61,6 +61,6 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         },
-        PickRaycastCamera::default(),
+        RaycastPickCamera::default(),
     ));
 }

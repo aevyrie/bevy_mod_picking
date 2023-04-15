@@ -11,7 +11,7 @@ pub mod focus;
 pub mod pointer;
 
 use bevy::prelude::*;
-use focus::update_focus;
+use focus::{interactions_from_events, update_focus};
 
 /// Used to globally toggle picking features at runtime.
 #[derive(Clone, Debug, Resource)]
@@ -67,7 +67,7 @@ pub struct PointerCoreBundle {
     /// Tracks the pointer's button press state.
     pub click: pointer::PointerPress,
     /// Tracks the pointer's interaction state.
-    pub interaction: events::PointerInteraction,
+    pub interaction: focus::PointerInteraction,
 }
 
 impl PointerCoreBundle {
@@ -85,7 +85,7 @@ impl PointerCoreBundle {
             id,
             location: pointer::PointerLocation::default(),
             click: pointer::PointerPress::default(),
-            interaction: events::PointerInteraction::default(),
+            interaction: focus::PointerInteraction::default(),
         }
     }
 }

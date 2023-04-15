@@ -10,7 +10,7 @@ use bevy_picking_core::backend::{prelude::*, PickingBackend};
 
 /// Commonly used imports for the [`bevy_picking_raycast`](crate) crate.
 pub mod prelude {
-    pub use crate::{PickRaycastCamera, PickRaycastTarget, RaycastBackend};
+    pub use crate::{RaycastBackend, RaycastPickCamera, RaycastPickTarget};
 }
 
 /// Adds the raycasting picking backend to your app.
@@ -41,15 +41,23 @@ impl Plugin for RaycastBackend {
 pub struct RaycastPickingSet;
 
 /// Marks an entity that should be pickable with [`bevy_mod_raycast`] ray casts.
-pub type PickRaycastTarget = bevy_mod_raycast::RaycastMesh<RaycastPickingSet>;
+pub type RaycastPickTarget = bevy_mod_raycast::RaycastMesh<RaycastPickingSet>;
 
 /// Marks a camera that should be used for picking with [`bevy_mod_raycast`].
 #[derive(Debug, Default, Clone, Component, Reflect)]
-pub struct PickRaycastCamera {
+pub struct RaycastPickCamera {
     #[reflect(ignore)]
-    /// Maps the pointers visible to this [`PickRaycastSource`] to their corresponding ray. We need
+    /// Maps the pointers visible to this [`RaycastPickCamera`] to their corresponding ray. We need
     /// to create a map because many pointers may be visible to this camera.
     ray_map: HashMap<PointerId, Ray3d>,
+}
+
+impl RaycastPickCamera {
+    /// Returns a map that defines the [`Ray3d`] associated with every [`PointerId`] that is on this
+    /// [`RaycastPickCamera`]'s render target.
+    pub fn ray_map(&self) -> &HashMap<PointerId, Ray3d> {
+        &self.ray_map
+    }
 }
 
 // --
@@ -62,13 +70,13 @@ pub struct PickRaycastCamera {
 //
 // --
 
-/// Builds rays and updates raycasting [`PickRaycastCamera`]s from [`PointerLocation`]s.
+/// Builds rays and updates raycasting [`RaycastPickCamera`]s from [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
     pointers: Query<(&PointerId, &PointerLocation)>,
     windows: Query<&Window>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
-    mut picking_cameras: Query<(&Camera, &GlobalTransform, &mut PickRaycastCamera)>,
+    mut picking_cameras: Query<(&Camera, &GlobalTransform, &mut RaycastPickCamera)>,
 ) {
     picking_cameras.iter_mut().for_each(|(_, _, mut pick_cam)| {
         pick_cam.ray_map.clear();
@@ -92,15 +100,15 @@ pub fn build_rays_from_pointers(
     }
 }
 
-/// A newtype, used solely to mark the [`RaycastSource`] children on the [`PickRaycastCamera`] so we
+/// A newtype, used solely to mark the [`RaycastSource`] children on the [`RaycastPickCamera`] so we
 /// know what pointer they are associated with.
 #[derive(Component)]
 struct PointerMarker(PointerId);
 
-/// Using the rays in each [`PickRaycastCamera`], updates their child [`RaycastSource`]s.
+/// Using the rays in each [`RaycastPickCamera`], updates their child [`RaycastSource`]s.
 pub fn spawn_raycast_sources(
     mut commands: Commands,
-    picking_cameras: Query<(Entity, &PickRaycastCamera)>,
+    picking_cameras: Query<(Entity, &RaycastPickCamera)>,
     child_sources: Query<Entity, With<RaycastSource<RaycastPickingSet>>>,
 ) {
     child_sources
@@ -120,7 +128,7 @@ pub fn spawn_raycast_sources(
 
 /// Produces [`EntitiesUnderPointer`]s from [`RaycastSource`] intersections.
 fn update_hits(
-    pick_cameras: Query<(Entity, &Camera), With<PickRaycastCamera>>,
+    pick_cameras: Query<(Entity, &Camera), With<RaycastPickCamera>>,
     mut pick_sources: Query<(&PointerMarker, &RaycastSource<RaycastPickingSet>, &Parent)>,
     mut output_events: EventWriter<EntitiesUnderPointer>,
 ) {

@@ -60,7 +60,7 @@ fn setup(
             ..Default::default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
 
     // cube
@@ -72,7 +72,7 @@ fn setup(
             ..Default::default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
 
     // light
@@ -92,6 +92,6 @@ fn setup(
             transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         },
-        PickRaycastCamera::default(), // <- Enable picking for this camera
+        RaycastPickCamera::default(), // <- Enable picking for this camera
     ));
 }

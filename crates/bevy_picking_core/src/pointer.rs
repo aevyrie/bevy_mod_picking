@@ -234,8 +234,8 @@ impl InputMove {
     }
 }
 
-/// The location of a pointer, including the current [`RenderTarget`], and the x/y position of the
-/// pointer on this render target.
+/// The location of a pointer, including the current [`NormalizedRenderTarget`], and the x/y
+/// position of the pointer on this render target.
 ///
 /// Note that:
 /// - a pointer can move freely between render targets
@@ -252,7 +252,7 @@ pub struct Location {
 impl Location {
     /// Returns `true` if this pointer's [`Location`] is within the [`Camera`]'s viewport.
     ///
-    /// Note this returns `false` if the location and camera have different [`RenderTarget`]s.
+    /// Note this returns `false` if the location and camera have different render targets.
     #[inline]
     pub fn is_in_viewport(
         &self,

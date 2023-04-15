@@ -1,11 +1,13 @@
-//! Determines which entities are being hovered by pointers, taking into account [`FocusPolicy`],
-//! [`RenderLayers`], and entity depth.
+//! Determines which entities are being hovered by which pointers.
 
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    ops::{Deref, DerefMut},
+};
 
 use crate::{
     backend::{self, PickData},
-    events::PointerCancel,
+    events::{Down, IsPointerEvent, Out, Over, PointerCancel, PointerEvent, Up},
     pointer::PointerId,
 };
 use bevy::{
@@ -143,4 +145,66 @@ fn build_hover_map(
             }
         }
     }
+}
+
+/// Holds a map of entities this pointer is currently interacting with.
+#[derive(Debug, Default, Clone, Component)]
+pub struct PointerInteraction {
+    map: HashMap<Entity, Interaction>,
+}
+impl Deref for PointerInteraction {
+    type Target = HashMap<Entity, Interaction>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.map
+    }
+}
+impl DerefMut for PointerInteraction {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.map
+    }
+}
+
+/// Uses pointer events to update [`PointerInteraction`] and [`Interaction`] components.
+pub fn interactions_from_events(
+    // Input
+    mut pointer_over: EventReader<PointerEvent<Over>>,
+    mut pointer_out: EventReader<PointerEvent<Out>>,
+    mut pointer_up: EventReader<PointerEvent<Up>>,
+    mut pointer_down: EventReader<PointerEvent<Down>>,
+    // Outputs
+    mut pointers: Query<(&PointerId, &mut PointerInteraction)>,
+    mut interact: Query<&mut Interaction>,
+) {
+    for event in pointer_over.iter() {
+        update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);
+    }
+    for event in pointer_down.iter() {
+        update_interactions(event, Interaction::Clicked, &mut pointers, &mut interact);
+    }
+    for event in pointer_up.iter() {
+        update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);
+    }
+    for event in pointer_out.iter() {
+        update_interactions(event, Interaction::None, &mut pointers, &mut interact);
+    }
+}
+
+fn update_interactions<E: IsPointerEvent>(
+    event: &PointerEvent<E>,
+    new_interaction: Interaction,
+    pointer_interactions: &mut Query<(&PointerId, &mut PointerInteraction)>,
+    entity_interactions: &mut Query<&mut Interaction>,
+) {
+    if let Some(mut interaction_map) = pointer_interactions
+        .iter_mut()
+        .find_map(|(id, interaction)| (*id == event.pointer_id).then_some(interaction))
+    {
+        interaction_map.insert(event.target, new_interaction);
+        if let Ok(mut interaction) = entity_interactions.get_mut(event.target) {
+            *interaction = new_interaction;
+        }
+        interaction_map
+            .retain(|_, i| i != &Interaction::None || new_interaction != Interaction::None);
+    };
 }

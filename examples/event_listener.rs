@@ -1,27 +1,19 @@
-//! This example demonstrates how event bubbling can be used to propagate events up an entity
-//! hierarchy, as well as how event listeners can be used to forward events to specific entities
-//! when a specific pointer event occurs.
+//! This example demonstrates how [`EventListener`]s and event bubbling can be used to propagate
+//! events up an entity hierarchy, and run callbacks when an event reaches an entity.
 //!
 //! The Big Idea here is to make it easy to couple interaction events with specific entities. In
 //! other words, it allows you to easily implement "If entity X is hovered/clicked/dragged, do Y".
 //!
 //! The `forward_events` function might seem like magic, but it's pretty straightforward under the
-//! hood. It simply adds an [`EventListener`](bevy_picking_core::events::EventListener) component to
-//! the entity. When the event bubbling system encounters this `EventListener`, it uses the
-//! [`ForwardedEvent`] trait you implemented on your custom event to convert the `PointerEvent` into
-//! your custom event.
+//! hood. It simply adds an [`EventListener`] component to the entity. When the event bubbling
+//! system encounters this `EventListener`, it uses the [`ForwardedEvent`] trait you implemented on
+//! your custom event to convert the `PointerEvent` into your custom event.
 //!
 //! In other words, the `forward_events` function is really a helper function that just inserts a
 //! predefined `EventListener` component on your entity.
 
 use bevy::prelude::*;
-use bevy_mod_picking::{
-    events::{Bubble, EventListener},
-    prelude::{
-        backends::raycast::{PickRaycastCamera, PickRaycastTarget},
-        *,
-    },
-};
+use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
@@ -69,7 +61,7 @@ fn setup(
                 ..Default::default()
             },
             PickableBundle::default(),
-            PickRaycastTarget::default(),
+            RaycastPickTarget::default(),
             // When any of this entity's children are clicked, they will be deleted
             EventListener::<Click>::callback(delete_target),
         ))
@@ -88,7 +80,7 @@ fn setup(
                         ..Default::default()
                     },
                     PickableBundle::default(),
-                    PickRaycastTarget::default(),
+                    RaycastPickTarget::default(),
                 ));
             }
         });
@@ -107,6 +99,6 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 4.5, 5.0).looking_at(Vec3::Y * 2.0, Vec3::Y),
             ..Default::default()
         },
-        PickRaycastCamera::default(),
+        RaycastPickCamera::default(),
     ));
 }

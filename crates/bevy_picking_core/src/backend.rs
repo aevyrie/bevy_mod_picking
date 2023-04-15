@@ -1,10 +1,13 @@
-//! This module provides a simple interface for implementing a picking backend. A picking backend is
-//! responsible for reading [`PointerLocation`](crate::pointer::PointerLocation) components, and
-//! producing [`EntitiesUnderPointer`] events. The [`EntitiesUnderPointer`] events produced by a
-//! backend do **not** need to be sorted or filtered, all that is needed is an unordered list of
-//! entities and their distance from the pointer into the screen (depth). Depth only needs to be
-//! self-consistent with other [`EntitiesUnderPointer`]s in the same
-//! [`RenderLayers`](bevy::render::view::RenderLayers).
+//! This module provides a simple interface for implementing a picking backend.
+//!
+//! A picking backend is responsible for reading
+//! [`PointerLocation`](crate::pointer::PointerLocation) components, and producing
+//! [`EntitiesUnderPointer`] events.
+//!
+//! The [`EntitiesUnderPointer`] events produced by a backend do **not** need to be sorted or
+//! filtered, all that is needed is an unordered list of entities and their distance from the
+//! pointer into the screen (depth). Depth only needs to be self-consistent with other
+//! [`EntitiesUnderPointer`]s using the same [`RenderTarget`](bevy::render::camera::RenderTarget).
 //!
 //! In plain English, a backend is provided the location of pointers, and is asked to provide a list
 //! of entities under those pointers.
@@ -47,6 +50,8 @@ pub struct EntitiesUnderPointer {
     pub pointer: prelude::PointerId,
     /// An unordered collection of entities and their distance (depth) from the cursor.
     pub picks: Vec<(Entity, PickData)>,
+    /// Set the order of this group of picks. Normally, this is the [`Camera::order`].
+    ///
     /// Used to allow multiple `EntitiesUnderPointer` submitted for the same pointer to be ordered.
     /// `EntitiesUnderPointer` with a higher `order` will be checked before those with a lower
     /// `order`, regardless of the depth of each entity pick.

@@ -11,13 +11,27 @@ use bevy_picking_core::PickSet;
 #[cfg(feature = "selection")]
 use bevy_picking_selection::PickSelection;
 
-/// Adds pick highlighting functionality to your app.
-pub struct HighlightingPlugin;
-impl Plugin for HighlightingPlugin {
+/// Adds the [`StandardMaterial`] and [`ColorMaterial`] highlighting plugins.
+///
+/// To use another asset type `T` for highlighting, add [`HighlightPlugin<T>`].
+///
+/// ### Settings
+///
+/// You can adjust the global highlight material settings with the [`GlobalHighlight<T>`] resource.
+/// For example, to update the `StandardMaterial` highlight color for 3D meshes, you would access
+/// `ResMut<GlobalHighlight<StandardMaterial>>`.
+///
+/// ### Overriding Highlighting Appearance
+///
+/// By default, this plugin will use the  resource to define global highlighting settings for assets
+/// of type `T`. You can override this global default with the optional fields in the [`Highlight`]
+/// component.
+pub struct DefaultHighlightingPlugin;
+impl Plugin for DefaultHighlightingPlugin {
     #[allow(unused_variables)]
     fn build(&self, app: &mut App) {
-        app.add_plugin(CustomHighlightPlugin::<StandardMaterial> {
-            highlighting_default: |mut assets| DefaultHighlighting {
+        app.add_plugin(HighlightPlugin::<StandardMaterial> {
+            highlighting_default: |mut assets| GlobalHighlight {
                 hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
                 pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
                 #[cfg(feature = "selection")]
@@ -26,8 +40,8 @@ impl Plugin for HighlightingPlugin {
         });
 
         #[cfg(feature = "bevy/bevy_sprite")]
-        app.add_plugin(CustomHighlightPlugin::<bevy::sprite::ColorMaterial> {
-            highlighting_default: |mut assets| DefaultHighlighting {
+        app.add_plugin(HighlightPlugin::<bevy::sprite::ColorMaterial> {
+            highlighting_default: |mut assets| GlobalHighlight {
                 hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
                 pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
                 #[cfg(feature = "selection")]
@@ -37,27 +51,96 @@ impl Plugin for HighlightingPlugin {
     }
 }
 
-/// Makes an entity highlightable with any [`Highlightable`] [`Asset`]. By default, this plugin
-/// provides an implementation for [`StandardMaterial`] and [`ColorMaterial`]. If this entity has
-/// either of those asset handles, the plugin will automatically update them to match the entity's
-/// interaction state. To use another asset type, all you need to do is implement [`Highlightable`]
-/// for the asset and add the [`CustomHighlightingPlugin::<T>`] plugin to your app, where `T` is
-/// your asset type.
-///
-/// ### Overriding Highlighting Appearance
-///
-/// By default, this plugin will use [`DefaultHighlighting<T>`] for assets of type `T`. You can
-/// override this global default with the optional fields in the [`HighlightOverride`] component.
+/// A highlighting plugin, generic over any asset that might be used for rendering the different
+/// highlighting states.
+pub struct HighlightPlugin<T: 'static + Asset + Sync + Send> {
+    /// A function that is invoked at startup to allow you to generate the default highlighting
+    /// states for `T`.
+    pub highlighting_default: fn(ResMut<Assets<T>>) -> GlobalHighlight<T>,
+}
+
+impl<T> Plugin for HighlightPlugin<T>
+where
+    T: 'static + Asset + Sync + Send,
+{
+    fn build(&self, app: &mut App) {
+        let highlighting_default = self.highlighting_default;
+
+        app.add_startup_system(move |mut commands: Commands, assets: ResMut<Assets<T>>| {
+            commands.insert_resource(highlighting_default(assets));
+        })
+        .add_systems(
+            (
+                get_initial_highlight_asset::<T>,
+                Highlight::<T>::update_dynamic,
+                update_highlight_assets::<T>,
+                #[cfg(feature = "selection")]
+                update_selection::<T>,
+            )
+                .chain()
+                .in_set(PickSet::Last),
+        );
+    }
+}
+
+/// Component used to track the initial asset state of a highlightable object. This is needed to
+/// return the highlighting asset back to its original state after highlighting it.
+#[derive(Component, Clone, Debug, Reflect)]
+pub struct InitialHighlight<T: Asset> {
+    /// A handle for the initial asset state of the highlightable entity.
+    pub initial: Handle<T>,
+}
+
+/// Resource that defines the global default highlighting assets to use. This can be overridden
+/// per-entity with the [`Highlight`] component.
+#[derive(Resource)]
+pub struct GlobalHighlight<T: Asset> {
+    /// Default asset handle to use for hovered entities without the [`Highlight`] component.
+    pub hovered: Handle<T>,
+    /// Default asset handle to use for pressed entities without the [`Highlight`] component.
+    pub pressed: Handle<T>,
+    /// Default asset handle to use for selected entities without the [`Highlight`] component.
+    #[cfg(feature = "selection")]
+    pub selected: Handle<T>,
+}
+
+impl<T: Asset> GlobalHighlight<T> {
+    /// Returns the hovered highlight override if it exists, falling back to the default.
+    pub fn hovered(&self, h_override: &Option<&Highlight<T>>) -> Handle<T> {
+        h_override
+            .and_then(|h| h.hovered.as_ref())
+            .and_then(|h| h.get_handle())
+            .unwrap_or_else(|| self.hovered.clone())
+    }
+
+    /// Returns the pressed highlight override if it exists, falling back to the default.
+    pub fn pressed(&self, h_override: &Option<&Highlight<T>>) -> Handle<T> {
+        h_override
+            .and_then(|h| h.pressed.as_ref())
+            .and_then(|h| h.get_handle())
+            .unwrap_or_else(|| self.pressed.clone())
+    }
+    /// Returns the selected highlight override if it exists, falling back to the default.
+    #[cfg(feature = "selection")]
+    pub fn selected(&self, h_override: &Option<&Highlight<T>>) -> Handle<T> {
+        h_override
+            .and_then(|h| h.selected.as_ref())
+            .and_then(|h| h.get_handle())
+            .unwrap_or_else(|| self.selected.clone())
+    }
+}
+
+/// Makes an entity highlightable with any [`Asset`]. See [`DefaultHighlightingPlugin`] for details.
 #[derive(Component, Clone, Debug, Default, Reflect)]
 pub struct PickHighlight;
 
-/// [`HighlightOverride`] options.
+/// Used to override each highlighting state in [`Highlight`].
 #[derive(Clone)]
 pub enum HighlightKind<T: Asset> {
-    /// A simple fixed highlight material override for this entity.
+    /// A fixed override for this entity. For example, to change a material to a specific color.
     Fixed(Handle<T>),
-    /// A function that takes the base material of the entity, and outputs a new material. This can
-    /// be used to make "tinted" materials.
+    /// A function that takes the base asset of the entity, and outputs a new, modified asset. This
+    /// can be used to make "tinted" materials.
     Dynamic {
         /// The function to set.
         function: fn(initial: &T) -> T,
@@ -103,9 +186,9 @@ impl<T: Asset> std::fmt::Debug for HighlightKind<T> {
     }
 }
 
-/// Overrides the global highlighting material of an entity. See [`PickHighlight`].
+/// Overrides the global highlighting material for an entity. See [`PickHighlight`].
 #[derive(Component, Clone, Debug, Default)]
-pub struct HighlightOverride<T: Asset> {
+pub struct Highlight<T: Asset> {
     /// Overrides this asset's global default appearance when hovered
     pub hovered: Option<HighlightKind<T>>,
     /// Overrides this asset's global default appearance when pressed
@@ -115,17 +198,17 @@ pub struct HighlightOverride<T: Asset> {
     pub selected: Option<HighlightKind<T>>,
 }
 
-impl<T: Asset> HighlightOverride<T> {
+impl<T: Asset> Highlight<T> {
     /// System that updates the dynamic overrides when the entity's Handle changes.
     fn update_dynamic(
         mut asset_server: ResMut<Assets<T>>,
         mut entities: Query<
-            (&mut HighlightOverride<T>, &InitialHighlight<T>),
+            (&mut Highlight<T>, &InitialHighlight<T>),
             Changed<InitialHighlight<T>>,
         >,
     ) {
         for (mut highlight_override, highlight_initial) in entities.iter_mut() {
-            let HighlightOverride {
+            let Highlight {
                 hovered,
                 pressed,
                 selected,
@@ -153,85 +236,6 @@ impl<T: Asset> HighlightOverride<T> {
     }
 }
 
-/// A highlighting plugin, generic over any asset that might be used for rendering the different
-/// highlighting states.
-pub struct CustomHighlightPlugin<T: 'static + Asset + Sync + Send> {
-    /// A function that is invoked at startup to allow you to generate the default highlighting
-    /// states for `T`.
-    pub highlighting_default: fn(ResMut<Assets<T>>) -> DefaultHighlighting<T>,
-}
-
-impl<T> Plugin for CustomHighlightPlugin<T>
-where
-    T: 'static + Asset + Sync + Send,
-{
-    fn build(&self, app: &mut App) {
-        let highlighting_default = self.highlighting_default;
-
-        app.add_startup_system(move |mut commands: Commands, assets: ResMut<Assets<T>>| {
-            commands.insert_resource(highlighting_default(assets));
-        })
-        .add_systems(
-            (
-                get_initial_highlight_asset::<T>,
-                HighlightOverride::<T>::update_dynamic,
-                update_highlight_assets::<T>,
-                #[cfg(feature = "selection")]
-                update_selection::<T>,
-            )
-                .chain()
-                .in_set(PickSet::Last),
-        );
-    }
-}
-
-/// Component used to track the initial asset state of a highlightable object. This is needed to
-/// return the highlighting asset back to its original state after highlighting it.
-#[derive(Component, Clone, Debug, Reflect)]
-pub struct InitialHighlight<T: Asset> {
-    /// A handle for the initial asset state of the highlightable entity.
-    pub initial: Handle<T>,
-}
-
-/// Resource that defines the default highlighting assets to use. This can be overridden per-entity
-/// with the [`HighlightOverride`] component.
-#[derive(Resource)]
-pub struct DefaultHighlighting<T: Asset> {
-    /// Default asset handle to use for hovered entities without a [`HighlightOverride`].
-    pub hovered: Handle<T>,
-    /// Default asset handle to use for pressed entities without a [`HighlightOverride`].
-    pub pressed: Handle<T>,
-    /// Default asset handle to use for selected entities without a [`HighlightOverride`].
-    #[cfg(feature = "selection")]
-    pub selected: Handle<T>,
-}
-
-impl<T: Asset> DefaultHighlighting<T> {
-    /// Returns the hovered highlight override if it exists, falling back to the default.
-    pub fn hovered(&self, h_override: &Option<&HighlightOverride<T>>) -> Handle<T> {
-        h_override
-            .and_then(|h| h.hovered.as_ref())
-            .and_then(|h| h.get_handle())
-            .unwrap_or_else(|| self.hovered.clone())
-    }
-
-    /// Returns the pressed highlight override if it exists, falling back to the default.
-    pub fn pressed(&self, h_override: &Option<&HighlightOverride<T>>) -> Handle<T> {
-        h_override
-            .and_then(|h| h.pressed.as_ref())
-            .and_then(|h| h.get_handle())
-            .unwrap_or_else(|| self.pressed.clone())
-    }
-    /// Returns the selected highlight override if it exists, falling back to the default.
-    #[cfg(feature = "selection")]
-    pub fn selected(&self, h_override: &Option<&HighlightOverride<T>>) -> Handle<T> {
-        h_override
-            .and_then(|h| h.selected.as_ref())
-            .and_then(|h| h.get_handle())
-            .unwrap_or_else(|| self.selected.clone())
-    }
-}
-
 /// Automatically records the "initial" state of highlightable entities.
 pub fn get_initial_highlight_asset<T: Asset>(
     mut commands: Commands,
@@ -252,13 +256,13 @@ pub fn get_initial_highlight_asset<T: Asset>(
 
 /// Apply highlighting assets to entities based on their state.
 pub fn update_highlight_assets<T: Asset>(
-    global_defaults: Res<DefaultHighlighting<T>>,
+    global_defaults: Res<GlobalHighlight<T>>,
     mut interaction_query: Query<
         (
             &mut Handle<T>,
             &Interaction,
             &InitialHighlight<T>,
-            Option<&HighlightOverride<T>>,
+            Option<&Highlight<T>>,
         ),
         Changed<Interaction>,
     >,
@@ -275,14 +279,14 @@ pub fn update_highlight_assets<T: Asset>(
 #[cfg(feature = "selection")]
 /// If the interaction state of a selected entity is `None`, set the highlight color to `selected`.
 pub fn update_selection<T: Asset>(
-    global_defaults: Res<DefaultHighlighting<T>>,
+    global_defaults: Res<GlobalHighlight<T>>,
     mut interaction_query: Query<
         (
             &mut Handle<T>,
             &Interaction,
             &PickSelection,
             &InitialHighlight<T>,
-            Option<&HighlightOverride<T>>,
+            Option<&Highlight<T>>,
         ),
         Or<(Changed<PickSelection>, Changed<Interaction>)>,
     >,

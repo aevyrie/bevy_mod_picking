@@ -30,7 +30,7 @@ impl PluginGroup for DefaultPickingPlugins {
 
         #[cfg(feature = "highlight")]
         {
-            builder = builder.add(highlight::HighlightingPlugin);
+            builder = builder.add(highlight::DefaultHighlightingPlugin);
         }
 
         #[cfg(feature = "selection")]

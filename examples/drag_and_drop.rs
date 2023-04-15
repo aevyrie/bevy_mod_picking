@@ -1,13 +1,7 @@
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
-use bevy_mod_picking::{
-    events::{Bubble, EventListener, PointerEvent},
-    prelude::{
-        backends::raycast::{PickRaycastCamera, PickRaycastTarget},
-        *,
-    },
-};
+use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
@@ -36,14 +30,14 @@ fn setup(
                 ..Default::default()
             },
             PickableBundle::default(),    // <- Makes the mesh pickable.
-            PickRaycastTarget::default(), // <- Needed for the raycast backend.
+            RaycastPickTarget::default(), // <- Needed for the raycast backend.
             EventListener::<DragStart>::callback(make_non_pickable),
             EventListener::<DragEnd>::callback(make_pickable),
             EventListener::<Drop>::callback(spin_target),
         ));
     }
 
-    commands.spawn((Camera2dBundle::default(), PickRaycastCamera::default())); // <- Sets the camera to use for picking.
+    commands.spawn((Camera2dBundle::default(), RaycastPickCamera::default())); // <- Sets the camera to use for picking.
 }
 
 /// When we start dragging, we don't want this entity to prevent picking squares underneath
@@ -54,13 +48,13 @@ fn make_non_pickable(
 ) {
     commands
         .entity(event.target())
-        .remove::<PickRaycastTarget>();
+        .remove::<RaycastPickTarget>();
 }
 
 fn make_pickable(commands: &mut Commands, event: &EventListenerData<DragEnd>, _: &mut Bubble) {
     commands
         .entity(event.target())
-        .insert(PickRaycastTarget::default());
+        .insert(RaycastPickTarget::default());
 }
 
 fn spin_target(commands: &mut Commands, event: &EventListenerData<Drop>, _: &mut Bubble) {
@@ -82,7 +76,7 @@ fn drag_squares(
 ) {
     // While being dragged, update the position of the square to be under the pointer.
     for dragging in drag_events.iter() {
-        let pointer_entity = pointers.get_entity(dragging.pointer_id()).unwrap();
+        let pointer_entity = pointers.get_entity(dragging.pointer_id).unwrap();
         let pointer_location = locations.get(pointer_entity).unwrap().location().unwrap();
         let pointer_position = pointer_location.position;
         let target = pointer_location
@@ -91,7 +85,7 @@ fn drag_squares(
             .unwrap();
         let target_size = target.physical_size.as_vec2() / target.scale_factor as f32;
 
-        let (_, mut square_transform) = square.get_mut(dragging.target()).unwrap();
+        let (_, mut square_transform) = square.get_mut(dragging.target).unwrap();
         let z = square_transform.translation.z;
         square_transform.translation = (pointer_position - (target_size / 2.0)).extend(z);
     }

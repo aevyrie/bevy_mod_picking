@@ -1,6 +1,6 @@
-//! A [`bevy`] plugin for `bevy_mod_picking` that adds multiselect functionality.
+//! A plugin for `bevy_mod_picking` that adds multiselect functionality.
 //!
-//! This adds the [`PointerDeselect`] and [`PointerSelect`] [`PointerEvent`]s, including support for
+//! This adds the [`Deselect`] and [`Select`] [`PointerEvent`]s, including support for
 //! bubbling these events.
 
 #![allow(clippy::type_complexity)]
@@ -106,8 +106,8 @@ pub fn multiselect_events(
     }
 }
 
-/// Determines which entities have been selected or deselected, and sends [`PointerSelect`] and
-/// [`PointerDeselect`] events corresponding to these state changes.
+/// Determines which entities have been selected or deselected, and sends [`Select`] and
+/// [`Deselect`] events corresponding to these state changes.
 pub fn send_selection_events(
     settings: Res<SelectionSettings>,
     mut pointer_down: EventReader<PointerEvent<Down>>,
@@ -124,18 +124,18 @@ pub fn send_selection_events(
     let mut pointer_down_list = HashSet::new();
 
     for down in pointer_down.iter() {
-        pointer_down_list.insert(down.pointer_id());
+        pointer_down_list.insert(down.pointer_id);
         let multiselect = pointers
             .iter()
-            .find_map(|(id, multi)| (id == &down.pointer_id()).then_some(multi.is_pressed))
+            .find_map(|(id, multi)| (id == &down.pointer_id).then_some(multi.is_pressed))
             .unwrap_or(false);
-        let target_can_deselect = no_deselect.get(down.target()).is_err();
+        let target_can_deselect = no_deselect.get(down.target).is_err();
         // Deselect everything
         if !multiselect && target_can_deselect {
             for (entity, selection) in selectables.iter() {
-                let not_click_target = down.target() != entity;
+                let not_click_target = down.target != entity;
                 if selection.is_selected && not_click_target {
-                    deselections.send(PointerEvent::new(&down.pointer_id(), &entity, Deselect))
+                    deselections.send(PointerEvent::new(down.pointer_id, entity, Deselect))
                 }
             }
         }
@@ -148,15 +148,15 @@ pub fn send_selection_events(
             .iter()
             .filter(|p| p.is_just_down(PointerButton::Primary))
         {
-            let id = &press.pointer_id;
+            let id = press.pointer_id;
             let multiselect = pointers
                 .iter()
-                .find_map(|(this_id, multi)| (this_id == id).then_some(multi.is_pressed))
+                .find_map(|(this_id, multi)| (*this_id == id).then_some(multi.is_pressed))
                 .unwrap_or(false);
-            if !pointer_down_list.contains(id) && !multiselect {
+            if !pointer_down_list.contains(&id) && !multiselect {
                 for (entity, selection) in selectables.iter() {
                     if selection.is_selected {
-                        deselections.send(PointerEvent::new(id, &entity, Deselect))
+                        deselections.send(PointerEvent::new(id, entity, Deselect))
                     }
                 }
             }
@@ -164,22 +164,19 @@ pub fn send_selection_events(
     }
 
     for click in pointer_click.iter() {
+        let pointer = click.pointer_id;
         let multiselect = pointers
             .iter()
-            .find_map(|(id, multi)| id.eq(&click.pointer_id()).then_some(multi.is_pressed))
+            .find_map(|(id, multi)| id.eq(&id).then_some(multi.is_pressed))
             .unwrap_or(false);
-        if let Ok((entity, selection)) = selectables.get(click.target()) {
+        if let Ok((entity, selection)) = selectables.get(click.target) {
             if multiselect {
                 match selection.is_selected {
-                    true => {
-                        deselections.send(PointerEvent::new(&click.pointer_id(), &entity, Deselect))
-                    }
-                    false => {
-                        selections.send(PointerEvent::new(&click.pointer_id(), &entity, Select))
-                    }
+                    true => deselections.send(PointerEvent::new(pointer, entity, Deselect)),
+                    false => selections.send(PointerEvent::new(pointer, entity, Select)),
                 }
             } else if !selection.is_selected {
-                selections.send(PointerEvent::new(&click.pointer_id(), &entity, Select))
+                selections.send(PointerEvent::new(pointer, entity, Select))
             }
         }
     }
@@ -192,12 +189,12 @@ pub fn update_state_from_events(
     mut deselections: EventReader<PointerEvent<Deselect>>,
 ) {
     for selection in selections.iter() {
-        if let Ok(mut select_me) = selectables.get_mut(selection.target()) {
+        if let Ok(mut select_me) = selectables.get_mut(selection.target) {
             select_me.is_selected = true;
         }
     }
     for deselection in deselections.iter() {
-        if let Ok(mut deselect_me) = selectables.get_mut(deselection.target()) {
+        if let Ok(mut deselect_me) = selectables.get_mut(deselection.target) {
             deselect_me.is_selected = false;
         }
     }

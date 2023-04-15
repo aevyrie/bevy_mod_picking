@@ -25,7 +25,7 @@ fn setup(
             ..default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
     // cube
     commands.spawn((
@@ -36,7 +36,7 @@ fn setup(
             ..default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
     // light
     commands.spawn(PointLightBundle {
@@ -54,7 +54,7 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        PickRaycastCamera::default(), // <- Enable picking for this camera
+        RaycastPickCamera::default(), // <- Enable picking for this camera
     ));
 
     // plane 2
@@ -66,7 +66,7 @@ fn setup(
             ..default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
     // cube 2
     commands.spawn((
@@ -77,7 +77,7 @@ fn setup(
             ..default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
     // light
     commands.spawn(PointLightBundle {
@@ -105,6 +105,6 @@ fn setup(
             },
             ..default()
         },
-        PickRaycastCamera::default(), // <- Enable picking for this camera
+        RaycastPickCamera::default(), // <- Enable picking for this camera
     ));
 }

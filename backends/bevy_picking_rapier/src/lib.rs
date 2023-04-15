@@ -10,7 +10,7 @@ use bevy_rapier3d::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_rapier`] crate.
 pub mod prelude {
-    pub use crate::{RapierBackend, RapierPickSource};
+    pub use crate::{RapierBackend, RapierPickCamera};
 }
 
 /// Adds the `rapier` raycasting picking backend to your app.
@@ -28,14 +28,23 @@ impl Plugin for RapierBackend {
 #[derive(Debug, Clone, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct RapierPickTarget;
+
 /// Marks a camera that should be used for rapier raycast picking.
 #[derive(Debug, Clone, Default, Component, Reflect)]
 #[reflect(Component, Default)]
-pub struct RapierPickSource {
+pub struct RapierPickCamera {
     #[reflect(ignore)]
-    /// Maps the pointers visible to this [`RapierPickSource`] to their corresponding ray. We need
+    /// Maps the pointers visible to this [`RapierPickCamera`] to their corresponding ray. We need
     /// to create a map because many pointers may be visible to this camera.
     ray_map: HashMap<PointerId, Ray>,
+}
+
+impl RapierPickCamera {
+    /// Returns a map that defines the [`Ray`] associated with every [`PointerId`] that is on this
+    /// [`RapierPickCamera`]'s render target.
+    pub fn ray_map(&self) -> &HashMap<PointerId, Ray> {
+        &self.ray_map
+    }
 }
 
 /// Updates all picking [`Ray`]s with [`PointerLocation`]s.
@@ -44,7 +53,7 @@ pub fn build_rays_from_pointers(
     windows: Query<&Window>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
-    mut picking_cameras: Query<(&Camera, &GlobalTransform, &mut RapierPickSource)>,
+    mut picking_cameras: Query<(&Camera, &GlobalTransform, &mut RapierPickCamera)>,
 ) {
     picking_cameras.iter_mut().for_each(|(_, _, mut pick_cam)| {
         pick_cam.ray_map.clear();
@@ -72,7 +81,7 @@ pub fn build_rays_from_pointers(
 fn update_hits(
     rapier_context: Option<Res<RapierContext>>,
     targets: Query<With<RapierPickTarget>>,
-    mut sources: Query<(Entity, &Camera, &mut RapierPickSource)>,
+    mut sources: Query<(Entity, &Camera, &mut RapierPickCamera)>,
     mut output: EventWriter<EntitiesUnderPointer>,
 ) {
     let rapier_context = match rapier_context {

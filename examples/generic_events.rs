@@ -1,5 +1,5 @@
-//! This example is similar to the `bubbling` example, except we will demonstrate a more advanced
-//! method of forwarding events that are generic.
+//! This example is similar to the `event_listener` example, except we will demonstrate a more
+//! advanced method of forwarding events that are generic.
 //!
 //! This allows us to use the same custom event for multiple pointer events, as usual, but with the
 //! key difference that we can have different behavior depending on the pointer event that triggered
@@ -90,7 +90,7 @@ fn setup(
                 ..Default::default()
             },
             PickableBundle::default(),
-            PickRaycastTarget::default(),
+            RaycastPickTarget::default(),
         ))
         // Because event forwarding can rely on event bubbling, events that target children of the
         // parent cube will also bubble up to this parent level and will fire off an event:
@@ -106,7 +106,7 @@ fn setup(
                     ..Default::default()
                 },
                 PickableBundle::default(),
-                PickRaycastTarget::default(),
+                RaycastPickTarget::default(),
             ));
         });
 
@@ -127,6 +127,6 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..Default::default()
         },
-        PickRaycastCamera::default(),
+        RaycastPickCamera::default(),
     )); // <- Sets the camera to use for picking.
 }

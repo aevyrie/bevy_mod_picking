@@ -19,7 +19,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 .looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
             ..default()
         },
-        PickRaycastCamera::default(), // <- Sets the camera to use for picking.;
+        RaycastPickCamera::default(), // <- Sets the camera to use for picking.;
     ));
     commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight { ..default() },
@@ -59,18 +59,18 @@ impl HelmetClicked {
 /// Makes everything in the scene with a mesh pickable
 fn make_pickable(
     mut commands: Commands,
-    meshes: Query<Entity, (With<Handle<Mesh>>, Without<PickRaycastTarget>)>,
+    meshes: Query<Entity, (With<Handle<Mesh>>, Without<RaycastPickTarget>)>,
 ) {
     for entity in meshes.iter() {
         commands.entity(entity).insert((
             PickableBundle::default(),
-            PickRaycastTarget::default(),
+            RaycastPickTarget::default(),
             HIGHLIGHT_TINT.clone(),
         ));
     }
 }
 
-const HIGHLIGHT_TINT: HighlightOverride<StandardMaterial> = HighlightOverride {
+const HIGHLIGHT_TINT: Highlight<StandardMaterial> = Highlight {
     hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
         base_color: matl.base_color + vec4(-0.5, -0.3, 0.5, 0.0),
         ..matl.to_owned()

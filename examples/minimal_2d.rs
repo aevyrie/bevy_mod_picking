@@ -23,8 +23,8 @@ fn setup(
             ..default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
 
-    commands.spawn((Camera2dBundle::default(), PickRaycastCamera::default())); // <- Sets the camera to use for picking.
+    commands.spawn((Camera2dBundle::default(), RaycastPickCamera::default())); // <- Sets the camera to use for picking.
 }

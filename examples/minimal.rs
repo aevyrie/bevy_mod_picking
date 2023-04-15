@@ -22,7 +22,7 @@ fn setup(
             ..Default::default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
     commands.spawn((
         PbrBundle {
@@ -32,7 +32,7 @@ fn setup(
             ..Default::default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
-        PickRaycastTarget::default(), // <- Needed for the raycast backend.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -54,6 +54,6 @@ fn setup(
             // }),
             ..Default::default()
         },
-        PickRaycastCamera::default(), // <- Enable picking for this camera
+        RaycastPickCamera::default(), // <- Enable picking for this camera
     ));
 }

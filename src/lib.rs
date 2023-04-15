@@ -1,20 +1,38 @@
 //! A flexible set of plugins that add picking functionality to your [`bevy`] app, with a focus on
-//! ergonomics, expressiveness, and ease of use.
+//! ergonomics, modularity, and ease of use.
 //!
-//! # About
+//! #### Lightweight
 //!
-//! What is "picking"? Picking is the act of interacting with objects on your screen with a pointer.
-//! That pointer might be a mouse cursor, a touch input, or a custom software cursor (such as a game
-//! UI cursor controlled with a gamepad). As you make an application interactive, whether it's a
-//! traditional 2D UI, or 3D objects, you will run into some recurring challenges:
+//! Only pay for what you use. All non-critical plugins can be disabled, including highlighting,
+//! selection, and any backends not in use.
 //!
-//! - How do I highlight things?
-//! - How can I trigger an event when I click/drag/hover/etc over a thing?
-//! - Is it possible to do all of this across many windows?
-//! - Will this support multi-touch?
-//! - Can I test all of this somehow?
+//! #### Expressive
 //!
-//! These are the problems this crate solves.
+//! This plugin produces convenient [`PointerEvent`]s similar to those available in JS on the web:
+//! [`Click`], [`Over`], [`Drag`], and many more. To make it even easier to handle events that
+//! target a single entity, the [`EventListener`] component and event bubbling are provided. This
+//! allows you to run callbacks or forward events when, for example, the child of an entity is
+//! clicked on. This makes it very easy to express:
+//!
+//! > If entity X is hovered/clicked/dragged/etc, do Y
+//!
+//! #### Modular Backends
+//!
+//! Picking backends run hit tests to determine if a pointer is over any entities. This plugin
+//! provides a simple API to write your own backend in ~100 lines of code and includes half a dozen
+//! out of the box. These include backends for `rapier`, `bevy_mod_raycast`, and `bevy_egui` among
+//! others. Multiple backends can be used at the same time!
+//!
+//! #### Input Agnostic
+//!
+//! Pointers can be controlled with anything, whether its the included mouse or touch inputs, or a
+//! custom gamepad input system you write yourself.
+//!
+//! #### Robust
+//!
+//! In addition to these features, this plugin also correctly handles multitouch and multiple
+//! windows. Some backends, like the one for `bevy_ui`, cannot support multiple windows due to
+//! limitations of the plugin they are built for.
 //!
 //! # Getting Started
 //!
@@ -23,25 +41,24 @@
 //! ```
 //! # use bevy::prelude::*;
 //! use bevy_mod_picking::prelude::*;
-//!
-//! # struct DeleteMe(Entity);
-//! # impl<E: IsPointerEvent> ForwardedEvent<E> for DeleteMe {
-//! #     fn from_data(event_data: &EventData<E>) -> DeleteMe {
-//! #         Self(event_data.target())
-//! #     }
-//! # }
-//! # struct GreetMe(Entity);
-//! # impl<E: IsPointerEvent> ForwardedEvent<E> for GreetMe {
-//! #     fn from_data(event_data: &EventData<E>) -> GreetMe {
-//! #         Self(event_data.target())
-//! #     }
-//! # }
 //! # fn setup(
 //! #     mut commands: Commands,
+//! #     app: &mut App,
 //! # ) {
-//! commands
-//!     .spawn((PickableBundle::default(),  // Make the entity pickable
-//!         PickRaycastTarget::default()));   // Marker for the `mod_picking` backend
+//! App::new()
+//!     .add_plugins(DefaultPlugins)
+//!     .add_plugins(DefaultPickingPlugins);
+//!
+//! commands.spawn((
+//!     PbrBundle::default(),           // The `bevy_picking_raycast` backend works with meshes
+//!     PickableBundle::default(),      // Makes the entity pickable
+//!     RaycastPickTarget::default()    // Marker for the `bevy_picking_raycast` backend
+//! ));
+//!
+//! commands.spawn((
+//!     Camera3dBundle::default(),
+//!     RaycastPickCamera::default(),   // Enable picking using this camera
+//! ));
 //! # }
 //! ```
 //!
@@ -97,9 +114,10 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy_picking_core::PointerCoreBundle;
-
 use bevy::{prelude::Bundle, ui::Interaction};
+use bevy_picking_core::PointerCoreBundle;
+use prelude::*;
+
 pub use bevy_picking_core::{self as core, backend, events, focus, pointer};
 pub use bevy_picking_input::{self as input};
 
@@ -135,9 +153,9 @@ pub mod prelude {
     pub use crate::{
         backends,
         events::{
-            Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
-            EventListenerCommands, EventListenerData, ForwardedEvent, IsPointerEvent, Move, Out,
-            Over, Up,
+            Bubble, Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
+            EventListener, EventListenerCommands, EventListenerData, ForwardedEvent,
+            IsPointerEvent, Move, Out, Over, PointerEvent, Up,
         },
         plugins::DefaultPickingPlugins,
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
@@ -146,7 +164,7 @@ pub mod prelude {
 
     #[cfg(feature = "highlight")]
     pub use crate::highlight::{
-        CustomHighlightPlugin, DefaultHighlighting, HighlightOverride, HighlightingPlugin,
+        DefaultHighlightingPlugin, GlobalHighlight, Highlight, HighlightKind, HighlightPlugin,
         PickHighlight,
     };
 
@@ -192,7 +210,7 @@ pub struct PointerBundle {
 }
 impl PointerBundle {
     /// Build a new `PointerBundle` with the supplied [`PointerId`].
-    pub fn new(id: pointer::PointerId) -> PointerBundle {
+    pub fn new(id: PointerId) -> PointerBundle {
         PointerBundle {
             core: PointerCoreBundle::new(id),
             #[cfg(feature = "selection")]
