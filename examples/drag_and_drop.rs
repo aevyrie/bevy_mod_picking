@@ -82,7 +82,9 @@ fn drag_squares(
     mut square: Query<(&mut FollowPointer, &mut Transform)>,
 ) {
     for dragging in drag_events.iter() {
-        let (mut follow, mut square_transform) = square.get_mut(dragging.target).unwrap();
+        let Ok((mut follow, mut square_transform)) = square.get_mut(dragging.target) else {
+            continue;
+        };
         if follow.is_added() {
             // If the component was just added, use the square's position to compute the offset from
             // the pointer to the square's origin. Without this, the center of the square would snap
