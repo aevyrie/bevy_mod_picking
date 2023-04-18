@@ -28,7 +28,7 @@ impl Plugin for SpriteBackend {
 /// Checks if any sprite entities are under each pointer
 pub fn sprite_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    cameras: Query<(Entity, &Camera)>,
+    cameras: Query<(Entity, &Camera, &GlobalTransform)>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
     sprite_query: Query<(
@@ -52,9 +52,9 @@ pub fn sprite_picking(
         pointer_location.location().map(|loc| (pointer, loc))
     }) {
         let mut blocked = false;
-        let (cam_entity, camera) = cameras
+        let (cam_entity, camera, cam_transform) = cameras
             .iter()
-            .find(|(_entity, camera)| {
+            .find(|(_, camera, _)| {
                 camera
                     .target
                     .normalize(Some(primary_window.single()))
@@ -62,13 +62,10 @@ pub fn sprite_picking(
                     == location.target
             })
             .unwrap_or_else(|| panic!("No camera found associated with pointer {:?}.", pointer));
-        let target_half_extents = if let Some(target) = camera.logical_target_size() {
-            target / 2.0
-        } else {
+
+        let Some(cursor_pos_world) = camera.viewport_to_world_2d(cam_transform, location.position) else {
             continue;
         };
-        let cursor_position = location.position;
-        let cursor_pos_centered = cursor_position - target_half_extents;
 
         let picks: Vec<(Entity, PickData)> = sorted_sprites
             .iter()
@@ -86,7 +83,7 @@ pub fn sprite_picking(
                     let center = position.truncate() + (sprite.anchor.as_vec() * half_extents);
                     let rect = Rect::from_center_half_size(center, half_extents);
 
-                    let is_cursor_in_sprite = rect.contains(cursor_pos_centered);
+                    let is_cursor_in_sprite = rect.contains(cursor_pos_world);
                     blocked = is_cursor_in_sprite && sprite_focus != Some(&FocusPolicy::Pass);
 
                     is_cursor_in_sprite.then_some((
