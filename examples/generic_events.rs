@@ -17,8 +17,10 @@ fn main() {
                 .disable::<DebugPickingPlugin>(),
         )
         .add_startup_system(setup)
-        .add_system(SpecificEvent::handle_events)
-        .add_system(GeneralEvent::handle_events)
+        .add_event::<SpecificEvent>()
+        .add_event::<GeneralEvent>()
+        .add_system(SpecificEvent::print_events)
+        .add_system(GeneralEvent::print_events)
         .run();
 }
 
@@ -36,7 +38,7 @@ struct SpecificEvent {
 impl ForwardedEvent<Over> for SpecificEvent {
     fn from_data(event_data: &EventListenerData<Over>) -> SpecificEvent {
         SpecificEvent {
-            entity: event_data.target(),
+            entity: event_data.target,
             greeting: "Hello".into(),
         }
     }
@@ -45,14 +47,14 @@ impl ForwardedEvent<Over> for SpecificEvent {
 impl ForwardedEvent<Out> for SpecificEvent {
     fn from_data(event_data: &EventListenerData<Out>) -> SpecificEvent {
         SpecificEvent {
-            entity: event_data.target(),
+            entity: event_data.target,
             greeting: "Goodbye".into(),
         }
     }
 }
 // Finally, do something with our events.
 impl SpecificEvent {
-    fn handle_events(mut greet: EventReader<SpecificEvent>) {
+    fn print_events(mut greet: EventReader<SpecificEvent>) {
         for event in greet.iter() {
             info!("Specific: {} {:?}!", event.greeting, event.entity);
         }
@@ -68,9 +70,9 @@ impl<E: IsPointerEvent> ForwardedEvent<E> for GeneralEvent {
     }
 }
 impl GeneralEvent {
-    fn handle_events(mut greet: EventReader<GeneralEvent>) {
+    fn print_events(mut greet: EventReader<GeneralEvent>) {
         for _event in greet.iter() {
-            info!("General: An event was triggered, but we don't know why.");
+            info!("General: Some event was triggered, but we don't know which.");
         }
     }
 }
@@ -91,12 +93,12 @@ fn setup(
             },
             PickableBundle::default(),
             RaycastPickTarget::default(),
+            EventListener::<Over>::forward_event::<SpecificEvent>(),
+            EventListener::<Out>::forward_event::<SpecificEvent>(),
+            EventListener::<Down>::forward_event::<GeneralEvent>(),
         ))
         // Because event forwarding can rely on event bubbling, events that target children of the
         // parent cube will also bubble up to this parent level and will fire off an event:
-        .forward_events::<Over, SpecificEvent>()
-        .forward_events::<Out, SpecificEvent>()
-        .forward_events::<Down, GeneralEvent>()
         .with_children(|parent| {
             parent.spawn((
                 PbrBundle {

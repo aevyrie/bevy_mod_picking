@@ -5,10 +5,15 @@ use highlight::HighlightKind;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-        .add_plugins(DefaultPickingPlugins)
+        .add_plugins(
+            DefaultPickingPlugins
+                .build()
+                .disable::<DebugPickingPlugin>(),
+        )
         .add_startup_system(setup)
         .add_system(make_pickable)
-        .add_system(HelmetClicked::handle_events)
+        .add_event::<HelmetClicked>()
+        .add_system(HelmetClicked::print_events)
         .run();
 }
 
@@ -25,33 +30,31 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         directional_light: DirectionalLight { ..default() },
         ..default()
     });
-    commands
-        .spawn(SceneBundle {
+    commands.spawn((
+        SceneBundle {
             scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
             ..default()
-        })
-        // Check out this neat trick!
-        //
-        // Because event forwarding uses event bubbling, events that target children of the scene
-        // will bubble up to this level and will fire off a `HelmetClicked` event.
-        .forward_events::<Click, HelmetClicked>();
+        },
+        // Check out this neat trick! Events that target children of the scene will bubble up to
+        // this level and will fire off a `HelmetClicked` event.
+        EventListener::<Click>::forward_event::<HelmetClicked>(),
+    ));
 }
 
 struct HelmetClicked(Entity);
 impl<E: IsPointerEvent> ForwardedEvent<E> for HelmetClicked {
     fn from_data(event_data: &EventListenerData<E>) -> Self {
         // Note that we forward the target, not the listener! The target is the child that the event
-        // was originally called on, whereas the listener is the parent entity that was listening
-        // for the event that bubbled up from the target. This is what allows us to add a listener
-        // to the parent scene, yet still know exactly what child entity was interacted with.
-        Self(event_data.target())
+        // was targeting, whereas the listener is the parent with the `EventListener` component.
+        // This is what allows us to add a listener to the parent scene, yet still know precisely
+        // which child entity was clicked on.
+        Self(event_data.target)
     }
 }
 impl HelmetClicked {
-    /// Handle our custom forwarded event.
-    fn handle_events(mut click_events: EventReader<HelmetClicked>) {
+    fn print_events(mut click_events: EventReader<HelmetClicked>) {
         for event in click_events.iter() {
-            info!("Hello {:?}!", event.0);
+            info!("Clicked on: {:?}!", event.0);
         }
     }
 }
@@ -72,15 +75,15 @@ fn make_pickable(
 
 const HIGHLIGHT_TINT: Highlight<StandardMaterial> = Highlight {
     hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.5, -0.3, 0.5, 0.0),
+        base_color: matl.base_color + vec4(-0.5, -0.3, 0.9, 0.8),
         ..matl.to_owned()
     })),
     pressed: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.4, -0.4, 0.6, 0.0),
+        base_color: matl.base_color + vec4(-0.4, -0.4, 0.8, 0.8),
         ..matl.to_owned()
     })),
     selected: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.4, 0.3, -0.4, 0.0),
+        base_color: matl.base_color + vec4(-0.4, 0.8, -0.4, 0.0),
         ..matl.to_owned()
     })),
 };

@@ -39,7 +39,7 @@ pub fn sprite_picking(
         &ComputedVisibility,
         Option<&FocusPolicy>,
     )>,
-    mut output: EventWriter<EntitiesUnderPointer>,
+    mut output: EventWriter<PointerHits>,
 ) {
     let mut sorted_sprites: Vec<_> = sprite_query.iter().collect();
     sorted_sprites.sort_by(|a, b| {
@@ -67,7 +67,7 @@ pub fn sprite_picking(
             continue;
         };
 
-        let picks: Vec<(Entity, PickData)> = sorted_sprites
+        let picks: Vec<(Entity, HitData)> = sorted_sprites
             .iter()
             .copied()
             .filter_map(
@@ -88,7 +88,7 @@ pub fn sprite_picking(
 
                     is_cursor_in_sprite.then_some((
                         entity,
-                        PickData {
+                        HitData {
                             camera: cam_entity,
                             depth: position.z,
                             position: None,
@@ -99,7 +99,7 @@ pub fn sprite_picking(
             )
             .collect();
 
-        output.send(EntitiesUnderPointer {
+        output.send(PointerHits {
             pointer: *pointer,
             picks,
             order: 0,

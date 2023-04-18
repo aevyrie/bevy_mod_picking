@@ -10,7 +10,7 @@
 use bevy::{prelude::*, utils::hashbrown::HashSet};
 use bevy_picking_core::{
     events::{Click, Down, IsPointerEvent, PointerEvent},
-    pointer::{InputPress, PointerButton, PointerId},
+    pointer::{InputPress, PointerButton, PointerId, PointerLocation},
     PickSet,
 };
 
@@ -113,7 +113,7 @@ pub fn send_selection_events(
     mut pointer_down: EventReader<PointerEvent<Down>>,
     mut presses: EventReader<InputPress>,
     mut pointer_click: EventReader<PointerEvent<Click>>,
-    pointers: Query<(&PointerId, &PointerMultiselect)>,
+    pointers: Query<(&PointerId, &PointerMultiselect, &PointerLocation)>,
     no_deselect: Query<&NoDeselect>,
     selectables: Query<(Entity, &PickSelection)>,
     // Output
@@ -123,19 +123,30 @@ pub fn send_selection_events(
     // Pointers that have clicked on something.
     let mut pointer_down_list = HashSet::new();
 
-    for down in pointer_down.iter() {
-        pointer_down_list.insert(down.pointer_id);
+    for PointerEvent {
+        pointer_id,
+        pointer_location,
+        target,
+        event: _,
+    } in pointer_down.iter()
+    {
+        pointer_down_list.insert(pointer_id);
         let multiselect = pointers
             .iter()
-            .find_map(|(id, multi)| (id == &down.pointer_id).then_some(multi.is_pressed))
+            .find_map(|(id, multi, _)| (id == pointer_id).then_some(multi.is_pressed))
             .unwrap_or(false);
-        let target_can_deselect = no_deselect.get(down.target).is_err();
+        let target_can_deselect = no_deselect.get(*target).is_err();
         // Deselect everything
         if !multiselect && target_can_deselect {
             for (entity, selection) in selectables.iter() {
-                let not_click_target = down.target != entity;
+                let not_click_target = *target != entity;
                 if selection.is_selected && not_click_target {
-                    deselections.send(PointerEvent::new(down.pointer_id, entity, Deselect))
+                    deselections.send(PointerEvent::new(
+                        *pointer_id,
+                        pointer_location.to_owned(),
+                        entity,
+                        Deselect,
+                    ))
                 }
             }
         }
@@ -149,34 +160,60 @@ pub fn send_selection_events(
             .filter(|p| p.is_just_down(PointerButton::Primary))
         {
             let id = press.pointer_id;
-            let multiselect = pointers
+            let Some((multiselect, location)) = pointers
                 .iter()
-                .find_map(|(this_id, multi)| (*this_id == id).then_some(multi.is_pressed))
-                .unwrap_or(false);
+                .find_map(|(this_id, multi, location)| {
+                    (*this_id == id)
+                        .then_some(location.location.clone())
+                        .flatten()
+                        .map(|location| (multi.is_pressed, location))
+                }) else {
+                    continue
+                };
             if !pointer_down_list.contains(&id) && !multiselect {
                 for (entity, selection) in selectables.iter() {
                     if selection.is_selected {
-                        deselections.send(PointerEvent::new(id, entity, Deselect))
+                        deselections.send(PointerEvent::new(id, location.clone(), entity, Deselect))
                     }
                 }
             }
         }
     }
 
-    for click in pointer_click.iter() {
-        let pointer = click.pointer_id;
+    for PointerEvent {
+        pointer_id,
+        pointer_location,
+        target,
+        event: _,
+    } in pointer_click.iter()
+    {
         let multiselect = pointers
             .iter()
-            .find_map(|(id, multi)| id.eq(&id).then_some(multi.is_pressed))
+            .find_map(|(id, multi, _)| id.eq(&id).then_some(multi.is_pressed))
             .unwrap_or(false);
-        if let Ok((entity, selection)) = selectables.get(click.target) {
+        if let Ok((entity, selection)) = selectables.get(*target) {
             if multiselect {
                 match selection.is_selected {
-                    true => deselections.send(PointerEvent::new(pointer, entity, Deselect)),
-                    false => selections.send(PointerEvent::new(pointer, entity, Select)),
+                    true => deselections.send(PointerEvent::new(
+                        *pointer_id,
+                        pointer_location.to_owned(),
+                        entity,
+                        Deselect,
+                    )),
+                    false => selections.send(PointerEvent::new(
+                        *pointer_id,
+                        pointer_location.to_owned(),
+                        entity,
+                        Select,
+                    )),
                 }
             } else if !selection.is_selected {
-                selections.send(PointerEvent::new(pointer, entity, Select))
+                selections.send(PointerEvent::new(
+                    *pointer_id,
+                    pointer_location.to_owned(),
+                    entity,
+                    Select,
+                ))
             }
         }
     }

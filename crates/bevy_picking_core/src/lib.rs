@@ -99,9 +99,9 @@ pub enum PickSet {
     PostInput,
     /// Receives and processes pointer input events.
     ProcessInput,
-    /// Reads inputs and produces [`backend::EntitiesUnderPointer`]s.
+    /// Reads inputs and produces [`backend::PointerHits`]s.
     Backend,
-    /// Reads [`backend::EntitiesUnderPointer`]s, and updates focus, selection, and highlighting
+    /// Reads [`backend::PointerHits`]s, and updates focus, selection, and highlighting
     /// states.
     Focus,
     /// Runs after all the focus systems are done, before event listeners are triggered.
@@ -120,7 +120,7 @@ impl Plugin for CorePlugin {
             .init_resource::<pointer::PointerMap>()
             .add_event::<pointer::InputPress>()
             .add_event::<pointer::InputMove>()
-            .add_event::<backend::EntitiesUnderPointer>()
+            .add_event::<backend::PointerHits>()
             .add_system(pointer::update_pointer_map.in_set(PickSet::Input))
             .add_systems(
                 (pointer::InputMove::receive, pointer::InputPress::receive)

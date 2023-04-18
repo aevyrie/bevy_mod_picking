@@ -18,18 +18,23 @@ use bevy_mod_picking::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-        .add_plugins(DefaultPickingPlugins)
+        .add_plugins(
+            DefaultPickingPlugins
+                .build()
+                .disable::<DebugPickingPlugin>(),
+        )
         .add_startup_system(setup)
-        .add_system(Greeting::handle_events)
+        .add_event::<Greeting>()
+        .add_system(Greeting::print_events)
         .run();
 }
 
 /// A callback function used with an `EventListener`.
 fn delete_target(commands: &mut Commands, event: &EventListenerData<Click>, _: &mut Bubble) {
     // We don't want to despawn the parent cube, just the children
-    if event.listener() != event.target() {
-        commands.entity(event.target()).despawn();
-        info!("I deleted the thing!");
+    if event.listener != event.target {
+        commands.entity(event.target).despawn();
+        info!("I deleted {:?}!", event.target);
     }
 }
 
@@ -37,11 +42,11 @@ fn delete_target(commands: &mut Commands, event: &EventListenerData<Click>, _: &
 struct Greeting(Entity);
 impl ForwardedEvent<Over> for Greeting {
     fn from_data(event_data: &EventListenerData<Over>) -> Greeting {
-        Greeting(event_data.target())
+        Greeting(event_data.target)
     }
 }
 impl Greeting {
-    fn handle_events(mut greet: EventReader<Greeting>) {
+    fn print_events(mut greet: EventReader<Greeting>) {
         for event in greet.iter() {
             info!("Hello {:?}!", event.0);
         }
@@ -64,10 +69,11 @@ fn setup(
             RaycastPickTarget::default(),
             // When any of this entity's children are clicked, they will be deleted
             EventListener::<Click>::callback(delete_target),
+            // `forward_event` is a special case of `callback` that simply sends a user event when a
+            // specific pointer event reaches this entity. In this case, when a pointer over event
+            // occurs for any children of this entity, a `Greeting` event will be sent.
+            EventListener::<Over>::forward_event::<Greeting>(),
         ))
-        // Because event forwarding uses bubbling, events that target children of the parent cube
-        // will bubble up to this level and will fire off a `Greeting` event.
-        .forward_events::<Over, Greeting>()
         .with_children(|parent| {
             for i in 1..=5 {
                 parent.spawn((

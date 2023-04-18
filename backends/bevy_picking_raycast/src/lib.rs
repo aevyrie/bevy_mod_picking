@@ -126,11 +126,11 @@ pub fn spawn_raycast_sources(
     })
 }
 
-/// Produces [`EntitiesUnderPointer`]s from [`RaycastSource`] intersections.
+/// Produces [`PointerHits`]s from [`RaycastSource`] intersections.
 fn update_hits(
     pick_cameras: Query<(Entity, &Camera), With<RaycastPickCamera>>,
     mut pick_sources: Query<(&PointerMarker, &RaycastSource<RaycastPickingSet>, &Parent)>,
-    mut output_events: EventWriter<EntitiesUnderPointer>,
+    mut output_events: EventWriter<PointerHits>,
 ) {
     pick_sources
         .iter_mut()
@@ -141,13 +141,13 @@ fn update_hits(
                 .ok()
         })
         .for_each(|(pointer_marker, pick_source, cam_entity, camera)| {
-            let under_cursor: Vec<(Entity, PickData)> = pick_source
+            let under_cursor: Vec<(Entity, HitData)> = pick_source
                 .intersections()
                 .iter()
                 .map(|(entity, intersection)| {
                     (
                         *entity,
-                        PickData {
+                        HitData {
                             camera: cam_entity,
                             depth: intersection.distance(),
                             position: Some(intersection.position()),
@@ -158,7 +158,7 @@ fn update_hits(
                 .collect();
 
             if !under_cursor.is_empty() {
-                output_events.send(EntitiesUnderPointer {
+                output_events.send(PointerHits {
                     pointer: pointer_marker.0,
                     picks: under_cursor,
                     order: camera.order,

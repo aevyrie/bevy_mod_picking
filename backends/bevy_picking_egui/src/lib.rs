@@ -66,7 +66,7 @@ pub fn update_settings(
 pub fn egui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
     mut egui_context: Query<(Entity, &mut EguiContext)>,
-    mut output: EventWriter<EntitiesUnderPointer>,
+    mut output: EventWriter<PointerHits>,
 ) {
     for (pointer, location) in pointers
         .iter()
@@ -77,7 +77,7 @@ pub fn egui_picking(
                 if ctx.get_mut().is_pointer_over_area() {
                     let entry = (
                         entity,
-                        PickData {
+                        HitData {
                             camera: entity,
                             depth: 0.0,
                             position: None,
@@ -85,7 +85,7 @@ pub fn egui_picking(
                         },
                     );
 
-                    output.send(EntitiesUnderPointer {
+                    output.send(PointerHits {
                         pointer: *pointer,
                         picks: Vec::from([entry]),
                         order: 1_000_000, // Assume egui should be on top of everything else.

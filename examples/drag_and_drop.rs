@@ -40,6 +40,12 @@ fn setup(
     commands.spawn((Camera2dBundle::default(), RaycastPickCamera::default())); // <- Sets the camera to use for picking.
 }
 
+#[derive(Component)]
+struct FollowPointer {
+    camera: Entity,
+    offset: Vec2, // Initial click position, so the square is moved by the point it was clicked
+}
+
 /// When we start dragging, we don't want this entity to prevent picking squares underneath
 fn make_non_pickable(
     commands: &mut Commands,
@@ -47,47 +53,47 @@ fn make_non_pickable(
     _: &mut Bubble,
 ) {
     commands
-        .entity(event.target())
-        .remove::<RaycastPickTarget>();
+        .entity(event.target)
+        .remove::<RaycastPickTarget>()
+        .insert(FollowPointer {
+            camera: event.inner.hit.camera,
+            offset: event.inner.hit.position.unwrap().truncate(),
+        });
 }
 
 fn make_pickable(commands: &mut Commands, event: &EventListenerData<DragEnd>, _: &mut Bubble) {
     commands
-        .entity(event.target())
-        .insert(RaycastPickTarget::default());
+        .entity(event.target)
+        .insert(RaycastPickTarget::default())
+        .remove::<FollowPointer>();
 }
 
 fn spin_target(commands: &mut Commands, event: &EventListenerData<Drop>, _: &mut Bubble) {
-    let dropped = event.event().dropped_entity;
+    let dropped = event.inner.dropped_entity;
     commands.entity(dropped).insert(SpinTarget(FRAC_PI_2));
-    let onto = event.target();
+    let onto = event.target;
     commands.entity(onto).insert(SpinTarget(-FRAC_PI_2));
 }
 
-#[allow(clippy::too_many_arguments)]
+// While being dragged, update the position of the square to be under the pointer.
 fn drag_squares(
     mut drag_events: EventReader<PointerEvent<Drag>>,
-    pointers: Res<PointerMap>,
-    windows: Query<(Entity, &Window)>,
-    images: Res<Assets<Image>>,
-    locations: Query<&PointerLocation>,
-    // Outputs
-    mut square: Query<(Entity, &mut Transform)>,
+    cameras: Query<(&Camera, &GlobalTransform)>,
+    mut square: Query<(&mut FollowPointer, &mut Transform)>,
 ) {
-    // While being dragged, update the position of the square to be under the pointer.
     for dragging in drag_events.iter() {
-        let pointer_entity = pointers.get_entity(dragging.pointer_id).unwrap();
-        let pointer_location = locations.get(pointer_entity).unwrap().location().unwrap();
-        let pointer_position = pointer_location.position;
-        let target = pointer_location
-            .target
-            .get_render_target_info(&windows, &images)
-            .unwrap();
-        let target_size = target.physical_size.as_vec2() / target.scale_factor as f32;
-
-        let (_, mut square_transform) = square.get_mut(dragging.target).unwrap();
-        let z = square_transform.translation.z;
-        square_transform.translation = (pointer_position - (target_size / 2.0)).extend(z);
+        let (mut follow, mut square_transform) = square.get_mut(dragging.target).unwrap();
+        if follow.is_added() {
+            // If the component was just added, use the square's position to compute the offset from
+            // the pointer to the square's origin. Without this, the center of the square would snap
+            // to the pointer when dragging started.
+            follow.offset -= square_transform.translation.truncate();
+        }
+        let (camera, cam_transform) = cameras.get(follow.camera).unwrap();
+        let pointer_world =
+            camera.viewport_to_world_2d(cam_transform, dragging.pointer_location.position);
+        square_transform.translation =
+            (pointer_world.unwrap() - follow.offset).extend(square_transform.translation.z);
     }
 }
 

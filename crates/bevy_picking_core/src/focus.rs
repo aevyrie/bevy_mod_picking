@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    backend::{self, PickData},
+    backend::{self, HitData},
     events::{Down, IsPointerEvent, Out, Over, PointerCancel, PointerEvent, Up},
     pointer::PointerId,
 };
@@ -17,7 +17,7 @@ use bevy::{
 };
 
 /// A map of entities sorted by depth.
-type DepthMap = BTreeMap<FloatOrd, (Entity, PickData)>;
+type DepthMap = BTreeMap<FloatOrd, (Entity, HitData)>;
 
 /// Events returned from backends can be grouped with an order field. This allows picking to work
 /// with multiple layers of rendered output to the same render target.
@@ -36,11 +36,11 @@ type OverMap = HashMap<PointerId, LayerMap>;
 /// pointer is "hovering" an entity only if the mouse is "over" the entity AND it is the topmost
 /// entity(s) according to `FocusPolicy` and `RenderLayer`.
 #[derive(Debug, Deref, DerefMut, Default, Resource)]
-pub struct HoverMap(pub HashMap<PointerId, HashMap<Entity, PickData>>);
+pub struct HoverMap(pub HashMap<PointerId, HashMap<Entity, HitData>>);
 
 /// The previous state of the hover map, used to track changes to hover state.
 #[derive(Debug, Deref, DerefMut, Default, Resource)]
-pub struct PreviousHoverMap(pub HashMap<PointerId, HashMap<Entity, PickData>>);
+pub struct PreviousHoverMap(pub HashMap<PointerId, HashMap<Entity, HitData>>);
 
 /// Coalesces all data from inputs and backends to generate a map of the currently hovered entities.
 /// This is the final focusing step to determine which entity the pointer is hovering over.
@@ -48,7 +48,7 @@ pub fn update_focus(
     // Inputs
     focus: Query<&FocusPolicy>,
     pointers: Query<&PointerId>,
-    mut under_pointer: EventReader<backend::EntitiesUnderPointer>,
+    mut under_pointer: EventReader<backend::PointerHits>,
     mut cancellations: EventReader<PointerCancel>,
     // Local
     mut over_map: Local<OverMap>,
@@ -93,7 +93,7 @@ fn reset_maps(
 
 /// Build an ordered map of entities that are under each pointer
 fn build_over_map(
-    backend_events: &mut EventReader<backend::EntitiesUnderPointer>,
+    backend_events: &mut EventReader<backend::PointerHits>,
     pointer_over_map: &mut Local<OverMap>,
     pointer_cancel: &mut EventReader<PointerCancel>,
 ) {

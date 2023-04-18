@@ -1,5 +1,5 @@
 //! A flexible set of plugins that add picking functionality to your [`bevy`] app, with a focus on
-//! ergonomics, modularity, and ease of use.
+//! modularity, expressiveness, and robustness.
 //!
 //! #### Lightweight
 //!
@@ -10,18 +10,19 @@
 //!
 //! [`PointerEvent`]s make it easy to react to interactions like [`Click`], [`Over`], or [`Drag`].
 //! Reacting to these interaction events on a specific entity is made possible with the
-//! [`EventListener`] component and event bubbling. As events are generated, they bubble up the
-//! entity hierarchy, looking for event listeners.
+//! [`EventListener`] component and event bubbling. When events are generated, they bubble up the
+//! entity hierarchy starting from their target, looking for event listeners.
 //!
-//! This allows you to, for example, run a callback when any child of the listening entity is
-//! clicked on:
+//! This allows you to run callbacks when any children of an entity are interacted with:
 //!
 //! >
 //!
-//! ```no_run
+//! ```
 //! commands.spawn((
-//!     // If any children are clicked, delete them.
+//!     // When a child entity is clicked, delete it.
 //!     EventListener::<Click>::callback(delete_target),
+//!
+//!     EventListener::<Click>::forward_event<>,
 //! ))
 //!
 //! ```
@@ -29,9 +30,10 @@
 //! #### Modular
 //!
 //! Picking backends run hit tests to determine if a pointer is over any entities. This plugin
-//! provides a simple API to write your own backend in about 100 lines of code; it also and includes
-//! half a dozen backends out of the box. These include `rapier`, `bevy_mod_raycast`, and
-//! `bevy_egui` among others. Multiple backends can be used at the same time!
+//! provides a [simple API to write your own backend](crate::backend) in about 100 lines of code; it
+//! also and includes half a dozen backends out of the box. These include `rapier`,
+//! `bevy_mod_raycast`, and `bevy_egui` among others. Multiple backends can be used at the same
+//! time!
 //!
 //! #### Input Agnostic
 //!
@@ -165,8 +167,8 @@ pub mod prelude {
         backends,
         events::{
             Bubble, Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
-            EventListener, EventListenerCommands, EventListenerData, ForwardedEvent,
-            IsPointerEvent, Move, Out, Over, PointerEvent, Up,
+            EventListener, EventListenerData, ForwardedEvent, IsPointerEvent, Move, Out, Over,
+            PointerEvent, Up,
         },
         plugins::DefaultPickingPlugins,
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},

@@ -38,7 +38,7 @@ pub fn ui_picking(
         ),
         Without<PointerId>,
     >,
-    mut output: EventWriter<EntitiesUnderPointer>,
+    mut output: EventWriter<PointerHits>,
 ) {
     for (pointer, location) in pointers.iter().filter_map(|(pointer, pointer_location)| {
         pointer_location
@@ -93,7 +93,7 @@ pub fn ui_picking(
 
                 contains_cursor.then_some((
                     entity,
-                    PickData {
+                    HitData {
                         camera,
                         depth: position.z,
                         position: None,
@@ -103,7 +103,7 @@ pub fn ui_picking(
             })
             .collect::<Vec<_>>();
 
-        output.send(EntitiesUnderPointer {
+        output.send(PointerHits {
             pointer: *pointer,
             picks: over_list,
             order: 10,

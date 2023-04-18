@@ -77,12 +77,12 @@ pub fn build_rays_from_pointers(
     }
 }
 
-/// Produces [`EntitiesUnderPointer`]s from [`RapierPickRay`] intersections.
+/// Produces [`PointerHits`]s from [`RapierPickRay`] intersections.
 fn update_hits(
     rapier_context: Option<Res<RapierContext>>,
     targets: Query<With<RapierPickTarget>>,
     mut sources: Query<(Entity, &Camera, &mut RapierPickCamera)>,
-    mut output: EventWriter<EntitiesUnderPointer>,
+    mut output: EventWriter<PointerHits>,
 ) {
     let rapier_context = match rapier_context {
         Some(c) => c,
@@ -112,15 +112,15 @@ fn update_hits(
                 })
         })
         .for_each(|(cam_entity, cam_order, pointer, target, intersection)| {
-            let pick_data = PickData {
+            let hit = HitData {
                 camera: cam_entity,
                 depth: intersection.toi,
                 position: Some(intersection.point),
                 normal: Some(intersection.normal),
             };
-            output.send(EntitiesUnderPointer {
+            output.send(PointerHits {
                 pointer: pointer,
-                picks: vec![(target, pick_data)],
+                picks: vec![(target, hit)],
                 order: cam_order,
             });
         });

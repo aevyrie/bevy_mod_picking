@@ -46,12 +46,6 @@ fn setup(
     commands.spawn((
         Camera3dBundle {
             transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-            // Uncomment the following lines to try out orthographic projection:
-            //
-            // projection: bevy::render::camera::Projection::Orthographic(OrthographicProjection {
-            //     scale: 0.01,
-            //     ..Default::default()
-            // }),
             ..Default::default()
         },
         RaycastPickCamera::default(), // <- Enable picking for this camera
