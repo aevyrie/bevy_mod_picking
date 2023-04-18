@@ -3,25 +3,35 @@
 //!
 //! #### Lightweight
 //!
-//! Only pay for what you use. All non-critical plugins can be disabled, including highlighting,
+//! Only compile what you use. All non-critical plugins can be disabled, including highlighting,
 //! selection, and any backends not in use.
 //!
 //! #### Expressive
 //!
-//! This plugin produces convenient [`PointerEvent`]s similar to those available in JS on the web:
-//! [`Click`], [`Over`], [`Drag`], and many more. To make it even easier to handle events that
-//! target a single entity, the [`EventListener`] component and event bubbling are provided. This
-//! allows you to run callbacks or forward events when, for example, the child of an entity is
-//! clicked on. This makes it very easy to express:
+//! [`PointerEvent`]s make it easy to react to interactions like [`Click`], [`Over`], or [`Drag`].
+//! Reacting to these interaction events on a specific entity is made possible with the
+//! [`EventListener`] component and event bubbling. As events are generated, they bubble up the
+//! entity hierarchy, looking for event listeners.
 //!
-//! > If entity X is hovered/clicked/dragged/etc, do Y
+//! This allows you to, for example, run a callback when any child of the listening entity is
+//! clicked on:
 //!
-//! #### Modular Backends
+//! >
+//!
+//! ```no_run
+//! commands.spawn((
+//!     // If any children are clicked, delete them.
+//!     EventListener::<Click>::callback(delete_target),
+//! ))
+//!
+//! ```
+//!
+//! #### Modular
 //!
 //! Picking backends run hit tests to determine if a pointer is over any entities. This plugin
-//! provides a simple API to write your own backend in ~100 lines of code and includes half a dozen
-//! out of the box. These include backends for `rapier`, `bevy_mod_raycast`, and `bevy_egui` among
-//! others. Multiple backends can be used at the same time!
+//! provides a simple API to write your own backend in about 100 lines of code; it also and includes
+//! half a dozen backends out of the box. These include `rapier`, `bevy_mod_raycast`, and
+//! `bevy_egui` among others. Multiple backends can be used at the same time!
 //!
 //! #### Input Agnostic
 //!
@@ -105,7 +115,8 @@
 //!
 //! In the final step, the high-level pointer events are generated, such as events that trigger when
 //! a pointer hovers or clicks an entity. These simple events are then used to generate more complex
-//! events for dragging and dropping. Once all events have been generated, the event bubbline
+//! events for dragging and dropping. Once all events have been generated, the event bubbling
+//! systems propagate events through the entity hierarchy, triggering [`EventListener`]s.
 //!
 //!  Because it is completely agnostic to the the earlier stages of the pipeline, you can easily
 //! extend the plugin with arbitrary backends and input methods.
@@ -224,7 +235,7 @@ impl PointerBundle {
 pub fn low_latency_window_plugin() -> bevy::window::WindowPlugin {
     bevy::window::WindowPlugin {
         primary_window: Some(bevy::window::Window {
-            present_mode: bevy::window::PresentMode::Mailbox,
+            present_mode: bevy::window::PresentMode::AutoNoVsync,
             ..Default::default()
         }),
         ..Default::default()

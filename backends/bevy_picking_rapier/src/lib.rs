@@ -91,11 +91,11 @@ fn update_hits(
 
     sources
         .iter_mut()
-        .flat_map(|(entity, camera, mut source)| {
+        .flat_map(|(entity, camera, source)| {
             source
                 .ray_map
-                .drain()
-                .map(|(pointer, ray)| (entity, camera.order, pointer, ray))
+                .iter()
+                .map(|(pointer, ray)| (entity, camera.order, *pointer, *ray))
                 .collect::<Vec<_>>()
         })
         .filter_map(|(cam_entity, cam_order, pointer, ray)| {
