@@ -29,30 +29,6 @@ fn main() {
         .run();
 }
 
-/// A callback function used with an `EventListener`.
-fn delete_target(commands: &mut Commands, event: &EventListenerData<Click>, _: &mut Bubble) {
-    // We don't want to despawn the parent cube, just the children
-    if event.listener != event.target {
-        commands.entity(event.target).despawn();
-        info!("I deleted {:?}!", event.target);
-    }
-}
-
-/// A forwarded event, an alternative to using callbacks.
-struct Greeting(Entity);
-impl ForwardedEvent<Over> for Greeting {
-    fn from_data(event_data: &EventListenerData<Over>) -> Greeting {
-        Greeting(event_data.target)
-    }
-}
-impl Greeting {
-    fn print_events(mut greet: EventReader<Greeting>) {
-        for event in greet.iter() {
-            info!("Hello {:?}!", event.0);
-        }
-    }
-}
-
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -107,4 +83,28 @@ fn setup(
         },
         RaycastPickCamera::default(),
     ));
+}
+
+/// A callback function used with an `EventListener`.
+fn delete_target(commands: &mut Commands, event: &ListenedEvent<Click>, _: &mut Bubble) {
+    // We don't want to despawn the parent cube, just the children
+    if event.listener != event.target {
+        commands.entity(event.target).despawn();
+        info!("I deleted {:?}!", event.target);
+    }
+}
+
+/// A forwarded event, an alternative to using callbacks.
+struct Greeting(Entity);
+impl ForwardedEvent<Over> for Greeting {
+    fn from_data(event_data: &ListenedEvent<Over>) -> Greeting {
+        Greeting(event_data.target)
+    }
+}
+impl Greeting {
+    fn print_events(mut greet: EventReader<Greeting>) {
+        for event in greet.iter() {
+            info!("Hello {:?}!", event.0);
+        }
+    }
 }

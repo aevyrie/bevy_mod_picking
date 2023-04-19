@@ -14,7 +14,7 @@ use bevy::{ecs::event::Event, prelude::*, utils::HashMap};
 /// into the custom event type.
 pub trait ForwardedEvent<E: IsPointerEvent>: Event {
     /// Create a new event from [`EventListenerData`].
-    fn from_data(event_data: &EventListenerData<E>) -> Self;
+    fn from_data(event_data: &ListenedEvent<E>) -> Self;
 }
 
 /// An `EventListener` marks an entity, informing the [`event_bubbling`] system to run the
@@ -24,13 +24,13 @@ pub trait ForwardedEvent<E: IsPointerEvent>: Event {
 pub struct EventListener<E: IsPointerEvent> {
     #[reflect(ignore)]
     /// A function that is called when the event listener is triggered.
-    callback: fn(&mut Commands, &EventListenerData<E>, &mut Bubble),
+    callback: fn(&mut Commands, &ListenedEvent<E>, &mut Bubble),
 }
 
 impl<E: IsPointerEvent> EventListener<E> {
     /// Create an [`EventListener`] that will run the supplied `callback` function with access to
     /// bevy [`Commands`] when the pointer event reaches this entity.
-    pub fn callback(callback: fn(&mut Commands, &EventListenerData<E>, &mut Bubble)) -> Self {
+    pub fn callback(callback: fn(&mut Commands, &ListenedEvent<E>, &mut Bubble)) -> Self {
         Self { callback }
     }
 
@@ -38,7 +38,7 @@ impl<E: IsPointerEvent> EventListener<E> {
     /// triggered, then continue to bubble the original event up this entity's hierarchy.
     pub fn forward_event<F: ForwardedEvent<E>>() -> Self {
         Self::callback(
-            |commands: &mut Commands, event_data: &EventListenerData<E>, _bubble: &mut Bubble| {
+            |commands: &mut Commands, event_data: &ListenedEvent<E>, _bubble: &mut Bubble| {
                 let forwarded_event = F::from_data(event_data);
                 commands.add(|world: &mut World| {
                     let mut events = world.get_resource_or_insert_with(Events::<F>::default);
@@ -56,7 +56,7 @@ impl<E: IsPointerEvent> EventListener<E> {
     pub fn forward_event_and_halt<F: ForwardedEvent<E>>() -> Self {
         Self {
             callback: |commands: &mut Commands,
-                       event_data: &EventListenerData<E>,
+                       event_data: &ListenedEvent<E>,
                        bubble: &mut Bubble| {
                 let forwarded_event = F::from_data(event_data);
                 commands.add(|world: &mut World| {
@@ -69,13 +69,13 @@ impl<E: IsPointerEvent> EventListener<E> {
     }
 }
 
-/// Data from a pointer event, for use with [`EventListener`]s and event forwarding.
+/// Data from a pointer event returned by an [`EventListener`].
 ///
 /// This is similar to the [`PointerEvent`] struct, except it also contains the event listener for
-/// this event, as well as the ability to stop bubbling this event. When you forward an event, this
-/// is the data that you can use to build your own custom, [`ForwardedEvent`].
+/// this event. When you forward an event, this is the data that you can use to build your own
+/// custom, [`ForwardedEvent`].
 #[derive(Clone, PartialEq, Debug)]
-pub struct EventListenerData<E: IsPointerEvent> {
+pub struct ListenedEvent<E: IsPointerEvent> {
     /// The pointer involved in this event.
     pub id: PointerId,
     /// The entity that was listening for this event.
@@ -160,7 +160,7 @@ pub fn event_bubbling<E: IsPointerEvent + 'static>(
         let mut listener = event.target;
         while let Ok((event_listener, parent)) = listeners.get(listener) {
             if let Some(event_listener) = event_listener {
-                let event_data = EventListenerData {
+                let event_data = ListenedEvent {
                     id: event.pointer_id,
                     listener,
                     target: event.target,

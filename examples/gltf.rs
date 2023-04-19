@@ -35,15 +35,15 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
             ..default()
         },
-        // Check out this neat trick! Events that target children of the scene will bubble up to
-        // this level and will fire off a `HelmetClicked` event.
+        // Events that target children of the scene will bubble up to this level and will fire off a
+        // `HelmetClicked` event.
         EventListener::<Click>::forward_event::<HelmetClicked>(),
     ));
 }
 
 struct HelmetClicked(Entity);
 impl<E: IsPointerEvent> ForwardedEvent<E> for HelmetClicked {
-    fn from_data(event_data: &EventListenerData<E>) -> Self {
+    fn from_data(event_data: &ListenedEvent<E>) -> Self {
         // Note that we forward the target, not the listener! The target is the child that the event
         // was targeting, whereas the listener is the parent with the `EventListener` component.
         // This is what allows us to add a listener to the parent scene, yet still know precisely

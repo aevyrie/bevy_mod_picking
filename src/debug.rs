@@ -74,7 +74,7 @@ pub fn debug_draw_egui(
         &pointer::PointerId,
         &pointer::PointerLocation,
         &pointer::PointerPress,
-        &events::PointerInteraction,
+        &focus::PointerInteraction,
     )>,
     #[cfg(feature = "selection")] selection: Query<Option<&selection::PointerMultiselect>>,
     windows: Query<&Window>,

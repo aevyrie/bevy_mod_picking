@@ -39,7 +39,6 @@ impl Plugin for DefaultHighlightingPlugin {
             },
         });
 
-        #[cfg(feature = "bevy/bevy_sprite")]
         app.add_plugin(HighlightPlugin::<bevy::sprite::ColorMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
                 hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
