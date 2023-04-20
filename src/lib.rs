@@ -167,8 +167,7 @@ pub mod prelude {
         backends,
         events::{
             Bubble, Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
-            EventListener, ForwardedEvent, IsPointerEvent, ListenedEvent, Move, Out, Over,
-            PointerEvent, Up,
+            EventListener, IsPointerEvent, ListenedEvent, Move, Out, Over, PointerEvent, Up,
         },
         plugins::DefaultPickingPlugins,
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},

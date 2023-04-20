@@ -1,5 +1,7 @@
 //! Processes data from input and backends, producing interaction events.
 
+use std::marker::PhantomData;
+
 use crate::{
     backend::HitData,
     focus::{HoverMap, PreviousHoverMap},
@@ -7,65 +9,87 @@ use crate::{
         self, InputMove, InputPress, Location, PointerButton, PointerId, PointerLocation,
         PointerMap, PressDirection,
     },
+    PickSet,
 };
-use bevy::{ecs::event::Event, prelude::*, utils::HashMap};
+use bevy::{prelude::*, utils::HashMap};
 
-/// Can be implemented on a custom event to allow [`EventListener`]s to convert [`PointerEvent`]s
-/// into the custom event type.
-pub trait ForwardedEvent<E: IsPointerEvent>: Event {
-    /// Create a new event from [`EventListenerData`].
-    fn from_data(event_data: &ListenedEvent<E>) -> Self;
+/// Adds event listening and bubbling support for event `E`.
+pub struct EventListenerPlugin<E>(PhantomData<E>);
+
+impl<E> Default for EventListenerPlugin<E> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}
+
+impl<E: IsPointerEvent> Plugin for EventListenerPlugin<E> {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(EventCallbackGraph::<E>::default())
+            .add_systems(
+                (
+                    EventCallbackGraph::<E>::build.run_if(on_event::<PointerEvent<E>>()),
+                    event_bubbling::<E>.run_if(on_event::<PointerEvent<E>>()),
+                )
+                    .chain()
+                    .in_set(PickSet::EventListeners),
+            );
+    }
+}
+
+enum CallbackSystem<E: IsPointerEvent> {
+    Empty,
+    New(Box<dyn System<In = ListenedEvent<E>, Out = Bubble>>),
+    Initialized(Box<dyn System<In = ListenedEvent<E>, Out = Bubble>>),
+}
+
+impl<E: IsPointerEvent> CallbackSystem<E> {
+    fn is_initialized(&self) -> bool {
+        matches!(self, CallbackSystem::Initialized(_))
+    }
+
+    fn run(&mut self, world: &mut World, event_data: ListenedEvent<E>) -> Bubble {
+        if !self.is_initialized() {
+            let mut temp = CallbackSystem::Empty;
+            std::mem::swap(self, &mut temp);
+            if let CallbackSystem::New(mut system) = temp {
+                system.initialize(world);
+                *self = CallbackSystem::Initialized(system);
+            }
+        }
+        match self {
+            CallbackSystem::Initialized(system) => {
+                let result = system.run(event_data, world);
+                system.apply_buffers(world);
+                result
+            }
+            _ => unreachable!(),
+        }
+    }
 }
 
 /// An `EventListener` marks an entity, informing the [`event_bubbling`] system to run the
 /// `callback` function when an event of type `E` is being bubbled up the hierarchy and reaches this
 /// entity.
-#[derive(Component, Clone, Reflect)]
+#[derive(Component, Reflect)]
 pub struct EventListener<E: IsPointerEvent> {
     #[reflect(ignore)]
     /// A function that is called when the event listener is triggered.
-    callback: fn(&mut Commands, &ListenedEvent<E>, &mut Bubble),
+    callback: CallbackSystem<E>,
 }
 
 impl<E: IsPointerEvent> EventListener<E> {
-    /// Create an [`EventListener`] that will run the supplied `callback` function with access to
-    /// bevy [`Commands`] when the pointer event reaches this entity.
-    pub fn callback(callback: fn(&mut Commands, &ListenedEvent<E>, &mut Bubble)) -> Self {
-        Self { callback }
-    }
-
-    /// Create an [`EventListener`] that will send an event of type `F` when the listener is
-    /// triggered, then continue to bubble the original event up this entity's hierarchy.
-    pub fn forward_event<F: ForwardedEvent<E>>() -> Self {
-        Self::callback(
-            |commands: &mut Commands, event_data: &ListenedEvent<E>, _bubble: &mut Bubble| {
-                let forwarded_event = F::from_data(event_data);
-                commands.add(|world: &mut World| {
-                    let mut events = world.get_resource_or_insert_with(Events::<F>::default);
-                    events.send(forwarded_event);
-                });
-            },
-        )
-    }
-
-    /// Create an [`EventListener`] that will send an event of type `F` when the listener is
-    /// triggered, then halt bubbling, preventing event listeners of the same type from triggering
-    /// on parents of this entity.
-    ///
-    /// Prefer using `new_forward_event` instead, unless you have a good reason to halt bubbling.
-    pub fn forward_event_and_halt<F: ForwardedEvent<E>>() -> Self {
+    /// Create an [`EventListener`]
+    pub fn callback<M>(callback: impl IntoSystem<ListenedEvent<E>, Bubble, M>) -> Self {
         Self {
-            callback: |commands: &mut Commands,
-                       event_data: &ListenedEvent<E>,
-                       bubble: &mut Bubble| {
-                let forwarded_event = F::from_data(event_data);
-                commands.add(|world: &mut World| {
-                    let mut events = world.get_resource_or_insert_with(Events::<F>::default);
-                    events.send(forwarded_event);
-                });
-                bubble.burst();
-            },
+            callback: CallbackSystem::New(Box::new(IntoSystem::into_system(callback))),
         }
+    }
+
+    /// Take the boxed system callback out of this listener, leaving an empty one behind.
+    fn take(&mut self) -> CallbackSystem<E> {
+        let mut temp = CallbackSystem::Empty;
+        std::mem::swap(&mut self.callback, &mut temp);
+        temp
     }
 }
 
@@ -86,7 +110,7 @@ pub struct ListenedEvent<E: IsPointerEvent> {
     pub inner: E,
 }
 
-/// Controls whether the event should bubble up to the entity's parent, or halt.
+/// Determines whether an event should continue to bubble up the entity hierarchy.
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub enum Bubble {
     /// Allows this event to bubble up to its parent.
@@ -140,6 +164,94 @@ impl<E: IsPointerEvent + 'static> PointerEvent<E> {
     }
 }
 
+/// In order to traverse the entity hierarchy and read events, we need to extract the callbacks out
+/// of their components before they can be run. This is because running callbacks requires mutable
+/// access to the [`World`], which we can't do if we are also trying to mutate the inner
+/// [`EventListener`] state.
+#[derive(Resource)]
+pub struct EventCallbackGraph<E: IsPointerEvent> {
+    /// All the events of type `E` that were emitted this frame, and encountered an
+    /// [`EventListener`] while traversing the entity hierarchy. The `Entity` in the tuple is the
+    /// root node to use when traversing the listener graph..
+    events: Vec<(PointerEvent<E>, Entity)>,
+    /// Traversing the entity hierarchy for each event can visit the same entity multiple times.
+    /// Storing the callbacks for each of these potentially visited entities in a graph structure is
+    /// necessary for a few reasons:
+    ///
+    /// - Callback systems cannot implement `Clone`, so we can only have one copy of each callback
+    ///   system.
+    /// - For complex hierarchies, this is more memory efficient.
+    /// - This allows us to jump to the next listener in the hierarchy without unnecessary
+    ///   traversal. When bubbling many events of the same type `E` through the same entity tree,
+    ///   this can save a significant amount of work.
+    listener_graph: HashMap<Entity, (CallbackSystem<E>, Option<Entity>)>,
+}
+
+impl<E: IsPointerEvent> EventCallbackGraph<E> {
+    fn build(
+        mut events: EventReader<PointerEvent<E>>,
+        mut listeners: Query<(Option<&mut EventListener<E>>, Option<&Parent>)>,
+        mut bubble_prep: ResMut<EventCallbackGraph<E>>,
+    ) {
+        let mut filtered_events = Vec::new();
+        let mut listener_map = HashMap::new();
+
+        for event in events.iter() {
+            let mut this_node = event.target;
+            let mut prev_node = this_node;
+            let mut root_node = None;
+
+            loop {
+                if let Some((_, next_node)) = listener_map.get(&this_node) {
+                    // If the current entity is already in the map, use it to jump ahead
+                    match next_node {
+                        Some(next_node) => this_node = *next_node,
+                        None => break, // Bubble reached the surface!
+                    }
+                } else if let Ok((event_listener, parent)) = listeners.get_mut(this_node) {
+                    // Otherwise, get the current entity's data with a query
+                    if let Some(mut event_listener) = event_listener {
+                        // If it has an event listener, we need to add it to the map
+                        listener_map.insert(this_node, (event_listener.take(), None));
+                        if let Some((_, prev_nodes_next_node)) = listener_map.get_mut(&prev_node) {
+                            if prev_node != this_node {
+                                *prev_nodes_next_node = Some(this_node);
+                            }
+                        }
+                        if root_node.is_none() {
+                            root_node = Some(this_node);
+                        }
+                        prev_node = this_node;
+                    }
+                    match parent {
+                        Some(parent) => this_node = **parent,
+                        None => break, // Bubble reached the surface!
+                    }
+                } else {
+                    // This can be reached if the entity targeted by the event was deleted before
+                    // the bubbling system could run.
+                    break;
+                }
+            }
+            if let Some(root_node) = root_node {
+                // Only add events if they interact with an event listener.
+                filtered_events.push((event.to_owned(), root_node));
+            }
+        }
+        bubble_prep.listener_graph = listener_map;
+        bubble_prep.events = filtered_events;
+    }
+}
+
+impl<E: IsPointerEvent> Default for EventCallbackGraph<E> {
+    fn default() -> Self {
+        Self {
+            events: Vec::new(),
+            listener_graph: HashMap::new(),
+        }
+    }
+}
+
 /// Bubbles [`PointerEvent`]s of event type `E`.
 ///
 /// Event bubbling makes it simple for specific entities to listen for specific events. When a
@@ -151,38 +263,37 @@ impl<E: IsPointerEvent + 'static> PointerEvent<E> {
 /// event type `E`, and run the `callback` function in the event listener.
 ///
 /// Some `PointerEvent`s cannot be bubbled, and are instead sent to the entire hierarchy.
-pub fn event_bubbling<E: IsPointerEvent + 'static>(
-    mut commands: Commands,
-    mut events: EventReader<PointerEvent<E>>,
-    listeners: Query<(Option<&EventListener<E>>, Option<&Parent>)>,
-) {
-    for event in events.iter() {
-        let mut listener = event.target;
-        while let Ok((event_listener, parent)) = listeners.get(listener) {
-            if let Some(event_listener) = event_listener {
-                let event_data = ListenedEvent {
-                    id: event.pointer_id,
-                    listener,
-                    target: event.target,
-                    inner: event.event.clone(),
-                };
-                let mut bubble = Bubble::default();
-                let callback = event_listener.callback;
-                callback(&mut commands, &event_data, &mut bubble);
+pub fn event_bubbling<E: IsPointerEvent + 'static>(world: &mut World) {
+    let Some(mut callbacks) = world.remove_resource::<EventCallbackGraph<E>>() else {
+        return
+    };
+    world.insert_resource(EventCallbackGraph::<E>::default());
 
-                match bubble {
-                    Bubble::Up => match parent {
-                        Some(parent) => listener = **parent,
-                        None => break, // Bubble reached the surface!
-                    },
-                    Bubble::Burst => break,
-                }
-            } else {
-                match parent {
-                    Some(parent) => listener = **parent,
-                    None => break, // Bubble reached the surface!
-                }
+    for (event, root_node) in callbacks.events.iter() {
+        let mut this_node = *root_node;
+        while let Some((callback, next_node)) = callbacks.listener_graph.get_mut(&this_node) {
+            let event_data = ListenedEvent {
+                id: event.pointer_id,
+                listener: this_node,
+                target: event.target,
+                inner: event.event.clone(),
+            };
+            let callback_result = callback.run(world, event_data);
+            if callback_result == Bubble::Burst {
+                break;
             }
+            match next_node {
+                Some(next_node) => this_node = *next_node,
+                _ => break,
+            }
+        }
+    }
+
+    let mut listeners = world.query::<&mut EventListener<E>>();
+
+    for (entity, (callback, _)) in callbacks.listener_graph.drain() {
+        if let Ok(mut listener) = listeners.get_mut(world, entity) {
+            listener.callback = callback;
         }
     }
 }

@@ -24,8 +24,6 @@ fn main() {
                 .disable::<DebugPickingPlugin>(),
         )
         .add_startup_system(setup)
-        .add_event::<Greeting>()
-        .add_system(Greeting::print_events)
         .run();
 }
 
@@ -48,7 +46,7 @@ fn setup(
             // `forward_event` is a special case of `callback` that simply sends a user event when a
             // specific pointer event reaches this entity. In this case, when a pointer over event
             // occurs for any children of this entity, a `Greeting` event will be sent.
-            EventListener::<Over>::forward_event::<Greeting>(),
+            // EventListener::<Over>::forward_event::<Greeting>(),
         ))
         .with_children(|parent| {
             for i in 1..=5 {
@@ -85,26 +83,12 @@ fn setup(
     ));
 }
 
-/// A callback function used with an `EventListener`.
-fn delete_target(commands: &mut Commands, event: &ListenedEvent<Click>, _: &mut Bubble) {
+/// A callback system used with an `EventListener`.
+fn delete_target(In(event): In<ListenedEvent<Click>>, mut commands: Commands) -> Bubble {
     // We don't want to despawn the parent cube, just the children
     if event.listener != event.target {
         commands.entity(event.target).despawn();
         info!("I deleted {:?}!", event.target);
     }
-}
-
-/// A forwarded event, an alternative to using callbacks.
-struct Greeting(Entity);
-impl ForwardedEvent<Over> for Greeting {
-    fn from_data(event_data: &ListenedEvent<Over>) -> Greeting {
-        Greeting(event_data.target)
-    }
-}
-impl Greeting {
-    fn print_events(mut greet: EventReader<Greeting>) {
-        for event in greet.iter() {
-            info!("Hello {:?}!", event.0);
-        }
-    }
+    Bubble::Up
 }

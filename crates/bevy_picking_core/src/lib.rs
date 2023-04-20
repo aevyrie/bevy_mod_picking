@@ -165,27 +165,22 @@ impl Plugin for InteractionPlugin {
             )
             .configure_set(PickSet::Focus.run_if(PickingPluginsSettings::interaction_should_run));
 
-        app.add_systems(
-            (
-                event_bubbling::<Over>.run_if(on_event::<PointerEvent<Over>>()),
-                event_bubbling::<Out>.run_if(on_event::<PointerEvent<Out>>()),
-                event_bubbling::<Down>.run_if(on_event::<PointerEvent<Down>>()),
-                event_bubbling::<Up>.run_if(on_event::<PointerEvent<Up>>()),
-                event_bubbling::<Click>.run_if(on_event::<PointerEvent<Click>>()),
-                event_bubbling::<Move>.run_if(on_event::<PointerEvent<Move>>()),
-                event_bubbling::<DragStart>.run_if(on_event::<PointerEvent<DragStart>>()),
-                event_bubbling::<Drag>.run_if(on_event::<PointerEvent<Drag>>()),
-                event_bubbling::<DragEnd>.run_if(on_event::<PointerEvent<DragEnd>>()),
-                event_bubbling::<DragEnter>.run_if(on_event::<PointerEvent<DragEnter>>()),
-                event_bubbling::<DragOver>.run_if(on_event::<PointerEvent<DragOver>>()),
-                event_bubbling::<DragLeave>.run_if(on_event::<PointerEvent<DragLeave>>()),
-                event_bubbling::<Drop>.run_if(on_event::<PointerEvent<Drop>>()),
-            )
-                .in_set(PickSet::EventListeners),
-        )
-        .configure_set(
-            PickSet::EventListeners.run_if(PickingPluginsSettings::interaction_should_run),
-        );
+        app.add_plugin(EventListenerPlugin::<Over>::default())
+            .add_plugin(EventListenerPlugin::<Out>::default())
+            .add_plugin(EventListenerPlugin::<Down>::default())
+            .add_plugin(EventListenerPlugin::<Up>::default())
+            .add_plugin(EventListenerPlugin::<Click>::default())
+            .add_plugin(EventListenerPlugin::<Move>::default())
+            .add_plugin(EventListenerPlugin::<DragStart>::default())
+            .add_plugin(EventListenerPlugin::<Drag>::default())
+            .add_plugin(EventListenerPlugin::<DragEnd>::default())
+            .add_plugin(EventListenerPlugin::<DragEnter>::default())
+            .add_plugin(EventListenerPlugin::<DragOver>::default())
+            .add_plugin(EventListenerPlugin::<DragLeave>::default())
+            .add_plugin(EventListenerPlugin::<Drop>::default())
+            .configure_set(
+                PickSet::EventListeners.run_if(PickingPluginsSettings::interaction_should_run),
+            );
 
         app.configure_sets(
             (PickSet::Input, PickSet::PostInput)
