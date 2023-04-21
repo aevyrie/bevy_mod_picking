@@ -189,7 +189,7 @@ pub fn send_selection_events(
     {
         let multiselect = pointers
             .iter()
-            .find_map(|(id, multi, _)| id.eq(&id).then_some(multi.is_pressed))
+            .find_map(|(id, multi, _)| id.eq(pointer_id).then_some(multi.is_pressed))
             .unwrap_or(false);
         if let Ok((entity, selection)) = selectables.get(*target) {
             if multiselect {

@@ -30,7 +30,7 @@ impl Plugin for DebugPickingPlugin {
             .add_system(debug::increment_frame.in_base_set(CoreSet::First))
             .add_system(
                 input::debug::print
-                    .before(core::PickSet::Backend)
+                    .before(picking_core::PickSet::Backend)
                     .run_if(move || noisy_debug)
                     .in_base_set(CoreSet::PreUpdate),
             )

@@ -179,7 +179,7 @@ impl<E: IsPointerEvent + 'static> PointerEvent<E> {
         Self {
             pointer_id: id,
             pointer_location: location,
-            target: target,
+            target,
             event,
         }
     }
