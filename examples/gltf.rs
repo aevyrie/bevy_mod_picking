@@ -12,8 +12,6 @@ fn main() {
         )
         .add_startup_system(setup)
         .add_system(make_pickable)
-        .add_event::<HelmetClicked>()
-        .add_system(HelmetClicked::print_events)
         .run();
 }
 
@@ -37,26 +35,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         // Events that target children of the scene will bubble up to this level and will fire off a
         // `HelmetClicked` event.
-        EventListener::<Click>::forward_event::<HelmetClicked>(),
+        OnPointer::<Click>::run_callback(|In(event): In<ListenedEvent<Click>>| {
+            info!("Clicked on entity {:?}", event.target);
+            Bubble::Up
+        }),
     ));
-}
-
-struct HelmetClicked(Entity);
-impl<E: IsPointerEvent> ForwardedEvent<E> for HelmetClicked {
-    fn from_data(event_data: &ListenedEvent<E>) -> Self {
-        // Note that we forward the target, not the listener! The target is the child that the event
-        // was targeting, whereas the listener is the parent with the `EventListener` component.
-        // This is what allows us to add a listener to the parent scene, yet still know precisely
-        // which child entity was clicked on.
-        Self(event_data.target)
-    }
-}
-impl HelmetClicked {
-    fn print_events(mut click_events: EventReader<HelmetClicked>) {
-        for event in click_events.iter() {
-            info!("Clicked on: {:?}!", event.0);
-        }
-    }
 }
 
 /// Makes everything in the scene with a mesh pickable

@@ -35,19 +35,19 @@ struct SpecificEvent {
     greeting: String,
 }
 // Here we are implementing event forwarding only for the `PointerOver` version of our event.
-impl ForwardedEvent<Over> for SpecificEvent {
-    fn from_data(event_data: &ListenedEvent<Over>) -> SpecificEvent {
+impl From<ListenedEvent<Over>> for SpecificEvent {
+    fn from(event: ListenedEvent<Over>) -> Self {
         SpecificEvent {
-            entity: event_data.target,
+            entity: event.target,
             greeting: "Hello".into(),
         }
     }
 }
 // Here we are implementing event forwarding only for `PointerOut` version of our event.
-impl ForwardedEvent<Out> for SpecificEvent {
-    fn from_data(event_data: &ListenedEvent<Out>) -> SpecificEvent {
+impl From<ListenedEvent<Out>> for SpecificEvent {
+    fn from(event: ListenedEvent<Out>) -> Self {
         SpecificEvent {
-            entity: event_data.target,
+            entity: event.target,
             greeting: "Goodbye".into(),
         }
     }
@@ -64,8 +64,8 @@ impl SpecificEvent {
 // If you don't care what pointer event is triggering your event, and you want to have the same
 // behavior in all cases, you can simply ignore the event type.
 struct GeneralEvent;
-impl<E: IsPointerEvent> ForwardedEvent<E> for GeneralEvent {
-    fn from_data(_event_data: &ListenedEvent<E>) -> GeneralEvent {
+impl<E: IsPointerEvent> From<ListenedEvent<E>> for GeneralEvent {
+    fn from(_event: ListenedEvent<E>) -> GeneralEvent {
         GeneralEvent
     }
 }
@@ -93,9 +93,9 @@ fn setup(
             },
             PickableBundle::default(),
             RaycastPickTarget::default(),
-            EventListener::<Over>::forward_event::<SpecificEvent>(),
-            EventListener::<Out>::forward_event::<SpecificEvent>(),
-            EventListener::<Down>::forward_event::<GeneralEvent>(),
+            OnPointer::<Over>::send_event::<SpecificEvent>(),
+            OnPointer::<Out>::send_event::<SpecificEvent>(),
+            OnPointer::<Down>::send_event::<GeneralEvent>(),
         ))
         // Because event forwarding can rely on event bubbling, events that target children of the
         // parent cube will also bubble up to this parent level and will fire off an event:

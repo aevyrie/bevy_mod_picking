@@ -1,8 +1,6 @@
-use bevy::{
-    ecs::system::{Command, EntityCommand},
-    prelude::*,
-    ui::FocusPolicy,
-};
+use std::marker::PhantomData;
+
+use bevy::{ecs::system::Command, prelude::*, ui::FocusPolicy};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -13,12 +11,7 @@ fn main() {
         .run();
 }
 
-const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
-const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
-const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
-
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // ui camera
     commands.spawn(Camera2dBundle::default());
     commands
         .spawn((
@@ -30,29 +23,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     align_items: AlignItems::Center,
                     ..default()
                 },
-                background_color: NORMAL_BUTTON.into(),
+                background_color: Color::rgb(0.15, 0.15, 0.15).into(),
                 ..default()
             },
-            EventListener::<Over>::callback(|commands, event, _| {
-                commands
-                    .entity(event.target)
-                    .insert(BackgroundColor::from(HOVERED_BUTTON));
-            }),
-            EventListener::<Out>::callback(|commands, event, _| {
-                commands
-                    .entity(event.target)
-                    .insert(BackgroundColor::from(NORMAL_BUTTON));
-            }),
-            EventListener::<Down>::callback(|commands, event, _| {
-                commands
-                    .entity(event.target)
-                    .insert(BackgroundColor::from(PRESSED_BUTTON));
-            }),
-            EventListener::<Up>::callback(|commands, event, _| {
-                commands
-                    .entity(event.target)
-                    .insert(BackgroundColor::from(NORMAL_BUTTON));
-            }),
+            OnPointer::<Over>::add_command::<SetColor<Hovered>>(),
+            OnPointer::<Out>::add_command::<SetColor<Normal>>(),
+            OnPointer::<Down>::add_command::<SetColor<Pressed>>(),
+            OnPointer::<Up>::add_command::<SetColor<Normal>>(),
         ))
         .with_children(|parent| {
             let mut bundle = TextBundle::from_section(
@@ -68,21 +45,36 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         });
 }
 
-struct SetTargetBg(Entity, Color);
-impl Command for SetTargetBg {
+trait AsColor: Send + 'static {
+    const COLOR: Color;
+}
+
+struct Normal;
+impl AsColor for Normal {
+    const COLOR: Color = Color::rgb(0.15, 0.15, 0.15);
+}
+
+struct Hovered;
+impl AsColor for Hovered {
+    const COLOR: Color = Color::rgb(0.25, 0.25, 0.25);
+}
+
+struct Pressed;
+impl AsColor for Pressed {
+    const COLOR: Color = Color::rgb(0.35, 0.75, 0.35);
+}
+
+struct SetColor<C: AsColor>(Entity, PhantomData<C>);
+impl<C: AsColor> Command for SetColor<C> {
     fn write(self, world: &mut World) {
         world
             .entity_mut(self.0)
-            .insert(BackgroundColor::from(self.1));
+            .insert(BackgroundColor::from(C::COLOR));
     }
 }
 
-fn set_background_color<E: IsPointerEvent>(
-    color: Color,
-) -> fn(&mut Commands, &ListenedEvent<E>, &mut Bubble) {
-    |commands, event, _| {
-        commands
-            .entity(event.target)
-            .insert(BackgroundColor::from(NORMAL_BUTTON));
+impl<E: IsPointerEvent, C: AsColor> From<ListenedEvent<E>> for SetColor<C> {
+    fn from(event: ListenedEvent<E>) -> Self {
+        SetColor(event.target, PhantomData)
     }
 }

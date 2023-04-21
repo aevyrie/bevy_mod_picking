@@ -8,22 +8,49 @@
 //!
 //! #### Expressive
 //!
-//! [`PointerEvent`]s make it easy to react to interactions like [`Click`], [`Over`], or [`Drag`].
-//! Reacting to these interaction events on a specific entity is made possible with the
-//! [`EventListener`] component and event bubbling. When events are generated, they bubble up the
-//! entity hierarchy starting from their target, looking for event listeners.
+//! [`PointerEvent`]s make it easy to react to interactions like [`Click`], [`Over`], or [`Drag`]
+//! (13 pointer events are provided). Reacting to these interaction events on a specific entity is
+//! made possible with the [`OnPointer<E>`] component. When events are generated, they bubble up the
+//! entity hierarchy starting from their target, looking for these event listener components.
 //!
 //! This allows you to run callbacks when any children of an entity are interacted with:
 //!
-//! >
-//!
 //! ```
-//! commands.spawn((
-//!     // When a child entity is clicked, delete it.
-//!     EventListener::<Click>::callback(delete_target),
+//! # use bevy::prelude::*;
+//! # use bevy::ecs::system::Command;
+//! # use bevy_mod_picking::prelude::*;
+//! #
+//! # fn rotate_with_mouse(
+//! #     In(event): In<ListenedEvent<Drag>>,
+//! # ) -> Bubble {
+//! #     Bubble::Up
+//! # }
+//! #
+//! # struct DeleteTarget;
+//! # impl From<ListenedEvent<Click>> for DeleteTarget {
+//! #     fn from(_: ListenedEvent<Click>) -> Self {
+//! #         DeleteTarget
+//! #     }
+//! # }
+//! # impl Command for DeleteTarget {
+//! #     fn write(self, world: &mut World) {}
+//! # }
+//! #
+//! # struct Greeting;
+//! # impl From<ListenedEvent<Over>> for Greeting {
+//! #     fn from(_: ListenedEvent<Over>) -> Self {
+//! #         Greeting
+//! #     }
+//! # }
 //!
-//!     EventListener::<Click>::forward_event<>,
-//! ))
+//! fn setup(mut commands: Commands) {
+//!     commands.spawn((
+//!         // Spawn your entity, e.g. a Mesh
+//!         OnPointer::<Drag>::run_callback(rotate_with_mouse),
+//!         OnPointer::<Click>::add_command::<DeleteTarget>(),
+//!         OnPointer::<Over>::send_event::<Greeting>(),
+//!     ));
+//! }
 //!
 //! ```
 //!
@@ -118,7 +145,7 @@
 //! In the final step, the high-level pointer events are generated, such as events that trigger when
 //! a pointer hovers or clicks an entity. These simple events are then used to generate more complex
 //! events for dragging and dropping. Once all events have been generated, the event bubbling
-//! systems propagate events through the entity hierarchy, triggering [`EventListener`]s.
+//! systems propagate events through the entity hierarchy, triggering [`OnPointer<E>`] callbacks.
 //!
 //!  Because it is completely agnostic to the the earlier stages of the pipeline, you can easily
 //! extend the plugin with arbitrary backends and input methods.
@@ -167,7 +194,7 @@ pub mod prelude {
         backends,
         events::{
             Bubble, Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
-            EventListener, IsPointerEvent, ListenedEvent, Move, Out, Over, PointerEvent, Up,
+            IsPointerEvent, ListenedEvent, Move, OnPointer, Out, Over, PointerEvent, Up,
         },
         plugins::DefaultPickingPlugins,
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},

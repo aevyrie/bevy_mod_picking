@@ -8,7 +8,6 @@ fn main() {
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
         .add_startup_system(setup)
-        .add_system(drag_squares)
         .add_system(spin)
         .run();
 }
@@ -34,70 +33,66 @@ fn setup(
             },
             PickableBundle::default(),    // <- Makes the mesh pickable.
             RaycastPickTarget::default(), // <- Needed for the raycast backend.
-            EventListener::<DragStart>::callback(start_dragging),
-            EventListener::<DragEnd>::callback(stop_dragging),
-            EventListener::<Drop>::callback(spin_target),
+            OnPointer::<DragStart>::run_callback(start_dragging),
+            OnPointer::<DragEnd>::run_callback(stop_dragging),
+            OnPointer::<Drag>::run_callback(drag_squares),
+            OnPointer::<Drop>::run_callback(spin_target),
         ));
     }
 }
 
-/// Needed to track where on the square the drag started
-enum ClickOffset {
-    World(Vec2),
-    Local(Vec2),
-}
-
+/// Used to track where the square was clicked, so the square doesn't jump and center itself on the
+/// pointer when you start dragging.
 #[derive(Component)]
-struct FollowPointer {
+struct DragOffset {
+    offset: Vec2,
     camera: Entity,
-    offset: ClickOffset,
 }
 
-fn start_dragging(commands: &mut Commands, event: &ListenedEvent<DragStart>, _: &mut Bubble) {
+fn start_dragging(
+    In(event): In<ListenedEvent<DragStart>>,
+    mut commands: Commands,
+    mut square: Query<&Transform>,
+) -> Bubble {
+    let square_transform = square.get_mut(event.target).unwrap();
     commands
         .entity(event.target)
-        .remove::<RaycastPickTarget>() // allow picking squares underneath this one
-        .insert(FollowPointer {
-            camera: event.inner.hit.camera,
-            offset: ClickOffset::World(event.inner.hit.position.unwrap().truncate()),
+        .remove::<RaycastPickTarget>() // Allow pointer hit tests to pass through while dragging
+        .insert(DragOffset {
+            offset: (event.pointer_event.hit.position.unwrap() - square_transform.translation)
+                .truncate(),
+            camera: event.pointer_event.hit.camera,
         });
-}
-
-fn stop_dragging(commands: &mut Commands, event: &ListenedEvent<DragEnd>, _: &mut Bubble) {
-    commands
-        .entity(event.target)
-        .insert(RaycastPickTarget::default())
-        .remove::<FollowPointer>();
-}
-
-fn spin_target(commands: &mut Commands, event: &ListenedEvent<Drop>, _: &mut Bubble) {
-    let dropped = event.inner.dropped_entity;
-    commands.entity(dropped).insert(SpinTarget(FRAC_PI_2));
-    let onto = event.target;
-    commands.entity(onto).insert(SpinTarget(-FRAC_PI_2));
+    Bubble::Up
 }
 
 // While being dragged, update the position of the square to be under the pointer.
 fn drag_squares(
-    mut drag_events: EventReader<PointerEvent<Drag>>,
+    In(event): In<ListenedEvent<Drag>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
-    mut square: Query<(&mut FollowPointer, &mut Transform)>,
-) {
-    for dragging in drag_events.iter() {
-        let Ok((mut follow, mut square_transform)) = square.get_mut(dragging.target) else {
-            continue;
-        };
-        if let ClickOffset::World(pos) = follow.offset {
-            follow.offset = ClickOffset::Local(pos - square_transform.translation.truncate())
-        };
-        if let ClickOffset::Local(offset) = follow.offset {
-            let (camera, cam_transform) = cameras.get(follow.camera).unwrap();
-            let pointer_world =
-                camera.viewport_to_world_2d(cam_transform, dragging.pointer_location.position);
-            square_transform.translation =
-                (pointer_world.unwrap() - offset).extend(square_transform.translation.z);
-        }
-    }
+    mut square: Query<(&DragOffset, &mut Transform)>,
+) -> Bubble {
+    let (drag, mut square_transform) = square.get_mut(event.target).unwrap();
+    let (camera, cam_transform) = cameras.get(drag.camera).unwrap();
+    let pointer_world = camera.viewport_to_world_2d(cam_transform, event.pointer_location.position);
+    square_transform.translation =
+        (pointer_world.unwrap() - drag.offset).extend(square_transform.translation.z);
+    Bubble::Up
+}
+
+fn stop_dragging(In(event): In<ListenedEvent<DragEnd>>, mut commands: Commands) -> Bubble {
+    commands
+        .entity(event.target)
+        .insert(RaycastPickTarget::default());
+    Bubble::Up
+}
+
+fn spin_target(In(event): In<ListenedEvent<Drop>>, mut commands: Commands) -> Bubble {
+    let dropped = event.pointer_event.dropped_entity;
+    commands.entity(dropped).insert(SpinTarget(FRAC_PI_2));
+    let onto = event.target;
+    commands.entity(onto).insert(SpinTarget(-FRAC_PI_2));
+    Bubble::Up
 }
 
 #[derive(Component)]

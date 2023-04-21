@@ -1,18 +1,10 @@
-//! This example demonstrates how [`EventListener`]s and event bubbling can be used to propagate
-//! events up an entity hierarchy, and run callbacks when an event reaches an entity.
+//! This example demonstrates how [`OnPointer`] components and event bubbling can be used to
+//! propagate events up an entity hierarchy, and run callbacks when an event reaches an entity.
 //!
 //! The Big Idea here is to make it easy to couple interaction events with specific entities. In
 //! other words, it allows you to easily implement "If entity X is hovered/clicked/dragged, do Y".
-//!
-//! The `forward_events` function might seem like magic, but it's pretty straightforward under the
-//! hood. It simply adds an [`EventListener`] component to the entity. When the event bubbling
-//! system encounters this `EventListener`, it uses the [`ForwardedEvent`] trait you implemented on
-//! your custom event to convert the `PointerEvent` into your custom event.
-//!
-//! In other words, the `forward_events` function is really a helper function that just inserts a
-//! predefined `EventListener` component on your entity.
 
-use bevy::prelude::*;
+use bevy::{ecs::system::Command, input::mouse::MouseMotion, prelude::*};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -24,6 +16,8 @@ fn main() {
                 .disable::<DebugPickingPlugin>(),
         )
         .add_startup_system(setup)
+        .add_event::<Greeting>()
+        .add_system(receive_greetings)
         .run();
 }
 
@@ -33,6 +27,10 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands
+        // When any of this entity's children are interacted with using a pointer, those events will
+        // propagate up the entity hierarchy until they reach this parent. By referring to the
+        // `target` entity instead of the `listener` entity, we can do things to specific target
+        // entities, even though they lack `OnPointer` components.
         .spawn((
             PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -41,12 +39,27 @@ fn setup(
             },
             PickableBundle::default(),
             RaycastPickTarget::default(),
-            // When any of this entity's children are clicked, they will be deleted
-            EventListener::<Click>::callback(delete_target),
-            // `forward_event` is a special case of `callback` that simply sends a user event when a
-            // specific pointer event reaches this entity. In this case, when a pointer over event
-            // occurs for any children of this entity, a `Greeting` event will be sent.
-            // EventListener::<Over>::forward_event::<Greeting>(),
+            // Callbacks are just bevy systems that have a specific input (`In<ListenedEvent<E>>`)
+            // and output (`Bubble`). This gives you full freedom to write normal bevy systems that
+            // are only called when specific entities are interacted with. Here we have a system
+            // that rotates a cube when it is dragged, in just a few lines of code:
+            OnPointer::<Drag>::run_callback(rotate_with_mouse),
+            // Just like bevy systems, callbacks can be closures!
+            OnPointer::<Out>::run_callback(|In(event): In<ListenedEvent<Out>>| {
+                info!("The pointer left entity {:?}", event.target);
+                Bubble::Up
+            }),
+            // When you just want to do something simple, the `add_command` helper will handle the
+            // boilerplate of adding a bevy `Command`. Because it's added with a closure, this
+            // allows us to pass event data into the command:
+            OnPointer::<Click>::add_command::<DeleteTarget>(),
+            // Sometimes you may need to do multiple things in response to an interaction. Events
+            // can be an easy way to handle this, as you can react to an event across many systems.
+            // Unlike pointer events, recall that this event is only sent when the event listener
+            // for this *specific* entity (or its children) are targeted. Similar to `add_command`
+            // this is simply a helper function that creates an event-sending callback to reduce
+            // boilerplate.
+            OnPointer::<Over>::send_event::<Greeting>(),
         ))
         .with_children(|parent| {
             for i in 1..=5 {
@@ -83,12 +96,52 @@ fn setup(
     ));
 }
 
-/// A callback system used with an `EventListener`.
-fn delete_target(In(event): In<ListenedEvent<Click>>, mut commands: Commands) -> Bubble {
-    // We don't want to despawn the parent cube, just the children
-    if event.listener != event.target {
-        commands.entity(event.target).despawn();
-        info!("I deleted {:?}!", event.target);
+/// Delete the entity if clicked with RMB and not the root entity
+struct DeleteTarget(Entity, PointerButton);
+
+impl From<ListenedEvent<Click>> for DeleteTarget {
+    fn from(event: ListenedEvent<Click>) -> Self {
+        DeleteTarget(event.target, event.pointer_event.button)
     }
-    Bubble::Up
+}
+
+impl Command for DeleteTarget {
+    fn write(self, world: &mut World) {
+        let target = world.entity_mut(self.0);
+        if target.get::<Children>().is_none() && self.1 == PointerButton::Secondary {
+            target.despawn();
+        }
+    }
+}
+
+/// Rotate the target entity about its y axis.
+fn rotate_with_mouse(
+    // The first parameter is always the `ListenedEvent`, passed in by the event listening system.
+    In(event): In<ListenedEvent<Drag>>,
+    // The following can be any normal bevy system params:
+    mut mouse_move: EventReader<MouseMotion>,
+    mut cube: Query<&mut Transform>,
+) -> Bubble {
+    let total_drag_dist: f32 = mouse_move.iter().map(|mm| mm.delta.x).sum();
+    if let Ok(mut transform) = cube.get_mut(event.target) {
+        transform.rotate_local_y(total_drag_dist / 50.0);
+    }
+    Bubble::Up // Determines if the event should continue to bubble through the hierarchy.
+}
+
+struct Greeting(Entity, f32);
+
+impl From<ListenedEvent<Over>> for Greeting {
+    fn from(event: ListenedEvent<Over>) -> Self {
+        Greeting(event.target, event.pointer_event.hit.depth)
+    }
+}
+
+fn receive_greetings(mut greetings: EventReader<Greeting>) {
+    for event in greetings.iter() {
+        info!(
+            "Hello {:?}, you are {:?} depth units away from the pointer",
+            event.0, event.1
+        );
+    }
 }

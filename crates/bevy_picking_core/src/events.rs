@@ -11,7 +11,7 @@ use crate::{
     },
     PickSet,
 };
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{ecs::system::Command, prelude::*, utils::HashMap};
 
 /// Adds event listening and bubbling support for event `E`.
 pub struct EventListenerPlugin<E>(PhantomData<E>);
@@ -67,22 +67,42 @@ impl<E: IsPointerEvent> CallbackSystem<E> {
     }
 }
 
-/// An `EventListener` marks an entity, informing the [`event_bubbling`] system to run the
+/// An `OnPointer` component marks an entity, informing the [`event_bubbling`] system to run the
 /// `callback` function when an event of type `E` is being bubbled up the hierarchy and reaches this
 /// entity.
 #[derive(Component, Reflect)]
-pub struct EventListener<E: IsPointerEvent> {
+pub struct OnPointer<E: IsPointerEvent> {
     #[reflect(ignore)]
     /// A function that is called when the event listener is triggered.
     callback: CallbackSystem<E>,
 }
 
-impl<E: IsPointerEvent> EventListener<E> {
-    /// Create an [`EventListener`]
-    pub fn callback<M>(callback: impl IntoSystem<ListenedEvent<E>, Bubble, M>) -> Self {
+impl<E: IsPointerEvent> OnPointer<E> {
+    /// Run a callback system when this event listener is triggered.
+    pub fn run_callback<M>(callback: impl IntoSystem<ListenedEvent<E>, Bubble, M>) -> Self {
         Self {
             callback: CallbackSystem::New(Box::new(IntoSystem::into_system(callback))),
         }
+    }
+
+    /// Add a command to the [`CommandQueue`](bevy::ecs::system::CommandQueue) when when this event
+    /// listener is triggered.
+    pub fn add_command<C: From<ListenedEvent<E>> + Command + Send + Sync + 'static>() -> Self {
+        Self::run_callback(
+            move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
+                commands.add(C::from(event));
+                Bubble::Up
+            },
+        )
+    }
+
+    /// Send an event `F` when this event listener is triggered. `F` must implement
+    /// `From<ListenedEvent<E>>`.
+    pub fn send_event<F: Event + From<ListenedEvent<E>>>() -> Self {
+        Self::run_callback(|In(event): In<ListenedEvent<E>>, mut ev: EventWriter<F>| {
+            ev.send(F::from(event));
+            Bubble::Up
+        })
     }
 
     /// Take the boxed system callback out of this listener, leaving an empty one behind.
@@ -93,21 +113,22 @@ impl<E: IsPointerEvent> EventListener<E> {
     }
 }
 
-/// Data from a pointer event returned by an [`EventListener`].
+/// Data from a pointer event returned by an [`OnPointer`].
 ///
-/// This is similar to the [`PointerEvent`] struct, except it also contains the event listener for
-/// this event. When you forward an event, this is the data that you can use to build your own
-/// custom, [`ForwardedEvent`].
+/// This is similar to the [`PointerEvent`] struct, with the addition of event listener data.
 #[derive(Clone, PartialEq, Debug)]
 pub struct ListenedEvent<E: IsPointerEvent> {
     /// The pointer involved in this event.
-    pub id: PointerId,
+    pub pointer_id: PointerId,
+    /// The location of the pointer during this event
+    pub pointer_location: Location,
     /// The entity that was listening for this event.
     pub listener: Entity,
     /// The entity that this event was originally triggered on.
     pub target: Entity,
-    /// The inner event data, if any, for the specific event that was triggered.
-    pub inner: E,
+    /// Event-specific information, e.g. data specific to `Drag` events, that isn't shared amongst
+    /// all pointer events. This contains the [`HitData`] if it is available.
+    pub pointer_event: E,
 }
 
 /// Determines whether an event should continue to bubble up the entity hierarchy.
@@ -166,13 +187,13 @@ impl<E: IsPointerEvent + 'static> PointerEvent<E> {
 
 /// In order to traverse the entity hierarchy and read events, we need to extract the callbacks out
 /// of their components before they can be run. This is because running callbacks requires mutable
-/// access to the [`World`], which we can't do if we are also trying to mutate the inner
-/// [`EventListener`] state.
+/// access to the [`World`], which we can't do if we are also trying to mutate the [`OnPointer`]'s
+/// inner callback state.
 #[derive(Resource)]
 pub struct EventCallbackGraph<E: IsPointerEvent> {
-    /// All the events of type `E` that were emitted this frame, and encountered an
-    /// [`EventListener`] while traversing the entity hierarchy. The `Entity` in the tuple is the
-    /// root node to use when traversing the listener graph..
+    /// All the events of type `E` that were emitted this frame, and encountered an [`OnPointer<E>`]
+    /// while traversing the entity hierarchy. The `Entity` in the tuple is the root node to use
+    /// when traversing the listener graph..
     events: Vec<(PointerEvent<E>, Entity)>,
     /// Traversing the entity hierarchy for each event can visit the same entity multiple times.
     /// Storing the callbacks for each of these potentially visited entities in a graph structure is
@@ -190,7 +211,7 @@ pub struct EventCallbackGraph<E: IsPointerEvent> {
 impl<E: IsPointerEvent> EventCallbackGraph<E> {
     fn build(
         mut events: EventReader<PointerEvent<E>>,
-        mut listeners: Query<(Option<&mut EventListener<E>>, Option<&Parent>)>,
+        mut listeners: Query<(Option<&mut OnPointer<E>>, Option<&Parent>)>,
         mut bubble_prep: ResMut<EventCallbackGraph<E>>,
     ) {
         let mut filtered_events = Vec::new();
@@ -255,12 +276,12 @@ impl<E: IsPointerEvent> Default for EventCallbackGraph<E> {
 /// Bubbles [`PointerEvent`]s of event type `E`.
 ///
 /// Event bubbling makes it simple for specific entities to listen for specific events. When a
-/// `PointerEvent` event is fired, `event_bubbling` will look for an `EventListener` on the event's
+/// `PointerEvent` event is fired, `event_bubbling` will look for an `OnPointer` on the event's
 /// target entity, then walk up the hierarchy of the entity's ancestors, until a [`Bubble`]`::Pop`
 /// is found or the root of the hierarchy is reached.
 ///
-/// For every entity in the hierarchy, this system will look for an [`EventListener`]  matching the
-/// event type `E`, and run the `callback` function in the event listener.
+/// For every entity in the hierarchy, this system will look for an [`OnPointer`] matching the event
+/// type `E`, and run the `callback` function in the event listener.
 ///
 /// Some `PointerEvent`s cannot be bubbled, and are instead sent to the entire hierarchy.
 pub fn event_bubbling<E: IsPointerEvent + 'static>(world: &mut World) {
@@ -273,10 +294,11 @@ pub fn event_bubbling<E: IsPointerEvent + 'static>(world: &mut World) {
         let mut this_node = *root_node;
         while let Some((callback, next_node)) = callbacks.listener_graph.get_mut(&this_node) {
             let event_data = ListenedEvent {
-                id: event.pointer_id,
+                pointer_id: event.pointer_id,
+                pointer_location: event.pointer_location.clone(),
                 listener: this_node,
                 target: event.target,
-                inner: event.event.clone(),
+                pointer_event: event.event.clone(),
             };
             let callback_result = callback.run(world, event_data);
             if callback_result == Bubble::Burst {
@@ -289,7 +311,7 @@ pub fn event_bubbling<E: IsPointerEvent + 'static>(world: &mut World) {
         }
     }
 
-    let mut listeners = world.query::<&mut EventListener<E>>();
+    let mut listeners = world.query::<&mut OnPointer<E>>();
 
     for (entity, (callback, _)) in callbacks.listener_graph.drain() {
         if let Ok(mut listener) = listeners.get_mut(world, entity) {
