@@ -30,7 +30,7 @@
 use bevy::prelude::*;
 use bevy_picking_core::backend::*;
 
-/// Commonly used imports for the [`bevy_picking_shader`] crate.
+/// Commonly used imports.
 pub mod prelude {
     // pub use crate::;
 }

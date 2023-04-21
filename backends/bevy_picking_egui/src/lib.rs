@@ -33,7 +33,7 @@ impl Plugin for EguiBackend {
 pub struct EguiBackendSettings {
     /// When set to true, clicking on egui will deselect other entities
     #[cfg(feature = "selection")]
-    allow_deselect: bool,
+    pub allow_deselect: bool,
 }
 
 /// Marks the entity used as the pseudo egui pointer.
@@ -61,8 +61,7 @@ pub fn update_settings(
     }
 }
 
-/// If egui in the current window is reporting that the pointer is over it, we report that with a
-/// pick depth of -1, so it is on top of all other entities.
+/// If egui in the current window is reporting that the pointer is over it, we report a hit.
 pub fn egui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
     mut egui_context: Query<(Entity, &mut EguiContext)>,

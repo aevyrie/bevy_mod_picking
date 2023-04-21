@@ -193,7 +193,7 @@ impl<E: IsPointerEvent + 'static> PointerEvent<E> {
 pub struct EventCallbackGraph<E: IsPointerEvent> {
     /// All the events of type `E` that were emitted this frame, and encountered an [`OnPointer<E>`]
     /// while traversing the entity hierarchy. The `Entity` in the tuple is the root node to use
-    /// when traversing the listener graph..
+    /// when traversing the listener graph.
     events: Vec<(PointerEvent<E>, Entity)>,
     /// Traversing the entity hierarchy for each event can visit the same entity multiple times.
     /// Storing the callbacks for each of these potentially visited entities in a graph structure is
@@ -282,8 +282,6 @@ impl<E: IsPointerEvent> Default for EventCallbackGraph<E> {
 ///
 /// For every entity in the hierarchy, this system will look for an [`OnPointer`] matching the event
 /// type `E`, and run the `callback` function in the event listener.
-///
-/// Some `PointerEvent`s cannot be bubbled, and are instead sent to the entire hierarchy.
 pub fn event_bubbling<E: IsPointerEvent + 'static>(world: &mut World) {
     let Some(mut callbacks) = world.remove_resource::<EventCallbackGraph<E>>() else {
         return

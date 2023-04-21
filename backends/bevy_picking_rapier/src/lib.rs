@@ -8,7 +8,7 @@ use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use bevy_picking_core::backend::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-/// Commonly used imports for the [`bevy_picking_rapier`] crate.
+/// Commonly used imports.
 pub mod prelude {
     pub use crate::{RapierBackend, RapierPickCamera};
 }

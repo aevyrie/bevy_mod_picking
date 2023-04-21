@@ -42,7 +42,6 @@
 //! #         Greeting
 //! #     }
 //! # }
-//!
 //! fn setup(mut commands: Commands) {
 //!     commands.spawn((
 //!         // Spawn your entity, e.g. a Mesh
@@ -51,16 +50,14 @@
 //!         OnPointer::<Over>::send_event::<Greeting>(),
 //!     ));
 //! }
-//!
 //! ```
 //!
 //! #### Modular
 //!
 //! Picking backends run hit tests to determine if a pointer is over any entities. This plugin
 //! provides a [simple API to write your own backend](crate::backend) in about 100 lines of code; it
-//! also and includes half a dozen backends out of the box. These include `rapier`,
-//! `bevy_mod_raycast`, and `bevy_egui` among others. Multiple backends can be used at the same
-//! time!
+//! also includes half a dozen backends out of the box. These include `rapier`, `bevy_mod_raycast`,
+//! and `bevy_egui` among others. Multiple backends can be used at the same time!
 //!
 //! #### Input Agnostic
 //!
@@ -126,14 +123,16 @@
 //! You will eventually need to choose which picking backend(s) you want to use. This plugin uses
 //! `bevy_mod_raycast` by default; it works with bevy `Mesh`es out of the box and requires no extra
 //! dependencies. These qualities make it useful when prototyping, however it is not particularly
-//! performant for large meshes. You can consider switching to the rapier backends if performance
-//! becomes a problem. For simple or low-poly games, it may never be an issue.
+//! performant for large meshes. Consider switching to the rapier backend if performance becomes a
+//! problem or if you already have the dependency in-tree. For simple or low-poly games, it may
+//! never be an issue.
 //!
-//! However, it's important to understand that you can mix and match backends! This crate provides
-//! some backends out of the box, but you can even write your own. It's been made as easy as
-//! possible intentionally; the entire `bevy_mod_raycast` backend is less than 100 lines of code.
-//! For example, you might have a backend for your UI, and one for the 3d scene, with each being
-//! specialized for their purpose.
+//! However, it's important to understand that you can mix and match backends! For example, you
+//! might have a backend for your UI, and one for the 3d scene, with each being specialized for
+//! their purpose. This crate provides some backends out of the box, but you can even write your
+//! own. It's been made as easy as possible intentionally; the entire `bevy_mod_raycast` backend is
+//! less than 100 lines of code.
+//!
 //!
 //! ## Focus ([`bevy_picking_core::focus`])
 //!
@@ -158,7 +157,7 @@ use bevy::{prelude::Bundle, ui::Interaction};
 use bevy_picking_core::PointerCoreBundle;
 use prelude::*;
 
-pub use bevy_picking_core::{self as core, backend, events, focus, pointer};
+pub use bevy_picking_core::{self as picking_core, backend, events, focus, pointer};
 pub use bevy_picking_input::{self as input};
 
 #[cfg(feature = "highlight")]
@@ -167,8 +166,6 @@ pub use bevy_picking_highlight as highlight;
 pub use bevy_picking_selection as selection;
 #[cfg(feature = "debug")]
 pub mod debug;
-
-pub mod plugins;
 
 /// Picking backend exports, feature-gated.
 pub mod backends {
@@ -196,9 +193,8 @@ pub mod prelude {
             Bubble, Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
             IsPointerEvent, ListenedEvent, Move, OnPointer, Out, Over, PointerEvent, Up,
         },
-        plugins::DefaultPickingPlugins,
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
-        *,
+        DefaultPickingPlugins, *,
     };
 
     #[cfg(feature = "highlight")]
@@ -258,7 +254,65 @@ impl PointerBundle {
     }
 }
 
+/// A "batteries-included" set of plugins that adds everything needed for picking, highlighting, and
+/// multiselect. Backends are automatically added if their corresponding feature is enabled.
+pub struct DefaultPickingPlugins;
+
+impl bevy::prelude::PluginGroup for DefaultPickingPlugins {
+    fn build(self) -> bevy::app::PluginGroupBuilder {
+        let mut builder = bevy::app::PluginGroupBuilder::start::<Self>();
+
+        builder = builder
+            .add(picking_core::CorePlugin)
+            .add(picking_core::InteractionPlugin)
+            .add(input::InputPlugin);
+
+        #[cfg(feature = "debug")]
+        {
+            builder = builder.add(debug::DebugPickingPlugin::default());
+        }
+
+        #[cfg(feature = "highlight")]
+        {
+            builder = builder.add(highlight::DefaultHighlightingPlugin);
+        }
+
+        #[cfg(feature = "selection")]
+        {
+            builder = builder.add(selection::SelectionPlugin);
+        }
+
+        #[cfg(feature = "backend_raycast")]
+        {
+            builder = builder.add(bevy_picking_raycast::RaycastBackend);
+        }
+        #[cfg(feature = "backend_bevy_ui")]
+        {
+            builder = builder.add(bevy_picking_ui::BevyUiBackend);
+        }
+        #[cfg(feature = "backend_rapier")]
+        {
+            builder = builder.add(bevy_picking_rapier::RapierBackend);
+        }
+        #[cfg(feature = "backend_shader")]
+        {
+            builder = builder.add(bevy_picking_shader::ShaderBackend);
+        }
+        #[cfg(feature = "backend_sprite")]
+        {
+            builder = builder.add(bevy_picking_sprite::SpriteBackend);
+        }
+        #[cfg(feature = "backend_egui")]
+        {
+            builder = builder.add(bevy_picking_egui::EguiBackend);
+        }
+
+        builder
+    }
+}
+
 /// Used for examples to reduce picking latency. Not relevant code for the examples.
+#[doc(hidden)]
 #[allow(dead_code)]
 pub fn low_latency_window_plugin() -> bevy::window::WindowPlugin {
     bevy::window::WindowPlugin {

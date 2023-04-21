@@ -34,7 +34,7 @@ type OverMap = HashMap<PointerId, LayerMap>;
 /// state, in this case, not just whether the pointer happens to be over the entity. More
 /// specifically, a pointer is "over" an entity if it is within the bounds of that entity, whereas a
 /// pointer is "hovering" an entity only if the mouse is "over" the entity AND it is the topmost
-/// entity(s) according to `FocusPolicy` and `RenderLayer`.
+/// entity.
 #[derive(Debug, Deref, DerefMut, Default, Resource)]
 pub struct HoverMap(pub HashMap<PointerId, HashMap<Entity, HitData>>);
 
