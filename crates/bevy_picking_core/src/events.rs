@@ -642,7 +642,7 @@ pub fn send_click_and_drag_events(
     pointer_map: Res<PointerMap>,
     pointers: Query<&PointerLocation>,
     // Locals
-    mut down_map: Local<HashMap<(PointerId, PointerButton), Option<Entity>>>,
+    mut down_map: Local<HashMap<(PointerId, PointerButton), Option<PointerEvent<Down>>>>,
     // Output
     mut drag_map: ResMut<DragMap>,
     mut pointer_click: EventWriter<PointerEvent<Click>>,
@@ -660,28 +660,34 @@ pub fn send_click_and_drag_events(
     // Only triggers when over an entity
     for PointerEvent {
         pointer_id: pointer,
-        pointer_location,
+        pointer_location: _,
         target,
-        event: Move { hit },
+        event: _,
     } in pointer_move.iter().cloned()
     {
         for button in PointerButton::iter() {
-            let is_pointer_down = matches!(down_map.get(&(pointer, button)), Some(Some(_)));
+            let Some(Some(down)) = down_map.get(&(pointer, button)) else {
+                continue
+            };
             let is_pointer_dragging = matches!(drag_map.get(&(pointer, button)), Some(Some(_)));
-            if is_pointer_down && !is_pointer_dragging {
+            let same_target = target == down.target;
+            if same_target && !is_pointer_dragging {
                 drag_map.insert(
                     (pointer, button),
                     Some(DragEntry {
-                        target,
-                        start_pos: pointer_location.position,
-                        latest_pos: pointer_location.position,
+                        target: down.target,
+                        start_pos: down.pointer_location.position,
+                        latest_pos: down.pointer_location.position,
                     }),
                 );
                 pointer_drag_start.send(PointerEvent::new(
                     pointer,
-                    pointer_location.clone(),
-                    target,
-                    DragStart { button, hit },
+                    down.pointer_location.clone(),
+                    down.target,
+                    DragStart {
+                        button,
+                        hit: down.hit,
+                    },
                 ))
             }
         }
@@ -723,10 +729,10 @@ pub fn send_click_and_drag_events(
         event: Up { button, hit },
     } in pointer_up.iter().cloned()
     {
-        let Some(Some(down_entity)) = down_map.insert((pointer_id, button), None) else {
+        let Some(Some(down)) = down_map.insert((pointer_id, button), None) else {
             continue; // Can't have a click without the button being pressed down first
         };
-        if down_entity != target {
+        if down.target != target {
             continue; // A click starts and ends on the same target
         }
         pointer_click.send(PointerEvent::new(
@@ -740,7 +746,7 @@ pub fn send_click_and_drag_events(
     // Triggers when button is pressed over an entity
     for event in pointer_down.iter() {
         let button = event.button;
-        down_map.insert((event.pointer_id, button), Some(event.target));
+        down_map.insert((event.pointer_id, button), Some(event.clone()));
     }
 
     // Triggered for all button presses
