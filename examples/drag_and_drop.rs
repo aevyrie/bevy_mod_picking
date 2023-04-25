@@ -59,9 +59,8 @@ fn start_dragging(
         .entity(event.target)
         .remove::<RaycastPickTarget>() // Allow pointer hit tests to pass through while dragging
         .insert(DragOffset {
-            offset: (event.pointer_event.hit.position.unwrap() - square_transform.translation)
-                .truncate(),
-            camera: event.pointer_event.hit.camera,
+            offset: (event.hit.position.unwrap() - square_transform.translation).truncate(),
+            camera: event.hit.camera,
         });
     Bubble::Up
 }
@@ -88,7 +87,7 @@ fn stop_dragging(In(event): In<ListenedEvent<DragEnd>>, mut commands: Commands) 
 }
 
 fn spin_target(In(event): In<ListenedEvent<Drop>>, mut commands: Commands) -> Bubble {
-    let dropped = event.pointer_event.dropped_entity;
+    let dropped = event.dropped_entity;
     commands.entity(dropped).insert(SpinTarget(FRAC_PI_2));
     let onto = event.target;
     commands.entity(onto).insert(SpinTarget(-FRAC_PI_2));

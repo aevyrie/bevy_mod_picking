@@ -86,3 +86,8 @@ required-features = ["backend_rapier"]
 name = "egui"
 path = "examples/egui.rs"
 required-features = ["backend_egui"]
+
+[[example]]
+name = "event_listener"
+path = "examples/event_listener.rs"
+required-features = ["backend_egui"]

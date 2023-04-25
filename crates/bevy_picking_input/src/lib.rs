@@ -36,6 +36,7 @@ impl Plugin for InputPlugin {
                     // missed events during drag and drop.
                     apply_system_buffers,
                 )
+                    .chain()
                     .in_set(PickSet::Input),
             )
             .add_system(

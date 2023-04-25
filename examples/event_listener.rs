@@ -4,17 +4,14 @@
 //! The Big Idea here is to make it easy to couple interaction events with specific entities. In
 //! other words, it allows you to easily implement "If entity X is hovered/clicked/dragged, do Y".
 
-use bevy::{ecs::system::Command, input::mouse::MouseMotion, prelude::*};
+use bevy::{ecs::system::Command, prelude::*};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-        .add_plugins(
-            DefaultPickingPlugins
-                .build()
-                .disable::<DebugPickingPlugin>(),
-        )
+        .add_plugins(DefaultPickingPlugins)
+        .add_plugin(bevy_egui::EguiPlugin)
         .add_startup_system(setup)
         .add_event::<Greeting>()
         .add_system(receive_greetings)
@@ -43,7 +40,7 @@ fn setup(
             // and output (`Bubble`). This gives you full freedom to write normal bevy systems that
             // are only called when specific entities are interacted with. Here we have a system
             // that rotates a cube when it is dragged, in just a few lines of code:
-            OnPointer::<Drag>::run_callback(rotate_with_mouse),
+            OnPointer::<Drag>::run_callback(rotate_with_drag),
             // Just like bevy systems, callbacks can be closures!
             OnPointer::<Out>::run_callback(|In(event): In<ListenedEvent<Out>>| {
                 info!("The pointer left entity {:?}", event.target);
@@ -101,7 +98,7 @@ struct DeleteTarget(Entity, PointerButton);
 
 impl From<ListenedEvent<Click>> for DeleteTarget {
     fn from(event: ListenedEvent<Click>) -> Self {
-        DeleteTarget(event.target, event.pointer_event.button)
+        DeleteTarget(event.target, event.button)
     }
 }
 
@@ -115,16 +112,14 @@ impl Command for DeleteTarget {
 }
 
 /// Rotate the target entity about its y axis.
-fn rotate_with_mouse(
+fn rotate_with_drag(
     // The first parameter is always the `ListenedEvent`, passed in by the event listening system.
-    In(event): In<ListenedEvent<Drag>>,
+    In(drag): In<ListenedEvent<Drag>>,
     // The following can be any normal bevy system params:
-    mut mouse_move: EventReader<MouseMotion>,
     mut cube: Query<&mut Transform>,
 ) -> Bubble {
-    let total_drag_dist: f32 = mouse_move.iter().map(|mm| mm.delta.x).sum();
-    if let Ok(mut transform) = cube.get_mut(event.target) {
-        transform.rotate_local_y(total_drag_dist / 50.0);
+    if let Ok(mut transform) = cube.get_mut(drag.target) {
+        transform.rotate_local_y(drag.delta.x / 50.0);
     }
     Bubble::Up // Determines if the event should continue to bubble through the hierarchy.
 }
@@ -133,7 +128,7 @@ struct Greeting(Entity, f32);
 
 impl From<ListenedEvent<Over>> for Greeting {
     fn from(event: ListenedEvent<Over>) -> Self {
-        Greeting(event.target, event.pointer_event.hit.depth)
+        Greeting(event.target, event.hit.depth)
     }
 }
 

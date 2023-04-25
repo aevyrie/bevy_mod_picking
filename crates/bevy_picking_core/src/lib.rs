@@ -121,9 +121,12 @@ impl Plugin for CorePlugin {
             .add_event::<pointer::InputPress>()
             .add_event::<pointer::InputMove>()
             .add_event::<backend::PointerHits>()
-            .add_system(pointer::update_pointer_map.in_set(PickSet::Input))
             .add_systems(
-                (pointer::InputMove::receive, pointer::InputPress::receive)
+                (
+                    pointer::update_pointer_map,
+                    pointer::InputMove::receive,
+                    pointer::InputPress::receive,
+                )
                     .in_set(PickSet::ProcessInput),
             );
     }
