@@ -106,7 +106,7 @@ fn bool_to_icon(f: &mut std::fmt::Formatter, prefix: &str, input: bool) -> std::
 impl std::fmt::Display for PointerDebug {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(location) = &self.location {
-            write!(f, "Location: {:.2?}\n", location.position)?;
+            writeln!(f, "Location: {:.2?}", location.position)?;
         }
         bool_to_icon(f, "Pressed: ", self.press.is_primary_pressed())?;
         bool_to_icon(f, " ", self.press.is_middle_pressed())?;
@@ -161,8 +161,7 @@ pub fn update_debug_data(
                 .flat_map(|button| {
                     drag_map
                         .get(&(id, button))
-                        .map(|entry| entry.as_ref())
-                        .flatten()
+                        .and_then(|entry| entry.as_ref())
                         .map(|entry| (button, entry.start_pos))
                 })
                 .collect()
