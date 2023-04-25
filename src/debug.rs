@@ -122,7 +122,7 @@ impl std::fmt::Display for PointerDebug {
             writeln!(f, "Depth: {depth:.2?}")?;
         }
         if !self.interactions.is_empty() {
-            writeln!(f, "{:?}", self.interactions)?;
+            write!(f, "{:?}", self.interactions)?;
         }
         Ok(())
     }
@@ -212,7 +212,7 @@ pub fn debug_draw_egui(
         dbg_painter.circle(
             to_egui_pos(location.position),
             20.0,
-            egui::Color32::TRANSPARENT,
+            Color32::from_rgba_unmultiplied(255, 255, 255, 32),
             stroke,
         );
 
@@ -220,15 +220,16 @@ pub fn debug_draw_egui(
             let (start, end) = (to_egui_pos(*drag_start), to_egui_pos(location.position));
             dbg_painter.line_segment([start, end], stroke);
             dbg_painter.circle(start, 20.0, egui::Color32::TRANSPARENT, stroke);
+            let drag_dist = location.position - *drag_start;
             dbg_painter.debug_text(
                 ((end.to_vec2() + start.to_vec2()) * 0.5).to_pos2(),
                 egui::Align2::CENTER_CENTER,
                 Color32::WHITE,
-                format!("{button:?} drag: {:.1?}", location.position - *drag_start),
+                format!("{button:?}: [{:.1}, {:.1}]", drag_dist.x, drag_dist.y),
             );
         });
 
-        let text = format!("{id:?}\n{debug}");
+        let text = format!("{id:?} {debug}");
         let alignment = egui::Align2::LEFT_TOP;
         dbg_painter.debug_text(
             (to_egui_pos(location.position).to_vec2()
