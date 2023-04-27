@@ -11,7 +11,11 @@ use crate::{
     },
     PickSet,
 };
-use bevy::{ecs::system::Command, prelude::*, utils::HashMap};
+use bevy::{
+    ecs::system::{Command, EntityCommands},
+    prelude::*,
+    utils::HashMap,
+};
 
 /// Adds event listening and bubbling support for event `E`.
 pub struct EventListenerPlugin<E>(PhantomData<E>);
@@ -85,12 +89,36 @@ impl<E: IsPointerEvent> OnPointer<E> {
         }
     }
 
-    /// Add a command to the [`CommandQueue`](bevy::ecs::system::CommandQueue) when when this event
-    /// listener is triggered.
+    /// Add a single [`Command`] to the [`CommandQueue`](bevy::ecs::system::CommandQueue) when when
+    /// this event listener is triggered. The command will be constructed using the
+    /// `From<ListenedEvent<E>>`  implementation.
     pub fn add_command<C: From<ListenedEvent<E>> + Command + Send + Sync + 'static>() -> Self {
         Self::run_callback(
             move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
                 commands.add(C::from(event));
+                Bubble::Up
+            },
+        )
+    }
+
+    /// Add multiple commands to the [`CommandQueue`](bevy::ecs::system::CommandQueue) using the
+    /// provided closure when this event listener is triggered.
+    pub fn add_commands(func: fn(&ListenedEvent<E>, &mut Commands)) -> Self {
+        Self::run_callback(
+            move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
+                func(&event, &mut commands);
+                Bubble::Up
+            },
+        )
+    }
+
+    /// Add multiple [`EntityCommands`] to the event's `target` entity to the
+    /// [`CommandQueue`](bevy::ecs::system::CommandQueue) using the provided closure when when this
+    /// event listener is triggered.
+    pub fn add_target_commands(func: fn(&ListenedEvent<E>, &mut EntityCommands)) -> Self {
+        Self::run_callback(
+            move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
+                func(&event, &mut commands.entity(event.target));
                 Bubble::Up
             },
         )
@@ -476,7 +504,7 @@ pub struct Drop {
     /// Pointer button lifted to drop.
     pub button: PointerButton,
     /// The entity that was dropped onto the `target` entity.
-    pub dropped_entity: Entity,
+    pub dropped: Entity,
     /// Information about the picking intersection.
     pub hit: HitData,
 }
@@ -868,7 +896,7 @@ pub fn send_drag_over_events(
                 dragged_over,
                 Drop {
                     button,
-                    dropped_entity: target,
+                    dropped: target,
                     hit,
                 },
             ));

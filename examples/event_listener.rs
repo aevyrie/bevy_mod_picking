@@ -4,7 +4,7 @@
 //! The Big Idea here is to make it easy to couple interaction events with specific entities. In
 //! other words, it allows you to easily implement "If entity X is hovered/clicked/dragged, do Y".
 
-use bevy::{ecs::system::Command, prelude::*};
+use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -13,7 +13,7 @@ fn main() {
         .add_plugins(DefaultPickingPlugins)
         .add_plugin(bevy_egui::EguiPlugin)
         .add_startup_system(setup)
-        .add_event::<Greeting>()
+        .add_event::<DoSomethingComplex>()
         .add_system(receive_greetings)
         .run();
 }
@@ -39,24 +39,50 @@ fn setup(
             // Callbacks are just bevy systems that have a specific input (`In<ListenedEvent<E>>`)
             // and output (`Bubble`). This gives you full freedom to write normal bevy systems that
             // are only called when specific entities are interacted with. Here we have a system
-            // that rotates a cube when it is dragged, in just a few lines of code:
+            // that rotates a cube when it is dragged. See the comments added to the function for
+            // more details on the requirements of callback systems.
+            //
+            // # Performance 💀
+            //
+            // Callback systems require exclusive world access, which means the system cannot be run
+            // in parallel with other systems! Callback systems are very flexible, but should be
+            // used with care. If you want to do something complex in response to a listened event,
+            // prefer to use `OnPointer::send_event` instead, and react to your custom event in a
+            // normally-scheduled bevy system (see example below).
             OnPointer::<Drag>::run_callback(rotate_with_drag),
-            // Just like bevy systems, callbacks can be closures!
-            OnPointer::<Out>::run_callback(|In(event): In<ListenedEvent<Out>>| {
-                info!("The pointer left entity {:?}", event.target);
+            // Just like bevy systems, callbacks can be closures! Recall that the parameters can be
+            // any bevy system parameters, with the only requirement that the first parameter be the
+            // input event, and the function output is a `Bubble`.
+            OnPointer::<Out>::run_callback(|In(event): In<ListenedEvent<Out>>, time: Res<Time>| {
+                info!(
+                    "[{:?}]: The pointer left entity {:?}",
+                    time.elapsed_seconds(),
+                    event.target
+                );
                 Bubble::Up
             }),
-            // When you just want to do something simple, the `add_command` helper will handle the
-            // boilerplate of adding a bevy `Command`. Because it's added with a closure, this
-            // allows us to pass event data into the command:
-            OnPointer::<Click>::add_command::<DeleteTarget>(),
+            // When you just want to add a `Command` to the target entity,`add_target_commands` will
+            // reduce boilerplate and allow you to do this directly.
+            OnPointer::<Click>::add_target_commands(|event, target_commands| {
+                if event.target != event.listener && event.button == PointerButton::Secondary {
+                    target_commands.despawn();
+                }
+            }),
             // Sometimes you may need to do multiple things in response to an interaction. Events
             // can be an easy way to handle this, as you can react to an event across many systems.
             // Unlike pointer events, recall that this event is only sent when the event listener
             // for this *specific* entity (or its children) are targeted. Similar to `add_command`
             // this is simply a helper function that creates an event-sending callback to reduce
             // boilerplate.
-            OnPointer::<Over>::send_event::<Greeting>(),
+            //
+            // # Performance 🚀
+            //
+            // Unlike the `run_callback` method, this will not prevent systems from parallelizing,
+            // as the systems that react to this event can be scheduled normally. In fact, you can
+            // get the best of both worlds by using run criteria on the systems that react to your
+            // custom event. This allows you to run bevy systems in response to interaction with a
+            // specific entity, while still allowing full system parallelism.
+            OnPointer::<Down>::send_event::<DoSomethingComplex>(),
         ))
         .with_children(|parent| {
             for i in 1..=5 {
@@ -93,24 +119,6 @@ fn setup(
     ));
 }
 
-/// Delete the entity if clicked with RMB and not the root entity
-struct DeleteTarget(Entity, PointerButton);
-
-impl From<ListenedEvent<Click>> for DeleteTarget {
-    fn from(event: ListenedEvent<Click>) -> Self {
-        DeleteTarget(event.target, event.button)
-    }
-}
-
-impl Command for DeleteTarget {
-    fn write(self, world: &mut World) {
-        let target = world.entity_mut(self.0);
-        if target.get::<Children>().is_none() && self.1 == PointerButton::Secondary {
-            target.despawn();
-        }
-    }
-}
-
 /// Rotate the target entity about its y axis.
 fn rotate_with_drag(
     // The first parameter is always the `ListenedEvent`, passed in by the event listening system.
@@ -124,15 +132,16 @@ fn rotate_with_drag(
     Bubble::Up // Determines if the event should continue to bubble through the hierarchy.
 }
 
-struct Greeting(Entity, f32);
+struct DoSomethingComplex(Entity, f32);
 
-impl From<ListenedEvent<Over>> for Greeting {
-    fn from(event: ListenedEvent<Over>) -> Self {
-        Greeting(event.target, event.hit.depth)
+impl From<ListenedEvent<Down>> for DoSomethingComplex {
+    fn from(event: ListenedEvent<Down>) -> Self {
+        DoSomethingComplex(event.target, event.hit.depth)
     }
 }
 
-fn receive_greetings(mut greetings: EventReader<Greeting>) {
+/// Unlike callback systems, this is a normal system that can be run in parallel with other systems.
+fn receive_greetings(mut greetings: EventReader<DoSomethingComplex>) {
     for event in greetings.iter() {
         info!(
             "Hello {:?}, you are {:?} depth units away from the pointer",
