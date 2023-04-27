@@ -1,7 +1,9 @@
-use std::marker::PhantomData;
-
-use bevy::{ecs::system::Command, prelude::*, ui::FocusPolicy};
+use bevy::{prelude::*, ui::FocusPolicy};
 use bevy_mod_picking::prelude::*;
+
+const NORMAL: Color = Color::rgb(0.15, 0.15, 0.15);
+const HOVERED: Color = Color::rgb(0.25, 0.25, 0.25);
+const PRESSED: Color = Color::rgb(0.35, 0.75, 0.35);
 
 fn main() {
     App::new()
@@ -26,10 +28,18 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 background_color: Color::rgb(0.15, 0.15, 0.15).into(),
                 ..default()
             },
-            OnPointer::<Over>::add_command::<SetColor<Hovered>>(),
-            OnPointer::<Out>::add_command::<SetColor<Normal>>(),
-            OnPointer::<Down>::add_command::<SetColor<Pressed>>(),
-            OnPointer::<Up>::add_command::<SetColor<Normal>>(),
+            OnPointer::<Over>::add_target_commands(|_, commands| {
+                commands.insert(BackgroundColor::from(HOVERED));
+            }),
+            OnPointer::<Out>::add_target_commands(|_, commands| {
+                commands.insert(BackgroundColor::from(NORMAL));
+            }),
+            OnPointer::<Down>::add_target_commands(|_, commands| {
+                commands.insert(BackgroundColor::from(PRESSED));
+            }),
+            OnPointer::<Up>::add_target_commands(|_, commands| {
+                commands.insert(BackgroundColor::from(NORMAL));
+            }),
         ))
         .with_children(|parent| {
             let mut bundle = TextBundle::from_section(
@@ -43,38 +53,4 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             bundle.focus_policy = FocusPolicy::Pass;
             parent.spawn(bundle);
         });
-}
-
-trait AsColor: Send + 'static {
-    const COLOR: Color;
-}
-
-struct Normal;
-impl AsColor for Normal {
-    const COLOR: Color = Color::rgb(0.15, 0.15, 0.15);
-}
-
-struct Hovered;
-impl AsColor for Hovered {
-    const COLOR: Color = Color::rgb(0.25, 0.25, 0.25);
-}
-
-struct Pressed;
-impl AsColor for Pressed {
-    const COLOR: Color = Color::rgb(0.35, 0.75, 0.35);
-}
-
-struct SetColor<C: AsColor>(Entity, PhantomData<C>);
-impl<C: AsColor> Command for SetColor<C> {
-    fn write(self, world: &mut World) {
-        world
-            .entity_mut(self.0)
-            .insert(BackgroundColor::from(C::COLOR));
-    }
-}
-
-impl<E: IsPointerEvent, C: AsColor> From<ListenedEvent<E>> for SetColor<C> {
-    fn from(event: ListenedEvent<E>) -> Self {
-        SetColor(event.target, PhantomData)
-    }
 }

@@ -41,15 +41,15 @@ fn setup(
             }),
             OnPointer::<Drag>::run_callback(drag_squares),
             OnPointer::<Drop>::add_commands(|event, commands| {
-                commands.entity(event.dropped).insert(SpinTarget(FRAC_PI_2));
-                commands.entity(event.target).insert(SpinTarget(-FRAC_PI_2));
+                commands.entity(event.dropped).insert(Spin(FRAC_PI_2)); // Spin dropped entity
+                commands.entity(event.target).insert(Spin(-FRAC_PI_2)); // Spin dropped-on entity
             }),
         ));
     }
 }
 
 /// Update the position of a square while it is being dragged. By using event data instead of winit
-/// events, this will work for any pointing hardware.
+/// events, this will work for any pointing hardware (mouse/touch/pen/etc).
 fn drag_squares(In(drag): In<ListenedEvent<Drag>>, mut square: Query<&mut Transform>) -> Bubble {
     let mut square_transform = square.get_mut(drag.target).unwrap();
     square_transform.translation += drag.delta.extend(0.0);
@@ -57,9 +57,9 @@ fn drag_squares(In(drag): In<ListenedEvent<Drag>>, mut square: Query<&mut Transf
 }
 
 #[derive(Component)]
-struct SpinTarget(f32);
+struct Spin(f32);
 
-fn spin(mut square: Query<(&mut SpinTarget, &mut Transform)>) {
+fn spin(mut square: Query<(&mut Spin, &mut Transform)>) {
     for (mut spin, mut transform) in square.iter_mut() {
         transform.rotation = Quat::from_rotation_z(spin.0);
         let delta = -spin.0.clamp(-1.0, 1.0) * 0.05;
