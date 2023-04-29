@@ -31,7 +31,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             OnPointer::<Over>::insert_on_target(BackgroundColor::from(HOVERED)),
             OnPointer::<Out>::insert_on_target(BackgroundColor::from(NORMAL)),
             OnPointer::<Down>::insert_on_target(BackgroundColor::from(PRESSED)),
-            OnPointer::<Up>::insert_on_target(BackgroundColor::from(NORMAL)),
+            OnPointer::<Up>::insert_on_target(BackgroundColor::from(HOVERED)),
         ))
         .with_children(|parent| {
             let mut bundle = TextBundle::from_section(
