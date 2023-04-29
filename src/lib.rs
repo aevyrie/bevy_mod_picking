@@ -1,5 +1,8 @@
 //! A flexible set of plugins that add picking functionality to your [`bevy`] app, with a focus on
-//! modularity, expressiveness, and robustness.
+//! modularity, expressiveness, and robustness. Want to drag a UI entity and drop it onto a 3D mesh
+//! entity? This plugin allows you to add event listeners to **any** entity, and works with mouse,
+//! touch, or even gamepads. Includes optional integrations for `rapier` and `egui`, but is agnostic
+//! to the picking backend.
 //!
 //! #### Lightweight
 //!
@@ -67,8 +70,7 @@
 //! #### Robust
 //!
 //! In addition to these features, this plugin also correctly handles multitouch and multiple
-//! windows. Some backends, like the one for `bevy_ui`, cannot support multiple windows due to
-//! limitations of the plugin they are built for.
+//! windows.
 //!
 //! # Getting Started
 //!
@@ -98,13 +100,18 @@
 //! # }
 //! ```
 //!
+//! #### Next Steps
+//!
+//! To learn more, take a look at the examples in the
+//! [`./examples`](https://github.com/aevyrie/bevy_mod_picking/tree/main/examples) directory.
+//!
 //! # The Picking Pipeline
 //!
 //! This plugin is designed to be extremely modular. To do so, it works in well-defined stages that
 //! form a pipeline, where events are used to pass data between each stage. All the types needed for
 //! the pipeline are defined in the [`bevy_picking_core`] crate.
 //!
-//! ## Input ([`bevy_picking_input`])
+//! #### Input ([`bevy_picking_input`])
 //!
 //! The first stage of the pipeline is to gather inputs and create pointers. This stage is
 //! ultimately responsible for generating [`InputMove`](bevy_picking_core::pointer::InputMove) and
@@ -115,10 +122,13 @@
 //! Because pointer positions and presses are driven by these events, you can use them to mock
 //! inputs for testing.
 //!
-//! ## Backend ([`bevy_picking_core::backend`])
+//! After inputs are generated, they are then collected to update the current [`PointerLocation`]
+//! for each pointer.
 //!
-//! The job of a backend is extremely simple: given the location of a pointer (from the input
-//! stage), return a list of all entities under that pointer.
+//! #### Backend ([`bevy_picking_core::backend`])
+//!
+//! A picking backend only has one job: reading [`PointerLocation`](crate::pointer::PointerLocation)
+//! components, and producing [`PointerHits`](crate::backend::PointerHits).
 //!
 //! You will eventually need to choose which picking backend(s) you want to use. This plugin uses
 //! `bevy_mod_raycast` by default; it works with bevy `Mesh`es out of the box and requires no extra
@@ -127,26 +137,32 @@
 //! problem or if you already have the dependency in-tree. For simple or low-poly games, it may
 //! never be an issue.
 //!
-//! However, it's important to understand that you can mix and match backends! For example, you
-//! might have a backend for your UI, and one for the 3d scene, with each being specialized for
-//! their purpose. This crate provides some backends out of the box, but you can even write your
-//! own. It's been made as easy as possible intentionally; the entire `bevy_mod_raycast` backend is
-//! less than 100 lines of code.
+//! It's important to understand that you can mix and match backends! For example, you might have a
+//! backend for your UI, and one for the 3d scene, with each being specialized for their purpose.
+//! This crate provides some backends out of the box, but you can even write your own. It's been
+//! made as easy as possible intentionally; the entire `bevy_mod_raycast` backend is less than 100
+//! lines of code.
 //!
 //!
-//! ## Focus ([`bevy_picking_core::focus`])
+//! #### Focus ([`bevy_picking_core::focus`])
 //!
-//! The next step is to use the data from the previous stages, combine and sort the results, and
-//! determine what each cursor is hovering over.
+//! The next step is to use the data from the backends, combine and sort the results, and determine
+//! what each cursor is hovering over, producing a [`HoverMap`](`crate::focus::HoverMap`). Note that
+//! just because a pointer is over an entity, it is not necessarily hovering that entity. Although
+//! multiple backends may be reporting that a pointer is over an entity, the focus system needs to
+//! determine which one(s) are actually being hovered based on the pick depth, order of the backend,
+//! and the [`FocusPolicy`](bevy::ui::FocusPolicy) of the entity. In other words, if one entity is
+//! in front of another, only the topmost one will be hovered, even if the pointer is within the
+//! bounds of both entities.
 //!
-//! ### Events ([`bevy_picking_core::events`])
+//! #### Events ([`bevy_picking_core::events`])
 //!
 //! In the final step, the high-level pointer events are generated, such as events that trigger when
 //! a pointer hovers or clicks an entity. These simple events are then used to generate more complex
 //! events for dragging and dropping. Once all events have been generated, the event bubbling
 //! systems propagate events through the entity hierarchy, triggering [`OnPointer<E>`] callbacks.
 //!
-//!  Because it is completely agnostic to the the earlier stages of the pipeline, you can easily
+//! Because it is completely agnostic to the the earlier stages of the pipeline, you can easily
 //! extend the plugin with arbitrary backends and input methods.
 
 #![allow(clippy::type_complexity)]
@@ -157,7 +173,9 @@ use bevy::{prelude::Bundle, ui::Interaction};
 use bevy_picking_core::PointerCoreBundle;
 use prelude::*;
 
-pub use bevy_picking_core::{self as picking_core, backend, events, focus, pointer};
+pub use bevy_picking_core::{
+    self as picking_core, backend, event_listening, events, focus, pointer,
+};
 pub use bevy_picking_input::{self as input};
 
 #[cfg(feature = "highlight")]
@@ -189,9 +207,10 @@ pub mod prelude {
     pub use crate::debug::DebugPickingPlugin;
     pub use crate::{
         backends,
+        event_listening::{Bubble, ListenedEvent, OnPointer},
         events::{
-            Bubble, Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
-            IsPointerEvent, ListenedEvent, Move, OnPointer, Out, Over, PointerEvent, Up,
+            Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
+            IsPointerEvent, Move, Out, Over, PointerEvent, Up,
         },
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
         DefaultPickingPlugins, *,

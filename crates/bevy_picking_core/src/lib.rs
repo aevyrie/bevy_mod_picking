@@ -6,6 +6,7 @@
 
 pub mod backend;
 pub mod debug;
+pub mod event_listening;
 pub mod events;
 pub mod focus;
 pub mod pointer;
@@ -136,6 +137,7 @@ impl Plugin for CorePlugin {
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
+        use event_listening::*;
         use events::*;
 
         app.init_resource::<focus::HoverMap>()

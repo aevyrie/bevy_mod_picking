@@ -1,3 +1,6 @@
+//! If you are using the provided highlighting plugin, this example demonstrates how you can define
+//! dynamic tints that run a closure to determine the color of a highlight.
+
 use bevy::{math::vec4, prelude::*};
 use bevy_mod_picking::prelude::*;
 
@@ -9,6 +12,13 @@ fn main() {
         .run();
 }
 
+// We can use a dynamic highlight that builds a material based on the entity's base material. This
+// allows us to "tint" a material by leaving all other properties - like the texture - unchanged,
+// and only modifying the base color. The highlighting plugin handles all the work of caching and
+// updating these materials when the base material changes, and swapping it out during pointer
+// events.
+//
+// Note that this works for *any* type of asset, not just bevy's built in materials.
 const HIGHLIGHT_TINT: Highlight<StandardMaterial> = Highlight {
     hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
         base_color: matl.base_color + vec4(-0.2, -0.2, 0.4, 0.0),

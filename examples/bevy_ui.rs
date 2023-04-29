@@ -28,18 +28,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 background_color: Color::rgb(0.15, 0.15, 0.15).into(),
                 ..default()
             },
-            OnPointer::<Over>::add_target_commands(|_, commands| {
-                commands.insert(BackgroundColor::from(HOVERED));
-            }),
-            OnPointer::<Out>::add_target_commands(|_, commands| {
-                commands.insert(BackgroundColor::from(NORMAL));
-            }),
-            OnPointer::<Down>::add_target_commands(|_, commands| {
-                commands.insert(BackgroundColor::from(PRESSED));
-            }),
-            OnPointer::<Up>::add_target_commands(|_, commands| {
-                commands.insert(BackgroundColor::from(NORMAL));
-            }),
+            OnPointer::<Over>::insert_on_target(BackgroundColor::from(HOVERED)),
+            OnPointer::<Out>::insert_on_target(BackgroundColor::from(NORMAL)),
+            OnPointer::<Down>::insert_on_target(BackgroundColor::from(PRESSED)),
+            OnPointer::<Up>::insert_on_target(BackgroundColor::from(NORMAL)),
         ))
         .with_children(|parent| {
             let mut bundle = TextBundle::from_section(

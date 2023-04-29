@@ -50,8 +50,8 @@ impl Plugin for SelectionPlugin {
             .add_systems(
                 (
                     send_selection_events,
-                    bevy_picking_core::events::event_bubbling::<Select>,
-                    bevy_picking_core::events::event_bubbling::<Deselect>,
+                    bevy_picking_core::event_listening::event_bubbling::<Select>,
+                    bevy_picking_core::event_listening::event_bubbling::<Deselect>,
                     update_state_from_events,
                 )
                     .in_set(PickSet::PostFocus),

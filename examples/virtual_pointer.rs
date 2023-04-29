@@ -1,3 +1,6 @@
+//! Demonstrates how to spawn and control a virtual pointer, useful for integration testing or
+//! something like a gamepad-controller cursor.
+
 use bevy::{
     prelude::*,
     render::camera::RenderTarget,

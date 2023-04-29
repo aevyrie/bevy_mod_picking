@@ -1,6 +1,4 @@
 //! Demonstrates how to use the rapier picking backend.
-//!
-//! You must enable the `backend_rapier` or `all` features.
 
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;

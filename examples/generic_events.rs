@@ -1,5 +1,4 @@
-//! This example is similar to the `event_listener` example, except we will demonstrate a more
-//! advanced method of forwarding events that are generic.
+//! This example demonstrates a more advanced method of forwarding events that are generic.
 //!
 //! This allows us to use the same custom event for multiple pointer events, as usual, but with the
 //! key difference that we can have different behavior depending on the pointer event that triggered

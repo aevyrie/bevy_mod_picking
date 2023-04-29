@@ -1,4 +1,4 @@
-//! Renders two 3d passes to the same window from different perspectives.
+//! Demonstrates that picking respects camera render order.
 
 use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*};
 use bevy_mod_picking::prelude::*;

@@ -1,6 +1,5 @@
-//! Demonstrates how to use the bevy_sprite picking backend.
-//!
-//! You must enable the `backend_sprite` or `all` features.
+//! Demonstrates how to use the bevy_sprite picking backend. This backend simply tests the bounds of
+//! a sprite.
 
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
