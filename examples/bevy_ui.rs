@@ -28,7 +28,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 background_color: Color::rgb(0.15, 0.15, 0.15).into(),
                 ..default()
             },
-            OnPointer::<Over>::insert_on_target(BackgroundColor::from(HOVERED)),
+            OnPointer::<Over>::target_mut::<BackgroundColor>(|_, color| color.0 = HOVERED),
             OnPointer::<Out>::insert_on_target(BackgroundColor::from(NORMAL)),
             OnPointer::<Down>::insert_on_target(BackgroundColor::from(PRESSED)),
             OnPointer::<Up>::insert_on_target(BackgroundColor::from(HOVERED)),

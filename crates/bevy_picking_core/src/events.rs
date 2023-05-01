@@ -115,6 +115,8 @@ impl IsPointerEvent for Click {}
 pub struct Move {
     /// Information about the picking intersection.
     pub hit: HitData,
+    /// The change in position since the last move event.
+    pub delta: Vec2,
 }
 impl IsPointerEvent for Move {}
 
@@ -221,21 +223,22 @@ pub fn pointer_events(
             .and_then(|pointer| pointer.location.clone())
     };
 
-    for move_event in input_moves.iter() {
+    for InputMove {
+        pointer_id,
+        location,
+        delta,
+    } in input_moves.iter().cloned()
+    {
         for (hovered_entity, hit) in hover_map
-            .get(&move_event.pointer_id)
+            .get(&pointer_id)
             .iter()
             .flat_map(|h| h.iter().map(|(entity, data)| (*entity, *data)))
         {
-            let Some(location) = pointer_location(move_event.pointer_id) else {
-                error!("Unable to get location for pointer {:?}", move_event.pointer_id);
-                continue;
-            };
             pointer_move.send(PointerEvent::new(
-                move_event.pointer_id,
-                location,
+                pointer_id,
+                location.clone(),
                 hovered_entity,
-                Move { hit },
+                Move { hit, delta },
             ))
         }
     }
@@ -376,6 +379,7 @@ pub fn send_click_and_drag_events(
     for InputMove {
         pointer_id,
         location,
+        delta: _,
     } in input_move.iter().cloned()
     {
         for button in PointerButton::iter() {
@@ -529,7 +533,7 @@ pub fn send_drag_over_events(
         pointer_id,
         pointer_location,
         target,
-        event: Move { hit },
+        event: Move { hit, delta: _ },
     } in pointer_move.iter().cloned()
     {
         for button in PointerButton::iter() {

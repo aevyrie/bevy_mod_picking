@@ -119,7 +119,7 @@ impl<E: IsPointerEvent> OnPointer<E> {
         )
     }
 
-    /// Convenience method to insert a bundle on the target entity.
+    /// Insert a bundle on the target entity.
     pub fn insert_on_target(bundle: impl Bundle + Clone) -> Self {
         Self::run_callback(
             move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
@@ -130,11 +130,26 @@ impl<E: IsPointerEvent> OnPointer<E> {
         )
     }
 
-    /// Convenience method to remove a bundle from the target entity.
+    /// Remove a bundle from the target entity.
     pub fn remove_from_target<B: Bundle>() -> Self {
         Self::run_callback(
             move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
                 commands.entity(event.target).remove::<B>();
+                Bubble::Up
+            },
+        )
+    }
+
+    /// Mutate a specific component on the target entity using a closure. If the component does not
+    /// exist, an error will be logged.
+    pub fn target_mut<C: Component>(func: fn(&ListenedEvent<E>, &mut C)) -> Self {
+        Self::run_callback(
+            move |In(event): In<ListenedEvent<E>>, mut query: Query<&mut C>| {
+                if let Ok(mut component) = query.get_mut(event.target) {
+                    func(&event, &mut component);
+                } else {
+                    error!("Component {:?} not found on entity {:?} during pointer callback for event {:?}", std::any::type_name::<C>(), event.target, std::any::type_name::<E>());
+                }
                 Bubble::Up
             },
         )

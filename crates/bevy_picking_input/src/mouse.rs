@@ -25,6 +25,7 @@ pub fn mouse_pick_events(
     // Input
     windows: Query<(Entity, &Window), With<PrimaryWindow>>,
     mut cursor_moves: EventReader<CursorMoved>,
+    mut cursor_last: Local<Vec2>,
     mut mouse_inputs: EventReader<MouseButtonInput>,
     // Output
     mut pointer_move: EventWriter<InputMove>,
@@ -39,7 +40,9 @@ pub fn mouse_pick_events(
                     .unwrap(),
                 position: event.position,
             },
+            event.position - *cursor_last,
         ));
+        *cursor_last = event.position;
     }
 
     for input in mouse_inputs.iter() {

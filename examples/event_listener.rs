@@ -10,7 +10,11 @@ use bevy_mod_picking::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-        .add_plugins(DefaultPickingPlugins)
+        .add_plugins(
+            DefaultPickingPlugins
+                .build()
+                .disable::<DefaultHighlightingPlugin>(),
+        )
         .add_plugin(bevy_egui::EguiPlugin)
         .add_startup_system(setup)
         .add_event::<DoSomethingComplex>()
@@ -47,9 +51,14 @@ fn setup(
             // Callback systems require exclusive world access, which means the system cannot be run
             // in parallel with other systems! Callback systems are very flexible, but should be
             // used with care. If you want to do something complex in response to a listened event,
-            // prefer to use `OnPointer::send_event` instead, and react to your custom event in a
-            // normally-scheduled bevy system (see example below).
-            OnPointer::<Drag>::run_callback(rotate_with_drag),
+            // prefer to instead use `OnPointer::send_event`, and react to your custom event in a
+            // normally-scheduled bevy system (see send_event usage below).
+            OnPointer::<Move>::run_callback(change_hue_with_vertical_move),
+            // We can use helper methods to make callbacks even simpler. For drag-to-rotate, we use
+            // this little closure, because we only need to modify the target entity's Transform:
+            OnPointer::<Drag>::target_mut::<Transform>(|drag, transform| {
+                transform.rotate_local_y(drag.delta.x / 50.0)
+            }),
             // Just like bevy systems, callbacks can be closures! Recall that the parameters can be
             // any bevy system parameters, with the only requirement that the first parameter be the
             // input event, and the function output is a `Bubble`.
@@ -119,16 +128,19 @@ fn setup(
     ));
 }
 
-/// Rotate the target entity about its y axis.
-fn rotate_with_drag(
+/// Change the hue of mesh's `StandardMaterial` when the mouse moves vertically over it.
+fn change_hue_with_vertical_move(
     // The first parameter is always the `ListenedEvent`, passed in by the event listening system.
-    In(drag): In<ListenedEvent<Drag>>,
+    In(event): In<ListenedEvent<Move>>,
     // The following can be any normal bevy system params:
-    mut cube: Query<&mut Transform>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    cube: Query<&Handle<StandardMaterial>>,
 ) -> Bubble {
-    if let Ok(mut transform) = cube.get_mut(drag.target) {
-        transform.rotate_local_y(drag.delta.x / 50.0);
-    }
+    let material = materials.get_mut(cube.get(event.target).unwrap()).unwrap();
+    let mut color = material.base_color.as_hsla_f32();
+    let to_u8 = 255.0 / 360.0; // we will use wrapping integer addition to make the hue wrap around
+    color[0] = ((color[0] * to_u8) as u8).wrapping_add_signed(event.delta.y as i8) as f32 / to_u8;
+    material.base_color = Color::hsla(color[0], color[1], color[2], color[3]);
     Bubble::Up // Determines if the event should continue to bubble through the hierarchy.
 }
 

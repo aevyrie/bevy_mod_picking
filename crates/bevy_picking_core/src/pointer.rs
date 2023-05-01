@@ -212,13 +212,16 @@ pub struct InputMove {
     pub pointer_id: PointerId,
     /// The [`Location`] of the pointer.
     pub location: Location,
+    /// The distance moved (change in `position`) since the last event.
+    pub delta: Vec2,
 }
 impl InputMove {
     /// Create a new [`InputMove`] event.
-    pub fn new(id: PointerId, location: Location) -> InputMove {
+    pub fn new(id: PointerId, location: Location, delta: Vec2) -> InputMove {
         Self {
             pointer_id: id,
             location,
+            delta,
         }
     }
 

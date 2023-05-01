@@ -48,14 +48,21 @@ pub fn touch_pick_events(
                     bevy_picking_selection::PointerMultiselect::default(),
                 ));
 
-                input_moves.send(InputMove::new(pointer, location));
+                input_moves.send(InputMove::new(pointer, location, Vec2::ZERO));
                 input_presses.send(InputPress::new_down(pointer, PointerButton::Primary));
                 location_cache.insert(touch.id, *touch);
             }
             TouchPhase::Moved => {
                 // Send a move event only if it isn't the same as the last one
-                if location_cache.get(&touch.id) != Some(touch) {
-                    input_moves.send(InputMove::new(pointer, location));
+                if let Some(last_touch) = location_cache.get(&touch.id) {
+                    if last_touch == touch {
+                        break;
+                    }
+                    input_moves.send(InputMove::new(
+                        pointer,
+                        location,
+                        touch.position - last_touch.position,
+                    ));
                 }
                 location_cache.insert(touch.id, *touch);
             }
