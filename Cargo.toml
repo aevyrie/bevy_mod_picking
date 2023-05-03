@@ -70,7 +70,7 @@ highlight = ["bevy_picking_highlight"]
 debug = ["bevy/bevy_text", "bevy/bevy_sprite"]
 backend_raycast = ["bevy_picking_raycast"]
 backend_rapier = ["bevy_picking_rapier", "bevy_rapier3d"]
-backend_sprite = ["bevy_picking_sprite"]
+backend_sprite = ["bevy_picking_sprite", "bevy_picking_highlight/sprite"]
 backend_bevy_ui = ["bevy_picking_ui"]
 backend_egui = ["bevy_picking_egui", "bevy_egui"]
 
