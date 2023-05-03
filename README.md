@@ -103,8 +103,8 @@ fn setup(
 ```
 ## Next Steps
 
-To learn more, take a look at the examples in the
-`/examples` directory.
+To learn more, take a look at the examples in the `/examples` directory. The `event_listener`
+example is a great place to start.
 
 # Bevy Version Support
 

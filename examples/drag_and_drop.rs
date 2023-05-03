@@ -33,23 +33,17 @@ fn setup(
             },
             PickableBundle::default(),    // <- Makes the mesh pickable.
             RaycastPickTarget::default(), // <- Needed for the raycast backend.
-            OnPointer::<DragStart>::target_remove::<RaycastPickTarget>(), // Disable picking
-            OnPointer::<DragEnd>::target_insert(RaycastPickTarget::default()),
-            OnPointer::<Drag>::run_callback(drag_squares),
+            OnPointer::<DragStart>::target_remove::<Pickable>(), // Disable picking
+            OnPointer::<DragEnd>::target_insert(Pickable), // Re-enable picking
+            OnPointer::<Drag>::target_component_mut::<Transform>(|drag, transform| {
+                transform.translation += drag.delta.extend(0.0) // Make the square follow the mouse
+            }),
             OnPointer::<Drop>::commands_mut(|event, commands| {
                 commands.entity(event.dropped).insert(Spin(FRAC_PI_2)); // Spin dropped entity
                 commands.entity(event.target).insert(Spin(-FRAC_PI_2)); // Spin dropped-on entity
             }),
         ));
     }
-}
-
-/// Update the position of a square while it is being dragged. By using event data instead of winit
-/// events, this will work for any pointing hardware (mouse/touch/pen/etc).
-fn drag_squares(In(drag): In<ListenedEvent<Drag>>, mut square: Query<&mut Transform>) -> Bubble {
-    let mut square_transform = square.get_mut(drag.target).unwrap();
-    square_transform.translation += drag.delta.extend(0.0);
-    Bubble::Up
 }
 
 #[derive(Component)]

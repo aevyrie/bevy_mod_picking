@@ -193,8 +193,9 @@ pub mod backends {
     pub use bevy_picking_rapier as rapier;
     #[cfg(feature = "backend_raycast")]
     pub use bevy_picking_raycast as raycast;
-    #[cfg(feature = "backend_shader")]
-    pub use bevy_picking_shader as shader;
+    // Currently a stub
+    // #[cfg(feature = "backend_shader")]
+    // pub use bevy_picking_shader as shader;
     #[cfg(feature = "backend_sprite")]
     pub use bevy_picking_sprite as sprite;
     #[cfg(feature = "backend_bevy_ui")]
@@ -212,8 +213,9 @@ pub mod prelude {
             Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
             IsPointerEvent, Move, Out, Over, PointerEvent, Up,
         },
+        picking_core::Pickable,
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
-        DefaultPickingPlugins, *,
+        *,
     };
 
     #[cfg(feature = "highlight")]
@@ -244,6 +246,8 @@ pub mod prelude {
 /// Makes an entity pickable.
 #[derive(Bundle, Default)]
 pub struct PickableBundle {
+    /// Marks pickable entities.
+    pub pickable: Pickable,
     /// Tracks entity [`Interaction`] state.
     pub interaction: Interaction,
     /// Tracks entity [`PickSelection`](selection::PickSelection) state.

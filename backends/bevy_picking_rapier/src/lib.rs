@@ -80,7 +80,7 @@ pub fn build_rays_from_pointers(
 /// Produces [`PointerHits`]s from [`RapierPickRay`] intersections.
 fn update_hits(
     rapier_context: Option<Res<RapierContext>>,
-    targets: Query<With<RapierPickTarget>>,
+    targets: Query<(With<RapierPickTarget>, With<Pickable>)>,
     mut sources: Query<(Entity, &Camera, &mut RapierPickCamera)>,
     mut output: EventWriter<PointerHits>,
 ) {

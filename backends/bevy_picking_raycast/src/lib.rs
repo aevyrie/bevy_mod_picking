@@ -31,7 +31,8 @@ impl Plugin for RaycastBackend {
             )
                 .chain()
                 .in_set(PickSet::Backend),
-        );
+        )
+        .add_system(sync_pickable.in_base_set(CoreSet::PostUpdate));
     }
 }
 
@@ -57,6 +58,32 @@ impl RaycastPickCamera {
     /// [`RaycastPickCamera`]'s render target.
     pub fn ray_map(&self) -> &HashMap<PointerId, Ray3d> {
         &self.ray_map
+    }
+}
+
+#[derive(Component)]
+struct DisabledTarget;
+
+/// A disgusting hack to support ignoring entities that have their `Pickable` component removed.
+fn sync_pickable(
+    mut commands: Commands,
+    mut removed: RemovedComponents<Pickable>,
+    targets: Query<With<RaycastPickTarget>>,
+    added: Query<Entity, (With<Pickable>, With<DisabledTarget>)>,
+) {
+    for removed in &mut removed {
+        if targets.get(removed).is_ok() {
+            commands
+                .entity(removed)
+                .insert(DisabledTarget)
+                .remove::<RaycastPickTarget>();
+        }
+    }
+    for added in &added {
+        commands
+            .entity(added)
+            .insert(RaycastPickTarget::default())
+            .remove::<DisabledTarget>();
     }
 }
 

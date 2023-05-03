@@ -53,6 +53,10 @@ impl Default for PickingPluginsSettings {
     }
 }
 
+/// Used to mark entities that should be pickable.
+#[derive(Component, Debug, Default, Clone, Reflect)]
+pub struct Pickable;
+
 /// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
 /// being an entity.
 ///
