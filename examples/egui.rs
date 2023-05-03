@@ -1,14 +1,32 @@
-//! A minimal 3d example.
+//! This example demonstrates how backends can be mixed and matched, specifically with egui. Here,
+//! we are using the egui backend, which is enabled automatically in `DefaultPickingPlugins` when
+//! the "egui_backend" feature is enabled. The egui backend will automatically apply a `NoDeselect`
+//! component to the egui entity, which allows you to interact with the UI without deselecting
+//! anything in the 3d scene.
 
 use bevy::prelude::*;
+use bevy_egui::{
+    egui::{self, ScrollArea},
+    EguiContexts, EguiPlugin,
+};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
+        .add_plugin(EguiPlugin)
+        .add_system(ui_example)
         .add_startup_system(setup)
         .run();
+}
+
+fn ui_example(mut egui_contexts: EguiContexts) {
+    egui::Window::new("Demo").show(egui_contexts.ctx_mut(), |ui| {
+        ScrollArea::both().auto_shrink([false; 2]).show(ui, |ui| {
+            ui.heading("Note that you can select a 3d object then click on the egui window without that object being deselected!");
+        });
+    });
 }
 
 /// set up a simple 3D scene
@@ -20,7 +38,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            material: materials.add(Color::WHITE.into()),
             ..Default::default()
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
@@ -29,7 +47,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            material: materials.add(Color::WHITE.into()),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         },

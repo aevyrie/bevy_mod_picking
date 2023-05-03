@@ -1,34 +1,100 @@
 [package]
 name = "bevy_mod_picking"
-version = "0.12.0"
+version = "0.13.0"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 edition = "2021"
-license = "MIT"
-description = "A 3D mouse picking and raycasting plugin for Bevy."
+license = "MIT OR Apache-2.0"
+description = "A modular picking plugin for Bevy."
 repository = "https://github.com/aevyrie/bevy_mod_picking/"
-keywords = ["gamedev", "picking", "bevy", "raycast"]
+keywords = ["gamedev", "picking", "bevy", "input", "eventlistener"]
 categories = ["game-engines", "rendering"]
 resolver = "2"
 
+[workspace]
+members = ["crates/*", "backends/*"]
+
 [dependencies]
-bevy = { version = "0.10.0", default-features = false, features = [
+bevy = { version = "0.10", default-features = false, features = [
+    "bevy_core_pipeline",
     "bevy_render",
     "bevy_ui",
 ] }
+bevy_egui = { optional = true, version = "0.20" }
+bevy_rapier3d = { optional = true, version = "0.21" }
 
-bevy_mod_raycast = "0.8"
+# Local
+bevy_picking_core = { path = "crates/bevy_picking_core", version = "0.1" }
+bevy_picking_input = { path = "crates/bevy_picking_input", version = "0.1" }
+bevy_picking_selection = { optional = true, path = "crates/bevy_picking_selection", version = "0.1" }
+bevy_picking_highlight = { optional = true, path = "crates/bevy_picking_highlight", version = "0.1" }
+bevy_picking_raycast = { optional = true, path = "backends/bevy_picking_raycast", version = "0.1" }
+bevy_picking_ui = { optional = true, path = "backends/bevy_picking_ui", version = "0.1" }
+bevy_picking_rapier = { optional = true, path = "backends/bevy_picking_rapier", version = "0.1" }
+bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite", version = "0.1" }
+bevy_picking_egui = { optional = true, path = "backends/bevy_picking_egui", version = "0.1" }
 
 [dev-dependencies]
-bevy = { version = "0.10.0", default-features = false, features = [
-    "bevy_pbr",
+bevy = { version = "0.10", default-features = false, features = [
     "bevy_winit",
-    "bevy_ui",
-    "bevy_core_pipeline",
-    "bevy_text",
     "x11",
+    "bevy_gltf",
+    "bevy_scene",
+    "png",
 ] }
 
 [features]
-default = ["2d", "debug"]
-2d = ["bevy_mod_raycast/2d"]
-debug = ["bevy_mod_raycast/debug"]
+all = [
+    "selection",
+    "highlight",
+    "debug",
+    "backend_raycast",
+    "backend_bevy_ui",
+    "backend_rapier",
+    "backend_sprite",
+    "backend_egui",
+]
+default = [
+    "backend_raycast",
+    "backend_bevy_ui",
+    "backend_sprite",
+    "debug",
+    "selection",
+    "highlight",
+]
+selection = [
+    "bevy_picking_selection",
+    "bevy_picking_input/selection",
+    "bevy_picking_highlight/selection",
+]
+highlight = ["bevy_picking_highlight"]
+debug = ["bevy/bevy_text", "bevy/bevy_sprite"]
+backend_raycast = ["bevy_picking_raycast"]
+backend_rapier = ["bevy_picking_rapier", "bevy_rapier3d"]
+backend_sprite = ["bevy_picking_sprite"]
+backend_bevy_ui = ["bevy_picking_ui"]
+backend_egui = ["bevy_picking_egui", "bevy_egui"]
+
+[[example]]
+name = "rapier"
+path = "examples/rapier.rs"
+required-features = ["backend_rapier"]
+
+[[example]]
+name = "egui"
+path = "examples/egui.rs"
+required-features = ["backend_egui"]
+
+[[example]]
+name = "event_listener"
+path = "examples/event_listener.rs"
+required-features = ["backend_egui"]
+
+[[example]]
+name = "multiple_windows"
+path = "examples/multiple_windows.rs"
+required-features = ["backend_egui"]
+
+[[example]]
+name = "virtual_pointer"
+path = "examples/virtual_pointer.rs"
+required-features = ["backend_egui"]

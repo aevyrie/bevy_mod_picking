@@ -1,17 +1,17 @@
-//! A minimal 3d example.
+//! Demonstrates picking working with multiple windows.
 
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::RenderTarget, window::WindowRef};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
+        .add_plugin(bevy_egui::EguiPlugin) //  For debug: bevy_ui does not support multiple windows.
         .add_startup_system(setup)
         .run();
 }
 
-/// set up a simple 3D scene
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -45,10 +45,33 @@ fn setup(
         transform: Transform::from_xyz(4.0, 8.0, -4.0),
         ..Default::default()
     });
+    // main camera, cameras default to the primary window
+    // so we don't need to specify that.
     commands.spawn((
         Camera3dBundle {
             transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ..Default::default()
+            ..default()
+        },
+        RaycastPickCamera::default(), // <- Enable picking for this camera
+    ));
+
+    // Spawn a second window
+    let second_window = commands
+        .spawn(Window {
+            title: "Second window".to_owned(),
+            ..default()
+        })
+        .id();
+
+    // second window camera
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(6.0, 1.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
+            camera: Camera {
+                target: RenderTarget::Window(WindowRef::Entity(second_window)),
+                ..default()
+            },
+            ..default()
         },
         RaycastPickCamera::default(), // <- Enable picking for this camera
     ));

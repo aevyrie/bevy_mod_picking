@@ -1,64 +1,119 @@
 <div align="center">
-  
-# Mouse Picking for Bevy
+
+# Pointer Picking for Bevy
 
 [![crates.io](https://img.shields.io/crates/v/bevy_mod_picking)](https://crates.io/crates/bevy_mod_picking)
 [![docs.rs](https://docs.rs/bevy_mod_picking/badge.svg)](https://docs.rs/bevy_mod_picking)
 [![CI](https://github.com/aevyrie/bevy_mod_picking/workflows/CI/badge.svg?branch=master)](https://github.com/aevyrie/bevy_mod_picking/actions?query=workflow%3A%22CI%22+branch%3Amaster)
 [![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 
-![picking_demo](https://user-images.githubusercontent.com/2632925/201516335-9ee66106-b2d8-4eb5-bc32-18da072999a2.gif)
+![picking_demo](https://user-images.githubusercontent.com/2632925/114128723-d8de1b00-98b1-11eb-9b25-812fcf6664e2.gif)
 
-A [Bevy](https://github.com/bevyengine/bevy) plugin for picking, making it easy to interact
-with meshes in Bevy. Built with [`bevy_mod_raycast`](https://github.com/aevyrie/bevy_mod_raycast).
+A flexible set of plugins that add picking functionality to your [`bevy`] app. Want to drag a UI
+entity and drop it onto a 3D mesh entity? This plugin allows you to add event listeners to **any**
+entity, and works with mouse, touch, or even gamepads.
 
 </div>
 
-## Features
-* Mouse intersection coordinates in world space
-* Mouseover and mouseclick events
-* Configurable highlighting
-* Selection state management
-* 3D debug cursor
-* Touch support
-* Common keybindings (Ctrl+A, Ctrl+Click multi-select)
+# Highlights
 
-# Quickstart
+- ***Lightweight***: only compile what you need.
+- ***Expressive***: event listener components `OnPointer::<Click>::run_callback(my_system)`.
+- ***Input Agnostic***: control pointers with mouse, pen, touch, or custom bevy systems.
+- ***Modular Backends***: mix and match backends like `rapier`, `egui`, `bevy_ui`, or write your own. 
+## Lightweight
 
-It only takes a few lines to get mouse picking working in your Bevy application using this plugin.
+Only compile what you use. All non-critical plugins can be disabled, including highlighting,
+selection, and any backends not in use. The crate uses no external dependencies unless you need it
+for a backend, e.g. `egui` or `rapier`.
 
-1. Add the plugin to your app:
+## Expressive
+
+The `OnPointer<E>` event listener component makes it easy to react to pointer interactions like
+`Click`, `Over`, and `Drag`. Events bubble up the entity hierarchy starting from their target
+looking for event listeners, and running any listener's callbacks. These callbacks are normal bevy
+systems, though a number of helpers are provided to reduce boilerplate:
+
 ```rs
-.add_plugins(DefaultPickingPlugins);
+commands.spawn((
+    PbrBundle { /* ... */ },
+    // These callbacks are run when this entity or its children are interacted with.
+    OnPointer::<Move>::run_callback(change_hue_with_vertical_move),
+    // Rotate an entity when dragged:
+    OnPointer::<Drag>::target_component_mut::<Transform>(|drag, transform| {
+        transform.rotate_local_y(drag.delta.x / 50.0)
+    }),
+    // Despawn an entity when clicked:
+    OnPointer::<Click>::target_commands_mut(|_click, target_commands| {
+        target_commands.despawn();
+    }),
+    // Send an event when the pointer is pressed over this entity:
+    OnPointer::<Down>::send_event::<DoSomethingComplex>(),
+));
+
 ```
 
-2. Mark your camera as the picking source with the `PickingCameraBundle` component:
+## Input Agnostic
+
+Pointers can be controlled with anything, whether its the included mouse or touch inputs, or a
+custom gamepad input system you write yourself.
+
+## Modular Backends
+
+Picking backends run hit tests to determine if a pointer is over any entities. This plugin provides
+an [extremely simple API to write your own backend](crates/bevy_picking_core/src/backend.rs) in
+about 100 lines of code; it also includes half a dozen backends out of the box. These include
+`rapier`, `egui`, and `bevy_ui`, among others. Multiple backends can be used at the same time! 
+
+You can have a simple rect hit test backend for your UI, a GPU picking shader for your 3D scene, and
+this plugin will handle sorting hits and generating events.
+
+## Robust
+
+In addition to these features, this plugin also correctly handles multitouch, multiple windows, and
+multiple layered render passes.
+
+# Getting Started
+
+Making objects pickable is pretty straightforward. In the most minimal cases, it's as simple as:
+
 ```rs
-.insert(PickingCameraBundle::default());
+use bevy::prelude::*;
+use bevy_mod_picking::prelude::*;
+
+fn setup(
+    mut commands: Commands,
+    app: &mut App,
+) {
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPickingPlugins);
+
+    commands.spawn((
+        PbrBundle::default(),           // The `bevy_picking_raycast` backend works with meshes
+        PickableBundle::default(),      // Makes the entity pickable
+        RaycastPickTarget::default()    // Marker for the `bevy_picking_raycast` backend
+    ));
+
+    commands.spawn((
+        Camera3dBundle::default(),
+        RaycastPickCamera::default(),   // Enable picking with this camera
+    ));
+}
 ```
+## Next Steps
 
-3. Add the `PickableBundle` component to any meshes you want to make pickable:
-```rs
-.insert(PickableBundle::default())
-```
-
-That's all there is to it! Read [the docs](https://docs.rs/bevy_mod_picking) and look at the provided examples to learn more.
-
-# Demo
-
-To run a minimal demo, clone this repository and run:
-
-```console
-cargo run --example minimal 
-```
+To learn more, take a look at the examples in the `/examples` directory. The `event_listener`
+example is a great place to start.
 
 # Bevy Version Support
 
 I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
 
+
 | bevy | bevy_mod_picking |
 | ---- | ---------------- |
-| 0.10 | 0.12             |
+| 0.10 | 0.12, 0.13       |
 | 0.9  | 0.10, 0.11       |
 | 0.8  | 0.8, 0.9         |
 | 0.7  | 0.6, 0.7         |
@@ -69,8 +124,13 @@ I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
 
 # License
 
-This project is licensed under the [MIT license](https://github.com/aevyrie/bevy_mod_picking/blob/master/LICENSE).
+All code in this repository is dual-licensed under either:
 
-## Contribution
+- MIT License (LICENSE-MIT or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0 (LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in bevy_mod_picking by you, shall be licensed as MIT, without any additional terms or conditions.
+at your option. This means you can select the license you prefer.
+
+## Your contributions
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+

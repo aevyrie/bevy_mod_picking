@@ -1,8 +1,9 @@
 /target
 Cargo.lock
-.cargo/config
+.cargo
 .vscode
 .idea
 .cargo/credentials.toml
 .cargo/config_fast_compile
 **/trace-*.json
+/Cargo.lock

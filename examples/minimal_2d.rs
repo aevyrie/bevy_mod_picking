@@ -1,18 +1,17 @@
+//! A minimal 2d example.
+
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
-use bevy_mod_picking::{
-    DebugEventsPickingPlugin, DefaultPickingPlugins, PickableBundle, PickingCameraBundle,
-};
+use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins) // <- Adds picking, interaction, and highlighting
-        .add_plugin(DebugEventsPickingPlugin) // <- Adds debug event logging.
+        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
+        .add_plugins(DefaultPickingPlugins)
         .add_startup_system(setup)
         .run();
 }
 
-/// set up a simple 2D scene
+/// Set up a simple 2D scene
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -25,10 +24,9 @@ fn setup(
             material: materials.add(ColorMaterial::from(Color::PURPLE)),
             ..default()
         },
-        PickableBundle::default(), // <- Makes the mesh pickable.
+        PickableBundle::default(),    // <- Makes the mesh pickable.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
-    // camera
-    commands.spawn(
-        (Camera2dBundle::default(), PickingCameraBundle::default()), // <- Sets the camera to use for picking.
-    );
+
+    commands.spawn((Camera2dBundle::default(), RaycastPickCamera::default())); // <- Sets the camera to use for picking.
 }
