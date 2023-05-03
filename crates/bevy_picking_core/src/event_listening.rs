@@ -68,7 +68,7 @@ impl<E: IsPointerEvent> CallbackSystem<E> {
 
 /// Used to attach a callback to an entity. This callback is executed any time a pointer event
 /// triggers this listener when bubbling up the entity hierarchy.
-/// 
+///
 /// Callback systems will give you access to the `ListenedEvent` that triggered the event listener.
 /// This includes the `listener` which is the entity with the `OnPointer` component, and the
 /// `target` which is the entity that generated the event. The `target` can be this entity or any of
