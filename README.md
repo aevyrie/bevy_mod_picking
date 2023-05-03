@@ -1,6 +1,6 @@
 <div align="center">
 
-# Pointer Picking for Bevy
+# Picking and Pointer Events for Bevy
 
 [![crates.io](https://img.shields.io/crates/v/bevy_mod_picking)](https://crates.io/crates/bevy_mod_picking)
 [![docs.rs](https://docs.rs/bevy_mod_picking/badge.svg)](https://docs.rs/bevy_mod_picking)
