@@ -193,9 +193,6 @@ pub mod backends {
     pub use bevy_picking_rapier as rapier;
     #[cfg(feature = "backend_raycast")]
     pub use bevy_picking_raycast as raycast;
-    // Currently a stub
-    // #[cfg(feature = "backend_shader")]
-    // pub use bevy_picking_shader as shader;
     #[cfg(feature = "backend_sprite")]
     pub use bevy_picking_sprite as sprite;
     #[cfg(feature = "backend_bevy_ui")]

@@ -1,3 +1,5 @@
+//! A minimal 2d example.
+
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::prelude::*;
 

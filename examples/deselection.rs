@@ -12,24 +12,11 @@ fn main() {
         .run();
 }
 
-/// set up a simple 3D scene
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // cube
-    commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-            transform: Transform::from_xyz(0.0, 0.5, 0.0),
-            ..Default::default()
-        },
-        PickableBundle::default(),
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
-    ));
-
     // cube with NoDeselect
     commands
         .spawn((
@@ -45,7 +32,16 @@ fn setup(
         ))
         .remove::<PickSelection>(); // <- Removing this removes the entity's ability to be selected.
 
-    // light
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+            ..Default::default()
+        },
+        PickableBundle::default(),
+        RaycastPickTarget::default(),
+    ));
     commands.spawn(PointLightBundle {
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         point_light: PointLight {
@@ -55,8 +51,6 @@ fn setup(
         },
         ..Default::default()
     });
-
-    // camera
     commands.spawn((
         Camera3dBundle {
             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),

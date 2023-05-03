@@ -1,4 +1,4 @@
-//! Uses two windows to visualize a 3D model from different angles.
+//! Demonstrates picking working with multiple windows.
 
 use bevy::{prelude::*, render::camera::RenderTarget, window::WindowRef};
 use bevy_mod_picking::prelude::*;
@@ -7,12 +7,12 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_startup_system(setup_scene)
-        .add_system(bevy::window::close_on_esc)
+        .add_plugin(bevy_egui::EguiPlugin) //  For debug: bevy_ui does not support multiple windows.
+        .add_startup_system(setup)
         .run();
 }
 
-fn setup_scene(
+fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,

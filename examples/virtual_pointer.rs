@@ -1,5 +1,5 @@
 //! Demonstrates how to spawn and control a virtual pointer, useful for integration testing or
-//! something like a gamepad-controller cursor.
+//! something like a gamepad-controlled software pointer.
 
 use bevy::{
     prelude::*,
@@ -13,6 +13,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
+        .add_plugin(bevy_egui::EguiPlugin) // Nicer pointer debug overlay, useful for this example.
         .add_startup_system(setup)
         .add_system(move_virtual_pointer)
         .run();

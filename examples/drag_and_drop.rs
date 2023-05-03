@@ -5,15 +5,12 @@ use bevy_mod_picking::prelude::*;
 
 fn main() {
     let mut app = App::new();
-
     app.add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
         .add_startup_system(setup)
         .add_system(spin);
-
     #[cfg(feature = "backend_egui")]
     app.add_plugin(bevy_egui::EguiPlugin);
-
     app.run();
 }
 

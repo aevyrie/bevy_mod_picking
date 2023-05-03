@@ -53,7 +53,7 @@ fn setup(
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
         RaycastPickTarget::default(), // <- Needed for the raycast backend.
-        HIGHLIGHT_TINT,
+        HIGHLIGHT_TINT,               // Override the global highlighting settings for this mesh
     ));
 
     // cube
@@ -69,7 +69,7 @@ fn setup(
         },
         PickableBundle::default(),    // <- Makes the mesh pickable.
         RaycastPickTarget::default(), // <- Needed for the raycast backend.
-        HIGHLIGHT_TINT,
+        HIGHLIGHT_TINT,               // Override the global highlighting settings for this mesh
     ));
 
     // light

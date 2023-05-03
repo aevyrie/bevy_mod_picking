@@ -1,3 +1,9 @@
+//! This example demonstrates how backends can be mixed and matched, specifically with egui. Here,
+//! we are using the egui backend, which is enabled automatically in `DefaultPickingPlugins` when
+//! the "egui_backend" feature is enabled. The egui backend will automatically apply a `NoDeselect`
+//! component to the egui entity, which allows you to interact with the UI without deselecting
+//! anything in the 3d scene.
+
 use bevy::prelude::*;
 use bevy_egui::{
     egui::{self, ScrollArea},
@@ -16,9 +22,9 @@ fn main() {
 }
 
 fn ui_example(mut egui_contexts: EguiContexts) {
-    egui::Window::new("Hello").show(egui_contexts.ctx_mut(), |ui| {
+    egui::Window::new("Demo").show(egui_contexts.ctx_mut(), |ui| {
         ScrollArea::both().auto_shrink([false; 2]).show(ui, |ui| {
-            ui.label("world");
+            ui.heading("Note that you can select a 3d object then click on the egui window without that object being deselected!");
         });
     });
 }
@@ -29,7 +35,6 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // plane
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
@@ -39,8 +44,6 @@ fn setup(
         PickableBundle::default(),    // <- Makes the mesh pickable.
         RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
-
-    // cube
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -51,8 +54,6 @@ fn setup(
         PickableBundle::default(),    // <- Makes the mesh pickable.
         RaycastPickTarget::default(), // <- Needed for the raycast backend.
     ));
-
-    // light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
             intensity: 1500.0,
@@ -62,17 +63,9 @@ fn setup(
         transform: Transform::from_xyz(4.0, 8.0, -4.0),
         ..Default::default()
     });
-
-    // camera
     commands.spawn((
         Camera3dBundle {
             transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-            // Uncomment the following lines to try out orthographic projection:
-            //
-            // projection: bevy::render::camera::Projection::Orthographic(OrthographicProjection {
-            //     scale: 0.01,
-            //     ..Default::default()
-            // }),
             ..Default::default()
         },
         RaycastPickCamera::default(), // <- Enable picking for this camera

@@ -1,3 +1,5 @@
+//! A minimal 3d example.
+
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 

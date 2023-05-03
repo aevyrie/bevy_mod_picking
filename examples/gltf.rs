@@ -1,3 +1,7 @@
+//! Demonstrates how to make a gltf pickable. Clicking on any mesh will print out the entity that
+//! was clicked on, even though we only need to add an `OnPointer` event listener to the root of the
+//! scene.
+
 use bevy::{math::vec4, prelude::*};
 use bevy_mod_picking::prelude::*;
 use highlight::HighlightKind;
@@ -56,17 +60,19 @@ fn make_pickable(
     }
 }
 
+/// USed to tint the mesh instead of simply replacing the mesh's material with a single color. See
+/// `tinted_highlight` for more details.
 const HIGHLIGHT_TINT: Highlight<StandardMaterial> = Highlight {
     hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.5, -0.3, 0.9, 0.8),
+        base_color: matl.base_color + vec4(-0.5, -0.3, 0.9, 0.8), // hovered is blue
         ..matl.to_owned()
     })),
     pressed: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.4, -0.4, 0.8, 0.8),
+        base_color: matl.base_color + vec4(-0.4, -0.4, 0.8, 0.8), // pressed is a different blue
         ..matl.to_owned()
     })),
     selected: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.4, 0.8, -0.4, 0.0),
+        base_color: matl.base_color + vec4(-0.4, 0.8, -0.4, 0.0), // selected is green
         ..matl.to_owned()
     })),
 };
