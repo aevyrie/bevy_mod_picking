@@ -33,10 +33,10 @@ fn setup(
             },
             PickableBundle::default(),    // <- Makes the mesh pickable.
             RaycastPickTarget::default(), // <- Needed for the raycast backend.
-            OnPointer::<DragStart>::remove_from_target::<RaycastPickTarget>(), // Disable picking
-            OnPointer::<DragEnd>::insert_on_target(RaycastPickTarget::default()),
+            OnPointer::<DragStart>::target_remove::<RaycastPickTarget>(), // Disable picking
+            OnPointer::<DragEnd>::target_insert(RaycastPickTarget::default()),
             OnPointer::<Drag>::run_callback(drag_squares),
-            OnPointer::<Drop>::add_commands(|event, commands| {
+            OnPointer::<Drop>::commands_mut(|event, commands| {
                 commands.entity(event.dropped).insert(Spin(FRAC_PI_2)); // Spin dropped entity
                 commands.entity(event.target).insert(Spin(-FRAC_PI_2)); // Spin dropped-on entity
             }),

@@ -18,7 +18,7 @@ fn main() {
         .add_plugin(bevy_egui::EguiPlugin)
         .add_startup_system(setup)
         .add_event::<DoSomethingComplex>()
-        .add_system(receive_greetings)
+        .add_system(receive_greetings.run_if(on_event::<DoSomethingComplex>()))
         .run();
 }
 
@@ -56,7 +56,7 @@ fn setup(
             OnPointer::<Move>::run_callback(change_hue_with_vertical_move),
             // We can use helper methods to make callbacks even simpler. For drag-to-rotate, we use
             // this little closure, because we only need to modify the target entity's Transform:
-            OnPointer::<Drag>::target_mut::<Transform>(|drag, transform| {
+            OnPointer::<Drag>::target_component_mut::<Transform>(|drag, transform| {
                 transform.rotate_local_y(drag.delta.x / 50.0)
             }),
             // Just like bevy systems, callbacks can be closures! Recall that the parameters can be
@@ -72,8 +72,8 @@ fn setup(
             }),
             // When you just want to add a `Command` to the target entity,`add_target_commands` will
             // reduce boilerplate and allow you to do this directly.
-            OnPointer::<Click>::add_target_commands(|event, target_commands| {
-                if event.target != event.listener && event.button == PointerButton::Secondary {
+            OnPointer::<Click>::target_commands_mut(|click, target_commands| {
+                if click.target != click.listener && click.button == PointerButton::Secondary {
                     target_commands.despawn();
                 }
             }),

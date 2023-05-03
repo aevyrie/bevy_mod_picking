@@ -28,10 +28,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 background_color: Color::rgb(0.15, 0.15, 0.15).into(),
                 ..default()
             },
-            OnPointer::<Over>::target_mut::<BackgroundColor>(|_, color| color.0 = HOVERED),
-            OnPointer::<Out>::insert_on_target(BackgroundColor::from(NORMAL)),
-            OnPointer::<Down>::insert_on_target(BackgroundColor::from(PRESSED)),
-            OnPointer::<Up>::insert_on_target(BackgroundColor::from(HOVERED)),
+            OnPointer::<Over>::target_insert(BackgroundColor::from(HOVERED)),
+            OnPointer::<Out>::target_insert(BackgroundColor::from(NORMAL)),
+            OnPointer::<Down>::target_insert(BackgroundColor::from(PRESSED)),
+            OnPointer::<Up>::target_insert(BackgroundColor::from(HOVERED)),
         ))
         .with_children(|parent| {
             let mut bundle = TextBundle::from_section(

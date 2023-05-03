@@ -66,9 +66,13 @@ impl<E: IsPointerEvent> CallbackSystem<E> {
     }
 }
 
-/// An `OnPointer` component marks an entity, informing the [`event_bubbling`] system to run the
-/// `callback` function when an event of type `E` is being bubbled up the hierarchy and reaches this
-/// entity.
+/// Used to attach a callback to an entity. This callback is executed any time a pointer event
+/// triggers this listener when bubbling up the entity hierarchy.
+/// 
+/// Callback systems will give you access to the `ListenedEvent` that triggered the event listener.
+/// This includes the `listener` which is the entity with the `OnPointer` component, and the
+/// `target` which is the entity that generated the event. The `target` can be this entity or any of
+/// its children.
 #[derive(Component, Reflect)]
 pub struct OnPointer<E: IsPointerEvent> {
     #[reflect(ignore)]
@@ -77,16 +81,15 @@ pub struct OnPointer<E: IsPointerEvent> {
 }
 
 impl<E: IsPointerEvent> OnPointer<E> {
-    /// Run a callback system when this event listener is triggered.
+    /// Run a callback system any time this event listener is triggered.
     pub fn run_callback<M>(callback: impl IntoSystem<ListenedEvent<E>, Bubble, M>) -> Self {
         Self {
             callback: CallbackSystem::New(Box::new(IntoSystem::into_system(callback))),
         }
     }
 
-    /// Add a single [`Command`] to the [`CommandQueue`](bevy::ecs::system::CommandQueue) when when
-    /// this event listener is triggered. The command will be constructed using the
-    /// `From<ListenedEvent<E>>`  implementation.
+    /// Add a single [`Command`] any time this event listener is triggered. The command must
+    /// implement `From<ListenedEvent<E>>`.
     pub fn add_command<C: From<ListenedEvent<E>> + Command + Send + Sync + 'static>() -> Self {
         Self::run_callback(
             move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
@@ -96,9 +99,8 @@ impl<E: IsPointerEvent> OnPointer<E> {
         )
     }
 
-    /// Add multiple commands to the [`CommandQueue`](bevy::ecs::system::CommandQueue) using the
-    /// provided closure when this event listener is triggered.
-    pub fn add_commands(func: fn(&ListenedEvent<E>, &mut Commands)) -> Self {
+    /// Get mutable access to [`Commands`] any time this event listener is triggered.
+    pub fn commands_mut(func: fn(&ListenedEvent<E>, &mut Commands)) -> Self {
         Self::run_callback(
             move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
                 func(&event, &mut commands);
@@ -107,10 +109,9 @@ impl<E: IsPointerEvent> OnPointer<E> {
         )
     }
 
-    /// Add multiple [`EntityCommands`] to the event's `target` entity to the
-    /// [`CommandQueue`](bevy::ecs::system::CommandQueue) using the provided closure when when this
+    /// Get mutable access to the target entity's [`EntityCommands`] using a closure any time this
     /// event listener is triggered.
-    pub fn add_target_commands(func: fn(&ListenedEvent<E>, &mut EntityCommands)) -> Self {
+    pub fn target_commands_mut(func: fn(&ListenedEvent<E>, &mut EntityCommands)) -> Self {
         Self::run_callback(
             move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
                 func(&event, &mut commands.entity(event.target));
@@ -119,8 +120,8 @@ impl<E: IsPointerEvent> OnPointer<E> {
         )
     }
 
-    /// Insert a bundle on the target entity.
-    pub fn insert_on_target(bundle: impl Bundle + Clone) -> Self {
+    /// Insert a bundle on the target entity any time this event listener is triggered.
+    pub fn target_insert(bundle: impl Bundle + Clone) -> Self {
         Self::run_callback(
             move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
                 let bundle = bundle.clone();
@@ -130,8 +131,8 @@ impl<E: IsPointerEvent> OnPointer<E> {
         )
     }
 
-    /// Remove a bundle from the target entity.
-    pub fn remove_from_target<B: Bundle>() -> Self {
+    /// Remove a bundle from the target entity any time this event listener is triggered.
+    pub fn target_remove<B: Bundle>() -> Self {
         Self::run_callback(
             move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
                 commands.entity(event.target).remove::<B>();
@@ -140,9 +141,9 @@ impl<E: IsPointerEvent> OnPointer<E> {
         )
     }
 
-    /// Mutate a specific component on the target entity using a closure. If the component does not
-    /// exist, an error will be logged.
-    pub fn target_mut<C: Component>(func: fn(&ListenedEvent<E>, &mut C)) -> Self {
+    /// Get mutable access to a specific component on the target entity using a closure any time
+    /// this event listener is triggered. If the component does not exist, an error will be logged.
+    pub fn target_component_mut<C: Component>(func: fn(&ListenedEvent<E>, &mut C)) -> Self {
         Self::run_callback(
             move |In(event): In<ListenedEvent<E>>, mut query: Query<&mut C>| {
                 if let Ok(mut component) = query.get_mut(event.target) {
@@ -155,7 +156,7 @@ impl<E: IsPointerEvent> OnPointer<E> {
         )
     }
 
-    /// Send an event `F` when this event listener is triggered. `F` must implement
+    /// Send an event `F`  any time this event listener is triggered. `F` must implement
     /// `From<ListenedEvent<E>>`.
     pub fn send_event<F: Event + From<ListenedEvent<E>>>() -> Self {
         Self::run_callback(|In(event): In<ListenedEvent<E>>, mut ev: EventWriter<F>| {
