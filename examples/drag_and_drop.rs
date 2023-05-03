@@ -4,12 +4,17 @@ use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
+    let mut app = App::new();
+
+    app.add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
         .add_startup_system(setup)
-        .add_system(spin)
-        .run();
+        .add_system(spin);
+
+    #[cfg(feature = "backend_egui")]
+    app.add_plugin(bevy_egui::EguiPlugin);
+
+    app.run();
 }
 
 /// Set up a simple 2D scene
