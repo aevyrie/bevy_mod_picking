@@ -7,7 +7,7 @@
 [![CI](https://github.com/aevyrie/bevy_mod_picking/workflows/CI/badge.svg?branch=master)](https://github.com/aevyrie/bevy_mod_picking/actions?query=workflow%3A%22CI%22+branch%3Amaster)
 [![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 
-![picking_demo](https://user-images.githubusercontent.com/2632925/114128723-d8de1b00-98b1-11eb-9b25-812fcf6664e2.gif)
+![demo](https://user-images.githubusercontent.com/2632925/235874600-de0c7720-6775-42e1-8650-41ee8ac68d1b.gif)
 
 A flexible set of plugins that add picking functionality to your [`bevy`] app. Want to drag a UI
 entity and drop it onto a 3D mesh entity? This plugin allows you to add event listeners to **any**
