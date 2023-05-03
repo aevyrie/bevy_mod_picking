@@ -16,4 +16,5 @@ resolver = "2"
 bevy = { version = "0.10", default-features = false, features = [
     "bevy_render",
     "bevy_ui",
+    "bevy_asset",
 ] }
