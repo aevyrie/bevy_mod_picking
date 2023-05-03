@@ -30,6 +30,7 @@ pub struct DefaultHighlightingPlugin;
 impl Plugin for DefaultHighlightingPlugin {
     #[allow(unused_variables)]
     fn build(&self, app: &mut App) {
+        #[cfg(feature = "pbr")]
         app.add_plugin(HighlightPlugin::<StandardMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
                 hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
