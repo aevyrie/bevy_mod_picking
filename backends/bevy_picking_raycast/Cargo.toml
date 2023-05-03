@@ -18,4 +18,4 @@ bevy = { version = "0.10", default-features = false, features = [
 ] }
 bevy_mod_raycast = "0.8"
 # Local
-bevy_picking_core = { path = "../../crates/bevy_picking_core" }
+bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.1" }
