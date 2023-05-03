@@ -212,6 +212,7 @@ impl<T: Asset> Highlight<T> {
             let Highlight {
                 hovered,
                 pressed,
+                #[cfg(feature = "selection")]
                 selected,
             } = highlight_override.as_mut();
 
