@@ -8,8 +8,8 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_startup_system(setup)
-        .add_system(move_sprite)
+        .add_systems(Startup, setup)
+        .add_systems(Update, move_sprite)
         .run();
 }
 

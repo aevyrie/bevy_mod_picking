@@ -16,9 +16,12 @@ fn main() {
                 .disable::<DefaultHighlightingPlugin>(),
         )
         .add_plugin(bevy_egui::EguiPlugin)
-        .add_startup_system(setup)
+        .add_systems(Startup, setup)
         .add_event::<DoSomethingComplex>()
-        .add_system(receive_greetings.run_if(on_event::<DoSomethingComplex>()))
+        .add_systems(
+            Update,
+            receive_greetings.run_if(on_event::<DoSomethingComplex>()),
+        )
         .run();
 }
 

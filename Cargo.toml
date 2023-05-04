@@ -14,7 +14,7 @@ resolver = "2"
 members = ["crates/*", "backends/*"]
 
 [dependencies]
-bevy = { version = "0.10", default-features = false, features = [
+bevy = { version = "0.11.0-dev", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
     "bevy_ui",
@@ -34,7 +34,7 @@ bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite", 
 bevy_picking_egui = { optional = true, path = "backends/bevy_picking_egui", version = "0.1" }
 
 [dev-dependencies]
-bevy = { version = "0.10", default-features = false, features = [
+bevy = { version = "0.11.0-dev", default-features = false, features = [
     "bevy_winit",
     "x11",
     "bevy_gltf",

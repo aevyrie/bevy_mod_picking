@@ -20,11 +20,11 @@ pub struct EguiBackend;
 impl PickingBackend for EguiBackend {}
 impl Plugin for EguiBackend {
     fn build(&self, app: &mut App) {
-        app.add_system(egui_picking.in_set(PickSet::Backend))
+        app.add_systems(PreUpdate, egui_picking.in_set(PickSet::Backend))
             .insert_resource(EguiBackendSettings::default());
 
         #[cfg(feature = "selection")]
-        app.add_system(update_settings.in_base_set(CoreSet::First));
+        app.add_systems(First, update_settings);
     }
 }
 

@@ -67,10 +67,14 @@ where
     fn build(&self, app: &mut App) {
         let highlighting_default = self.highlighting_default;
 
-        app.add_startup_system(move |mut commands: Commands, assets: ResMut<Assets<T>>| {
-            commands.insert_resource(highlighting_default(assets));
-        })
+        app.add_systems(
+            Startup,
+            move |mut commands: Commands, assets: ResMut<Assets<T>>| {
+                commands.insert_resource(highlighting_default(assets));
+            },
+        )
         .add_systems(
+            PreUpdate,
             (
                 get_initial_highlight_asset::<T>,
                 Highlight::<T>::update_dynamic,

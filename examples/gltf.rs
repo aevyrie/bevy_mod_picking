@@ -14,8 +14,8 @@ fn main() {
                 .build()
                 .disable::<DebugPickingPlugin>(),
         )
-        .add_startup_system(setup)
-        .add_system(make_pickable)
+        .add_systems(Startup, setup)
+        .add_systems(Update, make_pickable)
         .run();
 }
 

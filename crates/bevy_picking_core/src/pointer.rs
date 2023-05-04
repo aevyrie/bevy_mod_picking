@@ -295,7 +295,7 @@ impl Location {
 
         camera
             .logical_viewport_rect()
-            .map(|(min, max)| {
+            .map(|Rect { min, max }| {
                 (position - min).min_element() >= 0.0 && (position - max).max_element() <= 0.0
             })
             .unwrap_or(false)

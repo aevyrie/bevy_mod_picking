@@ -39,6 +39,7 @@ impl Plugin for SelectionPlugin {
             .add_event::<PointerEvent<Select>>()
             .add_event::<PointerEvent<Deselect>>()
             .add_systems(
+                PreUpdate,
                 (
                     multiselect_events.run_if(|settings: Res<SelectionSettings>| {
                         settings.use_multiselect_default_inputs
@@ -48,6 +49,7 @@ impl Plugin for SelectionPlugin {
                     .in_set(PickSet::ProcessInput),
             )
             .add_systems(
+                PreUpdate,
                 (
                     send_selection_events,
                     bevy_picking_core::event_listening::event_bubbling::<Select>,

@@ -11,7 +11,7 @@ fn main() {
         .add_plugins(DefaultPickingPlugins)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin::default())
-        .add_startup_system(setup)
+        .add_systems(Startup, setup)
         .run();
 }
 

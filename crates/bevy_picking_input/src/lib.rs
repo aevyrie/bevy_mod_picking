@@ -26,8 +26,9 @@ pub struct InputPlugin;
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<InputPluginSettings>()
-            .add_startup_system(mouse::spawn_mouse_pointer)
+            .add_systems(Startup, mouse::spawn_mouse_pointer)
             .add_systems(
+                First,
                 (
                     touch::touch_pick_events.run_if(touch_enabled),
                     mouse::mouse_pick_events.run_if(mouse_enabled),
@@ -39,10 +40,9 @@ impl Plugin for InputPlugin {
                     .chain()
                     .in_set(PickSet::Input),
             )
-            .add_system(
-                touch::deactivate_pointers
-                    .in_base_set(CoreSet::Last)
-                    .run_if(PickingPluginsSettings::input_enabled),
+            .add_systems(
+                Last,
+                touch::deactivate_pointers.run_if(PickingPluginsSettings::input_enabled),
             );
     }
 }

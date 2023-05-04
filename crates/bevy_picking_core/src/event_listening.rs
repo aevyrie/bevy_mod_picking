@@ -25,6 +25,7 @@ impl<E: IsPointerEvent> Plugin for EventListenerPlugin<E> {
     fn build(&self, app: &mut App) {
         app.insert_resource(EventCallbackGraph::<E>::default())
             .add_systems(
+                PreUpdate,
                 (
                     EventCallbackGraph::<E>::build.run_if(on_event::<PointerEvent<E>>()),
                     event_bubbling::<E>.run_if(on_event::<PointerEvent<E>>()),

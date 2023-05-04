@@ -14,6 +14,6 @@ resolver = "2"
 
 [dependencies]
 bevy_picking_core = { path = "../bevy_picking_core", version = "0.1" }
-bevy = { version = "0.10", default-features = false, features = [
+bevy = { version = "0.11.0-dev", default-features = false, features = [
     "bevy_render",
 ] }

@@ -28,14 +28,15 @@ impl Plugin for DebugPickingPlugin {
         load_internal_binary_asset!(app, DEBUG_FONT_HANDLE, "FiraMono-Medium.ttf", font_loader);
 
         app.init_resource::<debug::Frame>()
-            .add_system(debug::increment_frame.in_base_set(CoreSet::First))
-            .add_system(
+            .add_systems(First, debug::increment_frame)
+            .add_systems(
+                PreUpdate,
                 input::debug::print
                     .before(picking_core::PickSet::Backend)
-                    .run_if(move || noisy_debug)
-                    .in_base_set(CoreSet::PreUpdate),
+                    .run_if(move || noisy_debug),
             )
             .add_systems(
+                PreUpdate,
                 (
                     debug::print::<events::Over>,
                     debug::print::<events::Out>,
@@ -56,6 +57,7 @@ impl Plugin for DebugPickingPlugin {
 
         #[cfg(not(feature = "backend_egui"))]
         app.add_systems(
+            PreUpdate,
             (add_pointer_debug, update_debug_data, debug_draw)
                 .chain()
                 .in_set(picking_core::PickSet::Last),
@@ -68,10 +70,13 @@ impl Plugin for DebugPickingPlugin {
         );
 
         #[cfg(feature = "selection")]
-        app.add_systems((
-            debug::print::<selection::Select>,
-            debug::print::<selection::Deselect>,
-        ));
+        app.add_systems(
+            Update,
+            (
+                debug::print::<selection::Select>,
+                debug::print::<selection::Deselect>,
+            ),
+        );
     }
 }
 
@@ -279,11 +284,8 @@ pub fn debug_draw(
             ),
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    left: Val::Px(location.position.x + 5.0),
-                    bottom: Val::Px(location.position.y + 5.0),
-                    ..default()
-                },
+                left: Val::Px(location.position.x + 5.0),
+                bottom: Val::Px(location.position.y + 5.0),
                 ..default()
             },
             ..default()
