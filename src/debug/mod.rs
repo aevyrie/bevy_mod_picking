@@ -285,7 +285,7 @@ pub fn debug_draw(
             style: Style {
                 position_type: PositionType::Absolute,
                 left: Val::Px(location.position.x + 5.0),
-                bottom: Val::Px(location.position.y + 5.0),
+                top: Val::Px(location.position.y + 5.0),
                 ..default()
             },
             ..default()

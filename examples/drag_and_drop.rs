@@ -38,7 +38,8 @@ fn setup(
             OnPointer::<DragStart>::target_remove::<Pickable>(), // Disable picking
             OnPointer::<DragEnd>::target_insert(Pickable), // Re-enable picking
             OnPointer::<Drag>::target_component_mut::<Transform>(|drag, transform| {
-                transform.translation += drag.delta.extend(0.0) // Make the square follow the mouse
+                // Make the square follow the mouse
+                transform.translation += (drag.delta * Vec2::new(1.0, -1.0)).extend(0.0)
             }),
             OnPointer::<Drop>::commands_mut(|event, commands| {
                 commands.entity(event.dropped).insert(Spin(FRAC_PI_2)); // Spin dropped entity
