@@ -337,13 +337,11 @@ pub fn pointer_events(
 
 /// Maps pointers to the entities they are dragging.
 #[derive(Debug, Deref, DerefMut, Default, Resource)]
-pub struct DragMap(pub HashMap<(PointerId, PointerButton), Option<DragEntry>>);
+pub struct DragMap(pub HashMap<(PointerId, PointerButton), HashMap<Entity, DragEntry>>);
 
 /// An entry in the [`DragMap`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DragEntry {
-    /// The entity being dragged.
-    pub target: Entity,
     /// The position of the pointer at drag start.
     pub start_pos: Vec2,
     /// The latest position of the pointer during this drag, used to compute deltas.
@@ -360,7 +358,7 @@ pub fn send_click_and_drag_events(
     pointer_map: Res<PointerMap>,
     pointers: Query<&PointerLocation>,
     // Locals
-    mut down_map: Local<HashMap<(PointerId, PointerButton), Option<PointerEvent<Down>>>>,
+    mut down_map: Local<HashMap<(PointerId, PointerButton), HashMap<Entity, PointerEvent<Down>>>>,
     // Output
     mut drag_map: ResMut<DragMap>,
     mut pointer_click: EventWriter<PointerEvent<Click>>,
@@ -383,18 +381,21 @@ pub fn send_click_and_drag_events(
     } in input_move.iter().cloned()
     {
         for button in PointerButton::iter() {
-            let Some(Some(down)) = down_map.get(&(pointer_id, button)) else {
+            let Some(down_list) = down_map.get(&(pointer_id, button)) else {
                 continue;
             };
+            let drag_list = drag_map.entry((pointer_id, button)).or_default();
 
-            if !matches!(drag_map.get(&(pointer_id, button)), Some(Some(_))) {
-                drag_map.insert(
-                    (pointer_id, button),
-                    Some(DragEntry {
-                        target: down.target,
+            for down in down_list.values() {
+                if drag_list.contains_key(&down.target) {
+                    continue; // this entity is already logged as being dragged
+                }
+                drag_list.insert(
+                    down.target,
+                    DragEntry {
                         start_pos: down.pointer_location.position,
                         latest_pos: down.pointer_location.position,
-                    }),
+                    },
                 );
                 pointer_drag_start.send(PointerEvent::new(
                     pointer_id,
@@ -407,7 +408,7 @@ pub fn send_click_and_drag_events(
                 ))
             }
 
-            if let Some(Some(drag)) = drag_map.get_mut(&(pointer_id, button)) {
+            for (dragged_entity, drag) in drag_list.iter_mut() {
                 let drag_event = Drag {
                     button,
                     distance: location.position - drag.start_pos,
@@ -417,7 +418,7 @@ pub fn send_click_and_drag_events(
                 pointer_drag.send(PointerEvent::new(
                     pointer_id,
                     location.clone(),
-                    drag.target,
+                    *dragged_entity,
                     drag_event,
                 ))
             }
@@ -432,24 +433,26 @@ pub fn send_click_and_drag_events(
         event: Up { button, hit },
     } in pointer_up.iter().cloned()
     {
-        let Some(Some(down)) = down_map.insert((pointer_id, button), None) else {
-            continue; // Can't have a click without the button being pressed down first
-        };
-        if down.target != target {
-            continue; // A click starts and ends on the same target
+        // Can't have a click without the button being pressed down first
+        if down_map
+            .get(&(pointer_id, button))
+            .and_then(|down| down.get(&target))
+            .is_some()
+        {
+            pointer_click.send(PointerEvent::new(
+                pointer_id,
+                pointer_location,
+                target,
+                Click { button, hit },
+            ));
         }
-        pointer_click.send(PointerEvent::new(
-            pointer_id,
-            pointer_location,
-            target,
-            Click { button, hit },
-        ));
     }
 
     // Triggers when button is pressed over an entity
     for event in pointer_down.iter() {
         let button = event.button;
-        down_map.insert((event.pointer_id, button), Some(event.clone()));
+        let down_button_entity_map = down_map.entry((event.pointer_id, button)).or_default();
+        down_button_entity_map.insert(event.target, event.clone());
     }
 
     // Triggered for all button presses
@@ -457,26 +460,28 @@ pub fn send_click_and_drag_events(
         if press.direction != pointer::PressDirection::Up {
             continue; // We are only interested in button releases
         }
-        let Some(Some(drag)) =
-            drag_map.insert((press.pointer_id, press.button), None) else {
-                continue;
+        let Some(drag_list) = drag_map
+            .insert((press.pointer_id, press.button), HashMap::new()) else { 
+                continue 
             };
-
         let Some(location) = pointer_location(press.pointer_id) else {
                 error!("Unable to get location for pointer {:?}", press.pointer_id);
                 continue;
             };
-        let drag_end = DragEnd {
-            button: press.button,
-            distance: drag.latest_pos - drag.start_pos,
-        };
-        pointer_drag_end.send(PointerEvent::new(
-            press.pointer_id,
-            location,
-            drag.target,
-            drag_end,
-        ));
-        down_map.insert((press.pointer_id, press.button), None);
+
+        for (drag_target, drag) in drag_list {
+            let drag_end = DragEnd {
+                button: press.button,
+                distance: drag.latest_pos - drag.start_pos,
+            };
+            pointer_drag_end.send(PointerEvent::new(
+                press.pointer_id,
+                location.clone(),
+                drag_target,
+                drag_end,
+            ));
+        }
+        down_map.insert((press.pointer_id, press.button), HashMap::new());
     }
 }
 
@@ -506,25 +511,28 @@ pub fn send_drag_over_events(
     } in pointer_over.iter().cloned()
     {
         for button in PointerButton::iter() {
-            let Some(Some(drag)) = drag_map.get(&(pointer_id, button)) else {
-                continue; // Get the entity that is being dragged
-            };
-            if target == drag.target {
-                continue; // You can't drag an entity over itself
+            for drag_target in drag_map
+                .get(&(pointer_id, button))
+                .iter()
+                .flat_map(|drag_list| drag_list.keys())
+                .filter(
+                    |&&drag_target| target != drag_target, /* can't drag over itself */
+                )
+            {
+                let drag_entry = drag_over_map.entry((pointer_id, button)).or_default();
+                drag_entry.insert(target, hit);
+                let event = DragEnter {
+                    button,
+                    dragged: *drag_target,
+                    hit,
+                };
+                pointer_drag_enter.send(PointerEvent::new(
+                    pointer_id,
+                    pointer_location.clone(),
+                    target,
+                    event,
+                ))
             }
-            let drag_entry = drag_over_map.entry((pointer_id, button)).or_default();
-            drag_entry.insert(target, hit);
-            let event = DragEnter {
-                button,
-                dragged: drag.target,
-                hit,
-            };
-            pointer_drag_enter.send(PointerEvent::new(
-                pointer_id,
-                pointer_location.clone(),
-                target,
-                event,
-            ))
         }
     }
 
@@ -537,22 +545,25 @@ pub fn send_drag_over_events(
     } in pointer_move.iter().cloned()
     {
         for button in PointerButton::iter() {
-            let Some(Some(drag)) = drag_map.get(&(pointer_id, button)) else {
-                continue; // Get the entity that is being dragged
-            };
-            if target == drag.target {
-                continue; // You can't drag an entity over itself
+            for drag_target in drag_map
+                .get(&(pointer_id, button))
+                .iter()
+                .flat_map(|drag_list| drag_list.keys())
+                .filter(
+                    |&&drag_target| target != drag_target, /* can't drag over itself */
+                )
+            {
+                pointer_drag_over.send(PointerEvent::new(
+                    pointer_id,
+                    pointer_location.clone(),
+                    target,
+                    DragOver {
+                        button,
+                        dragged: *drag_target,
+                        hit,
+                    },
+                ))
             }
-            pointer_drag_over.send(PointerEvent::new(
-                pointer_id,
-                pointer_location.clone(),
-                target,
-                DragOver {
-                    button,
-                    dragged: drag.target,
-                    hit,
-                },
-            ))
         }
     }
 
@@ -610,19 +621,21 @@ pub fn send_drag_over_events(
             if dragged_over.remove(&target).is_none() {
                 continue;
             }
-            let Some(Some(drag)) = drag_map.get(&(pointer_id, button))  else {
+            let Some(drag_list) = drag_map.get(&(pointer_id, button))  else {
                 continue;
             };
-            pointer_drag_leave.send(PointerEvent::new(
-                pointer_id,
-                pointer_location.clone(),
-                target,
-                DragLeave {
-                    button,
-                    dragged: drag.target,
-                    hit,
-                },
-            ))
+            for drag_target in drag_list.keys() {
+                pointer_drag_leave.send(PointerEvent::new(
+                    pointer_id,
+                    pointer_location.clone(),
+                    target,
+                    DragLeave {
+                        button,
+                        dragged: *drag_target,
+                        hit,
+                    },
+                ))
+            }
         }
     }
 }

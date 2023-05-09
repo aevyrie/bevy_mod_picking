@@ -4,8 +4,13 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::ui::{self, FocusPolicy};
-use bevy::{prelude::*, render::camera::NormalizedRenderTarget, window::PrimaryWindow};
+use bevy::{
+    ecs::query::WorldQuery,
+    prelude::*,
+    render::camera::NormalizedRenderTarget,
+    ui::{FocusPolicy, RelativeCursorPosition, UiStack},
+    window::PrimaryWindow,
+};
 use bevy_picking_core::backend::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_ui`](crate) crate.
@@ -23,21 +28,30 @@ impl Plugin for BevyUiBackend {
     }
 }
 
-/// Computes the UI node entities under each pointer
+/// Main query for [`ui_focus_system`]
+#[derive(WorldQuery)]
+#[world_query(mutable)]
+pub struct NodeQuery {
+    entity: Entity,
+    node: &'static Node,
+    global_transform: &'static GlobalTransform,
+    interaction: Option<&'static mut Interaction>,
+    relative_cursor_position: Option<&'static mut RelativeCursorPosition>,
+    focus_policy: Option<&'static FocusPolicy>,
+    calculated_clip: Option<&'static CalculatedClip>,
+    computed_visibility: Option<&'static ComputedVisibility>,
+}
+
+/// Computes the UI node entities under each pointer.
+///
+/// Bevy's [`UiStack`] orders all nodes in the order they will be rendered, which is the same order
+/// we need for determining picking.
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    cameras: Query<(Entity, &Camera)>,
-    primary_window: Query<Entity, With<PrimaryWindow>>,
-    mut node_query: Query<
-        (
-            Entity,
-            &ui::Node,
-            &GlobalTransform,
-            &FocusPolicy,
-            Option<&CalculatedClip>,
-        ),
-        Without<PointerId>,
-    >,
+    cameras: Query<(Entity, &Camera, Option<&UiCameraConfig>)>,
+    primary_window: Query<(Entity, &Window), With<PrimaryWindow>>,
+    ui_stack: Res<UiStack>,
+    mut node_query: Query<NodeQuery>,
     mut output: EventWriter<PointerHits>,
 ) {
     for (pointer, location) in pointers.iter().filter_map(|(pointer, pointer_location)| {
@@ -54,58 +68,93 @@ pub fn ui_picking(
             })
             .map(|loc| (pointer, loc))
     }) {
-        let camera = cameras
+        let (window_entity, window) = primary_window.single();
+        let (camera, ui_config) = cameras
             .iter()
-            .find(|(_entity, camera)| {
-                camera
-                    .target
-                    .normalize(Some(primary_window.single()))
-                    .unwrap()
-                    == location.target
+            .find(|(_entity, camera, _)| {
+                camera.target.normalize(Some(window_entity)).unwrap() == location.target
             })
-            .map(|(entity, _camera)| entity)
+            .map(|(entity, _camera, ui_config)| (entity, ui_config))
             .unwrap_or_else(|| panic!("No camera found associated with pointer {:?}.", pointer));
 
-        let cursor_position = location.position;
-        let mut blocked = false;
+        if matches!(ui_config, Some(&UiCameraConfig { show_ui: false, .. })) {
+            return;
+        }
 
-        let over_list = node_query
-            .iter_mut()
-            .filter_map(|(entity, node, global_transform, focus, clip)| {
-                if blocked {
-                    return None;
+        let mut cursor_position = location.position;
+        cursor_position.y = window.resolution.height() - cursor_position.y;
+
+        let mut hovered_nodes = ui_stack
+            .uinodes
+            .iter()
+            // reverse the iterator to traverse the tree from closest nodes to furthest
+            .rev()
+            .filter_map(|entity| {
+                if let Ok(node) = node_query.get_mut(*entity) {
+                    // Nodes that are not rendered should not be interactable
+                    if let Some(computed_visibility) = node.computed_visibility {
+                        if !computed_visibility.is_visible() {
+                            return None;
+                        }
+                    }
+
+                    let position = node.global_transform.translation();
+                    let ui_position = position.truncate();
+                    let extents = node.node.size() / 2.0;
+                    let mut min = ui_position - extents;
+                    if let Some(clip) = node.calculated_clip {
+                        min = Vec2::max(min, clip.clip.min);
+                    }
+
+                    // The mouse position relative to the node
+                    // (0., 0.) is the top-left corner, (1., 1.) is the bottom-right corner
+                    let relative_cursor_position = Vec2::new(
+                        (cursor_position.x - min.x) / node.node.size().x,
+                        (cursor_position.y - min.y) / node.node.size().y,
+                    );
+
+                    if (0.0..1.).contains(&relative_cursor_position.x)
+                        && (0.0..1.).contains(&relative_cursor_position.y)
+                    {
+                        Some(*entity)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
                 }
-
-                blocked = *focus == FocusPolicy::Block;
-
-                let position = global_transform.translation();
-                let ui_position = position.truncate();
-                let extents = node.size() / 2.0;
-                let mut min = ui_position - extents;
-                let mut max = ui_position + extents;
-                if let Some(clip) = clip {
-                    min = min.max(clip.clip.min);
-                    max = Vec2::min(max, clip.clip.max);
-                }
-
-                let contains_cursor = (min.x..max.x).contains(&cursor_position.x)
-                    && (min.y..max.y).contains(&cursor_position.y);
-
-                contains_cursor.then_some((
-                    entity,
-                    HitData {
-                        camera,
-                        depth: position.z,
-                        position: None,
-                        normal: None,
-                    },
-                ))
             })
-            .collect::<Vec<_>>();
+            .collect::<Vec<Entity>>()
+            .into_iter();
+
+        // As soon as a node with a `Block` focus policy is detected, the iteration will stop on it
+        // because it "captures" the interaction.
+        let mut iter = node_query.iter_many_mut(hovered_nodes.by_ref());
+        let mut picks = Vec::new();
+        let mut depth = 0.0;
+
+        while let Some(node) = iter.fetch_next() {
+            picks.push((
+                node.entity,
+                HitData {
+                    camera,
+                    depth,
+                    position: None,
+                    normal: None,
+                },
+            ));
+            match node.focus_policy.unwrap_or(&FocusPolicy::Block) {
+                FocusPolicy::Block => {
+                    break;
+                }
+                FocusPolicy::Pass => { /* allow the next node to be hovered/clicked */ }
+            }
+            depth += 0.00001; // keep depth near 0 for precision
+        }
 
         output.send(PointerHits {
             pointer: *pointer,
-            picks: over_list,
+            picks,
             order: 10,
         })
     }
