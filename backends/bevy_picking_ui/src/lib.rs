@@ -69,13 +69,14 @@ pub fn ui_picking(
             .map(|loc| (pointer, loc))
     }) {
         let (window_entity, window) = primary_window.single();
-        let (camera, ui_config) = cameras
+        let Some((camera, ui_config)) = cameras
             .iter()
             .find(|(_entity, camera, _)| {
                 camera.target.normalize(Some(window_entity)).unwrap() == location.target
             })
-            .map(|(entity, _camera, ui_config)| (entity, ui_config))
-            .unwrap_or_else(|| panic!("No camera found associated with pointer {:?}.", pointer));
+            .map(|(entity, _camera, ui_config)| (entity, ui_config)) else {
+                continue;
+            };
 
         if matches!(ui_config, Some(&UiCameraConfig { show_ui: false, .. })) {
             return;
