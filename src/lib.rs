@@ -258,7 +258,6 @@ pub struct PickableBundle {
 /// Bundle of components needed for a fully-featured pointer.
 #[derive(Bundle)]
 pub struct PointerBundle {
-    #[bundle]
     core: PointerCoreBundle,
     #[cfg(feature = "selection")]
     selection: selection::PointerMultiselect,
