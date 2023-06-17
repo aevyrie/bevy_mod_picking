@@ -64,7 +64,7 @@ pub fn sprite_picking(
                 continue;
             };
 
-        let Some(cursor_pos_world) = 
+        let Some(cursor_pos_world) =
             camera.viewport_to_world_2d(cam_transform, location.position) else {
                 continue;
             };

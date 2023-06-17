@@ -461,8 +461,8 @@ pub fn send_click_and_drag_events(
             continue; // We are only interested in button releases
         }
         let Some(drag_list) = drag_map
-            .insert((press.pointer_id, press.button), HashMap::new()) else { 
-                continue 
+            .insert((press.pointer_id, press.button), HashMap::new()) else {
+                continue;
             };
         let Some(location) = pointer_location(press.pointer_id) else {
                 error!("Unable to get location for pointer {:?}", press.pointer_id);
