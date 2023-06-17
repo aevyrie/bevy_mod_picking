@@ -111,10 +111,21 @@ impl<E: IsPointerEvent> OnPointer<E> {
 
     /// Get mutable access to the target entity's [`EntityCommands`] using a closure any time this
     /// event listener is triggered.
-    pub fn target_commands_mut(func: fn(&ListenedEvent<E>, &mut EntityCommands)) -> Self {
+    pub fn target_commands_mut(func: fn(&ListenedEvent<E>, EntityCommands)) -> Self {
         Self::run_callback(
             move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
-                func(&event, &mut commands.entity(event.target));
+                func(&event, commands.entity(event.target));
+                Bubble::Up
+            },
+        )
+    }
+
+    /// Get mutable access to the listener entity's [`EntityCommands`] using a closure any time this
+    /// event listener is triggered.
+    pub fn listener_commands_mut(func: fn(&ListenedEvent<E>, EntityCommands)) -> Self {
+        Self::run_callback(
+            move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
+                func(&event, commands.entity(event.listener));
                 Bubble::Up
             },
         )
@@ -131,11 +142,32 @@ impl<E: IsPointerEvent> OnPointer<E> {
         )
     }
 
+    /// Insert a bundle on the listener entity any time this event listener is triggered.
+    pub fn listener_insert(bundle: impl Bundle + Clone) -> Self {
+        Self::run_callback(
+            move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
+                let bundle = bundle.clone();
+                commands.entity(event.listener).insert(bundle);
+                Bubble::Up
+            },
+        )
+    }
+
     /// Remove a bundle from the target entity any time this event listener is triggered.
     pub fn target_remove<B: Bundle>() -> Self {
         Self::run_callback(
             move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
                 commands.entity(event.target).remove::<B>();
+                Bubble::Up
+            },
+        )
+    }
+
+    /// Remove a bundle from the listener entity any time this event listener is triggered.
+    pub fn listener_remove<B: Bundle>() -> Self {
+        Self::run_callback(
+            move |In(event): In<ListenedEvent<E>>, mut commands: Commands| {
+                commands.entity(event.listener).remove::<B>();
                 Bubble::Up
             },
         )
@@ -150,6 +182,21 @@ impl<E: IsPointerEvent> OnPointer<E> {
                     func(&event, &mut component);
                 } else {
                     error!("Component {:?} not found on entity {:?} during pointer callback for event {:?}", std::any::type_name::<C>(), event.target, std::any::type_name::<E>());
+                }
+                Bubble::Up
+            },
+        )
+    }
+
+    /// Get mutable access to a specific component on the listener entity using a closure any time
+    /// this event listener is triggered. If the component does not exist, an error will be logged.
+    pub fn listener_component_mut<C: Component>(func: fn(&ListenedEvent<E>, &mut C)) -> Self {
+        Self::run_callback(
+            move |In(event): In<ListenedEvent<E>>, mut query: Query<&mut C>| {
+                if let Ok(mut component) = query.get_mut(event.listener) {
+                    func(&event, &mut component);
+                } else {
+                    error!("Component {:?} not found on entity {:?} during pointer callback for event {:?}", std::any::type_name::<C>(), event.listener, std::any::type_name::<E>());
                 }
                 Bubble::Up
             },
@@ -269,7 +316,9 @@ impl<E: IsPointerEvent> EventCallbackGraph<E> {
                     if let Some(mut event_listener) = event_listener {
                         // If it has an event listener, we need to add it to the map
                         listener_map.insert(this_node, (event_listener.take(), None));
-                        if let Some((_, prev_nodes_next_node)) = listener_map.get_mut(&prev_node) {
+                        if let Some((_, prev_nodes_next_node @ None)) =
+                            listener_map.get_mut(&prev_node)
+                        {
                             if prev_node != this_node {
                                 *prev_nodes_next_node = Some(this_node);
                             }
