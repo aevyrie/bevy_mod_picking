@@ -70,7 +70,7 @@ pub fn build_rays_from_pointers(
             })
             .for_each(|(camera, transform, mut source)| {
                 let pointer_pos = pointer_location.position;
-                if let Some(ray) = ray_from_screenspace(pointer_pos, camera, transform) {
+                if let Some(ray) = camera.viewport_to_world(transform, pointer_pos) {
                     source.ray_map.insert(*pointer_id, ray);
                 }
             });
@@ -124,26 +124,4 @@ fn update_hits(
                 order: cam_order,
             });
         });
-}
-
-/// Create a [`Ray`] from a camera's screenspace coordinates.
-pub fn ray_from_screenspace(
-    cursor_pos_screen: Vec2,
-    camera: &Camera,
-    camera_transform: &GlobalTransform,
-) -> Option<Ray> {
-    let view = camera_transform.compute_matrix();
-    let screen_size = camera.logical_target_size()?;
-    let projection = camera.projection_matrix();
-    let far_ndc = projection.project_point3(Vec3::NEG_Z * 1000.0).z;
-    let near_ndc = projection.project_point3(Vec3::NEG_Z * 0.001).z;
-    let cursor_ndc = (cursor_pos_screen / screen_size) * 2.0 - Vec2::ONE;
-    let ndc_to_world: Mat4 = view * projection.inverse();
-    let near = ndc_to_world.project_point3(cursor_ndc.extend(near_ndc));
-    let far = ndc_to_world.project_point3(cursor_ndc.extend(far_ndc));
-    let ray_direction = far - near;
-    Some(Ray {
-        origin: near,
-        direction: ray_direction,
-    })
 }
