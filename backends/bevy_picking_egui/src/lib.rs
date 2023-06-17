@@ -24,7 +24,7 @@ impl Plugin for EguiBackend {
         app.add_system(
             egui_picking
                 .in_set(PickSet::Backend)
-                .after(EguiSet::ProcessOutput),
+                .after(EguiSet::BeginFrame),
         )
         .insert_resource(EguiBackendSettings::default());
 
