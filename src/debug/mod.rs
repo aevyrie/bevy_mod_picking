@@ -161,7 +161,7 @@ pub fn update_debug_data(
                 .flat_map(|button| {
                     drag_map
                         .get(&(id, button))
-                        .and_then(|entry| entry.as_ref())
+                        .and_then(|entry| entry.values().next())
                         .map(|entry| (button, entry.start_pos))
                 })
                 .collect()
