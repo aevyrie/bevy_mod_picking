@@ -15,7 +15,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(EguiPlugin)
+        .add_plugins(EguiPlugin)
         .add_systems(Update, ui_example)
         .add_systems(Startup, setup)
         .run();

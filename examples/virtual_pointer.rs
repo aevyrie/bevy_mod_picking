@@ -13,7 +13,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(bevy_egui::EguiPlugin) // Nicer pointer debug overlay, useful for this example.
+        .add_plugins(bevy_egui::EguiPlugin) // Nicer pointer debug overlay, useful for this example.
         .add_systems(Startup, setup)
         .add_systems(Update, move_virtual_pointer)
         .run();

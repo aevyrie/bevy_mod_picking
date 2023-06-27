@@ -15,7 +15,7 @@ fn main() {
                 .build()
                 .disable::<DefaultHighlightingPlugin>(),
         )
-        .add_plugin(bevy_egui::EguiPlugin)
+        .add_plugins(bevy_egui::EguiPlugin)
         .add_systems(Startup, setup)
         .add_event::<DoSomethingComplex>()
         .add_systems(

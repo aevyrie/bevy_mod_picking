@@ -4,8 +4,8 @@ use bevy_picking_core::{debug, focus::HoverMap};
 use picking_core::{events::DragMap, pointer::Location};
 
 use crate::*;
+use bevy::prelude::*;
 use bevy::text::DEFAULT_FONT_HANDLE;
-use bevy::{asset::load_internal_binary_asset, prelude::*, utils::Uuid};
 
 /// Logs events for debugging
 #[derive(Debug, Default, Clone)]

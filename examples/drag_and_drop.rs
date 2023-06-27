@@ -10,7 +10,7 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(Update, spin);
     #[cfg(feature = "backend_egui")]
-    app.add_plugin(bevy_egui::EguiPlugin);
+    app.add_plugins(bevy_egui::EguiPlugin);
     app.run();
 }
 

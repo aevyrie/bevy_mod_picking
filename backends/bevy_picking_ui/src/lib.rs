@@ -49,7 +49,7 @@ pub struct NodeQuery {
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
     cameras: Query<(Entity, &Camera, Option<&UiCameraConfig>)>,
-    primary_window: Query<(Entity, &Window), With<PrimaryWindow>>,
+    primary_window: Query<Entity, With<PrimaryWindow>>,
     ui_stack: Res<UiStack>,
     mut node_query: Query<NodeQuery>,
     mut output: EventWriter<PointerHits>,
@@ -68,7 +68,7 @@ pub fn ui_picking(
             })
             .map(|loc| (pointer, loc))
     }) {
-        let (window_entity, window) = primary_window.single();
+        let window_entity = primary_window.single();
         let Some((camera, ui_config)) = cameras
             .iter()
             .find(|(_entity, camera, _)| {

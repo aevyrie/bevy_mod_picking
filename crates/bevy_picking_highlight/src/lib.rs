@@ -31,7 +31,7 @@ impl Plugin for DefaultHighlightingPlugin {
     #[allow(unused_variables)]
     fn build(&self, app: &mut App) {
         #[cfg(feature = "pbr")]
-        app.add_plugin(HighlightPlugin::<StandardMaterial> {
+        app.add_plugins(HighlightPlugin::<StandardMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
                 hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
                 pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
@@ -41,7 +41,7 @@ impl Plugin for DefaultHighlightingPlugin {
         });
 
         #[cfg(feature = "sprite")]
-        app.add_plugin(HighlightPlugin::<bevy::sprite::ColorMaterial> {
+        app.add_plugins(HighlightPlugin::<bevy::sprite::ColorMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
                 hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
                 pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),

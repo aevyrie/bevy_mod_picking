@@ -2,7 +2,7 @@
 
 use bevy::{
     prelude::*,
-    render::camera::{ManualTextureViews, NormalizedRenderTarget},
+    render::camera::NormalizedRenderTarget,
     utils::{HashMap, Uuid},
     window::PrimaryWindow,
 };

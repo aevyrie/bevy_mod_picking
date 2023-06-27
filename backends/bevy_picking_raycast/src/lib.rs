@@ -4,7 +4,7 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{prelude::*, render::camera::ManualTextureViews, utils::HashMap, window::PrimaryWindow};
+use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use bevy_mod_raycast::{Ray3d, RaycastSource};
 use bevy_picking_core::backend::{prelude::*, PickingBackend};
 

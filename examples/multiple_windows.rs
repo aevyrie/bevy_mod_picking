@@ -7,7 +7,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_plugin(bevy_egui::EguiPlugin) //  For debug: bevy_ui does not support multiple windows.
+        .add_plugins(bevy_egui::EguiPlugin) //  For debug: bevy_ui does not support multiple windows.
         .add_systems(Startup, setup)
         .run();
 }

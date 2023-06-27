@@ -13,7 +13,7 @@ fn main() {
         .add_plugins(DefaultPickingPlugins)
         .add_systems(Startup, setup);
     #[cfg(feature = "backend_egui")]
-    app.add_plugin(bevy_egui::EguiPlugin);
+    app.add_plugins(bevy_egui::EguiPlugin);
     app.run();
 }
 
