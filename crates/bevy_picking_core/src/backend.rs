@@ -45,7 +45,7 @@ impl Plugin for Box<dyn PickingBackend> {
 /// Some backends may only support providing the topmost entity; this is a valid limitation of some
 /// backends. For example, a picking shader might only have data on the topmost rendered output from
 /// its buffer.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Event)]
 pub struct PointerHits {
     /// The pointer associated with this hit test.
     pub pointer: prelude::PointerId,

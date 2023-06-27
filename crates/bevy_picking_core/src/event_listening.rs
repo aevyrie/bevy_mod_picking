@@ -25,6 +25,7 @@ impl<E: IsPointerEvent> Plugin for EventListenerPlugin<E> {
     fn build(&self, app: &mut App) {
         app.insert_resource(EventCallbackGraph::<E>::default())
             .add_systems(
+                PreUpdate,
                 (
                     EventCallbackGraph::<E>::build.run_if(on_event::<PointerEvent<E>>()),
                     event_bubbling::<E>.run_if(on_event::<PointerEvent<E>>()),
@@ -58,7 +59,7 @@ impl<E: IsPointerEvent> CallbackSystem<E> {
         match self {
             CallbackSystem::Initialized(system) => {
                 let result = system.run(event_data, world);
-                system.apply_buffers(world);
+                system.apply_deferred(world);
                 result
             }
             _ => unreachable!(),

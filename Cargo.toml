@@ -14,7 +14,7 @@ resolver = "2"
 members = ["crates/*", "backends/*"]
 
 [dependencies]
-bevy = { version = "0.10", default-features = false, features = [
+bevy = { version = "0.11.0-dev", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
     "bevy_ui",
@@ -34,7 +34,7 @@ bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite", 
 bevy_picking_egui = { optional = true, path = "backends/bevy_picking_egui", version = "0.1" }
 
 [dev-dependencies]
-bevy = { version = "0.10", default-features = false, features = [
+bevy = { version = "0.11.0-dev", default-features = false, features = [
     "bevy_winit",
     "x11",
     "bevy_gltf",
@@ -67,7 +67,7 @@ selection = [
     "bevy_picking_highlight/selection",
 ]
 highlight = ["bevy_picking_highlight"]
-debug = ["bevy/bevy_text", "bevy/bevy_sprite"]
+debug = ["bevy/bevy_text", "bevy/bevy_sprite", "bevy/default_font"]
 backend_raycast = ["bevy_picking_raycast"]
 backend_rapier = ["bevy_picking_rapier", "bevy_rapier3d"]
 backend_sprite = ["bevy_picking_sprite", "bevy_picking_highlight/sprite"]
@@ -98,3 +98,7 @@ required-features = ["backend_egui"]
 name = "virtual_pointer"
 path = "examples/virtual_pointer.rs"
 required-features = ["backend_egui"]
+
+[patch.crates-io]
+bevy = { git = 'https://github.com/bevyengine/bevy.git', branch = 'main' }
+bevy_mod_raycast = { git = 'https://github.com/Vrixyz/bevy_mod_raycast', branch = 'bevy-0.11-compatibility' }

@@ -4,7 +4,7 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
+use bevy::{prelude::*, render::camera::ManualTextureViews, utils::HashMap, window::PrimaryWindow};
 use bevy_mod_raycast::{Ray3d, RaycastSource};
 use bevy_picking_core::backend::{prelude::*, PickingBackend};
 
@@ -20,11 +20,13 @@ impl PickingBackend for RaycastBackend {}
 impl Plugin for RaycastBackend {
     fn build(&self, app: &mut App) {
         app.add_systems(
+            First,
             (build_rays_from_pointers, spawn_raycast_sources)
                 .chain()
                 .in_set(PickSet::PostInput),
         )
         .add_systems(
+            PreUpdate,
             (
                 bevy_mod_raycast::update_raycast::<RaycastPickingSet>,
                 update_hits,
@@ -32,7 +34,7 @@ impl Plugin for RaycastBackend {
                 .chain()
                 .in_set(PickSet::Backend),
         )
-        .add_system(sync_pickable.in_base_set(CoreSet::PostUpdate));
+        .add_systems(PostUpdate, sync_pickable);
     }
 }
 
@@ -100,9 +102,7 @@ fn sync_pickable(
 /// Builds rays and updates raycasting [`RaycastPickCamera`]s from [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    windows: Query<&Window>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
-    images: Res<Assets<Image>>,
     mut picking_cameras: Query<(&Camera, &GlobalTransform, &mut RaycastPickCamera)>,
 ) {
     picking_cameras.iter_mut().for_each(|(_, _, mut pick_cam)| {
@@ -115,9 +115,7 @@ pub fn build_rays_from_pointers(
         };
         picking_cameras
             .iter_mut()
-            .filter(|(camera, _, _)| {
-                pointer_location.is_in_viewport(camera, &windows, &primary_window, &images)
-            })
+            .filter(|(camera, _, _)| pointer_location.is_in_viewport(camera, &primary_window))
             .for_each(|(camera, transform, mut source)| {
                 let pointer_pos = pointer_location.position;
                 if let Some(ray) = Ray3d::from_screenspace(pointer_pos, camera, transform) {

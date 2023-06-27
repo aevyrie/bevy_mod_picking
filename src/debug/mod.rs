@@ -4,16 +4,8 @@ use bevy_picking_core::{debug, focus::HoverMap};
 use picking_core::{events::DragMap, pointer::Location};
 
 use crate::*;
+use bevy::text::DEFAULT_FONT_HANDLE;
 use bevy::{asset::load_internal_binary_asset, prelude::*, utils::Uuid};
-
-const DEBUG_FONT_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(
-    Uuid::from_u128(200742528088501825055247279035227365784),
-    436509473926038,
-);
-
-fn font_loader(bytes: &[u8]) -> Font {
-    Font::try_from_bytes(bytes.to_vec()).unwrap()
-}
 
 /// Logs events for debugging
 #[derive(Debug, Default, Clone)]
@@ -25,17 +17,16 @@ impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut App) {
         let noisy_debug = self.noisy;
 
-        load_internal_binary_asset!(app, DEBUG_FONT_HANDLE, "FiraMono-Medium.ttf", font_loader);
-
         app.init_resource::<debug::Frame>()
-            .add_system(debug::increment_frame.in_base_set(CoreSet::First))
-            .add_system(
+            .add_systems(First, debug::increment_frame)
+            .add_systems(
+                PreUpdate,
                 input::debug::print
                     .before(picking_core::PickSet::Backend)
-                    .run_if(move || noisy_debug)
-                    .in_base_set(CoreSet::PreUpdate),
+                    .run_if(move || noisy_debug),
             )
             .add_systems(
+                PreUpdate,
                 (
                     debug::print::<events::Over>,
                     debug::print::<events::Out>,
@@ -56,6 +47,7 @@ impl Plugin for DebugPickingPlugin {
 
         #[cfg(not(feature = "backend_egui"))]
         app.add_systems(
+            PreUpdate,
             (add_pointer_debug, update_debug_data, debug_draw)
                 .chain()
                 .in_set(picking_core::PickSet::Last),
@@ -68,10 +60,13 @@ impl Plugin for DebugPickingPlugin {
         );
 
         #[cfg(feature = "selection")]
-        app.add_systems((
-            debug::print::<selection::Select>,
-            debug::print::<selection::Deselect>,
-        ));
+        app.add_systems(
+            Update,
+            (
+                debug::print::<selection::Select>,
+                debug::print::<selection::Deselect>,
+            ),
+        );
     }
 }
 
@@ -272,18 +267,15 @@ pub fn debug_draw(
             text: Text::from_section(
                 text,
                 TextStyle {
-                    font: DEBUG_FONT_HANDLE.typed::<Font>(),
+                    font: DEFAULT_FONT_HANDLE.typed::<Font>(),
                     font_size: 12.0,
                     color: Color::WHITE,
                 },
             ),
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    left: Val::Px(location.position.x + 5.0),
-                    bottom: Val::Px(location.position.y + 5.0),
-                    ..default()
-                },
+                left: Val::Px(location.position.x + 5.0),
+                top: Val::Px(location.position.y + 5.0),
                 ..default()
             },
             ..default()

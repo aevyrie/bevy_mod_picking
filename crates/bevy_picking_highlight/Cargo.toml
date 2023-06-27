@@ -16,7 +16,7 @@ resolver = "2"
 bevy_picking_core = { path = "../bevy_picking_core", version = "0.1" }
 bevy_picking_input = { path = "../bevy_picking_input", version = "0.1" }
 bevy_picking_selection = { optional = true, path = "../bevy_picking_selection", version = "0.1" }
-bevy = { version = "0.10", default-features = false, features = [
+bevy = { version = "0.11.0-dev", default-features = false, features = [
     "bevy_render",
     "bevy_asset",
 ] }

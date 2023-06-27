@@ -24,7 +24,7 @@ pub struct BevyUiBackend;
 impl PickingBackend for BevyUiBackend {}
 impl Plugin for BevyUiBackend {
     fn build(&self, app: &mut App) {
-        app.add_system(ui_picking.in_set(PickSet::Backend));
+        app.add_systems(PreUpdate, ui_picking.in_set(PickSet::Backend));
     }
 }
 
@@ -82,8 +82,7 @@ pub fn ui_picking(
             return;
         }
 
-        let mut cursor_position = location.position;
-        cursor_position.y = window.resolution.height() - cursor_position.y;
+        let cursor_position = location.position;
 
         let mut hovered_nodes = ui_stack
             .uinodes
@@ -108,7 +107,7 @@ pub fn ui_picking(
                     }
 
                     // The mouse position relative to the node
-                    // (0., 0.) is the top-left corner, (1., 1.) is the bottom-right corner
+                    // (0., 0.) is the bottom-left corner, (1., 1.) is the top-right corner
                     let relative_cursor_position = Vec2::new(
                         (cursor_position.x - min.x) / node.node.size().x,
                         (cursor_position.y - min.y) / node.node.size().y,

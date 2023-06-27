@@ -21,7 +21,7 @@ pub struct SpriteBackend;
 impl PickingBackend for SpriteBackend {}
 impl Plugin for SpriteBackend {
     fn build(&self, app: &mut App) {
-        app.add_system(sprite_picking.in_set(PickSet::Backend));
+        app.add_systems(PreUpdate, sprite_picking.in_set(PickSet::Backend));
     }
 }
 

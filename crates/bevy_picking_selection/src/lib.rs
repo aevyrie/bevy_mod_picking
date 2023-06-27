@@ -39,6 +39,7 @@ impl Plugin for SelectionPlugin {
             .add_event::<PointerEvent<Select>>()
             .add_event::<PointerEvent<Deselect>>()
             .add_systems(
+                PreUpdate,
                 (
                     multiselect_events.run_if(|settings: Res<SelectionSettings>| {
                         settings.use_multiselect_default_inputs
@@ -48,6 +49,7 @@ impl Plugin for SelectionPlugin {
                     .in_set(PickSet::ProcessInput),
             )
             .add_systems(
+                PreUpdate,
                 (
                     send_selection_events,
                     bevy_picking_core::event_listening::event_bubbling::<Select>,
@@ -95,10 +97,10 @@ pub fn multiselect_events(
     mut pointer_query: Query<&mut PointerMultiselect>,
 ) {
     let is_multiselect_pressed = keyboard.any_pressed([
-        KeyCode::LControl,
-        KeyCode::RControl,
-        KeyCode::LShift,
-        KeyCode::RShift,
+        KeyCode::ControlLeft,
+        KeyCode::ControlRight,
+        KeyCode::ShiftLeft,
+        KeyCode::ShiftRight,
     ]);
 
     for mut multiselect in pointer_query.iter_mut() {

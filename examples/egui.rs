@@ -16,8 +16,8 @@ fn main() {
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
         .add_plugin(EguiPlugin)
-        .add_system(ui_example)
-        .add_startup_system(setup)
+        .add_systems(Update, ui_example)
+        .add_systems(Startup, setup)
         .run();
 }
 
