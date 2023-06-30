@@ -65,7 +65,6 @@ selection = [
     "bevy_picking_selection",
     "bevy_picking_input/selection",
     "bevy_picking_highlight/selection",
-    "bevy_picking_highlight/pbr",
 ]
 highlight = ["bevy_picking_highlight/pbr"]
 debug = ["bevy/bevy_text", "bevy/bevy_sprite"]
