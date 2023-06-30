@@ -12,6 +12,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
         .add_startup_system(setup)
+        .add_startup_system(setup_3d)
         .run();
 }
 
@@ -23,11 +24,19 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             style: Style {
                 size: Size::width(Val::Px(500.0)),
                 flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::FlexStart,
+                justify_content: JustifyContent::Center,
                 align_items: AlignItems::FlexStart,
                 margin: UiRect::horizontal(Val::Auto),
                 ..default()
             },
+            // *** Important! ***
+            //
+            // We need to use `FocusPolicy::Pass` here so the root node doesn't block pointer
+            // interactions from reaching the 3d objects under the UI. This node, as defined, will
+            // stretch from the top to bottom of the screen, take the width of the buttons, but will
+            // be invisible. Try commenting out this line or setting it to `Block` to see how
+            // behavior changes.
+            focus_policy: FocusPolicy::Pass,
             ..default()
         })
         .id();
@@ -37,6 +46,53 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .add_button(&font, "Start")
         .add_button(&font, "Settings")
         .add_button(&font, "Quit");
+}
+
+/// set up a simple 3D scene
+fn setup_3d(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            ..Default::default()
+        },
+        PickableBundle::default(),    // <- Makes the mesh pickable.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+    ));
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+            ..Default::default()
+        },
+        PickableBundle::default(),    // <- Makes the mesh pickable.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+    ));
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            intensity: 1500.0,
+            shadows_enabled: true,
+            ..Default::default()
+        },
+        transform: Transform::from_xyz(4.0, 8.0, -4.0),
+        ..Default::default()
+    });
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
+            camera: Camera {
+                order: 1,
+                ..default()
+            },
+            ..default()
+        },
+        RaycastPickCamera::default(), // <- Enable picking for this camera
+    ));
 }
 
 trait NewButton {

@@ -1,7 +1,7 @@
 //! Text and on-screen debugging tools
 
 use bevy_picking_core::{debug, focus::HoverMap};
-use picking_core::{events::DragMap, pointer::Location};
+use picking_core::{backend::HitData, events::DragMap, pointer::Location};
 
 use crate::*;
 use bevy::{asset::load_internal_binary_asset, prelude::*, utils::Uuid};
@@ -90,9 +90,7 @@ pub fn add_pointer_debug(
 pub struct PointerDebug {
     pub location: Option<Location>,
     pub press: PointerPress,
-    pub depth: Option<f32>,
-    pub world_pos: Option<Vec3>,
-    pub world_normal: Option<Vec3>,
+    pub hits: Vec<(Entity, HitData)>,
     pub drag_start: Vec<(PointerButton, Vec2)>,
     pub interactions: Vec<(DebugName, Interaction)>,
     #[cfg(feature = "selection")]
@@ -115,11 +113,15 @@ impl std::fmt::Display for PointerDebug {
         if let Some(multiselect) = self.multiselect {
             bool_to_icon(f, ", Multiselect: ", multiselect)?;
         }
-        if let Some((position, normal)) = self.world_pos.zip(self.world_normal) {
-            writeln!(f, "\nPosition: {position:.2?} Normal: {normal:.2?}")?;
-        }
-        if let Some(depth) = self.depth {
-            writeln!(f, "Depth: {depth:.2?}")?;
+        writeln!(f, "")?;
+        let mut sorted_hits = self.hits.clone();
+        sorted_hits.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+        for (entity, hit) in sorted_hits.iter() {
+            write!(f, "Entity: {entity:?}")?;
+            if let Some((position, normal)) = hit.position.zip(hit.normal) {
+                write!(f, ", Position: {position:.2?}, Normal: {normal:.2?}")?;
+            }
+            writeln!(f, ", Depth: {:.2?}", hit.depth)?;
         }
         if !self.interactions.is_empty() {
             write!(f, "{:?}", self.interactions)?;
@@ -155,7 +157,6 @@ pub fn update_debug_data(
                 (debug, *interaction)
             })
             .collect::<Vec<_>>();
-        let hover_data = |id| hover_map.get(id).and_then(|h| h.iter().next());
         let drag_start = |id| {
             PointerButton::iter()
                 .flat_map(|button| {
@@ -170,9 +171,12 @@ pub fn update_debug_data(
         *debug = PointerDebug {
             location: location.location().cloned(),
             press: press.to_owned(),
-            depth: hover_data(id).map(|h| h.1.depth),
-            world_pos: hover_data(id).and_then(|h| h.1.position),
-            world_normal: hover_data(id).and_then(|h| h.1.normal),
+            hits: hover_map
+                .get(id)
+                .iter()
+                .flat_map(|h| h.iter())
+                .map(|(e, h)| (*e, h.to_owned()))
+                .collect(),
             drag_start: drag_start(*id),
             interactions,
             #[cfg(feature = "selection")]
