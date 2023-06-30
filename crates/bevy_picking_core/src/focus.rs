@@ -129,18 +129,17 @@ fn build_hover_map(
         let pointer_entity_set = hover_map.entry(*pointer_id).or_insert_with(HashMap::new);
         if let Some(layer_map) = over_map.get(pointer_id) {
             // Note we reverse here to start from the highest layer first.
-            //
-            // In addition, we only look at the topmost layer, because if it exists, it has an
-            // intersection, and higher layers should block lower layers.
-            if let Some(depth_map) = layer_map.values().rev().next() {
-                for &(entity, pick_data) in depth_map.values() {
-                    pointer_entity_set.insert(entity, pick_data);
-                    if let Ok(FocusPolicy::Block) = focus.get(entity) {
-                        break;
-                    }
-                    if focus.get(entity).is_err() {
-                        break;
-                    }
+            for &(entity, pick_data) in layer_map
+                .values()
+                .rev()
+                .flat_map(|depth_map| depth_map.values())
+            {
+                pointer_entity_set.insert(entity, pick_data);
+                if let Ok(FocusPolicy::Block) = focus.get(entity) {
+                    break;
+                }
+                if focus.get(entity).is_err() {
+                    break;
                 }
             }
         }
