@@ -5,7 +5,7 @@
 //! other words, it allows you to easily implement "If entity X is hovered/clicked/dragged, do Y".
 
 use bevy::prelude::*;
-use bevy_eventlistener::prelude::*;
+use bevy_eventlistener::{callbacks::ListenerInput, prelude::*};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -74,7 +74,7 @@ fn setup(
             // When you just want to add a `Command` to the target entity,`add_target_commands` will
             // reduce boilerplate and allow you to do this directly.
             On::<Pointer<Click>>::target_commands_mut(|click, target_commands| {
-                if click.target != click.listener && click.button == PointerButton::Secondary {
+                if click.target != click.listener() && click.button == PointerButton::Secondary {
                     target_commands.despawn();
                 }
             }),
@@ -135,19 +135,18 @@ fn change_hue_with_vertical_move(
     event: Listener<Pointer<Move>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     cube: Query<&Handle<StandardMaterial>>,
-) -> Bubble {
+) {
     let material = materials.get_mut(cube.get(event.target).unwrap()).unwrap();
     let mut color = material.base_color.as_hsla_f32();
     let to_u8 = 255.0 / 360.0; // we will use wrapping integer addition to make the hue wrap around
     color[0] = ((color[0] * to_u8) as u8).wrapping_add_signed(event.delta.y as i8) as f32 / to_u8;
     material.base_color = Color::hsla(color[0], color[1], color[2], color[3]);
-    Bubble::Up // Determines if the event should continue to bubble through the hierarchy.
 }
 
 struct DoSomethingComplex(Entity, f32);
 
-impl From<ListenedEvent<Down>> for DoSomethingComplex {
-    fn from(event: ListenedEvent<Down>) -> Self {
+impl From<ListenerInput<Pointer<Down>>> for DoSomethingComplex {
+    fn from(event: ListenerInput<Pointer<Down>>) -> Self {
         DoSomethingComplex(event.target, event.hit.depth)
     }
 }
