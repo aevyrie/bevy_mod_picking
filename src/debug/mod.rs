@@ -20,7 +20,7 @@ fn font_loader(bytes: &[u8]) -> Font {
 pub enum DebugPickingMode {
     /// Only log non-noisy events
     #[default]
-    Quiet,
+    Normal,
     /// Log all events, including noisy events like `Move` and `Drag`
     Noisy,
     /// Do not show the debug interface or log any messages
@@ -30,7 +30,7 @@ pub enum DebugPickingMode {
 impl DebugPickingMode {
     /// A condition indicating the plugin is enabled
     pub fn is_enabled(res: Res<State<DebugPickingMode>>) -> bool {
-        matches!(res.0, Self::Quiet | Self::Noisy)
+        matches!(res.0, Self::Normal | Self::Noisy)
     }
     /// A condition indicating the plugin is disabled
     pub fn is_disabled(res: Res<State<DebugPickingMode>>) -> bool {
@@ -46,14 +46,14 @@ impl DebugPickingMode {
 /// Use the [`DebugPickingMode`] state resource to control this plugin.
 /// Example:
 ///
-/// ```rust
-/// use DebugPickingMode::{Quiet, Disabled};
+/// ```ignore
+/// use DebugPickingMode::{Normal, Disabled};
 /// app.add_plugin(DefaultPickingPlugins)
 ///     .insert_resource(State(Disabled))
 ///     .add_systems(
 ///         (
-///             (|mut next: ResMut<NextState<_>>| next.set(Quiet)).run_if(in_state(Disabled)),
-///             (|mut next: ResMut<NextState<_>>| next.set(Disabled)).run_if(in_state(Quiet)),
+///             (|mut next: ResMut<NextState<_>>| next.set(Normal)).run_if(in_state(Disabled)),
+///             (|mut next: ResMut<NextState<_>>| next.set(Disabled)).run_if(in_state(Normal)),
 ///         )
 ///             .distributive_run_if(input_just_pressed(KeyCode::F3)),
 ///     )
@@ -73,7 +73,7 @@ impl Plugin for DebugPickingPlugin {
         let start_mode = if self.noisy {
             DebugPickingMode::Noisy
         } else {
-            DebugPickingMode::Quiet
+            DebugPickingMode::Normal
         };
 
         load_internal_binary_asset!(app, DEBUG_FONT_HANDLE, "FiraMono-Medium.ttf", font_loader);
