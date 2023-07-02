@@ -463,6 +463,7 @@ pub fn send_click_and_drag_events(
         if press.direction != pointer::PressDirection::Up {
             continue; // We are only interested in button releases
         }
+        down_map.insert((press.pointer_id, press.button), HashMap::new());
         let Some(drag_list) = drag_map
             .insert((press.pointer_id, press.button), HashMap::new()) else {
                 continue;
@@ -484,7 +485,6 @@ pub fn send_click_and_drag_events(
                 drag_end,
             ));
         }
-        down_map.insert((press.pointer_id, press.button), HashMap::new());
     }
 }
 
