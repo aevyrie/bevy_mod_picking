@@ -18,3 +18,4 @@ bevy = { version = "0.10", default-features = false, features = [
     "bevy_ui",
     "bevy_asset",
 ] }
+bevy_eventlistener = "0.2"

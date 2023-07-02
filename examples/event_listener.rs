@@ -5,6 +5,7 @@
 //! other words, it allows you to easily implement "If entity X is hovered/clicked/dragged, do Y".
 
 use bevy::prelude::*;
+use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -40,39 +41,39 @@ fn setup(
             },
             PickableBundle::default(),
             RaycastPickTarget::default(),
-            // Callbacks are just bevy systems that have a specific input (`In<ListenedEvent<E>>`)
-            // and output (`Bubble`). This gives you full freedom to write normal bevy systems that
-            // are only called when specific entities are interacted with. Here we have a system
-            // that rotates a cube when it is dragged. See the comments added to the function for
-            // more details on the requirements of callback systems.
+            // Callbacks are just exclusive bevy systems that have access to an event data via
+            // `](bevy_eventlistener::prelude::Listener) and [`ListenerMut`]. This gives
+            // you full freedom to write normal bevy
+            // systems that are only called when specific entities are interacted with. Here we have
+            // a system that rotates a cube when it is dragged. See the comments added to the
+            // function for more details on the requirements of callback systems.
             //
             // # Performance 💀
             //
             // Callback systems require exclusive world access, which means the system cannot be run
             // in parallel with other systems! Callback systems are very flexible, but should be
             // used with care. If you want to do something complex in response to a listened event,
-            // prefer to instead use `OnPointer::send_event`, and react to your custom event in a
+            // prefer to instead use `send_event`, and react to your custom event in a
             // normally-scheduled bevy system (see send_event usage below).
-            OnPointer::<Move>::run_callback(change_hue_with_vertical_move),
+            On::<Pointer<Move>>::run(change_hue_with_vertical_move),
             // We can use helper methods to make callbacks even simpler. For drag-to-rotate, we use
             // this little closure, because we only need to modify the target entity's Transform:
-            OnPointer::<Drag>::target_component_mut::<Transform>(|drag, transform| {
+            On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
                 transform.rotate_local_y(drag.delta.x / 50.0)
             }),
             // Just like bevy systems, callbacks can be closures! Recall that the parameters can be
             // any bevy system parameters, with the only requirement that the first parameter be the
             // input event, and the function output is a `Bubble`.
-            OnPointer::<Out>::run_callback(|In(event): In<ListenedEvent<Out>>, time: Res<Time>| {
+            On::<Pointer<Out>>::run(|event: Listener<Pointer<Out>>, time: Res<Time>| {
                 info!(
                     "[{:?}]: The pointer left entity {:?}",
                     time.elapsed_seconds(),
                     event.target
                 );
-                Bubble::Up
             }),
             // When you just want to add a `Command` to the target entity,`add_target_commands` will
             // reduce boilerplate and allow you to do this directly.
-            OnPointer::<Click>::target_commands_mut(|click, target_commands| {
+            On::<Pointer<Click>>::target_commands_mut(|click, target_commands| {
                 if click.target != click.listener && click.button == PointerButton::Secondary {
                     target_commands.despawn();
                 }
@@ -86,12 +87,12 @@ fn setup(
             //
             // # Performance 🚀
             //
-            // Unlike the `run_callback` method, this will not prevent systems from parallelizing,
-            // as the systems that react to this event can be scheduled normally. In fact, you can
-            // get the best of both worlds by using run criteria on the systems that react to your
-            // custom event. This allows you to run bevy systems in response to interaction with a
-            // specific entity, while still allowing full system parallelism.
-            OnPointer::<Down>::send_event::<DoSomethingComplex>(),
+            // Unlike the `run` method, this will not prevent systems from parallelizing, as the
+            // systems that react to this event can be scheduled normally. In fact, you can get the
+            // best of both worlds by using run criteria on the systems that react to your custom
+            // event. This allows you to run bevy systems in response to interaction with a specific
+            // entity, while still allowing full system parallelism.
+            On::<Pointer<Down>>::send_event::<DoSomethingComplex>(),
         ))
         .with_children(|parent| {
             for i in 1..=5 {
@@ -130,9 +131,8 @@ fn setup(
 
 /// Change the hue of mesh's `StandardMaterial` when the mouse moves vertically over it.
 fn change_hue_with_vertical_move(
-    // The first parameter is always the `ListenedEvent`, passed in by the event listening system.
-    In(event): In<ListenedEvent<Move>>,
-    // The following can be any normal bevy system params:
+    // The event data accessible by the callback system
+    event: Listener<Pointer<Move>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     cube: Query<&Handle<StandardMaterial>>,
 ) -> Bubble {

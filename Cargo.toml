@@ -41,6 +41,7 @@ bevy = { version = "0.10", default-features = false, features = [
     "bevy_scene",
     "png",
 ] }
+bevy_eventlistener = "0.2"
 
 [features]
 all = [

@@ -23,7 +23,7 @@
 //! # use bevy::ecs::system::Command;
 //! # use bevy_mod_picking::prelude::*;
 //! #
-//! # fn rotate_with_mouse(
+//! # fn rotate_about_y_axis(
 //! #     In(event): In<ListenedEvent<Drag>>,
 //! # ) -> Bubble {
 //! #     Bubble::Up
@@ -47,10 +47,13 @@
 //! # }
 //! fn setup(mut commands: Commands) {
 //!     commands.spawn((
-//!         // Spawn your entity, e.g. a Mesh
-//!         OnPointer::<Drag>::run_callback(rotate_with_mouse),
-//!         OnPointer::<Click>::add_command::<DeleteTarget>(),
-//!         OnPointer::<Over>::send_event::<Greeting>(),
+//!         // Spawn your entity here, e.g. a Mesh.
+//!         // When dragged, mutate the `Transform` component on the dragged target entity:
+//!         On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
+//!             transform.rotate_local_y(drag.delta.x / 50.0)
+//!         }),
+//!         On::<Pointer<Click>::add_command::<DeleteTarget>(),
+//!         On::<Pointer<Over>::send_event::<Greeting>(),
 //!     ));
 //! }
 //! ```
@@ -173,9 +176,7 @@ use bevy::{prelude::Bundle, ui::Interaction};
 use bevy_picking_core::PointerCoreBundle;
 use prelude::*;
 
-pub use bevy_picking_core::{
-    self as picking_core, backend, event_listening, events, focus, pointer,
-};
+pub use bevy_picking_core::{self as picking_core, backend, events, focus, pointer};
 pub use bevy_picking_input::{self as input};
 
 #[cfg(feature = "highlight")]
@@ -205,10 +206,9 @@ pub mod prelude {
     pub use crate::debug::DebugPickingPlugin;
     pub use crate::{
         backends,
-        event_listening::{Bubble, ListenedEvent, OnPointer},
         events::{
             Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
-            IsPointerEvent, Move, Out, Over, PointerEvent, Up,
+            IsPointerEvent, Move, Out, Over, Pointer, Up,
         },
         picking_core::Pickable,
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},

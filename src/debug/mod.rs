@@ -113,7 +113,7 @@ impl std::fmt::Display for PointerDebug {
         if let Some(multiselect) = self.multiselect {
             bool_to_icon(f, ", Multiselect: ", multiselect)?;
         }
-        writeln!(f, "")?;
+        writeln!(f)?;
         let mut sorted_hits = self.hits.clone();
         sorted_hits.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
         for (entity, hit) in sorted_hits.iter() {
