@@ -122,6 +122,8 @@ impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
                 On::<Pointer<Out>>::listener_insert(BackgroundColor::from(NORMAL)),
                 On::<Pointer<Down>>::listener_insert(BackgroundColor::from(PRESSED)),
                 On::<Pointer<Up>>::listener_insert(BackgroundColor::from(HOVERED)),
+                // Buttons should not deselect other things:
+                NoDeselect,
             ))
             .with_children(|parent| {
                 parent.spawn(TextBundle {
