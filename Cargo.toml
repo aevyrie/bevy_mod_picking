@@ -66,7 +66,7 @@ selection = [
     "bevy_picking_input/selection",
     "bevy_picking_highlight/selection",
 ]
-highlight = ["bevy_picking_highlight"]
+highlight = ["bevy_picking_highlight/pbr"]
 debug = ["bevy/bevy_text", "bevy/bevy_sprite"]
 backend_raycast = ["bevy_picking_raycast"]
 backend_rapier = ["bevy_picking_rapier", "bevy_rapier3d"]
