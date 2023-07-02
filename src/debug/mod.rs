@@ -123,7 +123,8 @@ impl Plugin for DebugPickingPlugin {
                 .in_set(picking_core::PickSet::Last),
         );
 
-        app.add_system(hide_pointer_text.run_if(DebugPickingMode::is_disabled));
+        app.add_system(hide_pointer_text.in_schedule(OnEnter(DebugPickingMode::Disabled)));
+
         #[cfg(feature = "selection")]
         app.add_systems(
             (
