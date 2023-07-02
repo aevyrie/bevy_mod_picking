@@ -111,7 +111,7 @@ pub enum PickSet {
     Focus,
     /// Runs after all the focus systems are done, before event listeners are triggered.
     PostFocus,
-    /// Updates event listeners and bubbles [`events::PointerEvent`]s
+    /// Updates event listeners and bubbles [`events::Pointer`] events
     EventListeners,
     /// Runs after all other sets
     Last,
@@ -137,7 +137,7 @@ impl Plugin for CorePlugin {
     }
 }
 
-/// Generates [`PointerEvent`](events::PointerEvent)s and handles event bubbling.
+/// Generates [`Pointer`](events::Pointer) events and handles event bubbling.
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {

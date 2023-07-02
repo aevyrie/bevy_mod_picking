@@ -11,9 +11,9 @@
 //!
 //! #### Expressive
 //!
-//! [`PointerEvent`]s make it easy to react to interactions like [`Click`], [`Over`], or [`Drag`]
+//! [`Pointer`] events make it easy to react to interactions like [`Click`], [`Over`], or [`Drag`]
 //! (13 pointer events are provided). Reacting to these interaction events on a specific entity is
-//! made possible with the [`OnPointer<E>`] component. When events are generated, they bubble up the
+//! made possible with the [`On<Event>`] component. When events are generated, they bubble up the
 //! entity hierarchy starting from their target, looking for these event listener components.
 //!
 //! This allows you to run callbacks when any children of an entity are interacted with:
@@ -163,7 +163,7 @@
 //! In the final step, the high-level pointer events are generated, such as events that trigger when
 //! a pointer hovers or clicks an entity. These simple events are then used to generate more complex
 //! events for dragging and dropping. Once all events have been generated, the event bubbling
-//! systems propagate events through the entity hierarchy, triggering [`OnPointer<E>`] callbacks.
+//! systems propagate events through the entity hierarchy, triggering [`On<E>`] callbacks.
 //!
 //! Because it is completely agnostic to the the earlier stages of the pipeline, you can easily
 //! extend the plugin with arbitrary backends and input methods.
@@ -214,6 +214,8 @@ pub mod prelude {
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
         *,
     };
+
+    pub use bevy_eventlistener::prelude::*;
 
     #[cfg(feature = "highlight")]
     pub use crate::highlight::{

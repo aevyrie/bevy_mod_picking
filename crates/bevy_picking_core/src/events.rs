@@ -11,7 +11,7 @@ use crate::{
 use bevy::{prelude::*, utils::HashMap};
 use bevy_eventlistener::prelude::*;
 
-/// Used to mark the inner event types for [`PointerEvent`]s.
+/// Used to mark the inner event types for [`Pointer`] events.
 pub trait IsPointerEvent: Send + Sync + Clone + std::fmt::Debug + Reflect {}
 
 /// Stores the common data needed for all `PointerEvent`s.

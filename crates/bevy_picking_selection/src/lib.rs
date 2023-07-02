@@ -1,7 +1,7 @@
 //! A plugin for `bevy_mod_picking` that adds multiselect functionality.
 //!
-//! This adds the [`Deselect`] and [`Select`] [`PointerEvent`]s, including support for
-//! bubbling these events.
+//! This adds the [`Deselect`] and [`Select`] [`Pointer`] events, including support for bubbling
+//! these events.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
