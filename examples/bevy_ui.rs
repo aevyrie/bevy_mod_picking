@@ -1,6 +1,7 @@
 //! This example demonstrates how to use the plugin with bevy_ui.
 
 use bevy::{ecs::system::EntityCommands, prelude::*, ui::FocusPolicy};
+use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 const NORMAL: Color = Color::rgb(0.15, 0.15, 0.15);
@@ -117,10 +118,12 @@ impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
                     ..default()
                 },
                 // Use events to highlight buttons
-                OnPointer::<Over>::listener_insert(BackgroundColor::from(HOVERED)),
-                OnPointer::<Out>::listener_insert(BackgroundColor::from(NORMAL)),
-                OnPointer::<Down>::listener_insert(BackgroundColor::from(PRESSED)),
-                OnPointer::<Up>::listener_insert(BackgroundColor::from(HOVERED)),
+                On::<Pointer<Over>>::listener_insert(BackgroundColor::from(HOVERED)),
+                On::<Pointer<Out>>::listener_insert(BackgroundColor::from(NORMAL)),
+                On::<Pointer<Down>>::listener_insert(BackgroundColor::from(PRESSED)),
+                On::<Pointer<Up>>::listener_insert(BackgroundColor::from(HOVERED)),
+                // Buttons should not deselect other things:
+                NoDeselect,
             ))
             .with_children(|parent| {
                 parent.spawn(TextBundle {

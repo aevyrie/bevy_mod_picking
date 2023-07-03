@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     backend::{self, HitData},
-    events::{Down, IsPointerEvent, Out, Over, PointerCancel, PointerEvent, Up},
+    events::{Down, IsPointerEvent, Out, Over, Pointer, PointerCancel, Up},
     pointer::PointerId,
 };
 use bevy::{
@@ -167,10 +167,10 @@ impl DerefMut for PointerInteraction {
 /// Uses pointer events to update [`PointerInteraction`] and [`Interaction`] components.
 pub fn interactions_from_events(
     // Input
-    mut pointer_over: EventReader<PointerEvent<Over>>,
-    mut pointer_out: EventReader<PointerEvent<Out>>,
-    mut pointer_up: EventReader<PointerEvent<Up>>,
-    mut pointer_down: EventReader<PointerEvent<Down>>,
+    mut pointer_over: EventReader<Pointer<Over>>,
+    mut pointer_out: EventReader<Pointer<Out>>,
+    mut pointer_up: EventReader<Pointer<Up>>,
+    mut pointer_down: EventReader<Pointer<Down>>,
     // Outputs
     mut pointers: Query<(&PointerId, &mut PointerInteraction)>,
     mut interact: Query<&mut Interaction>,
@@ -190,7 +190,7 @@ pub fn interactions_from_events(
 }
 
 fn update_interactions<E: IsPointerEvent>(
-    event: &PointerEvent<E>,
+    event: &Pointer<E>,
     new_interaction: Interaction,
     pointer_interactions: &mut Query<(&PointerId, &mut PointerInteraction)>,
     entity_interactions: &mut Query<&mut Interaction>,

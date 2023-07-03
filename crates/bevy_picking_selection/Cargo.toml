@@ -17,3 +17,4 @@ bevy_picking_core = { path = "../bevy_picking_core", version = "0.1" }
 bevy = { version = "0.10", default-features = false, features = [
     "bevy_render",
 ] }
+bevy_eventlistener = "0.2"
