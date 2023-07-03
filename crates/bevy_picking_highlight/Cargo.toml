@@ -22,7 +22,6 @@ bevy = { version = "0.10", default-features = false, features = [
 ] }
 
 [features]
-default = ["pbr"]
 selection = ["bevy_picking_selection"]
 sprite = ["bevy/bevy_sprite"]
 pbr = ["bevy/bevy_pbr"]

@@ -19,6 +19,7 @@ bevy = { version = "0.10", default-features = false, features = [
     "bevy_render",
     "bevy_ui",
 ] }
+bevy_eventlistener = "0.2"
 bevy_egui = { optional = true, version = "0.20" }
 bevy_rapier3d = { optional = true, version = "0.21" }
 
@@ -66,7 +67,7 @@ selection = [
     "bevy_picking_input/selection",
     "bevy_picking_highlight/selection",
 ]
-highlight = ["bevy_picking_highlight"]
+highlight = ["bevy_picking_highlight/pbr"]
 debug = ["bevy/bevy_text", "bevy/bevy_sprite"]
 backend_raycast = ["bevy_picking_raycast"]
 backend_rapier = ["bevy_picking_rapier", "bevy_rapier3d"]
