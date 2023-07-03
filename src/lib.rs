@@ -21,17 +21,13 @@
 //! ```
 //! # use bevy::prelude::*;
 //! # use bevy::ecs::system::Command;
+//! # use prelude::*;
 //! # use bevy_mod_picking::prelude::*;
-//! #
-//! # fn rotate_about_y_axis(
-//! #     In(event): In<ListenedEvent<Drag>>,
-//! # ) -> Bubble {
-//! #     Bubble::Up
-//! # }
+//! # use bevy_eventlistener::callbacks::ListenerInput;
 //! #
 //! # struct DeleteTarget;
-//! # impl From<ListenedEvent<Click>> for DeleteTarget {
-//! #     fn from(_: ListenedEvent<Click>) -> Self {
+//! # impl From<ListenerInput<Pointer<Click>>> for DeleteTarget {
+//! #     fn from(_: ListenerInput<Pointer<Click>>) -> Self {
 //! #         DeleteTarget
 //! #     }
 //! # }
@@ -40,8 +36,8 @@
 //! # }
 //! #
 //! # struct Greeting;
-//! # impl From<ListenedEvent<Over>> for Greeting {
-//! #     fn from(_: ListenedEvent<Over>) -> Self {
+//! # impl From<ListenerInput<Pointer<Over>>> for Greeting {
+//! #     fn from(_: ListenerInput<Pointer<Over>>) -> Self {
 //! #         Greeting
 //! #     }
 //! # }
@@ -52,8 +48,8 @@
 //!         On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
 //!             transform.rotate_local_y(drag.delta.x / 50.0)
 //!         }),
-//!         On::<Pointer<Click>::add_command::<DeleteTarget>(),
-//!         On::<Pointer<Over>::send_event::<Greeting>(),
+//!         On::<Pointer<Click>>::add_command::<DeleteTarget>(),
+//!         On::<Pointer<Over>>::send_event::<Greeting>(),
 //!     ));
 //! }
 //! ```
