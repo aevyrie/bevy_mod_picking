@@ -1,6 +1,6 @@
 [package]
 name = "bevy_picking_sprite"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -19,4 +19,4 @@ bevy = { version = "0.10", default-features = false, features = [
     "bevy_render",
 ] }
 # Local
-bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.1" }
+bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.2" }
