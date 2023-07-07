@@ -15,63 +15,124 @@ fn font_loader(bytes: &[u8]) -> Font {
     Font::try_from_bytes(bytes.to_vec()).unwrap()
 }
 
+/// This state determines the runtime behavior of the debug plugin.
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
+pub enum DebugPickingMode {
+    /// Only log non-noisy events
+    #[default]
+    Normal,
+    /// Log all events, including noisy events like `Move` and `Drag`
+    Noisy,
+    /// Do not show the debug interface or log any messages
+    Disabled,
+}
+
+impl DebugPickingMode {
+    /// A condition indicating the plugin is enabled
+    pub fn is_enabled(res: Res<State<DebugPickingMode>>) -> bool {
+        matches!(res.0, Self::Normal | Self::Noisy)
+    }
+    /// A condition indicating the plugin is disabled
+    pub fn is_disabled(res: Res<State<DebugPickingMode>>) -> bool {
+        matches!(res.0, Self::Disabled)
+    }
+    /// A condition indicating the plugin is enabled and in noisy mode
+    pub fn is_noisy(res: Res<State<DebugPickingMode>>) -> bool {
+        matches!(res.0, Self::Noisy)
+    }
+}
+
 /// Logs events for debugging
+/// Use the [`DebugPickingMode`] state resource to control this plugin.
+/// Example:
+///
+/// ```ignore
+/// use DebugPickingMode::{Normal, Disabled};
+/// app.add_plugin(DefaultPickingPlugins)
+///     .insert_resource(State(Disabled))
+///     .add_systems(
+///         (
+///             (|mut next: ResMut<NextState<_>>| next.set(Normal)).run_if(in_state(Disabled)),
+///             (|mut next: ResMut<NextState<_>>| next.set(Disabled)).run_if(in_state(Normal)),
+///         )
+///             .distributive_run_if(input_just_pressed(KeyCode::F3)),
+///     )
+/// ```
+/// This sets the starting mode of the plugin to [`DebugPickingMode::Disabled`] and binds
+/// the F3 key to toggle it.
 #[derive(Debug, Default, Clone)]
 pub struct DebugPickingPlugin {
-    /// Suppresses noisy events like `Move` and `Drag` when set to `false`
+    /// Suppresses noisy events like `Move` and `Drag` when set to `false`.
+    #[deprecated = "Use the `DebugPickingMode` state directly instead"]
     pub noisy: bool,
 }
+
 impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut App) {
-        let noisy_debug = self.noisy;
+        #[allow(deprecated)]
+        let start_mode = if self.noisy {
+            DebugPickingMode::Noisy
+        } else {
+            DebugPickingMode::Normal
+        };
 
         load_internal_binary_asset!(app, DEBUG_FONT_HANDLE, "FiraMono-Medium.ttf", font_loader);
 
-        app.init_resource::<debug::Frame>()
+        app.add_state::<DebugPickingMode>()
+            .insert_resource(State(start_mode))
+            .init_resource::<debug::Frame>()
             .add_system(debug::increment_frame.in_base_set(CoreSet::First))
             .add_system(
                 input::debug::print
                     .before(picking_core::PickSet::Backend)
-                    .run_if(move || noisy_debug)
+                    .run_if(DebugPickingMode::is_noisy)
                     .in_base_set(CoreSet::PreUpdate),
-            )
-            .add_systems(
-                (
-                    debug::print::<events::Over>,
-                    debug::print::<events::Out>,
-                    debug::print::<events::Down>,
-                    debug::print::<events::Up>,
-                    debug::print::<events::Click>,
-                    debug::print::<events::Move>.run_if(move || noisy_debug),
-                    debug::print::<events::DragStart>,
-                    debug::print::<events::Drag>.run_if(move || noisy_debug),
-                    debug::print::<events::DragEnd>,
-                    debug::print::<events::DragEnter>,
-                    debug::print::<events::DragOver>.run_if(move || noisy_debug),
-                    debug::print::<events::DragLeave>,
-                    debug::print::<events::Drop>,
-                )
-                    .in_set(picking_core::PickSet::Last),
             );
+        app.add_systems(
+            (
+                debug::print::<events::Over>,
+                debug::print::<events::Out>,
+                debug::print::<events::Down>,
+                debug::print::<events::Up>,
+                debug::print::<events::Click>,
+                debug::print::<events::Move>.run_if(DebugPickingMode::is_noisy),
+                debug::print::<events::DragStart>,
+                debug::print::<events::Drag>.run_if(DebugPickingMode::is_noisy),
+                debug::print::<events::DragEnd>,
+                debug::print::<events::DragEnter>,
+                debug::print::<events::DragOver>.run_if(DebugPickingMode::is_noisy),
+                debug::print::<events::DragLeave>,
+                debug::print::<events::Drop>,
+            )
+                .distributive_run_if(DebugPickingMode::is_enabled)
+                .in_set(picking_core::PickSet::Last),
+        );
 
         #[cfg(not(feature = "backend_egui"))]
         app.add_systems(
             (add_pointer_debug, update_debug_data, debug_draw)
                 .chain()
+                .distributive_run_if(DebugPickingMode::is_enabled)
                 .in_set(picking_core::PickSet::Last),
         );
         #[cfg(feature = "backend_egui")]
         app.add_systems(
             (add_pointer_debug, update_debug_data, debug_draw_egui)
                 .chain()
+                .distributive_run_if(DebugPickingMode::is_enabled)
                 .in_set(picking_core::PickSet::Last),
         );
 
+        app.add_system(hide_pointer_text.in_schedule(OnEnter(DebugPickingMode::Disabled)));
+
         #[cfg(feature = "selection")]
-        app.add_systems((
-            debug::print::<selection::Select>,
-            debug::print::<selection::Deselect>,
-        ));
+        app.add_systems(
+            (
+                debug::print::<selection::Select>,
+                debug::print::<selection::Deselect>,
+            )
+                .distributive_run_if(DebugPickingMode::is_enabled),
+        );
     }
 }
 
@@ -82,6 +143,13 @@ pub fn add_pointer_debug(
 ) {
     for entity in &pointers {
         commands.entity(entity).insert(PointerDebug::default());
+    }
+}
+
+/// Hide text from pointers.
+pub fn hide_pointer_text(mut pointers: Query<&mut Visibility, With<PointerId>>) {
+    for mut vis in &mut pointers {
+        *vis = Visibility::Hidden;
     }
 }
 
