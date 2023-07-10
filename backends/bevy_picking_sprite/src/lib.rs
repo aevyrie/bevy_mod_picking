@@ -6,7 +6,6 @@
 
 use std::cmp::Ordering;
 
-use bevy::ui::FocusPolicy;
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_picking_core::backend::prelude::*;
 
@@ -37,7 +36,7 @@ pub fn sprite_picking(
         &Handle<Image>,
         &GlobalTransform,
         &ComputedVisibility,
-        Option<&FocusPolicy>,
+        Option<&Pickable>,
     )>,
     mut output: EventWriter<PointerHits>,
 ) {
@@ -86,7 +85,7 @@ pub fn sprite_picking(
                     let rect = Rect::from_center_half_size(center, half_extents);
 
                     let is_cursor_in_sprite = rect.contains(cursor_pos_world);
-                    blocked = is_cursor_in_sprite && sprite_focus != Some(&FocusPolicy::Pass);
+                    blocked = is_cursor_in_sprite && sprite_focus != Some(&Pickable::Pass);
 
                     is_cursor_in_sprite.then_some((
                         entity,

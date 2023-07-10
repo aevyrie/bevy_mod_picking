@@ -17,7 +17,6 @@ members = ["crates/*", "backends/*"]
 bevy = { version = "0.10", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
-    "bevy_ui",
 ] }
 bevy_eventlistener = "0.2"
 bevy_egui = { optional = true, version = "0.20" }

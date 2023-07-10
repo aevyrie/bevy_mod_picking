@@ -21,25 +21,30 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let font = asset_server.load("fonts/FiraMono-Medium.ttf");
     commands.spawn(Camera2dBundle::default());
     let root = commands
-        .spawn(NodeBundle {
-            style: Style {
-                size: Size::width(Val::Px(500.0)),
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::FlexStart,
-                margin: UiRect::horizontal(Val::Auto),
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    size: Size::width(Val::Px(500.0)),
+                    flex_direction: FlexDirection::Column,
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::FlexStart,
+                    margin: UiRect::horizontal(Val::Auto),
+                    ..default()
+                },
                 ..default()
             },
             // *** Important! ***
             //
-            // We need to use `FocusPolicy::Pass` here so the root node doesn't block pointer
-            // interactions from reaching the 3d objects under the UI. This node, as defined, will
-            // stretch from the top to bottom of the screen, take the width of the buttons, but will
-            // be invisible. Try commenting out this line or setting it to `Block` to see how
-            // behavior changes.
-            focus_policy: FocusPolicy::Pass,
-            ..default()
-        })
+            // We need to use `Pickable::Ignore` here so the root node doesn't block pointer
+            // interactions from reaching the 3d objects under the UI. We could also use `Pass` to
+            // allow picking entities below this, however the pointer would interact with both
+            // entities. Using `Ignore` will omit this entity from any picking events.
+            //
+            // This node, as defined, will stretch from the top to bottom of the screen, take the
+            // width of the buttons, but will be invisible. Try commenting out this line or setting
+            // it to `Block` or `Pass` to see how behavior changes.
+            Pickable::Ignore,
+        ))
         .id();
 
     commands

@@ -1,10 +1,10 @@
 //! Text and on-screen debugging tools
 
-use bevy_picking_core::{debug, focus::HoverMap};
+use bevy_picking_core::focus::HoverMap;
 use picking_core::{backend::HitData, events::DragMap, pointer::Location};
 
 use crate::*;
-use bevy::{asset::load_internal_binary_asset, prelude::*, utils::Uuid};
+use bevy::{asset::load_internal_binary_asset, prelude::*, ui::FocusPolicy, utils::Uuid};
 
 const DEBUG_FONT_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(
     Uuid::from_u128(200742528088501825055247279035227365784),
@@ -80,8 +80,6 @@ impl Plugin for DebugPickingPlugin {
 
         app.add_state::<DebugPickingMode>()
             .insert_resource(State(start_mode))
-            .init_resource::<debug::Frame>()
-            .add_system(debug::increment_frame.in_base_set(CoreSet::First))
             .add_system(
                 input::debug::print
                     .before(picking_core::PickSet::Backend)
@@ -90,19 +88,19 @@ impl Plugin for DebugPickingPlugin {
             );
         app.add_systems(
             (
-                debug::print::<events::Over>,
-                debug::print::<events::Out>,
-                debug::print::<events::Down>,
-                debug::print::<events::Up>,
-                debug::print::<events::Click>,
-                debug::print::<events::Move>.run_if(DebugPickingMode::is_noisy),
-                debug::print::<events::DragStart>,
-                debug::print::<events::Drag>.run_if(DebugPickingMode::is_noisy),
-                debug::print::<events::DragEnd>,
-                debug::print::<events::DragEnter>,
-                debug::print::<events::DragOver>.run_if(DebugPickingMode::is_noisy),
-                debug::print::<events::DragLeave>,
-                debug::print::<events::Drop>,
+                print::<events::Over>,
+                print::<events::Out>,
+                print::<events::Down>,
+                print::<events::Up>,
+                print::<events::Click>,
+                print::<events::Move>.run_if(DebugPickingMode::is_noisy),
+                print::<events::DragStart>,
+                print::<events::Drag>.run_if(DebugPickingMode::is_noisy),
+                print::<events::DragEnd>,
+                print::<events::DragEnter>,
+                print::<events::DragOver>.run_if(DebugPickingMode::is_noisy),
+                print::<events::DragLeave>,
+                print::<events::Drop>,
             )
                 .distributive_run_if(DebugPickingMode::is_enabled)
                 .in_set(picking_core::PickSet::Last),
@@ -127,12 +125,16 @@ impl Plugin for DebugPickingPlugin {
 
         #[cfg(feature = "selection")]
         app.add_systems(
-            (
-                debug::print::<selection::Select>,
-                debug::print::<selection::Deselect>,
-            )
+            (print::<selection::Select>, print::<selection::Deselect>)
                 .distributive_run_if(DebugPickingMode::is_enabled),
         );
+    }
+}
+
+/// Listens for pointer events of type `E` and prints them.
+pub fn print<E: IsPointerEvent + 'static>(mut pointer_events: EventReader<Pointer<E>>) {
+    for event in pointer_events.iter() {
+        info!("{event}");
     }
 }
 
@@ -340,25 +342,28 @@ pub fn debug_draw(
         };
         let text = format!("{id:?}\n{debug}");
 
-        commands.entity(entity).insert(TextBundle {
-            text: Text::from_section(
-                text,
-                TextStyle {
-                    font: DEBUG_FONT_HANDLE.typed::<Font>(),
-                    font_size: 12.0,
-                    color: Color::WHITE,
-                },
-            ),
-            style: Style {
-                position_type: PositionType::Absolute,
-                position: UiRect {
-                    left: Val::Px(location.position.x + 5.0),
-                    bottom: Val::Px(location.position.y + 5.0),
+        commands
+            .entity(entity)
+            .insert(TextBundle {
+                text: Text::from_section(
+                    text,
+                    TextStyle {
+                        font: DEBUG_FONT_HANDLE.typed::<Font>(),
+                        font_size: 12.0,
+                        color: Color::WHITE,
+                    },
+                ),
+                style: Style {
+                    position_type: PositionType::Absolute,
+                    position: UiRect {
+                        left: Val::Px(location.position.x + 5.0),
+                        bottom: Val::Px(location.position.y + 5.0),
+                        ..default()
+                    },
                     ..default()
                 },
                 ..default()
-            },
-            ..default()
-        });
+            })
+            .insert(Pickable::Ignore);
     }
 }

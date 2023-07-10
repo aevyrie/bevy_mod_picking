@@ -5,7 +5,6 @@
 #![deny(missing_docs)]
 
 pub mod backend;
-pub mod debug;
 pub mod events;
 pub mod focus;
 pub mod pointer;
@@ -53,9 +52,19 @@ impl Default for PickingPluginsSettings {
     }
 }
 
-/// Used to mark entities that should be pickable.
-#[derive(Component, Debug, Default, Clone, Reflect)]
-pub struct Pickable;
+/// Used to mark entities that should be pickable. Similar to bevy's `FocusPolicy`, except this type
+/// allows entities to be completely ignored in the picking process, and does not require compiling
+/// bevy_ui.
+#[derive(Component, Debug, Default, Clone, Reflect, PartialEq, Eq)]
+pub enum Pickable {
+    /// This entity can be focused, but blocks lower entities from receiving picking focus.
+    #[default]
+    Block,
+    /// This entity can be focused, and also allows entities underneath this one to be focused.
+    Pass,
+    /// Ignore this entity when computing picking focus.
+    Ignore,
+}
 
 /// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
 /// being an entity.

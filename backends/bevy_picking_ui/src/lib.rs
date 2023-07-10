@@ -38,6 +38,7 @@ pub struct NodeQuery {
     interaction: Option<&'static mut Interaction>,
     relative_cursor_position: Option<&'static mut RelativeCursorPosition>,
     focus_policy: Option<&'static FocusPolicy>,
+    pickable: Option<&'static Pickable>,
     calculated_clip: Option<&'static CalculatedClip>,
     computed_visibility: Option<&'static ComputedVisibility>,
 }
@@ -135,21 +136,35 @@ pub fn ui_picking(
         let mut depth = 0.0;
 
         while let Some(node) = iter.fetch_next() {
-            picks.push((
-                node.entity,
-                HitData {
-                    camera,
-                    depth,
-                    position: None,
-                    normal: None,
+            let mut push_hit = || {
+                picks.push((
+                    node.entity,
+                    HitData {
+                        camera,
+                        depth,
+                        position: None,
+                        normal: None,
+                    },
+                ))
+            };
+            match node.pickable {
+                Some(pickable) => match pickable {
+                    Pickable::Block => {
+                        push_hit();
+                        break;
+                    }
+                    Pickable::Pass => push_hit(), // allow the next node to be hovered/clicked
+                    Pickable::Ignore => (),       // allow the next node to be hovered/clicked
                 },
-            ));
-            match node.focus_policy.unwrap_or(&FocusPolicy::Block) {
-                FocusPolicy::Block => {
-                    break;
+                None => {
+                    push_hit();
+                    match node.focus_policy.unwrap_or(&FocusPolicy::Block) {
+                        FocusPolicy::Block => break,
+                        FocusPolicy::Pass => (), // allow the next node to be hovered/clicked
+                    }
                 }
-                FocusPolicy::Pass => { /* allow the next node to be hovered/clicked */ }
             }
+
             depth += 0.00001; // keep depth near 0 for precision
         }
 

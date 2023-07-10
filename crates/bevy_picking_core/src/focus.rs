@@ -9,10 +9,10 @@ use crate::{
     backend::{self, HitData},
     events::{Down, IsPointerEvent, Out, Over, Pointer, PointerCancel, Up},
     pointer::PointerId,
+    Pickable,
 };
 use bevy::{
     prelude::*,
-    ui::FocusPolicy,
     utils::{FloatOrd, HashMap},
 };
 
@@ -46,7 +46,7 @@ pub struct PreviousHoverMap(pub HashMap<PointerId, HashMap<Entity, HitData>>);
 /// This is the final focusing step to determine which entity the pointer is hovering over.
 pub fn update_focus(
     // Inputs
-    focus: Query<&FocusPolicy>,
+    pickable: Query<&Pickable>,
     pointers: Query<&PointerId>,
     mut under_pointer: EventReader<backend::PointerHits>,
     mut cancellations: EventReader<PointerCancel>,
@@ -63,7 +63,7 @@ pub fn update_focus(
         &pointers,
     );
     build_over_map(&mut under_pointer, &mut over_map, &mut cancellations);
-    build_hover_map(&pointers, focus, &over_map, &mut hover_map);
+    build_hover_map(&pointers, pickable, &over_map, &mut hover_map);
 }
 
 /// Clear non-empty local maps, reusing allocated memory.
@@ -115,12 +115,12 @@ fn build_over_map(
     }
 }
 
-/// Build an unsorted set of hovered entities, accounting for depth, layer, and focus policy. Note
-/// that unlike the pointer map, this uses the focus policy to determine if lower entities receive
-/// hover focus. Often, only a single entity per pointer will be hovered.
+/// Build an unsorted set of hovered entities, accounting for depth, layer, and [`Pickable`]. Note
+/// that unlike the pointer map, this uses [`Pickable`] to determine if lower entities receive hover
+/// focus. Often, only a single entity per pointer will be hovered.
 fn build_hover_map(
     pointers: &Query<&PointerId>,
-    focus: Query<&FocusPolicy>,
+    pickable: Query<&Pickable>,
     over_map: &Local<OverMap>,
     // Output
     hover_map: &mut HoverMap,
@@ -134,11 +134,12 @@ fn build_hover_map(
                 .rev()
                 .flat_map(|depth_map| depth_map.values())
             {
-                pointer_entity_set.insert(entity, pick_data);
-                if let Ok(FocusPolicy::Block) = focus.get(entity) {
-                    break;
+                if pickable.get(entity).is_err() {
+                    error!();
+                    continue;
                 }
-                if focus.get(entity).is_err() {
+                pointer_entity_set.insert(entity, pick_data);
+                if let Ok(Pickable::Block) = pickable.get(entity) {
                     break;
                 }
             }
