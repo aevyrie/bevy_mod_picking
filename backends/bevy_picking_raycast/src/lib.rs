@@ -99,9 +99,7 @@ fn sync_pickable(
 /// Builds rays and updates raycasting [`RaycastPickCamera`]s from [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    windows: Query<&Window>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
-    images: Res<Assets<Image>>,
     mut picking_cameras: Query<(&Camera, &GlobalTransform, &mut RaycastPickCamera)>,
 ) {
     picking_cameras.iter_mut().for_each(|(_, _, mut pick_cam)| {
@@ -114,9 +112,7 @@ pub fn build_rays_from_pointers(
         };
         picking_cameras
             .iter_mut()
-            .filter(|(camera, _, _)| {
-                pointer_location.is_in_viewport(camera, &windows, &primary_window, &images)
-            })
+            .filter(|(camera, _, _)| pointer_location.is_in_viewport(camera, &primary_window))
             .for_each(|(camera, transform, mut source)| {
                 let pointer_pos = pointer_location.position;
                 if let Some(ray) = Ray3d::from_screenspace(pointer_pos, camera, transform) {
