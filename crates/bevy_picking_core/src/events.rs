@@ -59,7 +59,6 @@ impl<E: IsPointerEvent + 'static> PointerEvent<E> {
 #[derive(Clone, PartialEq, Debug, Reflect, Event)]
 pub struct PointerCancel {
     /// ID of the pointer that was cancelled.
-    #[reflect(ignore)]
     pub pointer_id: PointerId,
 }
 

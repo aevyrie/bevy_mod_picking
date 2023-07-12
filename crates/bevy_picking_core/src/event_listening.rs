@@ -36,7 +36,9 @@ impl<E: IsPointerEvent> Plugin for EventListenerPlugin<E> {
     }
 }
 
+#[derive(Default)]
 pub(crate) enum CallbackSystem<E: IsPointerEvent> {
+    #[default]
     Empty,
     New(Box<dyn System<In = ListenedEvent<E>, Out = Bubble>>),
     Initialized(Box<dyn System<In = ListenedEvent<E>, Out = Bubble>>),

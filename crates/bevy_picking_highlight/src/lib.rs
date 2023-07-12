@@ -275,7 +275,7 @@ pub fn update_highlight_assets<T: Asset>(
 ) {
     for (mut asset, interaction, init_highlight, h_override) in &mut interaction_query {
         *asset = match interaction {
-            Interaction::Clicked => global_defaults.pressed(&h_override),
+            Interaction::Pressed => global_defaults.pressed(&h_override),
             Interaction::Hovered => global_defaults.hovered(&h_override),
             Interaction::None => init_highlight.initial.to_owned(),
         }

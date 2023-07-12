@@ -12,10 +12,11 @@ use std::fmt::Debug;
 ///
 /// This component is needed because pointers can be spawned and despawned, but they need to have a
 /// stable ID that persists regardless of the Entity they are associated with.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
+#[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
 #[reflect_value]
 pub enum PointerId {
     /// The mouse pointer.
+    #[default]
     Mouse,
     /// A touch input, usually numbered by window touch events from `winit`.
     Touch(u64),
