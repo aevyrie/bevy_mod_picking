@@ -6,7 +6,7 @@
 
 use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use bevy_mod_raycast::{Ray3d, RaycastSource};
-use bevy_picking_core::backend::{prelude::*, PickingBackend};
+use bevy_picking_core::backend::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_raycast`](crate) crate.
 pub mod prelude {
@@ -16,7 +16,6 @@ pub mod prelude {
 /// Adds the raycasting picking backend to your app.
 #[derive(Clone)]
 pub struct RaycastBackend;
-impl PickingBackend for RaycastBackend {}
 impl Plugin for RaycastBackend {
     fn build(&self, app: &mut App) {
         app.add_systems(
