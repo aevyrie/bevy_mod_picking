@@ -1,6 +1,7 @@
 //! This example demonstrates how to use the plugin with bevy_ui.
 
 use bevy::{ecs::system::EntityCommands, prelude::*, ui::FocusPolicy};
+use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 const NORMAL: Color = Color::rgb(0.15, 0.15, 0.15);
@@ -11,10 +12,9 @@ fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_systems(Startup, setup);
-    #[cfg(feature = "backend_egui")]
-    app.add_plugins(bevy_egui::EguiPlugin);
-    app.run();
+        .add_systems(Startup, setup)
+        .add_systems(Startup, setup_3d)
+        .run();
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -25,11 +25,19 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             style: Style {
                 width: Val::Px(500.0),
                 flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::FlexStart,
+                justify_content: JustifyContent::Center,
                 align_items: AlignItems::FlexStart,
                 margin: UiRect::horizontal(Val::Auto),
                 ..default()
             },
+            // *** Important! ***
+            //
+            // We need to use `FocusPolicy::Pass` here so the root node doesn't block pointer
+            // interactions from reaching the 3d objects under the UI. This node, as defined, will
+            // stretch from the top to bottom of the screen, take the width of the buttons, but will
+            // be invisible. Try commenting out this line or setting it to `Block` to see how
+            // behavior changes.
+            focus_policy: FocusPolicy::Pass,
             ..default()
         })
         .id();
@@ -39,6 +47,53 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .add_button(&font, "Start")
         .add_button(&font, "Settings")
         .add_button(&font, "Quit");
+}
+
+/// set up a simple 3D scene
+fn setup_3d(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            ..Default::default()
+        },
+        PickableBundle::default(),    // <- Makes the mesh pickable.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+    ));
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+            ..Default::default()
+        },
+        PickableBundle::default(),    // <- Makes the mesh pickable.
+        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+    ));
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            intensity: 1500.0,
+            shadows_enabled: true,
+            ..Default::default()
+        },
+        transform: Transform::from_xyz(4.0, 8.0, -4.0),
+        ..Default::default()
+    });
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
+            camera: Camera {
+                order: 1,
+                ..default()
+            },
+            ..default()
+        },
+        RaycastPickCamera::default(), // <- Enable picking for this camera
+    ));
 }
 
 trait NewButton {
@@ -64,10 +119,12 @@ impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
                     ..default()
                 },
                 // Use events to highlight buttons
-                OnPointer::<Over>::listener_insert(BackgroundColor::from(HOVERED)),
-                OnPointer::<Out>::listener_insert(BackgroundColor::from(NORMAL)),
-                OnPointer::<Down>::listener_insert(BackgroundColor::from(PRESSED)),
-                OnPointer::<Up>::listener_insert(BackgroundColor::from(HOVERED)),
+                On::<Pointer<Over>>::listener_insert(BackgroundColor::from(HOVERED)),
+                On::<Pointer<Out>>::listener_insert(BackgroundColor::from(NORMAL)),
+                On::<Pointer<Down>>::listener_insert(BackgroundColor::from(PRESSED)),
+                On::<Pointer<Up>>::listener_insert(BackgroundColor::from(HOVERED)),
+                // Buttons should not deselect other things:
+                NoDeselect,
             ))
             .with_children(|parent| {
                 parent.spawn(TextBundle {

@@ -28,7 +28,7 @@ impl Plugin for BevyUiBackend {
     }
 }
 
-/// Main query for [`ui_focus_system`]
+/// Main query from bevy's `ui_focus_system`
 #[derive(WorldQuery)]
 #[world_query(mutable)]
 pub struct NodeQuery {

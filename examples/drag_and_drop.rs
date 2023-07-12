@@ -1,6 +1,7 @@
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
+use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -35,13 +36,12 @@ fn setup(
             },
             PickableBundle::default(),    // <- Makes the mesh pickable.
             RaycastPickTarget::default(), // <- Needed for the raycast backend.
-            OnPointer::<DragStart>::target_remove::<Pickable>(), // Disable picking
-            OnPointer::<DragEnd>::target_insert(Pickable), // Re-enable picking
-            OnPointer::<Drag>::target_component_mut::<Transform>(|drag, transform| {
-                // Make the square follow the mouse
-                transform.translation += (drag.delta * Vec2::new(1.0, -1.0)).extend(0.0)
+            On::<Pointer<DragStart>>::target_remove::<Pickable>(), // Disable picking
+            On::<Pointer<DragEnd>>::target_insert(Pickable), // Re-enable picking
+            On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
+                transform.translation += drag.delta.extend(0.0) // Make the square follow the mouse
             }),
-            OnPointer::<Drop>::commands_mut(|event, commands| {
+            On::<Pointer<Drop>>::commands_mut(|event, commands| {
                 commands.entity(event.dropped).insert(Spin(FRAC_PI_2)); // Spin dropped entity
                 commands.entity(event.target).insert(Spin(-FRAC_PI_2)); // Spin dropped-on entity
             }),

@@ -3,6 +3,7 @@
 //! scene.
 
 use bevy::{math::vec4, prelude::*};
+use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
 use highlight::HighlightKind;
 
@@ -39,9 +40,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         // Events that target children of the scene will bubble up to this level and will fire off a
         // `HelmetClicked` event.
-        OnPointer::<Click>::run_callback(|In(event): In<ListenedEvent<Click>>| {
+        On::<Pointer<Click>>::run(|event: Listener<Pointer<Click>>| {
             info!("Clicked on entity {:?}", event.target);
-            Bubble::Up
         }),
     ));
 }
@@ -60,7 +60,7 @@ fn make_pickable(
     }
 }
 
-/// USed to tint the mesh instead of simply replacing the mesh's material with a single color. See
+/// Used to tint the mesh instead of simply replacing the mesh's material with a single color. See
 /// `tinted_highlight` for more details.
 const HIGHLIGHT_TINT: Highlight<StandardMaterial> = Highlight {
     hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {

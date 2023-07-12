@@ -1,15 +1,16 @@
 //! A plugin for `bevy_mod_picking` that adds multiselect functionality.
 //!
-//! This adds the [`Deselect`] and [`Select`] [`PointerEvent`]s, including support for
-//! bubbling these events.
+//! This adds the [`Deselect`] and [`Select`] [`Pointer`] events, including support for bubbling
+//! these events.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
 use bevy::{prelude::*, utils::hashbrown::HashSet};
+use bevy_eventlistener::prelude::*;
 use bevy_picking_core::{
-    events::{Click, Down, IsPointerEvent, PointerEvent},
+    events::{Click, Down, IsPointerEvent, Pointer},
     pointer::{InputPress, PointerButton, PointerId, PointerLocation},
     PickSet,
 };
@@ -36,8 +37,10 @@ pub struct SelectionPlugin;
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SelectionSettings>()
-            .add_event::<PointerEvent<Select>>()
-            .add_event::<PointerEvent<Deselect>>()
+            .add_event::<Pointer<Select>>()
+            .add_event::<Pointer<Deselect>>()
+            .add_plugins(EventListenerPlugin::<Pointer<Select>>::default())
+            .add_plugins(EventListenerPlugin::<Pointer<Deselect>>::default())
             .add_systems(
                 PreUpdate,
                 (
@@ -50,13 +53,7 @@ impl Plugin for SelectionPlugin {
             )
             .add_systems(
                 PreUpdate,
-                (
-                    send_selection_events,
-                    bevy_picking_core::event_listening::event_bubbling::<Select>,
-                    bevy_picking_core::event_listening::event_bubbling::<Deselect>,
-                    update_state_from_events,
-                )
-                    .in_set(PickSet::PostFocus),
+                (send_selection_events, update_state_from_events).in_set(PickSet::PostFocus),
             );
     }
 }
@@ -112,20 +109,20 @@ pub fn multiselect_events(
 /// [`Deselect`] events corresponding to these state changes.
 pub fn send_selection_events(
     settings: Res<SelectionSettings>,
-    mut pointer_down: EventReader<PointerEvent<Down>>,
+    mut pointer_down: EventReader<Pointer<Down>>,
     mut presses: EventReader<InputPress>,
-    mut pointer_click: EventReader<PointerEvent<Click>>,
+    mut pointer_click: EventReader<Pointer<Click>>,
     pointers: Query<(&PointerId, &PointerMultiselect, &PointerLocation)>,
     no_deselect: Query<&NoDeselect>,
     selectables: Query<(Entity, &PickSelection)>,
     // Output
-    mut selections: EventWriter<PointerEvent<Select>>,
-    mut deselections: EventWriter<PointerEvent<Deselect>>,
+    mut selections: EventWriter<Pointer<Select>>,
+    mut deselections: EventWriter<Pointer<Deselect>>,
 ) {
     // Pointers that have clicked on something.
     let mut pointer_down_list = HashSet::new();
 
-    for PointerEvent {
+    for Pointer {
         pointer_id,
         pointer_location,
         target,
@@ -143,7 +140,7 @@ pub fn send_selection_events(
             for (entity, selection) in selectables.iter() {
                 let not_click_target = *target != entity;
                 if selection.is_selected && not_click_target {
-                    deselections.send(PointerEvent::new(
+                    deselections.send(Pointer::new(
                         *pointer_id,
                         pointer_location.to_owned(),
                         entity,
@@ -175,14 +172,14 @@ pub fn send_selection_events(
             if !pointer_down_list.contains(&id) && !multiselect {
                 for (entity, selection) in selectables.iter() {
                     if selection.is_selected {
-                        deselections.send(PointerEvent::new(id, location.clone(), entity, Deselect))
+                        deselections.send(Pointer::new(id, location.clone(), entity, Deselect))
                     }
                 }
             }
         }
     }
 
-    for PointerEvent {
+    for Pointer {
         pointer_id,
         pointer_location,
         target,
@@ -196,13 +193,13 @@ pub fn send_selection_events(
         if let Ok((entity, selection)) = selectables.get(*target) {
             if multiselect {
                 match selection.is_selected {
-                    true => deselections.send(PointerEvent::new(
+                    true => deselections.send(Pointer::new(
                         *pointer_id,
                         pointer_location.to_owned(),
                         entity,
                         Deselect,
                     )),
-                    false => selections.send(PointerEvent::new(
+                    false => selections.send(Pointer::new(
                         *pointer_id,
                         pointer_location.to_owned(),
                         entity,
@@ -210,7 +207,7 @@ pub fn send_selection_events(
                     )),
                 }
             } else if !selection.is_selected {
-                selections.send(PointerEvent::new(
+                selections.send(Pointer::new(
                     *pointer_id,
                     pointer_location.to_owned(),
                     entity,
@@ -224,8 +221,8 @@ pub fn send_selection_events(
 /// Update entity selection component state from pointer events.
 pub fn update_state_from_events(
     mut selectables: Query<&mut PickSelection>,
-    mut selections: EventReader<PointerEvent<Select>>,
-    mut deselections: EventReader<PointerEvent<Deselect>>,
+    mut selections: EventReader<Pointer<Select>>,
+    mut deselections: EventReader<Pointer<Deselect>>,
 ) {
     for selection in selections.iter() {
         if let Ok(mut select_me) = selectables.get_mut(selection.target) {

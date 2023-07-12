@@ -1,6 +1,6 @@
 [package]
 name = "bevy_picking_selection"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -13,7 +13,8 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy_picking_core = { path = "../bevy_picking_core", version = "0.1" }
-bevy = { version = "0.11.0-dev", default-features = false, features = [
+bevy_picking_core = { path = "../bevy_picking_core", version = "0.2" }
+bevy = { version = "0.11", default-features = false, features = [
     "bevy_render",
 ] }
+bevy_eventlistener = { git = "https://github.com/aevyrie/bevy_eventlistener.git", branch = "main" } # "0.2"

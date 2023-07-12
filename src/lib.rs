@@ -11,9 +11,9 @@
 //!
 //! #### Expressive
 //!
-//! [`PointerEvent`]s make it easy to react to interactions like [`Click`], [`Over`], or [`Drag`]
+//! [`Pointer`] events make it easy to react to interactions like [`Click`], [`Over`], or [`Drag`]
 //! (13 pointer events are provided). Reacting to these interaction events on a specific entity is
-//! made possible with the [`OnPointer<E>`] component. When events are generated, they bubble up the
+//! made possible with the [`On<Event>`] component. When events are generated, they bubble up the
 //! entity hierarchy starting from their target, looking for these event listener components.
 //!
 //! This allows you to run callbacks when any children of an entity are interacted with:
@@ -21,17 +21,13 @@
 //! ```
 //! # use bevy::prelude::*;
 //! # use bevy::ecs::system::Command;
+//! # use prelude::*;
 //! # use bevy_mod_picking::prelude::*;
-//! #
-//! # fn rotate_with_mouse(
-//! #     In(event): In<ListenedEvent<Drag>>,
-//! # ) -> Bubble {
-//! #     Bubble::Up
-//! # }
+//! # use bevy_eventlistener::callbacks::ListenerInput;
 //! #
 //! # struct DeleteTarget;
-//! # impl From<ListenedEvent<Click>> for DeleteTarget {
-//! #     fn from(_: ListenedEvent<Click>) -> Self {
+//! # impl From<ListenerInput<Pointer<Click>>> for DeleteTarget {
+//! #     fn from(_: ListenerInput<Pointer<Click>>) -> Self {
 //! #         DeleteTarget
 //! #     }
 //! # }
@@ -40,17 +36,20 @@
 //! # }
 //! #
 //! # struct Greeting;
-//! # impl From<ListenedEvent<Over>> for Greeting {
-//! #     fn from(_: ListenedEvent<Over>) -> Self {
+//! # impl From<ListenerInput<Pointer<Over>>> for Greeting {
+//! #     fn from(_: ListenerInput<Pointer<Over>>) -> Self {
 //! #         Greeting
 //! #     }
 //! # }
 //! fn setup(mut commands: Commands) {
 //!     commands.spawn((
-//!         // Spawn your entity, e.g. a Mesh
-//!         OnPointer::<Drag>::run_callback(rotate_with_mouse),
-//!         OnPointer::<Click>::add_command::<DeleteTarget>(),
-//!         OnPointer::<Over>::send_event::<Greeting>(),
+//!         // Spawn your entity here, e.g. a Mesh.
+//!         // When dragged, mutate the `Transform` component on the dragged target entity:
+//!         On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
+//!             transform.rotate_local_y(drag.delta.x / 50.0)
+//!         }),
+//!         On::<Pointer<Click>>::add_command::<DeleteTarget>(),
+//!         On::<Pointer<Over>>::send_event::<Greeting>(),
 //!     ));
 //! }
 //! ```
@@ -160,7 +159,7 @@
 //! In the final step, the high-level pointer events are generated, such as events that trigger when
 //! a pointer hovers or clicks an entity. These simple events are then used to generate more complex
 //! events for dragging and dropping. Once all events have been generated, the event bubbling
-//! systems propagate events through the entity hierarchy, triggering [`OnPointer<E>`] callbacks.
+//! systems propagate events through the entity hierarchy, triggering [`On<E>`] callbacks.
 //!
 //! Because it is completely agnostic to the the earlier stages of the pipeline, you can easily
 //! extend the plugin with arbitrary backends and input methods.
@@ -173,9 +172,7 @@ use bevy::{prelude::Bundle, ui::Interaction};
 use bevy_picking_core::PointerCoreBundle;
 use prelude::*;
 
-pub use bevy_picking_core::{
-    self as picking_core, backend, event_listening, events, focus, pointer,
-};
+pub use bevy_picking_core::{self as picking_core, backend, events, focus, pointer};
 pub use bevy_picking_input::{self as input};
 
 #[cfg(feature = "highlight")]
@@ -205,15 +202,16 @@ pub mod prelude {
     pub use crate::debug::DebugPickingPlugin;
     pub use crate::{
         backends,
-        event_listening::{Bubble, ListenedEvent, OnPointer},
         events::{
             Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
-            IsPointerEvent, Move, Out, Over, PointerEvent, Up,
+            IsPointerEvent, Move, Out, Over, Pointer, Up,
         },
         picking_core::Pickable,
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
         *,
     };
+
+    pub use bevy_eventlistener::prelude::*;
 
     #[cfg(feature = "highlight")]
     pub use crate::highlight::{

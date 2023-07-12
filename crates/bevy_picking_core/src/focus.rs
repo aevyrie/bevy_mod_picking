@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     backend::{self, HitData},
-    events::{Down, IsPointerEvent, Out, Over, PointerCancel, PointerEvent, Up},
+    events::{Down, IsPointerEvent, Out, Over, Pointer, PointerCancel, Up},
     pointer::PointerId,
 };
 use bevy::{
@@ -129,18 +129,17 @@ fn build_hover_map(
         let pointer_entity_set = hover_map.entry(*pointer_id).or_insert_with(HashMap::new);
         if let Some(layer_map) = over_map.get(pointer_id) {
             // Note we reverse here to start from the highest layer first.
-            //
-            // In addition, we only look at the topmost layer, because if it exists, it has an
-            // intersection, and higher layers should block lower layers.
-            if let Some(depth_map) = layer_map.values().rev().next() {
-                for &(entity, pick_data) in depth_map.values() {
-                    pointer_entity_set.insert(entity, pick_data);
-                    if let Ok(FocusPolicy::Block) = focus.get(entity) {
-                        break;
-                    }
-                    if focus.get(entity).is_err() {
-                        break;
-                    }
+            for &(entity, pick_data) in layer_map
+                .values()
+                .rev()
+                .flat_map(|depth_map| depth_map.values())
+            {
+                pointer_entity_set.insert(entity, pick_data);
+                if let Ok(FocusPolicy::Block) = focus.get(entity) {
+                    break;
+                }
+                if focus.get(entity).is_err() {
+                    break;
                 }
             }
         }
@@ -168,10 +167,10 @@ impl DerefMut for PointerInteraction {
 /// Uses pointer events to update [`PointerInteraction`] and [`Interaction`] components.
 pub fn interactions_from_events(
     // Input
-    mut pointer_over: EventReader<PointerEvent<Over>>,
-    mut pointer_out: EventReader<PointerEvent<Out>>,
-    mut pointer_up: EventReader<PointerEvent<Up>>,
-    mut pointer_down: EventReader<PointerEvent<Down>>,
+    mut pointer_over: EventReader<Pointer<Over>>,
+    mut pointer_out: EventReader<Pointer<Out>>,
+    mut pointer_up: EventReader<Pointer<Up>>,
+    mut pointer_down: EventReader<Pointer<Down>>,
     // Outputs
     mut pointers: Query<(&PointerId, &mut PointerInteraction)>,
     mut interact: Query<&mut Interaction>,
@@ -191,7 +190,7 @@ pub fn interactions_from_events(
 }
 
 fn update_interactions<E: IsPointerEvent>(
-    event: &PointerEvent<E>,
+    event: &Pointer<E>,
     new_interaction: Interaction,
     pointer_interactions: &mut Query<(&PointerId, &mut PointerInteraction)>,
     entity_interactions: &mut Query<&mut Interaction>,
