@@ -263,9 +263,7 @@ impl Location {
     pub fn is_in_viewport(
         &self,
         camera: &Camera,
-        windows: &Query<&Window>,
         primary_window: &Query<Entity, With<PrimaryWindow>>,
-        images: &Res<Assets<Image>>,
     ) -> bool {
         if camera
             .target
@@ -275,23 +273,9 @@ impl Location {
         {
             return false;
         }
+        let Some(target_size) = camera.logical_target_size() else { return false };
 
-        let target_height = match &self.target {
-            NormalizedRenderTarget::Window(id) => {
-                let Ok(window) = windows.get(id.entity()) else {
-                    return false;
-                };
-                window.height()
-            }
-            NormalizedRenderTarget::Image(handle) => {
-                let Some(image) = images.get(handle) else {
-                return false;
-            };
-                image.size().y
-            }
-        };
-
-        let position = Vec2::new(self.position.x, target_height - self.position.y);
+        let position = Vec2::new(self.position.x, target_size.y - self.position.y);
 
         camera
             .logical_viewport_rect()
