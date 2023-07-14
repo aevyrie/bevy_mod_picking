@@ -99,3 +99,8 @@ required-features = ["backend_egui"]
 name = "virtual_pointer"
 path = "examples/virtual_pointer.rs"
 required-features = ["backend_egui"]
+
+[[example]]
+name = "split_screen"
+path = "examples/split_screen.rs"
+required-features = ["backend_egui"]
