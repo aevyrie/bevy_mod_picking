@@ -85,7 +85,8 @@ pub fn sprite_picking(
                     let rect = Rect::from_center_half_size(center, half_extents);
 
                     let is_cursor_in_sprite = rect.contains(cursor_pos_world);
-                    blocked = is_cursor_in_sprite && sprite_focus != Some(&Pickable::Pass);
+                    blocked =
+                        is_cursor_in_sprite && sprite_focus.map(|p| p.is_blocker) != Some(false);
 
                     is_cursor_in_sprite.then_some((
                         entity,

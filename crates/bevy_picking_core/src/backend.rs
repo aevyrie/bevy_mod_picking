@@ -17,7 +17,9 @@
 //! - The [`PointerHits`] events produced by a backend do **not** need to be sorted or filtered, all
 //! that is needed is an unordered list of entities and their [`HitData`].
 //!
-//! - **Backends should only pick entities with the [`Pickable`](crate::Pickable) component.**
+//! - Backends do not need to consider the [`Pickable`](crate::Pickable) component, though they may
+//!   use it for optimization purposes. For example, a backend that traverses a spatial hierarchy
+//!   may want to early exit if it intersects entity that blocks lower entities from being picked.
 
 use bevy::prelude::*;
 

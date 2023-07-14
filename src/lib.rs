@@ -203,8 +203,8 @@ pub mod prelude {
     pub use crate::{
         backends,
         events::{
-            Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
-            IsPointerEvent, Move, Out, Over, Pointer, Up,
+            Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop, Move, Out,
+            Over, Pointer, Up,
         },
         picking_core::Pickable,
         pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
@@ -257,9 +257,14 @@ pub struct PickableBundle {
 #[derive(Bundle)]
 pub struct PointerBundle {
     #[bundle]
-    core: PointerCoreBundle,
+    #[allow(missing_docs)]
+    pub core: PointerCoreBundle,
+    #[allow(missing_docs)]
     #[cfg(feature = "selection")]
-    selection: selection::PointerMultiselect,
+    pub selection: selection::PointerMultiselect,
+    #[allow(missing_docs)]
+    #[cfg(feature = "backend_bevy_ui")]
+    pub interaction: backends::bevy_ui::PointerInteraction,
 }
 impl PointerBundle {
     /// Build a new `PointerBundle` with the supplied [`PointerId`].
@@ -268,6 +273,8 @@ impl PointerBundle {
             core: PointerCoreBundle::new(id),
             #[cfg(feature = "selection")]
             selection: selection::PointerMultiselect::default(),
+            #[cfg(feature = "backend_bevy_ui")]
+            interaction: backends::bevy_ui::PointerInteraction::default(),
         }
     }
 }

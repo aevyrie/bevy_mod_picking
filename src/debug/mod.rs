@@ -1,10 +1,12 @@
 //! Text and on-screen debugging tools
 
+use std::fmt::Debug;
+
 use bevy_picking_core::focus::HoverMap;
 use picking_core::{backend::HitData, events::DragMap, pointer::Location};
 
 use crate::*;
-use bevy::{asset::load_internal_binary_asset, prelude::*, ui::FocusPolicy, utils::Uuid};
+use bevy::{asset::load_internal_binary_asset, prelude::*, utils::Uuid};
 
 const DEBUG_FONT_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(
     Uuid::from_u128(200742528088501825055247279035227365784),
@@ -132,7 +134,7 @@ impl Plugin for DebugPickingPlugin {
 }
 
 /// Listens for pointer events of type `E` and prints them.
-pub fn print<E: IsPointerEvent + 'static>(mut pointer_events: EventReader<Pointer<E>>) {
+pub fn print<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
     for event in pointer_events.iter() {
         info!("{event}");
     }
@@ -160,9 +162,8 @@ pub fn hide_pointer_text(mut pointers: Query<&mut Visibility, With<PointerId>>) 
 pub struct PointerDebug {
     pub location: Option<Location>,
     pub press: PointerPress,
-    pub hits: Vec<(Entity, HitData)>,
+    pub hits: Vec<(DebugName, HitData)>,
     pub drag_start: Vec<(PointerButton, Vec2)>,
-    pub interactions: Vec<(DebugName, Interaction)>,
     #[cfg(feature = "selection")]
     pub multiselect: Option<bool>,
 }
@@ -193,9 +194,7 @@ impl std::fmt::Display for PointerDebug {
             }
             writeln!(f, ", Depth: {:.2?}", hit.depth)?;
         }
-        if !self.interactions.is_empty() {
-            write!(f, "{:?}", self.interactions)?;
-        }
+
         Ok(())
     }
 }
@@ -210,23 +209,11 @@ pub fn update_debug_data(
         &pointer::PointerId,
         &pointer::PointerLocation,
         &pointer::PointerPress,
-        &focus::PointerInteraction,
         &mut PointerDebug,
     )>,
     #[cfg(feature = "selection")] selection: Query<Option<&selection::PointerMultiselect>>,
 ) {
-    for (entity, id, location, press, interactions, mut debug) in pointers.iter_mut() {
-        let interactions = interactions
-            .iter()
-            .map(|(entity, interaction)| {
-                let debug = match names.get(*entity) {
-                    Ok(name) => DebugName::Name(name.clone(), *entity),
-                    _ => DebugName::Entity(*entity),
-                };
-
-                (debug, *interaction)
-            })
-            .collect::<Vec<_>>();
+    for (entity, id, location, press, mut debug) in pointers.iter_mut() {
         let drag_start = |id| {
             PointerButton::iter()
                 .flat_map(|button| {
@@ -245,10 +232,18 @@ pub fn update_debug_data(
                 .get(id)
                 .iter()
                 .flat_map(|h| h.iter())
-                .map(|(e, h)| (*e, h.to_owned()))
+                .map(|(e, h)| {
+                    (
+                        if let Ok(name) = names.get(*e) {
+                            DebugName::Name(name.clone(), *e)
+                        } else {
+                            DebugName::Entity(*e)
+                        },
+                        h.to_owned(),
+                    )
+                })
                 .collect(),
             drag_start: drag_start(*id),
-            interactions,
             #[cfg(feature = "selection")]
             multiselect: selection.get(entity).ok().flatten().map(|f| f.is_pressed),
         };
@@ -316,13 +311,13 @@ pub fn debug_draw_egui(
 }
 
 #[allow(missing_docs)]
-#[derive(Clone)]
+#[derive(Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub enum DebugName {
     Name(Name, Entity),
     Entity(Entity),
 }
 
-impl std::fmt::Debug for DebugName {
+impl Debug for DebugName {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::Name(name, entity) => write!(f, "{} ({:?})", name.as_str(), entity),
@@ -364,6 +359,9 @@ pub fn debug_draw(
                 },
                 ..default()
             })
-            .insert(Pickable::Ignore);
+            .insert(Pickable {
+                is_blocker: false,
+                is_interactable: false,
+            });
     }
 }

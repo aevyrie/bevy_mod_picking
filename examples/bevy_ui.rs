@@ -35,15 +35,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             // *** Important! ***
             //
-            // We need to use `Pickable::Ignore` here so the root node doesn't block pointer
-            // interactions from reaching the 3d objects under the UI. We could also use `Pass` to
-            // allow picking entities below this, however the pointer would interact with both
-            // entities. Using `Ignore` will omit this entity from any picking events.
+            // We need to use `Pickable::ignore()` here so the root node doesn't block pointer
+            // interactions from reaching the 3d objects under the UI.
             //
             // This node, as defined, will stretch from the top to bottom of the screen, take the
             // width of the buttons, but will be invisible. Try commenting out this line or setting
             // it to `Block` or `Pass` to see how behavior changes.
-            Pickable::Ignore,
+            Pickable::ignore(),
         ))
         .id();
 
@@ -131,20 +129,20 @@ impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
                 NoDeselect,
             ))
             .with_children(|parent| {
-                parent.spawn(TextBundle {
-                    text: Text::from_section(
-                        text,
-                        TextStyle {
-                            font: font.to_owned(),
-                            font_size: 40.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
-                        },
-                    ),
-                    // If we don't block, the event will be sent twice, because picking the text
-                    // will pass through and pick the button container as well.
-                    focus_policy: FocusPolicy::Block,
-                    ..Default::default()
-                });
+                parent.spawn((
+                    TextBundle {
+                        text: Text::from_section(
+                            text,
+                            TextStyle {
+                                font: font.to_owned(),
+                                font_size: 40.0,
+                                color: Color::rgb(0.9, 0.9, 0.9),
+                            },
+                        ),
+                        ..Default::default()
+                    },
+                    Pickable::ignore(),
+                ));
             })
             .id();
         self.add_child(child);

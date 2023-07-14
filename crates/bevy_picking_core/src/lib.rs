@@ -11,7 +11,7 @@ pub mod pointer;
 
 use bevy::prelude::*;
 use bevy_eventlistener::prelude::*;
-use focus::{interactions_from_events, update_focus};
+use focus::update_focus;
 
 /// Used to globally toggle picking features at runtime.
 #[derive(Clone, Debug, Resource)]
@@ -52,18 +52,36 @@ impl Default for PickingPluginsSettings {
     }
 }
 
-/// Used to mark entities that should be pickable. Similar to bevy's `FocusPolicy`, except this type
-/// allows entities to be completely ignored in the picking process, and does not require compiling
-/// bevy_ui.
-#[derive(Component, Debug, Default, Clone, Reflect, PartialEq, Eq)]
-pub enum Pickable {
-    /// This entity can be focused, but blocks lower entities from receiving picking focus.
-    #[default]
-    Block,
-    /// This entity can be focused, and also allows entities underneath this one to be focused.
-    Pass,
-    /// Ignore this entity when computing picking focus.
-    Ignore,
+/// Overrides default picking behavior for this entity.
+///
+/// By default, all entities are pickable, as long as there is a picking backend running that knows
+/// *how* to pick entities of that kind.
+#[derive(Component, Debug, Clone, Reflect, PartialEq, Eq)]
+pub struct Pickable {
+    /// Should this entity block entities below it from being picked? Defaults to `true`.
+    pub is_blocker: bool,
+    /// Should this entity show up in the [`HoverMap`](focus::HoverMap) and emit pointer events?
+    /// Defaults to `true`.
+    pub is_interactable: bool,
+}
+
+impl Pickable {
+    /// This entity will not block entities beneath it, nor will it emit events.
+    pub fn ignore() -> Self {
+        Self {
+            is_blocker: false,
+            is_interactable: false,
+        }
+    }
+}
+
+impl Default for Pickable {
+    fn default() -> Self {
+        Self {
+            is_blocker: true,
+            is_interactable: true,
+        }
+    }
 }
 
 /// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
@@ -80,8 +98,6 @@ pub struct PointerCoreBundle {
     pub location: pointer::PointerLocation,
     /// Tracks the pointer's button press state.
     pub click: pointer::PointerPress,
-    /// Tracks the pointer's interaction state.
-    pub interaction: focus::PointerInteraction,
 }
 
 impl PointerCoreBundle {
@@ -99,7 +115,6 @@ impl PointerCoreBundle {
             id,
             location: pointer::PointerLocation::default(),
             click: pointer::PointerPress::default(),
-            interaction: focus::PointerInteraction::default(),
         }
     }
 }
@@ -173,7 +188,6 @@ impl Plugin for InteractionPlugin {
                 (
                     update_focus,
                     pointer_events,
-                    interactions_from_events,
                     send_click_and_drag_events,
                     send_drag_over_events,
                 )

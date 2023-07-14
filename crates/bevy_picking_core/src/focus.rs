@@ -1,13 +1,10 @@
 //! Determines which entities are being hovered by which pointers.
 
-use std::{
-    collections::BTreeMap,
-    ops::{Deref, DerefMut},
-};
+use std::collections::BTreeMap;
 
 use crate::{
     backend::{self, HitData},
-    events::{Down, IsPointerEvent, Out, Over, Pointer, PointerCancel, Up},
+    events::PointerCancel,
     pointer::PointerId,
     Pickable,
 };
@@ -30,11 +27,12 @@ type LayerMap = BTreeMap<PickLayer, DepthMap>;
 /// this data structure is used to sort entities by layer then depth for every pointer.
 type OverMap = HashMap<PointerId, LayerMap>;
 
-/// Maps pointers to the entities they are hovering over. "Hovering" refers to the actual hover
-/// state, in this case, not just whether the pointer happens to be over the entity. More
-/// specifically, a pointer is "over" an entity if it is within the bounds of that entity, whereas a
-/// pointer is "hovering" an entity only if the mouse is "over" the entity AND it is the topmost
-/// entity.
+/// Maps pointers to the entities they are hovering over.
+///
+/// "Hovering" refers to the *hover* state, which is not the same as whether or not the pointer
+/// happens to be over the entity. More specifically, a pointer is "over" an entity if it is within
+/// the bounds of that entity, whereas a pointer is "hovering" an entity only if the mouse is "over"
+/// the entity *and* no entities between it and the pointer block interactions.
 #[derive(Debug, Deref, DerefMut, Default, Resource)]
 pub struct HoverMap(pub HashMap<PointerId, HashMap<Entity, HitData>>);
 
@@ -134,77 +132,21 @@ fn build_hover_map(
                 .rev()
                 .flat_map(|depth_map| depth_map.values())
             {
-                if pickable.get(entity).is_err() {
-                    error!();
-                    continue;
+                if let Ok(pickable) = pickable.get(entity) {
+                    if pickable.is_interactable {
+                        pointer_entity_set.insert(entity, pick_data);
+                        // If this is set to false, we simply omit the entity from the hover map.
+                    }
+                    if !pickable.is_blocker {
+                        continue; // Only case where we continue looping is when *not* a blocker.
+                    }
+                } else {
+                    // The entity is missing `Pickable` so we use default behavior.
+                    pointer_entity_set.insert(entity, pick_data);
                 }
-                pointer_entity_set.insert(entity, pick_data);
-                if let Ok(Pickable::Block) = pickable.get(entity) {
-                    break;
-                }
+                // By default, entities block and we break out of the loop.
+                break;
             }
         }
     }
-}
-
-/// Holds a map of entities this pointer is currently interacting with.
-#[derive(Debug, Default, Clone, Component)]
-pub struct PointerInteraction {
-    map: HashMap<Entity, Interaction>,
-}
-impl Deref for PointerInteraction {
-    type Target = HashMap<Entity, Interaction>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.map
-    }
-}
-impl DerefMut for PointerInteraction {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.map
-    }
-}
-
-/// Uses pointer events to update [`PointerInteraction`] and [`Interaction`] components.
-pub fn interactions_from_events(
-    // Input
-    mut pointer_over: EventReader<Pointer<Over>>,
-    mut pointer_out: EventReader<Pointer<Out>>,
-    mut pointer_up: EventReader<Pointer<Up>>,
-    mut pointer_down: EventReader<Pointer<Down>>,
-    // Outputs
-    mut pointers: Query<(&PointerId, &mut PointerInteraction)>,
-    mut interact: Query<&mut Interaction>,
-) {
-    for event in pointer_over.iter() {
-        update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);
-    }
-    for event in pointer_down.iter() {
-        update_interactions(event, Interaction::Clicked, &mut pointers, &mut interact);
-    }
-    for event in pointer_up.iter() {
-        update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);
-    }
-    for event in pointer_out.iter() {
-        update_interactions(event, Interaction::None, &mut pointers, &mut interact);
-    }
-}
-
-fn update_interactions<E: IsPointerEvent>(
-    event: &Pointer<E>,
-    new_interaction: Interaction,
-    pointer_interactions: &mut Query<(&PointerId, &mut PointerInteraction)>,
-    entity_interactions: &mut Query<&mut Interaction>,
-) {
-    if let Some(mut interaction_map) = pointer_interactions
-        .iter_mut()
-        .find_map(|(id, interaction)| (*id == event.pointer_id).then_some(interaction))
-    {
-        interaction_map.insert(event.target, new_interaction);
-        if let Ok(mut interaction) = entity_interactions.get_mut(event.target) {
-            *interaction = new_interaction;
-        }
-        interaction_map
-            .retain(|_, i| i != &Interaction::None || new_interaction != Interaction::None);
-    };
 }
