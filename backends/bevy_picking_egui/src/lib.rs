@@ -18,7 +18,6 @@ pub mod prelude {
 /// picked.
 #[derive(Clone)]
 pub struct EguiBackend;
-impl PickingBackend for EguiBackend {}
 impl Plugin for EguiBackend {
     fn build(&self, app: &mut App) {
         app.add_system(
