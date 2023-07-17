@@ -21,7 +21,6 @@ pub mod prelude {
 /// Adds picking support for [`bevy_ui`](bevy::ui)
 #[derive(Clone)]
 pub struct BevyUiBackend;
-impl PickingBackend for BevyUiBackend {}
 impl Plugin for BevyUiBackend {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, ui_picking.in_set(PickSet::Backend));

@@ -16,7 +16,6 @@ pub mod prelude {
 /// Adds the `rapier` raycasting picking backend to your app.
 #[derive(Clone)]
 pub struct RapierBackend;
-impl PickingBackend for RapierBackend {}
 impl Plugin for RapierBackend {
     fn build(&self, app: &mut App) {
         app.add_systems(First, build_rays_from_pointers.in_set(PickSet::PostInput))

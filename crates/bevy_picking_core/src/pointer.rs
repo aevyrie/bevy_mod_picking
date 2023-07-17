@@ -274,7 +274,6 @@ impl Location {
         {
             return false;
         }
-
         let position = Vec2::new(self.position.x, self.position.y);
 
         camera

@@ -103,5 +103,10 @@ name = "virtual_pointer"
 path = "examples/virtual_pointer.rs"
 required-features = ["backend_egui"]
 
+[[example]]
+name = "split_screen"
+path = "examples/split_screen.rs"
+required-features = ["backend_egui"]
+
 [patch.crates-io]
-bevy_mod_raycast = { git = 'https://github.com/Vrixyz/bevy_mod_raycast', branch = 'bevy-0.11-compatibility' }
+bevy_mod_raycast = { git = 'https://github.com/aevyrie/bevy_mod_raycast', branch = 'main' }
