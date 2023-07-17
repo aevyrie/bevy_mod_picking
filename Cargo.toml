@@ -110,3 +110,4 @@ required-features = ["backend_egui"]
 
 [patch.crates-io]
 bevy_mod_raycast = { git = 'https://github.com/aevyrie/bevy_mod_raycast', branch = 'main' }
+bevy_eventlistener = { git = 'https://github.com/aevyrie/bevy_eventlistener', branch = 'main' }
