@@ -172,6 +172,7 @@ use bevy::{prelude::Bundle, ui::Interaction};
 use bevy_picking_core::PointerCoreBundle;
 use prelude::*;
 
+pub use bevy_eventlistener::{self as eventlistener};
 pub use bevy_picking_core::{self as picking_core, backend, events, focus, pointer};
 pub use bevy_picking_input::{self as input};
 
