@@ -32,9 +32,10 @@
 //! #     }
 //! # }
 //! # impl Command for DeleteTarget {
-//! #     fn write(self, world: &mut World) {}
+//! #     fn apply(self, world: &mut World) {}
 //! # }
 //! #
+//! # #[derive(Event)]
 //! # struct Greeting;
 //! # impl From<ListenerInput<Pointer<Over>>> for Greeting {
 //! #     fn from(_: ListenerInput<Pointer<Over>>) -> Self {
