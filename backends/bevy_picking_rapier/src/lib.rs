@@ -18,8 +18,8 @@ pub mod prelude {
 pub struct RapierBackend;
 impl Plugin for RapierBackend {
     fn build(&self, app: &mut App) {
-        app.add_system(build_rays_from_pointers.in_set(PickSet::PostInput))
-            .add_systems((update_hits,).chain().in_set(PickSet::Backend));
+        app.add_systems(First, build_rays_from_pointers.in_set(PickSet::PostInput))
+            .add_systems(PreUpdate, update_hits.in_set(PickSet::Backend));
     }
 }
 

@@ -5,11 +5,13 @@ use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-        .add_plugins(DefaultPickingPlugins)
-        .add_plugin(bevy_egui::EguiPlugin)
-        .add_startup_system(setup)
-        .add_system(set_camera_viewports)
+        .add_plugins((
+            DefaultPlugins.set(low_latency_window_plugin()),
+            DefaultPickingPlugins,
+            bevy_egui::EguiPlugin,
+        ))
+        .add_systems(Startup, setup)
+        .add_systems(Update, set_camera_viewports)
         .run();
 }
 

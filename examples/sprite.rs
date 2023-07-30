@@ -6,10 +6,12 @@ use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-        .add_plugins(DefaultPickingPlugins)
-        .add_startup_system(setup)
-        .add_system(move_sprite)
+        .add_plugins((
+            DefaultPlugins.set(low_latency_window_plugin()),
+            DefaultPickingPlugins,
+        ))
+        .add_systems(Startup, setup)
+        .add_systems(Update, move_sprite)
         .run();
 }
 
