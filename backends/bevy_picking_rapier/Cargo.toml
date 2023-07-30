@@ -1,6 +1,6 @@
 [package]
 name = "bevy_picking_rapier"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -18,4 +18,4 @@ bevy = { version = "0.11", default-features = false, features = [
 ] }
 bevy_rapier3d = "0.22"
 # Local
-bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.2" }
+bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.3" }
