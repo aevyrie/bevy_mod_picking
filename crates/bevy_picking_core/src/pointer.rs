@@ -12,10 +12,11 @@ use std::fmt::Debug;
 ///
 /// This component is needed because pointers can be spawned and despawned, but they need to have a
 /// stable ID that persists regardless of the Entity they are associated with.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
 #[reflect_value]
 pub enum PointerId {
     /// The mouse pointer.
+    #[default]
     Mouse,
     /// A touch input, usually numbered by window touch events from `winit`.
     Touch(u64),
@@ -102,7 +103,7 @@ impl PointerPress {
 }
 
 /// Pointer input event for button presses. Fires when a pointer button changes state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Event, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InputPress {
     /// The [`PointerId`] of the pointer that pressed a button.
     pub pointer_id: PointerId,
@@ -206,7 +207,7 @@ impl PointerLocation {
 }
 
 /// Pointer input event for pointer moves. Fires when a pointer changes location.
-#[derive(Debug, Clone)]
+#[derive(Event, Debug, Clone)]
 pub struct InputMove {
     /// The [`PointerId`] of the pointer that is moving.
     pub pointer_id: PointerId,
@@ -279,8 +280,9 @@ impl Location {
 
         camera
             .logical_viewport_rect()
-            .map(|(min, max)| {
-                (position - min).min_element() >= 0.0 && (position - max).max_element() <= 0.0
+            .map(|rect| {
+                (position - rect.min).min_element() >= 0.0
+                    && (position - rect.max).max_element() <= 0.0
             })
             .unwrap_or(false)
     }

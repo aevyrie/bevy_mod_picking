@@ -127,6 +127,7 @@ impl Plugin for CorePlugin {
             .add_event::<pointer::InputMove>()
             .add_event::<backend::PointerHits>()
             .add_systems(
+                PreUpdate,
                 (
                     pointer::update_pointer_map,
                     pointer::InputMove::receive,
@@ -161,6 +162,7 @@ impl Plugin for InteractionPlugin {
             .add_event::<Pointer<DragLeave>>()
             .add_event::<Pointer<Drop>>()
             .add_systems(
+                PreUpdate,
                 (
                     update_focus,
                     pointer_events,
@@ -171,40 +173,43 @@ impl Plugin for InteractionPlugin {
                     .chain()
                     .in_set(PickSet::Focus),
             )
-            .configure_set(PickSet::Focus.run_if(PickingPluginsSettings::interaction_should_run));
-
-        app.add_plugin(EventListenerPlugin::<Pointer<Over>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<Out>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<Down>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<Up>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<Click>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<Move>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<DragStart>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<Drag>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<DragEnd>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<DragEnter>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<DragOver>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<DragLeave>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<Drop>>::default())
             .configure_set(
-                PickSet::EventListeners.run_if(PickingPluginsSettings::interaction_should_run),
+                Update,
+                PickSet::Focus.run_if(PickingPluginsSettings::interaction_should_run),
             );
 
-        app.configure_sets(
-            (PickSet::Input, PickSet::PostInput)
-                .chain()
-                .in_base_set(CoreSet::First),
-        )
-        .configure_sets(
-            (
-                PickSet::ProcessInput,
-                PickSet::Backend,
-                PickSet::Focus,
-                PickSet::EventListeners,
-                PickSet::Last,
-            )
-                .chain()
-                .in_base_set(CoreSet::PreUpdate),
+        app.add_plugins((
+            EventListenerPlugin::<Pointer<Over>>::default(),
+            EventListenerPlugin::<Pointer<Out>>::default(),
+            EventListenerPlugin::<Pointer<Down>>::default(),
+            EventListenerPlugin::<Pointer<Up>>::default(),
+            EventListenerPlugin::<Pointer<Click>>::default(),
+            EventListenerPlugin::<Pointer<Move>>::default(),
+            EventListenerPlugin::<Pointer<DragStart>>::default(),
+            EventListenerPlugin::<Pointer<Drag>>::default(),
+            EventListenerPlugin::<Pointer<DragEnd>>::default(),
+            EventListenerPlugin::<Pointer<DragEnter>>::default(),
+            EventListenerPlugin::<Pointer<DragOver>>::default(),
+            EventListenerPlugin::<Pointer<DragLeave>>::default(),
+            EventListenerPlugin::<Pointer<Drop>>::default(),
+        ))
+        .configure_set(
+            Update,
+            PickSet::EventListeners.run_if(PickingPluginsSettings::interaction_should_run),
         );
+
+        app.configure_sets(First, (PickSet::Input, PickSet::PostInput).chain())
+            .configure_sets(
+                PreUpdate,
+                (
+                    PickSet::ProcessInput,
+                    PickSet::Backend,
+                    PickSet::Focus,
+                    PickSet::PostFocus,
+                    PickSet::EventListeners,
+                    PickSet::Last,
+                )
+                    .chain(),
+            );
     }
 }

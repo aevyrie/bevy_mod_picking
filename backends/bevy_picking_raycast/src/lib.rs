@@ -19,11 +19,13 @@ pub struct RaycastBackend;
 impl Plugin for RaycastBackend {
     fn build(&self, app: &mut App) {
         app.add_systems(
+            First,
             (build_rays_from_pointers, spawn_raycast_sources)
                 .chain()
                 .in_set(PickSet::PostInput),
         )
         .add_systems(
+            PreUpdate,
             (
                 bevy_mod_raycast::update_raycast::<RaycastPickingSet>,
                 update_hits,
@@ -31,7 +33,7 @@ impl Plugin for RaycastBackend {
                 .chain()
                 .in_set(PickSet::Backend),
         )
-        .add_system(sync_pickable.in_base_set(CoreSet::PostUpdate));
+        .add_systems(PostUpdate, sync_pickable);
     }
 }
 

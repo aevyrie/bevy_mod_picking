@@ -23,7 +23,7 @@ pub mod prelude {
 pub struct BevyUiBackend;
 impl Plugin for BevyUiBackend {
     fn build(&self, app: &mut App) {
-        app.add_system(ui_picking.in_set(PickSet::Backend));
+        app.add_systems(PreUpdate, ui_picking.in_set(PickSet::Backend));
     }
 }
 

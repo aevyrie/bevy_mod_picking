@@ -66,7 +66,7 @@ pub fn touch_pick_events(
                 }
                 location_cache.insert(touch.id, *touch);
             }
-            TouchPhase::Ended | TouchPhase::Cancelled => {
+            TouchPhase::Ended | TouchPhase::Canceled => {
                 input_presses.send(InputPress::new_up(pointer, PointerButton::Primary));
                 location_cache.remove(&touch.id);
                 cancel_events.send(PointerCancel {
@@ -89,7 +89,7 @@ pub fn deactivate_pointers(
 ) {
     for touch in touches.iter() {
         match touch.phase {
-            TouchPhase::Ended | TouchPhase::Cancelled => {
+            TouchPhase::Ended | TouchPhase::Canceled => {
                 for (entity, pointer) in &pointers {
                     if pointer.get_touch_id() == Some(touch.id) {
                         despawn_list.insert((entity, *pointer));

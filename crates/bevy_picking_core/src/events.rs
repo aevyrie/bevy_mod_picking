@@ -15,7 +15,7 @@ use bevy_eventlistener::prelude::*;
 pub trait IsPointerEvent: Send + Sync + Clone + std::fmt::Debug + Reflect {}
 
 /// Stores the common data needed for all `PointerEvent`s.
-#[derive(Clone, PartialEq, Debug, EntityEvent)]
+#[derive(Event, Clone, PartialEq, Debug, EntityEvent)]
 pub struct Pointer<E: IsPointerEvent> {
     /// The target of this event
     #[target]
@@ -59,7 +59,7 @@ impl<E: IsPointerEvent + 'static> Pointer<E> {
 }
 
 /// Fires when a pointer is no longer available.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Event, Clone, PartialEq, Debug, Reflect)]
 pub struct PointerCancel {
     /// ID of the pointer that was cancelled.
     #[reflect(ignore)]
