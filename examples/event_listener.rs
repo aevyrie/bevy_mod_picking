@@ -10,16 +10,19 @@ use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-        .add_plugins(
+        .add_plugins((
+            DefaultPlugins.set(low_latency_window_plugin()),
             DefaultPickingPlugins
                 .build()
                 .disable::<DefaultHighlightingPlugin>(),
-        )
-        .add_plugin(bevy_egui::EguiPlugin)
-        .add_startup_system(setup)
+            bevy_egui::EguiPlugin,
+        ))
+        .add_systems(Startup, setup)
         .add_event::<DoSomethingComplex>()
-        .add_system(receive_greetings.run_if(on_event::<DoSomethingComplex>()))
+        .add_systems(
+            Update,
+            receive_greetings.run_if(on_event::<DoSomethingComplex>()),
+        )
         .run();
 }
 
@@ -143,6 +146,7 @@ fn change_hue_with_vertical_move(
     material.base_color = Color::hsla(color[0], color[1], color[2], color[3]);
 }
 
+#[derive(Event)]
 struct DoSomethingComplex(Entity, f32);
 
 impl From<ListenerInput<Pointer<Down>>> for DoSomethingComplex {

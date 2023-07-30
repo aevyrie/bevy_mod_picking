@@ -262,7 +262,6 @@ pub fn update_debug_data(
 pub fn debug_draw_egui(
     mut egui: bevy_egui::EguiContexts,
     pointers: Query<(&pointer::PointerId, &PointerDebug)>,
-    windows: Query<&Window>,
 ) {
     use bevy::render::camera::NormalizedRenderTarget;
     use bevy_egui::egui::{self, Color32};
@@ -277,11 +276,8 @@ pub fn debug_draw_egui(
         let NormalizedRenderTarget::Window(window_ref) = location.target else {
             continue;
         };
-        let Ok(window) = windows.get(window_ref.entity()) else {
-            continue;
-        };
         let ctx = egui.ctx_for_window_mut(window_ref.entity());
-        let to_egui_pos = |v: Vec2| egui::pos2(v.x, window.height() - v.y);
+        let to_egui_pos = |v: Vec2| egui::pos2(v.x, v.y);
         let dbg_painter = ctx.layer_painter(egui::LayerId::debug());
 
         dbg_painter.circle(
