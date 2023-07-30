@@ -12,8 +12,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_startup_system(setup)
-        .add_startup_system(setup_3d)
+        .add_systems(Startup, (setup, setup_3d))
         .run();
 }
 
@@ -23,7 +22,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let root = commands
         .spawn(NodeBundle {
             style: Style {
-                size: Size::width(Val::Px(500.0)),
+                width: Val::Px(500.0),
                 flex_direction: FlexDirection::Column,
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::FlexStart,
@@ -107,7 +106,8 @@ impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
             .spawn((
                 ButtonBundle {
                     style: Style {
-                        size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
+                        width: Val::Percent(100.0),
+                        height: Val::Px(42.0),
                         margin: UiRect::top(Val::Percent(2.0)),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
