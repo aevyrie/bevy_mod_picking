@@ -16,8 +16,7 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let font = asset_server.load("fonts/FiraMono-Medium.ttf");
+fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
     let root = commands
         .spawn(NodeBundle {
@@ -43,9 +42,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .entity(root)
-        .add_button(&font, "Start")
-        .add_button(&font, "Settings")
-        .add_button(&font, "Quit");
+        .add_button("Start")
+        .add_button("Settings")
+        .add_button("Quit");
 }
 
 /// set up a simple 3D scene
@@ -96,11 +95,11 @@ fn setup_3d(
 }
 
 trait NewButton {
-    fn add_button(self, font: &Handle<Font>, text: &str) -> Self;
+    fn add_button(self, text: &str) -> Self;
 }
 
 impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
-    fn add_button(mut self, font: &Handle<Font>, text: &str) -> Self {
+    fn add_button(mut self, text: &str) -> Self {
         let child = self
             .commands()
             .spawn((
@@ -130,9 +129,9 @@ impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
                     text: Text::from_section(
                         text,
                         TextStyle {
-                            font: font.to_owned(),
                             font_size: 40.0,
                             color: Color::rgb(0.9, 0.9, 0.9),
+                            ..Default::default()
                         },
                     ),
                     // If we don't block, the event will be sent twice, because picking the text

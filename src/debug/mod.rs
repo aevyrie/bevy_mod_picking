@@ -4,16 +4,7 @@ use bevy_picking_core::{debug, focus::HoverMap};
 use picking_core::{backend::HitData, events::DragMap, pointer::Location};
 
 use crate::*;
-use bevy::{asset::load_internal_binary_asset, prelude::*, utils::Uuid};
-
-const DEBUG_FONT_HANDLE: HandleUntyped = HandleUntyped::weak_from_u64(
-    Uuid::from_u128(200742528088501825055247279035227365784),
-    436509473926038,
-);
-
-fn font_loader(bytes: &[u8], _path: String) -> Font {
-    Font::try_from_bytes(bytes.to_vec()).unwrap()
-}
+use bevy::prelude::*;
 
 /// This state determines the runtime behavior of the debug plugin.
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
@@ -75,8 +66,6 @@ impl Plugin for DebugPickingPlugin {
         } else {
             DebugPickingMode::Normal
         };
-
-        load_internal_binary_asset!(app, DEBUG_FONT_HANDLE, "FiraMono-Medium.ttf", font_loader);
 
         app.add_state::<DebugPickingMode>()
             .insert_resource(State::new(start_mode))
@@ -344,9 +333,9 @@ pub fn debug_draw(
             text: Text::from_section(
                 text,
                 TextStyle {
-                    font: DEBUG_FONT_HANDLE.typed::<Font>(),
                     font_size: 12.0,
                     color: Color::WHITE,
+                    ..default()
                 },
             ),
             style: Style {
