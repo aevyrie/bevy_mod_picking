@@ -31,13 +31,11 @@ pub fn touch_pick_events(
 ) {
     for touch in touches.iter() {
         let pointer = PointerId::Touch(touch.id);
-        let pos = touch.position;
-        let height = windows.single().1.height();
         let location = Location {
             target: RenderTarget::Window(WindowRef::Primary)
                 .normalize(Some(windows.single().0))
                 .unwrap(),
-            position: Vec2::new(pos.x, height - pos.y),
+            position: touch.position,
         };
         match touch.phase {
             TouchPhase::Started => {
