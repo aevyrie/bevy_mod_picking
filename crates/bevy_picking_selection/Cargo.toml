@@ -17,4 +17,4 @@ bevy_picking_core = { path = "../bevy_picking_core", version = "0.3" }
 bevy = { version = "0.11", default-features = false, features = [
     "bevy_render",
 ] }
-bevy_eventlistener = { git = "https://github.com/aevyrie/bevy_eventlistener.git", rev = "4d8de4c" }
+bevy_eventlistener = "0.3"

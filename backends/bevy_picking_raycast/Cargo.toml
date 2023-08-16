@@ -16,6 +16,6 @@ resolver = "2"
 bevy = { version = "0.11", default-features = false, features = [
     "bevy_render",
 ] }
-bevy_mod_raycast = "0.9"
+bevy_mod_raycast = "0.11"
 # Local
 bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.3" }

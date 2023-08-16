@@ -274,9 +274,8 @@ impl Location {
         {
             return false;
         }
-        let Some(target_size) = camera.logical_target_size() else { return false };
 
-        let position = Vec2::new(self.position.x, target_size.y - self.position.y);
+        let position = Vec2::new(self.position.x, self.position.y);
 
         camera
             .logical_viewport_rect()

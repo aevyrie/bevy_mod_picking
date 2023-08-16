@@ -18,4 +18,4 @@ bevy = { version = "0.11", default-features = false, features = [
     "bevy_ui",
     "bevy_asset",
 ] }
-bevy_eventlistener = { git = "https://github.com/aevyrie/bevy_eventlistener.git", rev = "4d8de4c" }
+bevy_eventlistener = "0.3"

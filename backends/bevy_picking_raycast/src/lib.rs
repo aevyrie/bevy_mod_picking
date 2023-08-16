@@ -116,8 +116,11 @@ pub fn build_rays_from_pointers(
             .iter_mut()
             .filter(|(camera, _, _)| pointer_location.is_in_viewport(camera, &primary_window))
             .for_each(|(camera, transform, mut source)| {
-                let pointer_pos = pointer_location.position;
-                if let Some(ray) = Ray3d::from_screenspace(pointer_pos, camera, transform) {
+                let mut viewport_pos = pointer_location.position;
+                if let Some(viewport) = &camera.viewport {
+                    viewport_pos -= viewport.physical_position.as_vec2();
+                }
+                if let Some(ray) = Ray3d::from_screenspace(viewport_pos, camera, transform) {
                     source.ray_map.insert(*pointer_id, ray);
                 }
             });
