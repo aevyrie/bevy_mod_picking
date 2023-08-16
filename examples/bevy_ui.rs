@@ -12,19 +12,17 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_startup_system(setup)
-        .add_startup_system(setup_3d)
+        .add_systems(Startup, (setup, setup_3d))
         .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let font = asset_server.load("fonts/FiraMono-Medium.ttf");
+fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
     let root = commands
         .spawn((
             NodeBundle {
                 style: Style {
-                    size: Size::width(Val::Px(500.0)),
+                    width: Val::Px(500.0),
                     flex_direction: FlexDirection::Column,
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::FlexStart,
@@ -47,9 +45,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .entity(root)
-        .add_button(&font, "Start")
-        .add_button(&font, "Settings")
-        .add_button(&font, "Quit");
+        .add_button("Start")
+        .add_button("Settings")
+        .add_button("Quit");
 }
 
 /// set up a simple 3D scene
@@ -100,17 +98,18 @@ fn setup_3d(
 }
 
 trait NewButton {
-    fn add_button(self, font: &Handle<Font>, text: &str) -> Self;
+    fn add_button(self, text: &str) -> Self;
 }
 
 impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
-    fn add_button(mut self, font: &Handle<Font>, text: &str) -> Self {
+    fn add_button(mut self, text: &str) -> Self {
         let child = self
             .commands()
             .spawn((
                 ButtonBundle {
                     style: Style {
-                        size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
+                        width: Val::Percent(100.0),
+                        height: Val::Px(42.0),
                         margin: UiRect::top(Val::Percent(2.0)),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
@@ -141,6 +140,7 @@ impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
                         ),
                         ..Default::default()
                     },
+                    // Text should not be involved in pick interactions.
                     Pickable::ignore(),
                 ));
             })

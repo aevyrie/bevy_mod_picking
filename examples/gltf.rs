@@ -9,14 +9,14 @@ use highlight::HighlightKind;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-        .add_plugins(
+        .add_plugins((
+            DefaultPlugins.set(low_latency_window_plugin()),
             DefaultPickingPlugins
                 .build()
                 .disable::<DebugPickingPlugin>(),
-        )
-        .add_startup_system(setup)
-        .add_system(make_pickable)
+        ))
+        .add_systems(Startup, setup)
+        .add_systems(Update, make_pickable)
         .run();
 }
 

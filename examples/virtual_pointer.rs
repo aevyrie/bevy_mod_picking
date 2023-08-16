@@ -11,11 +11,13 @@ use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-        .add_plugins(DefaultPickingPlugins)
-        .add_plugin(bevy_egui::EguiPlugin) // Nicer pointer debug overlay, useful for this example.
-        .add_startup_system(setup)
-        .add_system(move_virtual_pointer)
+        .add_plugins((
+            DefaultPlugins.set(low_latency_window_plugin()),
+            DefaultPickingPlugins,
+            bevy_egui::EguiPlugin, // Nicer pointer debug overlay, useful for this example.
+        ))
+        .add_systems(Startup, setup)
+        .add_systems(Update, move_virtual_pointer)
         .run();
 }
 

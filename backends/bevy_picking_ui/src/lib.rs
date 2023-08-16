@@ -30,11 +30,15 @@ pub mod prelude {
 /// Adds picking support for [`bevy_ui`](bevy::ui)
 #[derive(Clone)]
 pub struct BevyUiBackend;
-impl PickingBackend for BevyUiBackend {}
 impl Plugin for BevyUiBackend {
     fn build(&self, app: &mut App) {
-        app.add_system(ui_picking.in_set(PickSet::Backend))
-            .add_system(interactions_from_events.in_set(PickSet::Focus));
+        app.add_systems(
+            PreUpdate,
+            (
+                ui_picking.in_set(PickSet::Backend),
+                interactions_from_events.in_set(PickSet::Focus),
+            ),
+        );
     }
 }
 
@@ -60,7 +64,7 @@ pub struct NodeQuery {
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
     cameras: Query<(Entity, &Camera, Option<&UiCameraConfig>)>,
-    primary_window: Query<(Entity, &Window), With<PrimaryWindow>>,
+    primary_window: Query<Entity, With<PrimaryWindow>>,
     ui_stack: Res<UiStack>,
     mut node_query: Query<NodeQuery>,
     mut output: EventWriter<PointerHits>,
@@ -71,7 +75,7 @@ pub fn ui_picking(
             // TODO: update when proper multi-window UI is implemented
             .filter(|loc| {
                 if let NormalizedRenderTarget::Window(window) = loc.target {
-                    if primary_window.get(window.entity()).is_ok() {
+                    if primary_window.contains(window.entity()) {
                         return true;
                     }
                 }
@@ -79,7 +83,7 @@ pub fn ui_picking(
             })
             .map(|loc| (pointer, loc))
     }) {
-        let (window_entity, window) = primary_window.single();
+        let window_entity = primary_window.single();
         let Some((camera, ui_config)) = cameras
             .iter()
             .find(|(_entity, camera, _)| {
@@ -92,9 +96,6 @@ pub fn ui_picking(
         if matches!(ui_config, Some(&UiCameraConfig { show_ui: false, .. })) {
             return;
         }
-
-        let mut cursor_position = location.position;
-        cursor_position.y = window.resolution.height() - cursor_position.y;
 
         let mut hovered_nodes = ui_stack
             .uinodes
@@ -121,8 +122,8 @@ pub fn ui_picking(
                     // The mouse position relative to the node
                     // (0., 0.) is the top-left corner, (1., 1.) is the bottom-right corner
                     let relative_cursor_position = Vec2::new(
-                        (cursor_position.x - min.x) / node.node.size().x,
-                        (cursor_position.y - min.y) / node.node.size().y,
+                        (location.position.x - min.x) / node.node.size().x,
+                        (location.position.y - min.y) / node.node.size().y,
                     );
 
                     if (0.0..1.).contains(&relative_cursor_position.x)
@@ -218,7 +219,7 @@ pub fn interactions_from_events(
         update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);
     }
     for event in pointer_down.iter() {
-        update_interactions(event, Interaction::Clicked, &mut pointers, &mut interact);
+        update_interactions(event, Interaction::Pressed, &mut pointers, &mut interact);
     }
     for event in pointer_up.iter() {
         update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);

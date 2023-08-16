@@ -25,20 +25,11 @@ use bevy::prelude::*;
 
 /// Common imports for implementing a picking backend.
 pub mod prelude {
-    pub use super::{HitData, PickingBackend, PointerHits};
+    pub use super::{HitData, PointerHits};
     pub use crate::{
         pointer::{PointerId, PointerLocation},
         PickSet, Pickable,
     };
-}
-
-/// Implement this trait for a group of plugins to make them useable as a picking backend.
-pub trait PickingBackend: bevy::app::Plugin {}
-
-impl Plugin for Box<dyn PickingBackend> {
-    fn build(&self, app: &mut App) {
-        (**self).build(app);
-    }
 }
 
 /// An event produced by a picking backend after it has run its hit tests, describing the entities
@@ -47,7 +38,7 @@ impl Plugin for Box<dyn PickingBackend> {
 /// Some backends may only support providing the topmost entity; this is a valid limitation of some
 /// backends. For example, a picking shader might only have data on the topmost rendered output from
 /// its buffer.
-#[derive(Debug, Clone)]
+#[derive(Event, Debug, Clone)]
 pub struct PointerHits {
     /// The pointer associated with this hit test.
     pub pointer: prelude::PointerId,

@@ -14,7 +14,7 @@ use bevy::{prelude::*, utils::HashMap};
 use bevy_eventlistener::prelude::*;
 
 /// Stores the common data needed for all `PointerEvent`s.
-#[derive(Clone, PartialEq, Debug, Reflect, EntityEvent)]
+#[derive(Clone, PartialEq, Debug, Reflect, Event, EntityEvent)]
 pub struct Pointer<E: Debug + Clone + Reflect> {
     /// The target of this event
     #[target]
@@ -58,7 +58,7 @@ impl<E: Debug + Clone + Reflect> Pointer<E> {
 }
 
 /// Fires when a pointer is no longer available.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Event, Clone, PartialEq, Debug, Reflect)]
 pub struct PointerCancel {
     /// ID of the pointer that was cancelled.
     #[reflect(ignore)]

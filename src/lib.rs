@@ -32,9 +32,10 @@
 //! #     }
 //! # }
 //! # impl Command for DeleteTarget {
-//! #     fn write(self, world: &mut World) {}
+//! #     fn apply(self, world: &mut World) {}
 //! # }
 //! #
+//! # #[derive(Event)]
 //! # struct Greeting;
 //! # impl From<ListenerInput<Pointer<Over>>> for Greeting {
 //! #     fn from(_: ListenerInput<Pointer<Over>>) -> Self {
@@ -256,9 +257,7 @@ pub struct PickableBundle {
 /// Bundle of components needed for a fully-featured pointer.
 #[derive(Bundle)]
 pub struct PointerBundle {
-    #[bundle]
-    #[allow(missing_docs)]
-    pub core: PointerCoreBundle,
+    core: PointerCoreBundle,
     #[allow(missing_docs)]
     #[cfg(feature = "selection")]
     pub selection: selection::PointerMultiselect,
