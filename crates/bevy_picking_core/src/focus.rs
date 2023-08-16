@@ -133,19 +133,16 @@ fn build_hover_map(
                 .flat_map(|depth_map| depth_map.values())
             {
                 if let Ok(pickable) = pickable.get(entity) {
-                    if pickable.is_interactable {
+                    if pickable.should_emit_events {
                         pointer_entity_set.insert(entity, pick_data);
-                        // If this is set to false, we simply omit the entity from the hover map.
                     }
-                    if !pickable.is_blocker {
-                        continue; // Only case where we continue looping is when *not* a blocker.
+                    if pickable.should_block_lower {
+                        break;
                     }
                 } else {
-                    // The entity is missing `Pickable` so we use default behavior.
-                    pointer_entity_set.insert(entity, pick_data);
+                    pointer_entity_set.insert(entity, pick_data); // Emit events by default
+                    break; // Entities block by default so we break out of the loop
                 }
-                // By default, entities block and we break out of the loop.
-                break;
             }
         }
     }

@@ -39,8 +39,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             // interactions from reaching the 3d objects under the UI.
             //
             // This node, as defined, will stretch from the top to bottom of the screen, take the
-            // width of the buttons, but will be invisible. Try commenting out this line or setting
-            // it to `Block` or `Pass` to see how behavior changes.
+            // width of the buttons, but will be invisible. Try commenting out this line or changing
+            // it to see what happens.
             Pickable::ignore(),
         ))
         .id();

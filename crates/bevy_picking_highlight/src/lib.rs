@@ -7,9 +7,13 @@
 
 #[allow(unused_imports)]
 use bevy::{asset::Asset, prelude::*, render::color::Color};
-use bevy_picking_core::PickSet;
+use bevy_picking_core::{
+    events::{Down, Out, Over, Pointer, Up},
+    PickSet,
+};
 #[cfg(feature = "selection")]
 use bevy_picking_selection::PickSelection;
+use bevy_picking_selection::{Deselect, Select};
 
 /// Adds the [`StandardMaterial`] and [`ColorMaterial`] highlighting plugins.
 ///
@@ -75,8 +79,6 @@ where
                 get_initial_highlight_asset::<T>,
                 Highlight::<T>::update_dynamic,
                 update_highlight_assets::<T>,
-                #[cfg(feature = "selection")]
-                update_selection::<T>,
             )
                 .chain()
                 .in_set(PickSet::Last),
@@ -259,47 +261,55 @@ pub fn get_initial_highlight_asset<T: Asset>(
 /// Apply highlighting assets to entities based on their state.
 pub fn update_highlight_assets<T: Asset>(
     global_defaults: Res<GlobalHighlight<T>>,
-    mut interaction_query: Query<
-        (
-            &mut Handle<T>,
-            &Interaction,
-            &InitialHighlight<T>,
-            Option<&Highlight<T>>,
-        ),
-        Changed<Interaction>,
-    >,
+    mut over: EventReader<Pointer<Over>>,
+    mut out: EventReader<Pointer<Out>>,
+    mut down: EventReader<Pointer<Down>>,
+    mut up: EventReader<Pointer<Up>>,
+    mut highlight_query: Query<(&mut Handle<T>, &InitialHighlight<T>, Option<&Highlight<T>>)>,
+    #[cfg(feature = "selection")] mut select: EventReader<Pointer<Select>>,
+    #[cfg(feature = "selection")] mut deselect: EventReader<Pointer<Deselect>>,
+    #[cfg(feature = "selection")] selection_query: Query<&PickSelection>,
 ) {
-    for (mut asset, interaction, init_highlight, h_override) in &mut interaction_query {
-        *asset = match interaction {
-            Interaction::Clicked => global_defaults.pressed(&h_override),
-            Interaction::Hovered => global_defaults.hovered(&h_override),
-            Interaction::None => init_highlight.initial.to_owned(),
+    for over in over.iter() {
+        if let Ok((mut asset, _, highlight_override)) = highlight_query.get_mut(over.target) {
+            *asset = global_defaults.hovered(&highlight_override);
         }
     }
-}
-
-#[cfg(feature = "selection")]
-/// If the interaction state of a selected entity is `None`, set the highlight color to `selected`.
-pub fn update_selection<T: Asset>(
-    global_defaults: Res<GlobalHighlight<T>>,
-    mut interaction_query: Query<
-        (
-            &mut Handle<T>,
-            &Interaction,
-            &PickSelection,
-            &InitialHighlight<T>,
-            Option<&Highlight<T>>,
-        ),
-        Or<(Changed<PickSelection>, Changed<Interaction>)>,
-    >,
-) {
-    for (mut asset, interaction, selection, init_highlight, h_override) in &mut interaction_query {
-        if let Interaction::None = interaction {
-            *asset = if selection.is_selected {
-                global_defaults.selected(&h_override)
-            } else {
-                init_highlight.initial.to_owned()
+    for down in down.iter() {
+        if let Ok((mut asset, _, highlight_override)) = highlight_query.get_mut(down.target) {
+            *asset = global_defaults.pressed(&highlight_override);
+        }
+    }
+    for up in up.iter() {
+        if let Ok((mut asset, _, highlight_override)) = highlight_query.get_mut(up.target) {
+            *asset = global_defaults.hovered(&highlight_override);
+            #[cfg(feature = "selection")]
+            if let Ok(PickSelection { is_selected: true }) = selection_query.get(up.target) {
+                *asset = global_defaults.selected(&highlight_override)
             }
+        }
+    }
+    for out in out.iter() {
+        if let Ok((mut asset, init_highlight, highlight_override)) =
+            highlight_query.get_mut(out.target)
+        {
+            *asset = init_highlight.initial.to_owned();
+            #[cfg(feature = "selection")]
+            if let Ok(PickSelection { is_selected: true }) = selection_query.get(out.target) {
+                *asset = global_defaults.selected(&highlight_override)
+            }
+        }
+    }
+    #[cfg(feature = "selection")]
+    for select in select.iter() {
+        if let Ok((mut asset, _, h_override)) = highlight_query.get_mut(select.target) {
+            *asset = global_defaults.selected(&h_override)
+        }
+    }
+    #[cfg(feature = "selection")]
+    for deselect in deselect.iter() {
+        if let Ok((mut asset, init_highlight, _)) = highlight_query.get_mut(deselect.target) {
+            *asset = init_highlight.initial.to_owned()
         }
     }
 }

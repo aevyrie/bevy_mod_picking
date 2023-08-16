@@ -359,9 +359,6 @@ pub fn debug_draw(
                 },
                 ..default()
             })
-            .insert(Pickable {
-                is_blocker: false,
-                is_interactable: false,
-            });
+            .insert(Pickable::ignore());
     }
 }

@@ -52,25 +52,26 @@ impl Default for PickingPluginsSettings {
     }
 }
 
-/// Overrides default picking behavior for this entity.
-///
-/// By default, all entities are pickable, as long as there is a picking backend running that knows
-/// *how* to pick entities of that kind.
+/// An optional component that overrides default picking behavior for an entity.
 #[derive(Component, Debug, Clone, Reflect, PartialEq, Eq)]
 pub struct Pickable {
-    /// Should this entity block entities below it from being picked? Defaults to `true`.
-    pub is_blocker: bool,
-    /// Should this entity show up in the [`HoverMap`](focus::HoverMap) and emit pointer events?
-    /// Defaults to `true`.
-    pub is_interactable: bool,
+    /// Should this entity block entities below it from being picked? Entities without the
+    /// [`Pickable`] component will block by default.
+    ///
+    /// This is useful if you want an entity to exist in the hierarchy, but want picking to "pass
+    /// through" to lower layers and allow items below this one to be the target of picking events.
+    pub should_block_lower: bool,
+    /// Should this entity emit events when targeted? Entities without the [`Pickable`] component
+    /// will emit events by default.
+    pub should_emit_events: bool,
 }
 
 impl Pickable {
     /// This entity will not block entities beneath it, nor will it emit events.
     pub fn ignore() -> Self {
         Self {
-            is_blocker: false,
-            is_interactable: false,
+            should_block_lower: false,
+            should_emit_events: false,
         }
     }
 }
@@ -78,8 +79,8 @@ impl Pickable {
 impl Default for Pickable {
     fn default() -> Self {
         Self {
-            is_blocker: true,
-            is_interactable: true,
+            should_block_lower: true,
+            should_emit_events: true,
         }
     }
 }

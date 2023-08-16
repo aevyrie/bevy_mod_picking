@@ -160,7 +160,7 @@ pub fn ui_picking(
             push_hit();
             if let Some(pickable) = node.pickable {
                 // If an entity has a `Pickable` component, we will use that as the source of truth.
-                if pickable.is_blocker {
+                if pickable.should_block_lower {
                     break;
                 }
             } else if let Some(focus_policy) = node.focus_policy {
