@@ -19,11 +19,13 @@ pub struct RaycastBackend;
 impl Plugin for RaycastBackend {
     fn build(&self, app: &mut App) {
         app.add_systems(
+            First,
             (build_rays_from_pointers, spawn_raycast_sources)
                 .chain()
                 .in_set(PickSet::PostInput),
         )
         .add_systems(
+            PreUpdate,
             (
                 bevy_mod_raycast::update_raycast::<RaycastPickingSet>,
                 update_hits,
@@ -31,7 +33,7 @@ impl Plugin for RaycastBackend {
                 .chain()
                 .in_set(PickSet::Backend),
         )
-        .add_system(sync_pickable.in_base_set(CoreSet::PostUpdate));
+        .add_systems(PostUpdate, sync_pickable);
     }
 }
 
@@ -114,8 +116,11 @@ pub fn build_rays_from_pointers(
             .iter_mut()
             .filter(|(camera, _, _)| pointer_location.is_in_viewport(camera, &primary_window))
             .for_each(|(camera, transform, mut source)| {
-                let pointer_pos = pointer_location.position;
-                if let Some(ray) = Ray3d::from_screenspace(pointer_pos, camera, transform) {
+                let mut viewport_pos = pointer_location.position;
+                if let Some(viewport) = &camera.viewport {
+                    viewport_pos -= viewport.physical_position.as_vec2();
+                }
+                if let Some(ray) = Ray3d::from_screenspace(viewport_pos, camera, transform) {
                     source.ray_map.insert(*pointer_id, ray);
                 }
             });

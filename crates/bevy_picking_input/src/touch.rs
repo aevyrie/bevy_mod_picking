@@ -31,13 +31,11 @@ pub fn touch_pick_events(
 ) {
     for touch in touches.iter() {
         let pointer = PointerId::Touch(touch.id);
-        let pos = touch.position;
-        let height = windows.single().1.height();
         let location = Location {
             target: RenderTarget::Window(WindowRef::Primary)
                 .normalize(Some(windows.single().0))
                 .unwrap(),
-            position: Vec2::new(pos.x, height - pos.y),
+            position: touch.position,
         };
         match touch.phase {
             TouchPhase::Started => {
@@ -66,7 +64,7 @@ pub fn touch_pick_events(
                 }
                 location_cache.insert(touch.id, *touch);
             }
-            TouchPhase::Ended | TouchPhase::Cancelled => {
+            TouchPhase::Ended | TouchPhase::Canceled => {
                 input_presses.send(InputPress::new_up(pointer, PointerButton::Primary));
                 location_cache.remove(&touch.id);
                 cancel_events.send(PointerCancel {
@@ -89,7 +87,7 @@ pub fn deactivate_pointers(
 ) {
     for touch in touches.iter() {
         match touch.phase {
-            TouchPhase::Ended | TouchPhase::Cancelled => {
+            TouchPhase::Ended | TouchPhase::Canceled => {
                 for (entity, pointer) in &pointers {
                     if pointer.get_touch_id() == Some(touch.id) {
                         despawn_list.insert((entity, *pointer));

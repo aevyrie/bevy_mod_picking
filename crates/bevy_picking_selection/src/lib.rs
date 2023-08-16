@@ -39,19 +39,22 @@ impl Plugin for SelectionPlugin {
         app.init_resource::<SelectionSettings>()
             .add_event::<Pointer<Select>>()
             .add_event::<Pointer<Deselect>>()
-            .add_plugin(EventListenerPlugin::<Pointer<Select>>::default())
-            .add_plugin(EventListenerPlugin::<Pointer<Deselect>>::default())
+            .add_plugins((
+                EventListenerPlugin::<Pointer<Select>>::default(),
+                EventListenerPlugin::<Pointer<Deselect>>::default(),
+            ))
             .add_systems(
+                PreUpdate,
                 (
-                    multiselect_events.run_if(|settings: Res<SelectionSettings>| {
-                        settings.use_multiselect_default_inputs
-                    }),
-                )
-                    .chain()
-                    .in_set(PickSet::ProcessInput),
-            )
-            .add_systems(
-                (send_selection_events, update_state_from_events).in_set(PickSet::PostFocus),
+                    (
+                        multiselect_events.run_if(|settings: Res<SelectionSettings>| {
+                            settings.use_multiselect_default_inputs
+                        }),
+                    )
+                        .chain()
+                        .in_set(PickSet::ProcessInput),
+                    (send_selection_events, update_state_from_events).in_set(PickSet::PostFocus),
+                ),
             );
     }
 }
@@ -92,10 +95,10 @@ pub fn multiselect_events(
     mut pointer_query: Query<&mut PointerMultiselect>,
 ) {
     let is_multiselect_pressed = keyboard.any_pressed([
-        KeyCode::LControl,
-        KeyCode::RControl,
-        KeyCode::LShift,
-        KeyCode::RShift,
+        KeyCode::ControlLeft,
+        KeyCode::ControlRight,
+        KeyCode::ShiftLeft,
+        KeyCode::ShiftRight,
     ]);
 
     for mut multiselect in pointer_query.iter_mut() {

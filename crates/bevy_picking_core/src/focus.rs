@@ -179,7 +179,7 @@ pub fn interactions_from_events(
         update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);
     }
     for event in pointer_down.iter() {
-        update_interactions(event, Interaction::Clicked, &mut pointers, &mut interact);
+        update_interactions(event, Interaction::Pressed, &mut pointers, &mut interact);
     }
     for event in pointer_up.iter() {
         update_interactions(event, Interaction::Hovered, &mut pointers, &mut interact);

@@ -20,7 +20,8 @@ pub mod prelude {
 pub struct EguiBackend;
 impl Plugin for EguiBackend {
     fn build(&self, app: &mut App) {
-        app.add_system(
+        app.add_systems(
+            PreUpdate,
             egui_picking
                 .in_set(PickSet::Backend)
                 .after(EguiSet::BeginFrame),
@@ -28,7 +29,7 @@ impl Plugin for EguiBackend {
         .insert_resource(EguiBackendSettings::default());
 
         #[cfg(feature = "selection")]
-        app.add_system(update_settings.in_base_set(CoreSet::First));
+        app.add_systems(First, update_settings);
     }
 }
 
