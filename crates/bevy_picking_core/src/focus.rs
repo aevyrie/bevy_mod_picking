@@ -171,7 +171,7 @@ impl DerefMut for PointerInteraction {
 }
 
 /// Uses pointer events to update [`PointerInteraction`] and [`PointerInteractionMap`] components.
-pub fn interactions_from_events(
+pub fn update_interactions(
     // Input
     hover_map: Res<HoverMap>,
     previous_hover_map: Res<PreviousHoverMap>,
@@ -225,8 +225,12 @@ pub fn interactions_from_events(
 
     // Take the aggregated entity states and update or insert the component if missing.
     for (hovered_entity, new_interaction) in new_interaction_state.drain() {
-        if let Some(mut entity_commands) = commands.get_entity(hovered_entity) {
-            entity_commands.insert(new_interaction);
+        if let Ok(mut interaction) = interact.get_mut(hovered_entity) {
+            *interaction = new_interaction;
+        } else {
+            if let Some(mut entity_commands) = commands.get_entity(hovered_entity) {
+                entity_commands.insert(new_interaction);
+            }
         }
     }
 }

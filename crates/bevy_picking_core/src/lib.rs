@@ -11,7 +11,7 @@ pub mod pointer;
 
 use bevy::prelude::*;
 use bevy_eventlistener::prelude::*;
-use focus::{interactions_from_events, update_focus};
+use focus::{update_focus, update_interactions};
 
 /// Used to globally toggle picking features at runtime.
 #[derive(Clone, Debug, Resource)]
@@ -194,7 +194,7 @@ impl Plugin for InteractionPlugin {
                 (
                     update_focus,
                     pointer_events,
-                    interactions_from_events,
+                    update_interactions,
                     send_click_and_drag_events,
                     send_drag_over_events,
                 )
