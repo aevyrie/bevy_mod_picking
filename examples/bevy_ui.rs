@@ -133,9 +133,9 @@ impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
                         text: Text::from_section(
                             text,
                             TextStyle {
-                                font: font.to_owned(),
                                 font_size: 40.0,
                                 color: Color::rgb(0.9, 0.9, 0.9),
+                                ..default()
                             },
                         ),
                         ..Default::default()

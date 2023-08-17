@@ -1,11 +1,15 @@
 //! Determines which entities are being hovered by which pointers.
 
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    fmt::Debug,
+    ops::{Deref, DerefMut},
+};
 
 use crate::{
     backend::{self, HitData},
     events::PointerCancel,
-    pointer::PointerId,
+    pointer::{PointerId, PointerPress},
     Pickable,
 };
 use bevy::{
@@ -144,6 +148,85 @@ fn build_hover_map(
                     break; // Entities block by default so we break out of the loop
                 }
             }
+        }
+    }
+}
+
+/// Holds a map of entities this pointer is currently interacting with.
+#[derive(Debug, Default, Clone, Component)]
+pub struct PointerInteraction {
+    map: HashMap<Entity, Interaction>,
+}
+impl Deref for PointerInteraction {
+    type Target = HashMap<Entity, Interaction>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.map
+    }
+}
+impl DerefMut for PointerInteraction {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.map
+    }
+}
+
+/// Uses pointer events to update [`PointerInteraction`] and [`PointerInteractionMap`] components.
+pub fn interactions_from_events(
+    // Input
+    hover_map: Res<HoverMap>,
+    previous_hover_map: Res<PreviousHoverMap>,
+    // Outputs
+    mut commands: Commands,
+    mut pointers: Query<(&PointerId, &PointerPress, &mut PointerInteraction)>,
+    mut interact: Query<&mut Interaction>,
+) {
+    // Clear all previous hover data from pointers and entities
+    for (pointer, _, mut pointer_interaction) in &mut pointers {
+        pointer_interaction.clear();
+        if let Some(previously_hovered_entities) = previous_hover_map.get(pointer) {
+            for entity in previously_hovered_entities.keys() {
+                if let Ok(mut interaction) = interact.get_mut(*entity) {
+                    *interaction = Interaction::None;
+                }
+            }
+        }
+    }
+
+    // Create a map to hold the aggregated interaction for each entity. This is needed because we
+    // need to be able to insert the interaction component on entities if they do not exist. To do
+    // so we need to know the final aggregated interaction state to avoid the scenario where we set
+    // an entity to `Pressed`, then overwrite that with a lower precedent like `Hovered`.
+    let mut new_interaction_state = HashMap::<Entity, Interaction>::new();
+    for (pointer, pointer_press, _) in &mut pointers {
+        if let Some(hovering_pointer_map) = hover_map.get(pointer) {
+            for hovered_entity in hovering_pointer_map.iter().map(|(entity, _)| entity) {
+                let new_interaction = match pointer_press.is_any_pressed() {
+                    true => Interaction::Pressed,
+                    false => Interaction::Hovered,
+                };
+
+                if let Some(old_interaction) = new_interaction_state.get_mut(hovered_entity) {
+                    // Only update the entry if the new value has a higher precedence than the old
+                    // value.
+                    if matches!(
+                        (*old_interaction, new_interaction),
+                        (Interaction::Hovered, Interaction::Pressed)
+                            | (Interaction::None, Interaction::Pressed)
+                            | (Interaction::None, Interaction::Hovered)
+                    ) {
+                        *old_interaction = new_interaction;
+                    }
+                } else {
+                    new_interaction_state.insert(*hovered_entity, new_interaction);
+                }
+            }
+        }
+    }
+
+    // Take the aggregated entity states and update or insert the component if missing.
+    for (hovered_entity, new_interaction) in new_interaction_state.drain() {
+        if let Some(mut entity_commands) = commands.get_entity(hovered_entity) {
+            entity_commands.insert(new_interaction);
         }
     }
 }

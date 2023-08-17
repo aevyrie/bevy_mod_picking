@@ -299,12 +299,12 @@ pub fn pointer_events(
         }
     }
 
-    // If the entity was hovered last frame...
+    // If the entity was hovered by a specific pointer last frame...
     for (pointer_id, hovered_entity, hit) in previous_hover_map
         .iter()
         .flat_map(|(id, hashmap)| hashmap.iter().map(|data| (*id, *data.0, *data.1)))
     {
-        // ...but is now not being hovered...
+        // ...but is now not being hovered by that same pointer...
         if !hover_map
             .get(&pointer_id)
             .iter()

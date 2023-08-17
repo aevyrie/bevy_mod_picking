@@ -242,7 +242,7 @@ pub mod prelude {
 /// Makes an entity pickable.
 #[derive(Bundle, Default)]
 pub struct PickableBundle {
-    /// Marks pickable entities.
+    /// Provides overrides for picking behavior.
     pub pickable: Pickable,
     /// Tracks entity [`Interaction`] state.
     pub interaction: Interaction,
@@ -261,9 +261,6 @@ pub struct PointerBundle {
     #[allow(missing_docs)]
     #[cfg(feature = "selection")]
     pub selection: selection::PointerMultiselect,
-    #[allow(missing_docs)]
-    #[cfg(feature = "backend_bevy_ui")]
-    pub interaction: backends::bevy_ui::PointerInteraction,
 }
 impl PointerBundle {
     /// Build a new `PointerBundle` with the supplied [`PointerId`].
@@ -272,8 +269,6 @@ impl PointerBundle {
             core: PointerCoreBundle::new(id),
             #[cfg(feature = "selection")]
             selection: selection::PointerMultiselect::default(),
-            #[cfg(feature = "backend_bevy_ui")]
-            interaction: backends::bevy_ui::PointerInteraction::default(),
         }
     }
 }
