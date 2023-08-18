@@ -68,6 +68,8 @@ pub fn ui_picking(
             .map(|loc| (pointer, loc))
     }) {
         let window_entity = primary_window.single();
+
+        // Find the camera with the same target as this pointer
         let Some((camera, ui_config)) = cameras
             .iter()
             .find(|(_entity, camera, _)| {
@@ -77,8 +79,9 @@ pub fn ui_picking(
                 continue;
             };
 
+        // If this ui camera is disabled, skip to the next pointer.
         if matches!(ui_config, Some(&UiCameraConfig { show_ui: false, .. })) {
-            return;
+            continue;
         }
 
         let mut hovered_nodes = ui_stack
