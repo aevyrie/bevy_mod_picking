@@ -54,7 +54,14 @@ pub struct PointerHits {
     /// pointer, then sorted by order, and checked sequentially, sorting each `PointerHits` by
     /// entity depth. Events with a higher `order` are effectively on top of events with a lower
     /// order.
-    pub order: isize,
+    ///
+    /// ### Why is this an `f32`???
+    ///
+    /// Bevy UI is special in that it can share a camera with other things being rendered. in order
+    /// to properly sort them, we need a way to make bevy_ui's order a tiny bit higher, like adding
+    /// 0.5 to the order. We can't use integers, and we want users to be using camera.order by
+    /// default, so this is the best solution at the moment.
+    pub order: f32,
 }
 
 /// Holds data from a successful pointer hit test.

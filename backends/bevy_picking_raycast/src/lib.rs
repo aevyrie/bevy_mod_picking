@@ -182,11 +182,13 @@ fn update_hits(
                 })
                 .collect();
 
+            let order = camera.order as f32;
+
             if !under_cursor.is_empty() {
                 output_events.send(PointerHits {
                     pointer: pointer_marker.0,
                     picks: under_cursor,
-                    order: camera.order,
+                    order,
                 });
             }
         });

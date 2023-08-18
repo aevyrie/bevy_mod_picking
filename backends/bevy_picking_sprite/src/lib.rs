@@ -100,10 +100,12 @@ pub fn sprite_picking(
             )
             .collect();
 
+        let order = camera.order as f32;
+
         output.send(PointerHits {
             pointer: *pointer,
             picks,
-            order: 0,
+            order,
         })
     }
 }

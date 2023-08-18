@@ -136,10 +136,11 @@ fn update_hits(
                 position: Some(intersection.point),
                 normal: Some(intersection.normal),
             };
+            let order = cam_order as f32;
             output.send(PointerHits {
                 pointer: pointer,
                 picks: vec![(target, hit)],
-                order: cam_order,
+                order,
             });
         });
 }

@@ -23,7 +23,7 @@ type DepthMap = BTreeMap<FloatOrd, (Entity, HitData)>;
 
 /// Events returned from backends can be grouped with an order field. This allows picking to work
 /// with multiple layers of rendered output to the same render target.
-type PickLayer = isize;
+type PickLayer = FloatOrd;
 
 /// Maps [`RenderLayers`] to the map of entities within that pick layer, sorted by depth.
 type LayerMap = BTreeMap<PickLayer, DepthMap>;
@@ -112,7 +112,9 @@ fn build_over_map(
             .or_insert_with(BTreeMap::new);
         for &(entity, pick_data) in entities_under_pointer.picks.iter() {
             let layer = entities_under_pointer.order;
-            let depth_map = layer_map.entry(layer).or_insert_with(BTreeMap::new);
+            let depth_map = layer_map
+                .entry(FloatOrd(layer))
+                .or_insert_with(BTreeMap::new);
             depth_map.insert(FloatOrd(pick_data.depth), (entity, pick_data));
         }
     }

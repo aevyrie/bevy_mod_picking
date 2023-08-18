@@ -10,6 +10,12 @@
 //! This backend completely ignores [`FocusPolicy`](bevy::ui::FocusPolicy). The design of bevy ui's
 //! focus systems and the picking plugin are not compatible. Instead, use the [`Pickable`] component
 //! to customize how an entity responds to picking focus.
+//!
+//! ## Implementation Notes
+//!
+//! - Bevy ui can only render to the primary window
+//! - Bevy ui can render on any camera with a flag, it is special, and is not tied to a particular
+//!   camera.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
@@ -28,11 +34,6 @@ use bevy_picking_core::backend::prelude::*;
 pub mod prelude {
     pub use crate::BevyUiBackend;
 }
-
-/// For some reason bevy_ui seems to ignore the camera order of the UI camera, so we need to pick
-/// something arbitrary to send in [`PointerHits`] so that bevy_ui hits can be grouped together.
-/// From what I can tell, bevy_ui always renders on top, so we will just set this to max. 🥲
-pub const BEVY_UI_CAMERA_ORDER: isize = isize::MAX;
 
 /// Adds picking support for [`bevy_ui`](bevy::ui)
 #[derive(Clone)]
@@ -84,20 +85,23 @@ pub fn ui_picking(
     }) {
         let window_entity = primary_window.single();
 
-        // Find the camera with the same target as this pointer
-        let Some((camera_entity, ui_config)) = cameras
+        // Find the topmost bevy_ui camera with the same target as this pointer.
+        //
+        // Bevy ui can render on many cameras, but it will be the same UI, and we only want to
+        // consider the topmost one rendering UI in this window.
+        let mut ui_cameras: Vec<_> = cameras
             .iter()
-            .find(|(_entity, camera, _)| {
+            .filter(|(_entity, camera, _)| {
                 camera.target.normalize(Some(window_entity)).unwrap() == location.target
             })
-            .map(|(entity, _camera, ui_config)| (entity, ui_config)) else {
-                continue;
-            };
+            .filter(|(_, _, ui_config)| ui_config.map(|config| config.show_ui).unwrap_or(true))
+            .collect();
+        ui_cameras.sort_by_key(|(_, camera, _)| camera.order);
 
-        // If this ui camera is disabled, skip to the next pointer.
-        if matches!(ui_config, Some(&UiCameraConfig { show_ui: false, .. })) {
+        // The last camera in the list will be the one with the highest order, and be the topmost.
+        let Some((camera_entity, camera, _)) = ui_cameras.last() else {
             continue;
-        }
+        };
 
         let mut hovered_nodes = ui_stack
             .uinodes
@@ -153,7 +157,7 @@ pub fn ui_picking(
                 picks.push((
                     node.entity,
                     HitData {
-                        camera: camera_entity,
+                        camera: *camera_entity,
                         depth,
                         position: None,
                         normal: None,
@@ -177,7 +181,7 @@ pub fn ui_picking(
         output.send(PointerHits {
             pointer: *pointer,
             picks,
-            order: BEVY_UI_CAMERA_ORDER,
+            order: camera.order as f32 + 0.5,
         })
     }
 }
