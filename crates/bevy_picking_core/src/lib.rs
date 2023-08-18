@@ -154,6 +154,7 @@ impl Plugin for InteractionPlugin {
             .add_event::<Pointer<Up>>()
             .add_event::<Pointer<Click>>()
             .add_event::<Pointer<Move>>()
+            .add_event::<Pointer<Inside>>()
             .add_event::<Pointer<DragStart>>()
             .add_event::<Pointer<Drag>>()
             .add_event::<Pointer<DragEnd>>()
@@ -185,6 +186,7 @@ impl Plugin for InteractionPlugin {
             EventListenerPlugin::<Pointer<Up>>::default(),
             EventListenerPlugin::<Pointer<Click>>::default(),
             EventListenerPlugin::<Pointer<Move>>::default(),
+            EventListenerPlugin::<Pointer<Inside>>::default(),
             EventListenerPlugin::<Pointer<DragStart>>::default(),
             EventListenerPlugin::<Pointer<Drag>>::default(),
             EventListenerPlugin::<Pointer<DragEnd>>::default(),

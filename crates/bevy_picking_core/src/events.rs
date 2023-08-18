@@ -123,6 +123,14 @@ pub struct Move {
 }
 impl IsPointerEvent for Move {}
 
+/// Fires while a pointer is inside the `target` entity.
+#[derive(Clone, PartialEq, Debug, Reflect)]
+pub struct Inside {
+    /// Information about the picking intersection.
+    pub hit: HitData,
+}
+impl IsPointerEvent for Inside {}
+
 /// Fires when the `target` entity receives a pointer down event followed by a pointer move event.
 #[derive(Clone, PartialEq, Debug, Reflect)]
 pub struct DragStart {
@@ -214,6 +222,7 @@ pub fn pointer_events(
     previous_hover_map: Res<PreviousHoverMap>,
     // Output
     mut pointer_move: EventWriter<Pointer<Move>>,
+    mut pointer_in: EventWriter<Pointer<Inside>>,
     mut pointer_over: EventWriter<Pointer<Over>>,
     mut pointer_out: EventWriter<Pointer<Out>>,
     mut pointer_up: EventWriter<Pointer<Up>>,
@@ -311,6 +320,23 @@ pub fn pointer_events(
                 Over { hit },
             ));
         }
+    }
+
+    // If the entity is hovered
+    for (pointer_id, hovered_entity, hit) in hover_map
+        .iter()
+        .flat_map(|(id, hashmap)| hashmap.iter().map(|data| (*id, *data.0, *data.1)))
+    {
+        let Some(location) = pointer_location(pointer_id) else {
+            error!("Unable to get location for pointer {:?}", pointer_id);
+            continue;
+        };
+        pointer_in.send(Pointer::new(
+            pointer_id,
+            location,
+            hovered_entity,
+            Inside { hit },
+        ));
     }
 
     // If the entity was hovered last frame...

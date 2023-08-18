@@ -86,6 +86,7 @@ impl Plugin for DebugPickingPlugin {
                 debug::print::<events::Up>,
                 debug::print::<events::Click>,
                 debug::print::<events::Move>.run_if(DebugPickingMode::is_noisy),
+                debug::print::<events::Inside>,
                 debug::print::<events::DragStart>,
                 debug::print::<events::Drag>.run_if(DebugPickingMode::is_noisy),
                 debug::print::<events::DragEnd>,

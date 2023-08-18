@@ -204,7 +204,7 @@ pub mod prelude {
     pub use crate::{
         backends,
         events::{
-            Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
+            Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop, Inside,
             IsPointerEvent, Move, Out, Over, Pointer, Up,
         },
         picking_core::Pickable,
