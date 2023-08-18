@@ -35,7 +35,8 @@ impl PickingPluginsSettings {
     pub fn highlighting_should_run(state: Res<Self>) -> bool {
         state.enable_highlighting && state.enable
     }
-    /// Whether or not systems updating entities' [`Interaction`] component should be running.
+    /// Whether or not systems updating entities' [`PickingInteraction`](focus::PickingInteraction)
+    /// component should be running.
     pub fn interaction_should_run(state: Res<Self>) -> bool {
         state.enable_highlighting && state.enable
     }
@@ -55,25 +56,31 @@ impl Default for PickingPluginsSettings {
 /// An optional component that overrides default picking behavior for an entity.
 #[derive(Component, Debug, Clone, Reflect, PartialEq, Eq)]
 pub struct Pickable {
-    /// Should this entity block entities below it from being picked? Entities without the
-    /// [`Pickable`] component will block by default.
+    /// Should this entity block entities below it from being picked?
     ///
     /// This is useful if you want an entity to exist in the hierarchy, but want picking to "pass
-    /// through" to lower layers and allow items below this one to be the target of picking events.
+    /// through" to lower layers and allow items below this one to be the target of picking events
+    /// **as well as** this one.
+    ///
+    /// Entities without the [`Pickable`] component will block by default.
     pub should_block_lower: bool,
-    /// Should this entity emit events when targeted? Entities without the [`Pickable`] component
-    /// will emit events by default.
+    /// Should this entity emit events when targeted?
+    ///
+    /// If this is set to `false` and `should_block_lower` is set to true, this entity will block
+    /// lower entities from being interacted and at the same time will itself not emit any events.
+    ///
+    /// Entities without the [`Pickable`] component will emit events by default.
     pub should_emit_events: bool,
 }
 
 impl Pickable {
     /// This entity will not block entities beneath it, nor will it emit events.
-    pub fn ignore() -> Self {
-        Self {
-            should_block_lower: false,
-            should_emit_events: false,
-        }
-    }
+    ///
+    /// If a backend reports this entity as being hit, the picking plugin will completely ignore it.
+    pub const IGNORE: Self = Self {
+        should_block_lower: false,
+        should_emit_events: false,
+    };
 }
 
 impl Default for Pickable {
@@ -89,7 +96,7 @@ impl Default for Pickable {
 /// being an entity.
 ///
 /// `Mouse` and `Touch` pointers are automatically spawned as needed. Use this bundle if you are
-/// spawning a custom `PointerId::Custom` pointer, either for testing, or as a software controller
+/// spawning a custom `PointerId::Custom` pointer, either for testing, as a software controlled
 /// pointer, or if you are replacing the default touch and mouse inputs.
 #[derive(Bundle)]
 pub struct PointerCoreBundle {

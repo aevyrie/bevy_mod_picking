@@ -33,13 +33,13 @@ fn setup(mut commands: Commands) {
             },
             // *** Important! ***
             //
-            // We need to use `Pickable::ignore()` here so the root node doesn't block pointer
+            // We need to use `Pickable::IGNORE` here so the root node doesn't block pointer
             // interactions from reaching the 3d objects under the UI.
             //
             // This node, as defined, will stretch from the top to bottom of the screen, take the
             // width of the buttons, but will be invisible. Try commenting out this line or changing
             // it to see what happens.
-            Pickable::ignore(),
+            Pickable::IGNORE,
         ))
         .id();
 
@@ -141,7 +141,7 @@ impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
                         ..Default::default()
                     },
                     // Text should not be involved in pick interactions.
-                    Pickable::ignore(),
+                    Pickable::IGNORE,
                 ));
             })
             .id();

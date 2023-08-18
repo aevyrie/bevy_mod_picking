@@ -1,4 +1,24 @@
 //! A raycasting backend for `bevy_mod_picking` that uses `rapier` for raycasting.
+//!
+//! # Usage
+//!
+//! This backend requires you mark any cameras that will be used for raycasting with
+//! [`RapierPickCamera`]. If a pointer passes through this camera's render target, it will
+//! automatically shoot rays into the rapier scene and will be able to pick things.
+//!
+//! To ignore an entity, you can add [`Pickable::ignore`] to it, and it will be ignored during
+//! raycasting.
+//!
+//! ## Limitations
+//!
+//! Because raycasting is expensive, only the closest intersection will be reported. This means that
+//! unlike some UI, you cannot hover multiple rapier objects with a single pointer by configuring
+//! the [`Pickable`] component to not block lower elements but still emit events. As mentioned
+//! above, all that is supported is completely ignoring an entity with [`Pickable::ignore`].
+//!
+//! This is probably not a meaningful limitation, as the feature is usually only used in UI where
+//! you might want a pointer to be able to pick multiple elements that are on top of each other. If
+//! are trying to build a UI out of rapier entities, beware, I suppose.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
@@ -22,11 +42,6 @@ impl Plugin for RapierBackend {
             .add_systems(PreUpdate, update_hits.in_set(PickSet::Backend));
     }
 }
-
-/// Marks an entity that should be considered for picking raycasts.
-#[derive(Debug, Clone, Default, Component, Reflect)]
-#[reflect(Component)]
-pub struct RapierPickTarget;
 
 /// Marks a camera that should be used for rapier raycast picking.
 #[derive(Debug, Clone, Default, Component, Reflect)]
@@ -78,7 +93,7 @@ pub fn build_rays_from_pointers(
 /// Produces [`PointerHits`]s from [`RapierPickRay`] intersections.
 fn update_hits(
     rapier_context: Option<Res<RapierContext>>,
-    targets: Query<With<RapierPickTarget>>,
+    targets: Query<&Pickable>,
     mut sources: Query<(Entity, &Camera, &mut RapierPickCamera)>,
     mut output: EventWriter<PointerHits>,
 ) {
@@ -103,7 +118,12 @@ fn update_hits(
                     ray.direction,
                     f32::MAX,
                     true,
-                    QueryFilter::new().predicate(&|entity| targets.contains(entity)),
+                    QueryFilter::new().predicate(&|entity| {
+                        targets
+                            .get(entity)
+                            .map(|pickable| *pickable != Pickable::IGNORE)
+                            .unwrap_or(true)
+                    }),
                 )
                 .map(|(target, intersection)| {
                     (cam_entity, cam_order, pointer, target, intersection)

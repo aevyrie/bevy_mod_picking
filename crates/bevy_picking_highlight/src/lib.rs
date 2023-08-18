@@ -7,7 +7,7 @@
 
 #[allow(unused_imports)]
 use bevy::{asset::Asset, prelude::*, render::color::Color};
-use bevy_picking_core::PickSet;
+use bevy_picking_core::{focus::PickingInteraction, PickSet};
 #[cfg(feature = "selection")]
 use bevy_picking_selection::PickSelection;
 
@@ -79,6 +79,7 @@ where
                 get_initial_highlight_asset::<T>,
                 Highlight::<T>::update_dynamic,
                 update_highlight_assets::<T>,
+                update_selection::<T>,
             )
                 .chain()
                 .in_set(PickSet::Last),
@@ -264,18 +265,18 @@ pub fn update_highlight_assets<T: Asset>(
     mut interaction_query: Query<
         (
             &mut Handle<T>,
-            &Interaction,
+            &PickingInteraction,
             &InitialHighlight<T>,
             Option<&Highlight<T>>,
         ),
-        Changed<Interaction>,
+        Changed<PickingInteraction>,
     >,
 ) {
     for (mut asset, interaction, init_highlight, h_override) in &mut interaction_query {
         *asset = match interaction {
-            Interaction::Pressed => global_defaults.pressed(&h_override),
-            Interaction::Hovered => global_defaults.hovered(&h_override),
-            Interaction::None => init_highlight.initial.to_owned(),
+            PickingInteraction::Pressed => global_defaults.pressed(&h_override),
+            PickingInteraction::Hovered => global_defaults.hovered(&h_override),
+            PickingInteraction::None => init_highlight.initial.to_owned(),
         }
     }
 }
@@ -287,16 +288,16 @@ pub fn update_selection<T: Asset>(
     mut interaction_query: Query<
         (
             &mut Handle<T>,
-            &Interaction,
+            &PickingInteraction,
             &PickSelection,
             &InitialHighlight<T>,
             Option<&Highlight<T>>,
         ),
-        Or<(Changed<PickSelection>, Changed<Interaction>)>,
+        Or<(Changed<PickSelection>, Changed<PickingInteraction>)>,
     >,
 ) {
     for (mut asset, interaction, selection, init_highlight, h_override) in &mut interaction_query {
-        if let Interaction::None = interaction {
+        if let PickingInteraction::None = interaction {
             *asset = if selection.is_selected {
                 global_defaults.selected(&h_override)
             } else {

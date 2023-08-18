@@ -348,6 +348,6 @@ pub fn debug_draw(
                 },
                 ..default()
             })
-            .insert(Pickable::ignore());
+            .insert(Pickable::IGNORE);
     }
 }

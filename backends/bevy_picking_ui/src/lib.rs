@@ -1,4 +1,15 @@
-//! A raycasting backend for [`bevy_ui`](bevy::ui).
+//! A picking backend for [`bevy_ui`](bevy::ui).
+//!
+//! # Usage
+//!
+//! This backend does not require markers on cameras or entities to function. It will look for any
+//! pointers using the same render target as the UI camera, and run hit tests on the UI node tree.
+//!
+//! ## Important Note
+//!
+//! This backend completely ignores [`FocusPolicy`](bevy::ui::FocusPolicy). The design of bevy ui's
+//! focus systems and the picking plugin are not compatible. Instead, use the [`Pickable`] component
+//! to customize how an entity responds to picking focus.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
@@ -8,7 +19,7 @@ use bevy::{
     ecs::query::WorldQuery,
     prelude::*,
     render::camera::NormalizedRenderTarget,
-    ui::{FocusPolicy, RelativeCursorPosition, UiStack},
+    ui::{RelativeCursorPosition, UiStack},
     window::PrimaryWindow,
 };
 use bevy_picking_core::backend::prelude::*;
@@ -17,6 +28,11 @@ use bevy_picking_core::backend::prelude::*;
 pub mod prelude {
     pub use crate::BevyUiBackend;
 }
+
+/// For some reason bevy_ui seems to ignore the camera order of the UI camera, so we need to pick
+/// something arbitrary to send in [`PointerHits`] so that bevy_ui hits can be grouped together.
+/// From what I can tell, bevy_ui always renders on top, so we will just set this to max. 🥲
+pub const BEVY_UI_CAMERA_ORDER: isize = isize::MAX;
 
 /// Adds picking support for [`bevy_ui`](bevy::ui)
 #[derive(Clone)]
@@ -34,9 +50,7 @@ pub struct NodeQuery {
     entity: Entity,
     node: &'static Node,
     global_transform: &'static GlobalTransform,
-    interaction: Option<&'static mut Interaction>,
     relative_cursor_position: Option<&'static mut RelativeCursorPosition>,
-    focus_policy: Option<&'static FocusPolicy>,
     pickable: Option<&'static Pickable>,
     calculated_clip: Option<&'static CalculatedClip>,
     computed_visibility: Option<&'static ComputedVisibility>,
@@ -71,7 +85,7 @@ pub fn ui_picking(
         let window_entity = primary_window.single();
 
         // Find the camera with the same target as this pointer
-        let Some((camera, ui_config)) = cameras
+        let Some((camera_entity, ui_config)) = cameras
             .iter()
             .find(|(_entity, camera, _)| {
                 camera.target.normalize(Some(window_entity)).unwrap() == location.target
@@ -139,7 +153,7 @@ pub fn ui_picking(
                 picks.push((
                     node.entity,
                     HitData {
-                        camera,
+                        camera: camera_entity,
                         depth,
                         position: None,
                         normal: None,
@@ -152,14 +166,8 @@ pub fn ui_picking(
                 if pickable.should_block_lower {
                     break;
                 }
-            } else if let Some(focus_policy) = node.focus_policy {
-                // Fall back to using bevy's `FocusPolicy` if there is no `Pickable`.
-                match focus_policy {
-                    FocusPolicy::Block => break,
-                    FocusPolicy::Pass => (), // allow the next node to be hovered/clicked
-                }
             } else {
-                // If neither component exists, default behavior is to block.
+                // If the Pickable component doesn't exist, default behavior is to block.
                 break;
             }
 
@@ -169,7 +177,7 @@ pub fn ui_picking(
         output.send(PointerHits {
             pointer: *pointer,
             picks,
-            order: 10,
+            order: BEVY_UI_CAMERA_ORDER,
         })
     }
 }

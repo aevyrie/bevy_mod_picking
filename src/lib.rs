@@ -169,7 +169,7 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{prelude::Bundle, ui::Interaction};
+use bevy::prelude::Bundle;
 use bevy_picking_core::PointerCoreBundle;
 use prelude::*;
 
@@ -244,8 +244,8 @@ pub mod prelude {
 pub struct PickableBundle {
     /// Provides overrides for picking behavior.
     pub pickable: Pickable,
-    /// Tracks entity [`Interaction`] state.
-    pub interaction: Interaction,
+    /// Tracks entity interaction state.
+    pub interaction: focus::PickingInteraction,
     /// Tracks entity [`PickSelection`](selection::PickSelection) state.
     #[cfg(feature = "selection")]
     pub selection: selection::PickSelection,

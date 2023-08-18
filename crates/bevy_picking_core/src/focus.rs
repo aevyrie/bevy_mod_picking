@@ -12,6 +12,7 @@ use crate::{
     pointer::{PointerId, PointerPress},
     Pickable,
 };
+
 use bevy::{
     prelude::*,
     utils::{FloatOrd, HashMap},
@@ -152,13 +153,33 @@ fn build_hover_map(
     }
 }
 
+/// A component that aggregates picking interaction state of this entity across all pointers.
+///
+/// Unlike bevy's `Interaction` component, this is an aggregate of the state of all pointers
+/// interacting with this entity. Aggregation is done by taking the interaction with the highest
+/// precedence.
+///
+/// For example, if we have an entity that is being hovered by one pointer, and pressed by another,
+/// the entity will be considered pressed. If that entity is instead being hovered by both pointers,
+/// it will be considered hovered.
+#[derive(Component, Copy, Clone, Default, Eq, PartialEq, Debug, Reflect)]
+pub enum PickingInteraction {
+    /// The entity is being pressed down by a pointer.
+    Pressed = 2,
+    /// The entity is being hovered by a pointer.
+    Hovered = 1,
+    /// No pointers are interacting with this entity.
+    #[default]
+    None = 0,
+}
+
 /// Holds a map of entities this pointer is currently interacting with.
 #[derive(Debug, Default, Clone, Component)]
 pub struct PointerInteraction {
-    map: HashMap<Entity, Interaction>,
+    map: HashMap<Entity, PickingInteraction>,
 }
 impl Deref for PointerInteraction {
-    type Target = HashMap<Entity, Interaction>;
+    type Target = HashMap<Entity, PickingInteraction>;
 
     fn deref(&self) -> &Self::Target {
         &self.map
@@ -170,7 +191,7 @@ impl DerefMut for PointerInteraction {
     }
 }
 
-/// Uses pointer events to update [`PointerInteraction`] and [`PointerInteractionMap`] components.
+/// Uses pointer events to update [`PointerInteraction`] and [`PickingInteraction`] components.
 pub fn update_interactions(
     // Input
     hover_map: Res<HoverMap>,
@@ -178,7 +199,7 @@ pub fn update_interactions(
     // Outputs
     mut commands: Commands,
     mut pointers: Query<(&PointerId, &PointerPress, &mut PointerInteraction)>,
-    mut interact: Query<&mut Interaction>,
+    mut interact: Query<&mut PickingInteraction>,
 ) {
     // Clear all previous hover data from pointers and entities
     for (pointer, _, mut pointer_interaction) in &mut pointers {
@@ -186,7 +207,7 @@ pub fn update_interactions(
         if let Some(previously_hovered_entities) = previous_hover_map.get(pointer) {
             for entity in previously_hovered_entities.keys() {
                 if let Ok(mut interaction) = interact.get_mut(*entity) {
-                    *interaction = Interaction::None;
+                    *interaction = PickingInteraction::None;
                 }
             }
         }
@@ -196,13 +217,13 @@ pub fn update_interactions(
     // need to be able to insert the interaction component on entities if they do not exist. To do
     // so we need to know the final aggregated interaction state to avoid the scenario where we set
     // an entity to `Pressed`, then overwrite that with a lower precedent like `Hovered`.
-    let mut new_interaction_state = HashMap::<Entity, Interaction>::new();
+    let mut new_interaction_state = HashMap::<Entity, PickingInteraction>::new();
     for (pointer, pointer_press, _) in &mut pointers {
         if let Some(hovering_pointer_map) = hover_map.get(pointer) {
             for hovered_entity in hovering_pointer_map.iter().map(|(entity, _)| entity) {
                 let new_interaction = match pointer_press.is_any_pressed() {
-                    true => Interaction::Pressed,
-                    false => Interaction::Hovered,
+                    true => PickingInteraction::Pressed,
+                    false => PickingInteraction::Hovered,
                 };
 
                 if let Some(old_interaction) = new_interaction_state.get_mut(hovered_entity) {
@@ -210,9 +231,9 @@ pub fn update_interactions(
                     // value.
                     if matches!(
                         (*old_interaction, new_interaction),
-                        (Interaction::Hovered, Interaction::Pressed)
-                            | (Interaction::None, Interaction::Pressed)
-                            | (Interaction::None, Interaction::Hovered)
+                        (PickingInteraction::Hovered, PickingInteraction::Pressed)
+                            | (PickingInteraction::None, PickingInteraction::Pressed)
+                            | (PickingInteraction::None, PickingInteraction::Hovered)
                     ) {
                         *old_interaction = new_interaction;
                     }
