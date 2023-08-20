@@ -11,7 +11,6 @@ pub mod pointer;
 
 use bevy::prelude::*;
 use bevy_eventlistener::prelude::*;
-use focus::{update_focus, update_interactions};
 
 /// Used to globally toggle picking features at runtime.
 #[derive(Clone, Debug, Resource)]
@@ -107,7 +106,7 @@ pub struct PointerCoreBundle {
     /// Tracks the pointer's button press state.
     pub click: pointer::PointerPress,
     /// The interaction state of any hovered entities.
-    pub interaction: focus::PointerInteraction,
+    pub interaction: pointer::PointerInteraction,
 }
 
 impl PointerCoreBundle {
@@ -125,7 +124,7 @@ impl PointerCoreBundle {
             id,
             location: pointer::PointerLocation::default(),
             click: pointer::PointerPress::default(),
-            interaction: focus::PointerInteraction::default(),
+            interaction: pointer::PointerInteraction::default(),
         }
     }
 }
@@ -178,6 +177,7 @@ pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
         use events::*;
+        use focus::{update_focus, update_interactions};
 
         app.init_resource::<focus::HoverMap>()
             .init_resource::<focus::PreviousHoverMap>()

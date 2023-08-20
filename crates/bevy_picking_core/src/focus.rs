@@ -1,11 +1,11 @@
 //! Determines which entities are being hovered by which pointers.
 
-use std::{collections::BTreeMap, fmt::Debug, ops::Deref};
+use std::{collections::BTreeMap, fmt::Debug};
 
 use crate::{
     backend::{self, HitData},
     events::PointerCancel,
-    pointer::{PointerId, PointerPress},
+    pointer::{PointerId, PointerInteraction, PointerPress},
     Pickable,
 };
 
@@ -169,28 +169,6 @@ pub enum PickingInteraction {
     /// No pointers are interacting with this entity.
     #[default]
     None = 0,
-}
-
-/// Holds a list of entities this pointer is currently interacting with, sorted from nearest to
-/// farthest.
-#[derive(Debug, Default, Clone, Component)]
-pub struct PointerInteraction {
-    sorted_entities: Vec<(Entity, HitData)>,
-}
-
-impl PointerInteraction {
-    /// Returns the nearest hit entity and data about that intersection.
-    pub fn get_nearest_hit(&self) -> Option<&(Entity, HitData)> {
-        self.sorted_entities.first()
-    }
-}
-
-impl Deref for PointerInteraction {
-    type Target = Vec<(Entity, HitData)>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.sorted_entities
-    }
 }
 
 /// Uses pointer events to update [`PointerInteraction`] and [`PickingInteraction`] components.

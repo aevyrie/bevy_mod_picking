@@ -207,9 +207,11 @@ pub mod prelude {
             Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop, Move, Out,
             Over, Pointer, Up,
         },
-        focus::{PickingInteraction, PointerInteraction},
+        focus::PickingInteraction,
         picking_core::Pickable,
-        pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
+        pointer::{
+            PointerButton, PointerId, PointerInteraction, PointerLocation, PointerMap, PointerPress,
+        },
         *,
     };
 
