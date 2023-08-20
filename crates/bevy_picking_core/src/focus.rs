@@ -234,12 +234,14 @@ fn merge_interaction_states(
 
     if let Some(old_interaction) = new_interaction_state.get_mut(hovered_entity) {
         // Only update if the new value has a higher precedence than the old value.
-        if matches!(
-            (*old_interaction, new_interaction),
-            (PickingInteraction::Hovered, PickingInteraction::Pressed)
-                | (PickingInteraction::None, PickingInteraction::Pressed)
-                | (PickingInteraction::None, PickingInteraction::Hovered)
-        ) {
+        if *old_interaction != new_interaction
+            && matches!(
+                (*old_interaction, new_interaction),
+                (PickingInteraction::Hovered, PickingInteraction::Pressed)
+                    | (PickingInteraction::None, PickingInteraction::Pressed)
+                    | (PickingInteraction::None, PickingInteraction::Hovered)
+            )
+        {
             *old_interaction = new_interaction;
         }
     } else {

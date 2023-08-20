@@ -109,7 +109,12 @@ impl Plugin for DebugPickingPlugin {
         #[cfg(feature = "backend_egui")]
         app.add_systems(
             PreUpdate,
-            (add_pointer_debug, update_debug_data, debug_draw_egui)
+            (
+                add_pointer_debug,
+                update_debug_data,
+                debug_draw.run_if(|r: Option<Res<bevy_egui::EguiUserTextures>>| r.is_none()),
+                debug_draw_egui.run_if(|r: Option<Res<bevy_egui::EguiUserTextures>>| r.is_some()),
+            )
                 .chain()
                 .distributive_run_if(DebugPickingMode::is_enabled)
                 .in_set(picking_core::PickSet::Last),
@@ -180,15 +185,14 @@ impl std::fmt::Display for PointerDebug {
         if let Some(multiselect) = self.multiselect {
             bool_to_icon(f, ", Multiselect: ", multiselect)?;
         }
-        writeln!(f)?;
         let mut sorted_hits = self.hits.clone();
         sorted_hits.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
         for (entity, hit) in sorted_hits.iter() {
-            write!(f, "Entity: {entity:?}")?;
+            write!(f, "\nEntity: {entity:?}")?;
             if let Some((position, normal)) = hit.position.zip(hit.normal) {
                 write!(f, ", Position: {position:.2?}, Normal: {normal:.2?}")?;
             }
-            writeln!(f, ", Depth: {:.2?}", hit.depth)?;
+            write!(f, ", Depth: {:.2?}", hit.depth)?;
         }
 
         Ok(())
