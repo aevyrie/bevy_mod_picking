@@ -1,6 +1,8 @@
 //! Text and on-screen debugging tools
 
-use bevy_picking_core::{debug, focus::HoverMap};
+use std::fmt::Debug;
+
+use bevy_picking_core::focus::HoverMap;
 use picking_core::{backend::HitData, events::DragMap, pointer::Location};
 
 use crate::*;
@@ -69,8 +71,6 @@ impl Plugin for DebugPickingPlugin {
 
         app.add_state::<DebugPickingMode>()
             .insert_resource(State::new(start_mode))
-            .init_resource::<debug::Frame>()
-            .add_systems(First, debug::increment_frame)
             .add_systems(
                 PreUpdate,
                 input::debug::print
@@ -80,19 +80,19 @@ impl Plugin for DebugPickingPlugin {
         app.add_systems(
             PreUpdate,
             (
-                debug::print::<events::Over>,
-                debug::print::<events::Out>,
-                debug::print::<events::Down>,
-                debug::print::<events::Up>,
-                debug::print::<events::Click>,
-                debug::print::<events::Move>.run_if(DebugPickingMode::is_noisy),
-                debug::print::<events::DragStart>,
-                debug::print::<events::Drag>.run_if(DebugPickingMode::is_noisy),
-                debug::print::<events::DragEnd>,
-                debug::print::<events::DragEnter>,
-                debug::print::<events::DragOver>.run_if(DebugPickingMode::is_noisy),
-                debug::print::<events::DragLeave>,
-                debug::print::<events::Drop>,
+                print::<events::Over>,
+                print::<events::Out>,
+                print::<events::Down>,
+                print::<events::Up>,
+                print::<events::Click>,
+                print::<events::Move>.run_if(DebugPickingMode::is_noisy),
+                print::<events::DragStart>,
+                print::<events::Drag>.run_if(DebugPickingMode::is_noisy),
+                print::<events::DragEnd>,
+                print::<events::DragEnter>,
+                print::<events::DragOver>.run_if(DebugPickingMode::is_noisy),
+                print::<events::DragLeave>,
+                print::<events::Drop>,
             )
                 .distributive_run_if(DebugPickingMode::is_enabled)
                 .in_set(picking_core::PickSet::Last),
@@ -109,7 +109,12 @@ impl Plugin for DebugPickingPlugin {
         #[cfg(feature = "backend_egui")]
         app.add_systems(
             PreUpdate,
-            (add_pointer_debug, update_debug_data, debug_draw_egui)
+            (
+                add_pointer_debug,
+                update_debug_data,
+                debug_draw.run_if(|r: Option<Res<bevy_egui::EguiUserTextures>>| r.is_none()),
+                debug_draw_egui.run_if(|r: Option<Res<bevy_egui::EguiUserTextures>>| r.is_some()),
+            )
                 .chain()
                 .distributive_run_if(DebugPickingMode::is_enabled)
                 .in_set(picking_core::PickSet::Last),
@@ -126,6 +131,13 @@ impl Plugin for DebugPickingPlugin {
             )
                 .distributive_run_if(DebugPickingMode::is_enabled),
         );
+    }
+}
+
+/// Listens for pointer events of type `E` and prints them.
+pub fn print<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
+    for event in pointer_events.iter() {
+        info!("{event}");
     }
 }
 
@@ -151,9 +163,8 @@ pub fn hide_pointer_text(mut pointers: Query<&mut Visibility, With<PointerId>>) 
 pub struct PointerDebug {
     pub location: Option<Location>,
     pub press: PointerPress,
-    pub hits: Vec<(Entity, HitData)>,
+    pub hits: Vec<(DebugName, HitData)>,
     pub drag_start: Vec<(PointerButton, Vec2)>,
-    pub interactions: Vec<(DebugName, Interaction)>,
     #[cfg(feature = "selection")]
     pub multiselect: Option<bool>,
 }
@@ -174,19 +185,16 @@ impl std::fmt::Display for PointerDebug {
         if let Some(multiselect) = self.multiselect {
             bool_to_icon(f, ", Multiselect: ", multiselect)?;
         }
-        writeln!(f)?;
         let mut sorted_hits = self.hits.clone();
         sorted_hits.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
         for (entity, hit) in sorted_hits.iter() {
-            write!(f, "Entity: {entity:?}")?;
+            write!(f, "\nEntity: {entity:?}")?;
             if let Some((position, normal)) = hit.position.zip(hit.normal) {
                 write!(f, ", Position: {position:.2?}, Normal: {normal:.2?}")?;
             }
-            writeln!(f, ", Depth: {:.2?}", hit.depth)?;
+            write!(f, ", Depth: {:.2?}", hit.depth)?;
         }
-        if !self.interactions.is_empty() {
-            write!(f, "{:?}", self.interactions)?;
-        }
+
         Ok(())
     }
 }
@@ -201,23 +209,11 @@ pub fn update_debug_data(
         &pointer::PointerId,
         &pointer::PointerLocation,
         &pointer::PointerPress,
-        &focus::PointerInteraction,
         &mut PointerDebug,
     )>,
     #[cfg(feature = "selection")] selection: Query<Option<&selection::PointerMultiselect>>,
 ) {
-    for (entity, id, location, press, interactions, mut debug) in pointers.iter_mut() {
-        let interactions = interactions
-            .iter()
-            .map(|(entity, interaction)| {
-                let debug = match names.get(*entity) {
-                    Ok(name) => DebugName::Name(name.clone(), *entity),
-                    _ => DebugName::Entity(*entity),
-                };
-
-                (debug, *interaction)
-            })
-            .collect::<Vec<_>>();
+    for (entity, id, location, press, mut debug) in pointers.iter_mut() {
         let drag_start = |id| {
             PointerButton::iter()
                 .flat_map(|button| {
@@ -236,10 +232,18 @@ pub fn update_debug_data(
                 .get(id)
                 .iter()
                 .flat_map(|h| h.iter())
-                .map(|(e, h)| (*e, h.to_owned()))
+                .map(|(e, h)| {
+                    (
+                        if let Ok(name) = names.get(*e) {
+                            DebugName::Name(name.clone(), *e)
+                        } else {
+                            DebugName::Entity(*e)
+                        },
+                        h.to_owned(),
+                    )
+                })
                 .collect(),
             drag_start: drag_start(*id),
-            interactions,
             #[cfg(feature = "selection")]
             multiselect: selection.get(entity).ok().flatten().map(|f| f.is_pressed),
         };
@@ -303,13 +307,13 @@ pub fn debug_draw_egui(
 }
 
 #[allow(missing_docs)]
-#[derive(Clone)]
+#[derive(Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub enum DebugName {
     Name(Name, Entity),
     Entity(Entity),
 }
 
-impl std::fmt::Debug for DebugName {
+impl Debug for DebugName {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::Name(name, entity) => write!(f, "{} ({:?})", name.as_str(), entity),
@@ -329,22 +333,25 @@ pub fn debug_draw(
         };
         let text = format!("{id:?}\n{debug}");
 
-        commands.entity(entity).insert(TextBundle {
-            text: Text::from_section(
-                text,
-                TextStyle {
-                    font_size: 12.0,
-                    color: Color::WHITE,
+        commands
+            .entity(entity)
+            .insert(TextBundle {
+                text: Text::from_section(
+                    text,
+                    TextStyle {
+                        font_size: 12.0,
+                        color: Color::WHITE,
+                        ..default()
+                    },
+                ),
+                style: Style {
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(location.position.x + 5.0),
+                    top: Val::Px(location.position.y + 5.0),
                     ..default()
                 },
-            ),
-            style: Style {
-                position_type: PositionType::Absolute,
-                left: Val::Px(location.position.x + 5.0),
-                top: Val::Px(location.position.y + 5.0),
                 ..default()
-            },
-            ..default()
-        });
+            })
+            .insert(Pickable::IGNORE);
     }
 }

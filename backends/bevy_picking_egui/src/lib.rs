@@ -92,7 +92,7 @@ pub fn egui_picking(
                     output.send(PointerHits {
                         pointer: *pointer,
                         picks: Vec::from([entry]),
-                        order: 1_000_000, // Assume egui should be on top of everything else.
+                        order: 1_000_000f32, // Assume egui should be on top of everything else.
                     })
                 }
             }

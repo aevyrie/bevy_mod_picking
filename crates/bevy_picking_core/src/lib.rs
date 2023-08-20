@@ -5,14 +5,12 @@
 #![deny(missing_docs)]
 
 pub mod backend;
-pub mod debug;
 pub mod events;
 pub mod focus;
 pub mod pointer;
 
 use bevy::prelude::*;
 use bevy_eventlistener::prelude::*;
-use focus::{interactions_from_events, update_focus};
 
 /// Used to globally toggle picking features at runtime.
 #[derive(Clone, Debug, Resource)]
@@ -36,7 +34,8 @@ impl PickingPluginsSettings {
     pub fn highlighting_should_run(state: Res<Self>) -> bool {
         state.enable_highlighting && state.enable
     }
-    /// Whether or not systems updating entities' [`Interaction`] component should be running.
+    /// Whether or not systems updating entities' [`PickingInteraction`](focus::PickingInteraction)
+    /// component should be running.
     pub fn interaction_should_run(state: Res<Self>) -> bool {
         state.enable_highlighting && state.enable
     }
@@ -53,15 +52,50 @@ impl Default for PickingPluginsSettings {
     }
 }
 
-/// Used to mark entities that should be pickable.
-#[derive(Component, Debug, Default, Clone, Reflect)]
-pub struct Pickable;
+/// An optional component that overrides default picking behavior for an entity.
+#[derive(Component, Debug, Clone, Reflect, PartialEq, Eq)]
+pub struct Pickable {
+    /// Should this entity block entities below it from being picked?
+    ///
+    /// This is useful if you want an entity to exist in the hierarchy, but want picking to "pass
+    /// through" to lower layers and allow items below this one to be the target of picking events
+    /// **as well as** this one.
+    ///
+    /// Entities without the [`Pickable`] component will block by default.
+    pub should_block_lower: bool,
+    /// Should this entity emit events when targeted?
+    ///
+    /// If this is set to `false` and `should_block_lower` is set to true, this entity will block
+    /// lower entities from being interacted and at the same time will itself not emit any events.
+    ///
+    /// Entities without the [`Pickable`] component will emit events by default.
+    pub should_emit_events: bool,
+}
+
+impl Pickable {
+    /// This entity will not block entities beneath it, nor will it emit events.
+    ///
+    /// If a backend reports this entity as being hit, the picking plugin will completely ignore it.
+    pub const IGNORE: Self = Self {
+        should_block_lower: false,
+        should_emit_events: false,
+    };
+}
+
+impl Default for Pickable {
+    fn default() -> Self {
+        Self {
+            should_block_lower: true,
+            should_emit_events: true,
+        }
+    }
+}
 
 /// Components needed to build a pointer. Multiple pointers can be active at once, with each pointer
 /// being an entity.
 ///
 /// `Mouse` and `Touch` pointers are automatically spawned as needed. Use this bundle if you are
-/// spawning a custom `PointerId::Custom` pointer, either for testing, or as a software controller
+/// spawning a custom `PointerId::Custom` pointer, either for testing, as a software controlled
 /// pointer, or if you are replacing the default touch and mouse inputs.
 #[derive(Bundle)]
 pub struct PointerCoreBundle {
@@ -71,8 +105,8 @@ pub struct PointerCoreBundle {
     pub location: pointer::PointerLocation,
     /// Tracks the pointer's button press state.
     pub click: pointer::PointerPress,
-    /// Tracks the pointer's interaction state.
-    pub interaction: focus::PointerInteraction,
+    /// The interaction state of any hovered entities.
+    pub interaction: pointer::PointerInteraction,
 }
 
 impl PointerCoreBundle {
@@ -90,7 +124,7 @@ impl PointerCoreBundle {
             id,
             location: pointer::PointerLocation::default(),
             click: pointer::PointerPress::default(),
-            interaction: focus::PointerInteraction::default(),
+            interaction: pointer::PointerInteraction::default(),
         }
     }
 }
@@ -143,6 +177,7 @@ pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
         use events::*;
+        use focus::{update_focus, update_interactions};
 
         app.init_resource::<focus::HoverMap>()
             .init_resource::<focus::PreviousHoverMap>()
@@ -166,7 +201,7 @@ impl Plugin for InteractionPlugin {
                 (
                     update_focus,
                     pointer_events,
-                    interactions_from_events,
+                    update_interactions,
                     send_click_and_drag_events,
                     send_drag_over_events,
                 )

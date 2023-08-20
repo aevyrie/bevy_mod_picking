@@ -17,7 +17,9 @@
 //! - The [`PointerHits`] events produced by a backend do **not** need to be sorted or filtered, all
 //! that is needed is an unordered list of entities and their [`HitData`].
 //!
-//! - **Backends should only pick entities with the [`Pickable`](crate::Pickable) component.**
+//! - Backends do not need to consider the [`Pickable`](crate::Pickable) component, though they may
+//!   use it for optimization purposes. For example, a backend that traverses a spatial hierarchy
+//!   may want to early exit if it intersects entity that blocks lower entities from being picked.
 
 use bevy::prelude::*;
 
@@ -52,14 +54,21 @@ pub struct PointerHits {
     /// pointer, then sorted by order, and checked sequentially, sorting each `PointerHits` by
     /// entity depth. Events with a higher `order` are effectively on top of events with a lower
     /// order.
-    pub order: isize,
+    ///
+    /// ### Why is this an `f32`???
+    ///
+    /// Bevy UI is special in that it can share a camera with other things being rendered. in order
+    /// to properly sort them, we need a way to make bevy_ui's order a tiny bit higher, like adding
+    /// 0.5 to the order. We can't use integers, and we want users to be using camera.order by
+    /// default, so this is the best solution at the moment.
+    pub order: f32,
 }
 
 /// Holds data from a successful pointer hit test.
 ///
 /// `depth` only needs to be self-consistent with other [`PointerHits`]s using the same
 /// [`RenderTarget`](bevy::render::camera::RenderTarget).
-#[derive(Clone, Copy, Debug, PartialEq, Reflect)]
+#[derive(Clone, Debug, PartialEq, Reflect)]
 pub struct HitData {
     /// The camera entity used to detect this hit. Useful when you need to find the ray that was
     /// casted for this hit when using a raycasting backend.

@@ -38,8 +38,8 @@ fn setup(
             },
             PickableBundle::default(),    // <- Makes the mesh pickable.
             RaycastPickTarget::default(), // <- Needed for the raycast backend.
-            On::<Pointer<DragStart>>::target_remove::<Pickable>(), // Disable picking
-            On::<Pointer<DragEnd>>::target_insert(Pickable), // Re-enable picking
+            On::<Pointer<DragStart>>::target_insert(Pickable::IGNORE), // Disable picking
+            On::<Pointer<DragEnd>>::target_insert(Pickable::default()), // Re-enable picking
             On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
                 // Make the square follow the mouse
                 transform.translation.x += drag.delta.x;

@@ -1,4 +1,21 @@
-//! A raycasting backend for [`bevy_ui`](bevy::ui).
+//! A picking backend for [`bevy_ui`](bevy::ui).
+//!
+//! # Usage
+//!
+//! This backend does not require markers on cameras or entities to function. It will look for any
+//! pointers using the same render target as the UI camera, and run hit tests on the UI node tree.
+//!
+//! ## Important Note
+//!
+//! This backend completely ignores [`FocusPolicy`](bevy::ui::FocusPolicy). The design of bevy ui's
+//! focus systems and the picking plugin are not compatible. Instead, use the [`Pickable`] component
+//! to customize how an entity responds to picking focus.
+//!
+//! ## Implementation Notes
+//!
+//! - Bevy ui can only render to the primary window
+//! - Bevy ui can render on any camera with a flag, it is special, and is not tied to a particular
+//!   camera.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
@@ -8,7 +25,7 @@ use bevy::{
     ecs::query::WorldQuery,
     prelude::*,
     render::camera::NormalizedRenderTarget,
-    ui::{FocusPolicy, RelativeCursorPosition, UiStack},
+    ui::{RelativeCursorPosition, UiStack},
     window::PrimaryWindow,
 };
 use bevy_picking_core::backend::prelude::*;
@@ -34,9 +51,8 @@ pub struct NodeQuery {
     entity: Entity,
     node: &'static Node,
     global_transform: &'static GlobalTransform,
-    interaction: Option<&'static mut Interaction>,
     relative_cursor_position: Option<&'static mut RelativeCursorPosition>,
-    focus_policy: Option<&'static FocusPolicy>,
+    pickable: Option<&'static Pickable>,
     calculated_clip: Option<&'static CalculatedClip>,
     computed_visibility: Option<&'static ComputedVisibility>,
 }
@@ -69,20 +85,23 @@ pub fn ui_picking(
     }) {
         let window_entity = primary_window.single();
 
-        // Find the camera with the same target as this pointer
-        let Some((camera, ui_config)) = cameras
+        // Find the topmost bevy_ui camera with the same target as this pointer.
+        //
+        // Bevy ui can render on many cameras, but it will be the same UI, and we only want to
+        // consider the topmost one rendering UI in this window.
+        let mut ui_cameras: Vec<_> = cameras
             .iter()
-            .find(|(_entity, camera, _)| {
+            .filter(|(_entity, camera, _)| {
                 camera.target.normalize(Some(window_entity)).unwrap() == location.target
             })
-            .map(|(entity, _camera, ui_config)| (entity, ui_config)) else {
-                continue;
-            };
+            .filter(|(_, _, ui_config)| ui_config.map(|config| config.show_ui).unwrap_or(true))
+            .collect();
+        ui_cameras.sort_by_key(|(_, camera, _)| camera.order);
 
-        // If this ui camera is disabled, skip to the next pointer.
-        if matches!(ui_config, Some(&UiCameraConfig { show_ui: false, .. })) {
+        // The last camera in the list will be the one with the highest order, and be the topmost.
+        let Some((camera_entity, camera, _)) = ui_cameras.last() else {
             continue;
-        }
+        };
 
         let mut hovered_nodes = ui_stack
             .uinodes
@@ -134,28 +153,35 @@ pub fn ui_picking(
         let mut depth = 0.0;
 
         while let Some(node) = iter.fetch_next() {
-            picks.push((
-                node.entity,
-                HitData {
-                    camera,
-                    depth,
-                    position: None,
-                    normal: None,
-                },
-            ));
-            match node.focus_policy.unwrap_or(&FocusPolicy::Block) {
-                FocusPolicy::Block => {
+            let mut push_hit = || {
+                picks.push((
+                    node.entity,
+                    HitData {
+                        camera: *camera_entity,
+                        depth,
+                        position: None,
+                        normal: None,
+                    },
+                ))
+            };
+            push_hit();
+            if let Some(pickable) = node.pickable {
+                // If an entity has a `Pickable` component, we will use that as the source of truth.
+                if pickable.should_block_lower {
                     break;
                 }
-                FocusPolicy::Pass => { /* allow the next node to be hovered/clicked */ }
+            } else {
+                // If the Pickable component doesn't exist, default behavior is to block.
+                break;
             }
+
             depth += 0.00001; // keep depth near 0 for precision
         }
 
         output.send(PointerHits {
             pointer: *pointer,
             picks,
-            order: 10,
+            order: camera.order as f32 + 0.5,
         })
     }
 }

@@ -6,7 +6,9 @@ use bevy::{
     utils::{HashMap, Uuid},
     window::PrimaryWindow,
 };
-use std::fmt::Debug;
+use std::{fmt::Debug, ops::Deref};
+
+use crate::backend::HitData;
 
 /// Identifies a unique pointer entity. `Mouse` and `Touch` pointers are automatically spawned.
 ///
@@ -48,7 +50,29 @@ impl PointerId {
     }
 }
 
-/// Maps pointers to their entity for easy lookups.
+/// Holds a list of entities this pointer is currently interacting with, sorted from nearest to
+/// farthest.
+#[derive(Debug, Default, Clone, Component)]
+pub struct PointerInteraction {
+    pub(crate) sorted_entities: Vec<(Entity, HitData)>,
+}
+
+impl PointerInteraction {
+    /// Returns the nearest hit entity and data about that intersection.
+    pub fn get_nearest_hit(&self) -> Option<&(Entity, HitData)> {
+        self.sorted_entities.first()
+    }
+}
+
+impl Deref for PointerInteraction {
+    type Target = Vec<(Entity, HitData)>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.sorted_entities
+    }
+}
+
+/// A resource that maps each [`PointerId`] to their [`Entity`] for easy lookups.
 #[derive(Debug, Clone, Default, Resource)]
 pub struct PointerMap {
     inner: HashMap<PointerId, Entity>,

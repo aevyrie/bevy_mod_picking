@@ -1,4 +1,4 @@
-//! This example demonstrates how [`OnPointer`] components and event bubbling can be used to
+//! This example demonstrates how [`On<Event>`] components and event bubbling can be used to
 //! propagate events up an entity hierarchy, and run callbacks when an event reaches an entity.
 //!
 //! The Big Idea here is to make it easy to couple interaction events with specific entities. In

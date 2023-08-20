@@ -151,9 +151,9 @@
 //! just because a pointer is over an entity, it is not necessarily hovering that entity. Although
 //! multiple backends may be reporting that a pointer is over an entity, the focus system needs to
 //! determine which one(s) are actually being hovered based on the pick depth, order of the backend,
-//! and the [`FocusPolicy`](bevy::ui::FocusPolicy) of the entity. In other words, if one entity is
-//! in front of another, only the topmost one will be hovered, even if the pointer is within the
-//! bounds of both entities.
+//! and the [`Pickable`](bevy_picking_core::Pickable) state of the entity. In other words, if one
+//! entity is in front of another, only the topmost one will be hovered, even if the pointer is
+//! within the bounds of both entities.
 //!
 //! #### Events ([`bevy_picking_core::events`])
 //!
@@ -169,7 +169,7 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{prelude::Bundle, ui::Interaction};
+use bevy::prelude::Bundle;
 use bevy_picking_core::PointerCoreBundle;
 use prelude::*;
 
@@ -204,11 +204,14 @@ pub mod prelude {
     pub use crate::{
         backends,
         events::{
-            Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop,
-            IsPointerEvent, Move, Out, Over, Pointer, Up,
+            Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop, Move, Out,
+            Over, Pointer, Up,
         },
+        focus::PickingInteraction,
         picking_core::Pickable,
-        pointer::{PointerButton, PointerId, PointerLocation, PointerMap, PointerPress},
+        pointer::{
+            PointerButton, PointerId, PointerInteraction, PointerLocation, PointerMap, PointerPress,
+        },
         *,
     };
 
@@ -242,10 +245,10 @@ pub mod prelude {
 /// Makes an entity pickable.
 #[derive(Bundle, Default)]
 pub struct PickableBundle {
-    /// Marks pickable entities.
+    /// Provides overrides for picking behavior.
     pub pickable: Pickable,
-    /// Tracks entity [`Interaction`] state.
-    pub interaction: Interaction,
+    /// Tracks entity interaction state.
+    pub interaction: focus::PickingInteraction,
     /// Tracks entity [`PickSelection`](selection::PickSelection) state.
     #[cfg(feature = "selection")]
     pub selection: selection::PickSelection,
@@ -258,8 +261,9 @@ pub struct PickableBundle {
 #[derive(Bundle)]
 pub struct PointerBundle {
     core: PointerCoreBundle,
+    #[allow(missing_docs)]
     #[cfg(feature = "selection")]
-    selection: selection::PointerMultiselect,
+    pub selection: selection::PointerMultiselect,
 }
 impl PointerBundle {
     /// Build a new `PointerBundle` with the supplied [`PointerId`].

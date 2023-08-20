@@ -10,7 +10,7 @@
 use bevy::{prelude::*, utils::hashbrown::HashSet};
 use bevy_eventlistener::prelude::*;
 use bevy_picking_core::{
-    events::{Click, Down, IsPointerEvent, Pointer},
+    events::{Click, Down, Pointer},
     pointer::{InputPress, PointerButton, PointerId, PointerLocation},
     PickSet,
 };
@@ -59,8 +59,8 @@ impl Plugin for SelectionPlugin {
     }
 }
 
-/// Input state that defines whether or not the multiselect button is active. This is often the
-/// `Ctrl` or `Shift` keys.
+/// A component for pointers that defines whether or not the multiselect button is active. This is
+/// often the `Ctrl` or `Shift` keys.
 #[derive(Debug, Default, Clone, Component, PartialEq, Eq, Reflect)]
 pub struct PointerMultiselect {
     /// `true` if the multiselect button(s) is active.
@@ -77,12 +77,10 @@ pub struct PickSelection {
 /// Fires when an entity has been selected
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Select;
-impl IsPointerEvent for Select {}
 
 /// Fires when an entity has been deselected
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Deselect;
-impl IsPointerEvent for Deselect {}
 
 /// Marker struct used to mark pickable entities for which you don't want to trigger a deselection
 /// event when picked. This is useful for gizmos or other pickable UI entities.
@@ -128,7 +126,9 @@ pub fn send_selection_events(
         pointer_location,
         target,
         event: _,
-    } in pointer_down.iter()
+    } in pointer_down
+        .iter()
+        .filter(|pointer| pointer.event.button == PointerButton::Primary)
     {
         pointer_down_list.insert(pointer_id);
         let multiselect = pointers

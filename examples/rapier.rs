@@ -2,7 +2,6 @@
 
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
-use bevy_picking_rapier::RapierPickTarget;
 use bevy_rapier3d::prelude::*;
 
 fn main() {
@@ -31,8 +30,8 @@ fn setup(
             ..Default::default()
         },
         Collider::cuboid(2.5, 0.01, 2.5),
-        PickableBundle::default(),   // <- Makes the collider pickable.
-        RapierPickTarget::default(), // <- Needed for the rapier picking backend
+        PickableBundle::default(), // <- Makes the collider pickable.
+                                   // RapierPickTarget::default(), // <- Needed for the rapier picking backend
     ));
 
     // cube
@@ -44,8 +43,8 @@ fn setup(
             ..Default::default()
         },
         Collider::cuboid(0.5, 0.5, 0.5),
-        PickableBundle::default(),   // <- Makes the collider pickable.
-        RapierPickTarget::default(), // <- Needed for the rapier picking backend
+        PickableBundle::default(), // <- Makes the collider pickable.
+                                   // RapierPickTarget::default(), // <- Needed for the rapier picking backend
     ));
 
     // light
