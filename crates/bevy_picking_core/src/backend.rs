@@ -64,6 +64,17 @@ pub struct PointerHits {
     pub order: f32,
 }
 
+impl PointerHits {
+    #[allow(missing_docs)]
+    pub fn new(pointer: prelude::PointerId, picks: Vec<(Entity, HitData)>, order: f32) -> Self {
+        Self {
+            pointer,
+            picks,
+            order,
+        }
+    }
+}
+
 /// Holds data from a successful pointer hit test.
 ///
 /// `depth` only needs to be self-consistent with other [`PointerHits`]s using the same
@@ -79,4 +90,16 @@ pub struct HitData {
     pub position: Option<Vec3>,
     /// The normal vector of the hit test, if the data is available from the backend.
     pub normal: Option<Vec3>,
+}
+
+impl HitData {
+    #[allow(missing_docs)]
+    pub fn new(camera: Entity, depth: f32, position: Option<Vec3>, normal: Option<Vec3>) -> Self {
+        Self {
+            camera,
+            depth,
+            position,
+            normal,
+        }
+    }
 }

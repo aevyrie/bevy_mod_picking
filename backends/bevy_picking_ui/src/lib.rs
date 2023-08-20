@@ -16,6 +16,7 @@
 //! - Bevy ui can only render to the primary window
 //! - Bevy ui can render on any camera with a flag, it is special, and is not tied to a particular
 //!   camera.
+//! - To correctly sort picks, the order of bevy UI is set to be the camera order plus 0.5.
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
@@ -153,17 +154,8 @@ pub fn ui_picking(
         let mut depth = 0.0;
 
         while let Some(node) = iter.fetch_next() {
-            let mut push_hit = || {
-                picks.push((
-                    node.entity,
-                    HitData {
-                        camera: *camera_entity,
-                        depth,
-                        position: None,
-                        normal: None,
-                    },
-                ))
-            };
+            let mut push_hit =
+                || picks.push((node.entity, HitData::new(*camera_entity, depth, None, None)));
             push_hit();
             if let Some(pickable) = node.pickable {
                 // If an entity has a `Pickable` component, we will use that as the source of truth.
@@ -177,11 +169,7 @@ pub fn ui_picking(
 
             depth += 0.00001; // keep depth near 0 for precision
         }
-
-        output.send(PointerHits {
-            pointer: *pointer,
-            picks,
-            order: camera.order as f32 + 0.5,
-        })
+        let order = camera.order as f32 + 0.5; // bevy ui can run on any camera, it's a special case
+        output.send(PointerHits::new(*pointer, picks, order))
     }
 }

@@ -87,25 +87,13 @@ pub fn sprite_picking(
                     blocked = is_cursor_in_sprite
                         && sprite_focus.map(|p| p.should_block_lower) != Some(false);
 
-                    is_cursor_in_sprite.then_some((
-                        entity,
-                        HitData {
-                            camera: cam_entity,
-                            depth: position.z,
-                            position: None,
-                            normal: None,
-                        },
-                    ))
+                    is_cursor_in_sprite
+                        .then_some((entity, HitData::new(cam_entity, position.z, None, None)))
                 },
             )
             .collect();
 
         let order = camera.order as f32;
-
-        output.send(PointerHits {
-            pointer: *pointer,
-            picks,
-            order,
-        })
+        output.send(PointerHits::new(*pointer, picks, order))
     }
 }

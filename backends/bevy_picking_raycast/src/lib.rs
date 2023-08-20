@@ -114,24 +114,18 @@ fn update_hits(
                 .cast_ray(ray, &settings)
                 .iter()
                 .map(|(entity, hit)| {
-                    (
-                        *entity,
-                        HitData {
-                            camera: cam_entity,
-                            depth: hit.distance(),
-                            position: Some(hit.position()),
-                            normal: Some(hit.normal()),
-                        },
-                    )
+                    let hit_data = HitData::new(
+                        cam_entity,
+                        hit.distance(),
+                        Some(hit.position()),
+                        Some(hit.normal()),
+                    );
+                    (*entity, hit_data)
                 })
                 .collect::<Vec<_>>();
             let order = camera.order as f32;
             if !picks.is_empty() {
-                output_events.send(PointerHits {
-                    pointer,
-                    picks,
-                    order,
-                });
+                output_events.send(PointerHits::new(pointer, picks, order));
             }
         }
     });

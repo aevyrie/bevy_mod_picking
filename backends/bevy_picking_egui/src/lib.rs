@@ -79,21 +79,9 @@ pub fn egui_picking(
         if let NormalizedRenderTarget::Window(id) = location.target {
             if let Ok((entity, mut ctx)) = egui_context.get_mut(id.entity()) {
                 if ctx.get_mut().is_pointer_over_area() {
-                    let entry = (
-                        entity,
-                        HitData {
-                            camera: entity,
-                            depth: 0.0,
-                            position: None,
-                            normal: None,
-                        },
-                    );
-
-                    output.send(PointerHits {
-                        pointer: *pointer,
-                        picks: Vec::from([entry]),
-                        order: 1_000_000f32, // Assume egui should be on top of everything else.
-                    })
+                    let entry = (entity, HitData::new(entity, 0.0, None, None));
+                    let order = 1_000_000f32; // Assume egui should be on top of everything else.
+                    output.send(PointerHits::new(*pointer, Vec::from([entry]), order))
                 }
             }
         }

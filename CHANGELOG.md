@@ -29,4 +29,6 @@
   would be expected to work, and makes it easier to find the topmost entity under each pointer.
 - Added: `get_nearest_hit` method added to `PointerInteraction`
 - Changed: Moved `PointerInteraction` from the `focus` module to `pointer`.
-- Added: viewport example
+- Added: `split_screen` viewport example.
+- Added: many_events and many_buttons as stress tests.
+- Added: constructors for `HitData` and `PointerHits`.
