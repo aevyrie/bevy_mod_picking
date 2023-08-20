@@ -68,7 +68,7 @@ pub struct PointerHits {
 ///
 /// `depth` only needs to be self-consistent with other [`PointerHits`]s using the same
 /// [`RenderTarget`](bevy::render::camera::RenderTarget).
-#[derive(Clone, Copy, Debug, PartialEq, Reflect)]
+#[derive(Clone, Debug, PartialEq, Reflect)]
 pub struct HitData {
     /// The camera entity used to detect this hit. Useful when you need to find the ray that was
     /// casted for this hit when using a raycasting backend.

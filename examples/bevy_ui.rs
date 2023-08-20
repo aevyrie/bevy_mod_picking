@@ -1,19 +1,30 @@
 //! This example demonstrates how to use the plugin with bevy_ui.
 
-use bevy::{ecs::system::EntityCommands, prelude::*, ui::FocusPolicy};
+use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
-
-const NORMAL: Color = Color::rgb(0.15, 0.15, 0.15);
-const HOVERED: Color = Color::rgb(0.25, 0.25, 0.25);
-const PRESSED: Color = Color::rgb(0.35, 0.75, 0.35);
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
         .add_systems(Startup, (setup, setup_3d))
+        .add_systems(Update, update_button_colors)
         .run();
+}
+
+/// Use the [`PickingInteraction`] state of each button to update its color.
+fn update_button_colors(
+    mut buttons: Query<(Option<&PickingInteraction>, &mut BackgroundColor), With<Button>>,
+) {
+    for (interaction, mut button_color) in &mut buttons {
+        *button_color = match interaction {
+            Some(PickingInteraction::Pressed) => Color::rgb(0.35, 0.75, 0.35),
+            Some(PickingInteraction::Hovered) => Color::rgb(0.25, 0.25, 0.25),
+            Some(PickingInteraction::None) | None => Color::rgb(0.15, 0.15, 0.15),
+        }
+        .into();
+    }
 }
 
 fn setup(mut commands: Commands) {
@@ -102,6 +113,7 @@ trait NewButton {
 
 impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
     fn add_button(mut self, text: &str) -> Self {
+        let text_string = text.to_string();
         let child = self
             .commands()
             .spawn((
@@ -114,15 +126,10 @@ impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
                         align_items: AlignItems::Center,
                         ..default()
                     },
-                    background_color: NORMAL.into(),
-                    focus_policy: FocusPolicy::Block,
                     ..default()
                 },
-                // Use events to highlight buttons
-                On::<Pointer<Over>>::listener_insert(BackgroundColor::from(HOVERED)),
-                On::<Pointer<Out>>::listener_insert(BackgroundColor::from(NORMAL)),
-                On::<Pointer<Down>>::listener_insert(BackgroundColor::from(PRESSED)),
-                On::<Pointer<Up>>::listener_insert(BackgroundColor::from(HOVERED)),
+                // Add an onclick
+                On::<Pointer<Click>>::run(move || info!("Button {text_string} pressed!")),
                 // Buttons should not deselect other things:
                 NoDeselect,
             ))

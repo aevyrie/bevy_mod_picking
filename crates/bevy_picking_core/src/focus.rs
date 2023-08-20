@@ -1,10 +1,6 @@
 //! Determines which entities are being hovered by which pointers.
 
-use std::{
-    collections::BTreeMap,
-    fmt::Debug,
-    ops::{Deref, DerefMut},
-};
+use std::{collections::BTreeMap, fmt::Debug, ops::Deref};
 
 use crate::{
     backend::{self, HitData},
@@ -110,12 +106,12 @@ fn build_over_map(
         let layer_map = pointer_over_map
             .entry(pointer)
             .or_insert_with(BTreeMap::new);
-        for &(entity, pick_data) in entities_under_pointer.picks.iter() {
+        for (entity, pick_data) in entities_under_pointer.picks.iter() {
             let layer = entities_under_pointer.order;
             let depth_map = layer_map
                 .entry(FloatOrd(layer))
                 .or_insert_with(BTreeMap::new);
-            depth_map.insert(FloatOrd(pick_data.depth), (entity, pick_data));
+            depth_map.insert(FloatOrd(pick_data.depth), (*entity, pick_data.clone()));
         }
     }
 }
@@ -134,20 +130,20 @@ fn build_hover_map(
         let pointer_entity_set = hover_map.entry(*pointer_id).or_insert_with(HashMap::new);
         if let Some(layer_map) = over_map.get(pointer_id) {
             // Note we reverse here to start from the highest layer first.
-            for &(entity, pick_data) in layer_map
+            for (entity, pick_data) in layer_map
                 .values()
                 .rev()
                 .flat_map(|depth_map| depth_map.values())
             {
-                if let Ok(pickable) = pickable.get(entity) {
+                if let Ok(pickable) = pickable.get(*entity) {
                     if pickable.should_emit_events {
-                        pointer_entity_set.insert(entity, pick_data);
+                        pointer_entity_set.insert(*entity, pick_data.clone());
                     }
                     if pickable.should_block_lower {
                         break;
                     }
                 } else {
-                    pointer_entity_set.insert(entity, pick_data); // Emit events by default
+                    pointer_entity_set.insert(*entity, pick_data.clone()); // Emit events by default
                     break; // Entities block by default so we break out of the loop
                 }
             }
@@ -175,21 +171,25 @@ pub enum PickingInteraction {
     None = 0,
 }
 
-/// Holds a map of entities this pointer is currently interacting with.
+/// Holds a list of entities this pointer is currently interacting with, sorted from nearest to
+/// farthest.
 #[derive(Debug, Default, Clone, Component)]
 pub struct PointerInteraction {
-    map: HashMap<Entity, PickingInteraction>,
+    sorted_entities: Vec<(Entity, HitData)>,
 }
-impl Deref for PointerInteraction {
-    type Target = HashMap<Entity, PickingInteraction>;
 
-    fn deref(&self) -> &Self::Target {
-        &self.map
+impl PointerInteraction {
+    /// Returns the nearest hit entity and data about that intersection.
+    pub fn get_nearest_hit(&self) -> Option<&(Entity, HitData)> {
+        self.sorted_entities.first()
     }
 }
-impl DerefMut for PointerInteraction {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.map
+
+impl Deref for PointerInteraction {
+    type Target = Vec<(Entity, HitData)>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.sorted_entities
     }
 }
 
@@ -205,7 +205,7 @@ pub fn update_interactions(
 ) {
     // Clear all previous hover data from pointers and entities
     for (pointer, _, mut pointer_interaction) in &mut pointers {
-        pointer_interaction.clear();
+        pointer_interaction.sorted_entities.clear();
         if let Some(previously_hovered_entities) = previous_hover_map.get(pointer) {
             for entity in previously_hovered_entities.keys() {
                 if let Ok(mut interaction) = interact.get_mut(*entity) {
@@ -220,28 +220,15 @@ pub fn update_interactions(
     // so we need to know the final aggregated interaction state to avoid the scenario where we set
     // an entity to `Pressed`, then overwrite that with a lower precedent like `Hovered`.
     let mut new_interaction_state = HashMap::<Entity, PickingInteraction>::new();
-    for (pointer, pointer_press, _) in &mut pointers {
-        if let Some(hovering_pointer_map) = hover_map.get(pointer) {
-            for hovered_entity in hovering_pointer_map.iter().map(|(entity, _)| entity) {
-                let new_interaction = match pointer_press.is_any_pressed() {
-                    true => PickingInteraction::Pressed,
-                    false => PickingInteraction::Hovered,
-                };
+    for (pointer, pointer_press, mut pointer_interaction) in &mut pointers {
+        if let Some(pointers_hovered_entities) = hover_map.get(pointer) {
+            // Insert a sorted list of hit entities into the pointer's interaction component.
+            let mut sorted_entities: Vec<_> = pointers_hovered_entities.clone().drain().collect();
+            sorted_entities.sort_by_key(|(_entity, hit)| FloatOrd(hit.depth));
+            pointer_interaction.sorted_entities = sorted_entities;
 
-                if let Some(old_interaction) = new_interaction_state.get_mut(hovered_entity) {
-                    // Only update the entry if the new value has a higher precedence than the old
-                    // value.
-                    if matches!(
-                        (*old_interaction, new_interaction),
-                        (PickingInteraction::Hovered, PickingInteraction::Pressed)
-                            | (PickingInteraction::None, PickingInteraction::Pressed)
-                            | (PickingInteraction::None, PickingInteraction::Hovered)
-                    ) {
-                        *old_interaction = new_interaction;
-                    }
-                } else {
-                    new_interaction_state.insert(*hovered_entity, new_interaction);
-                }
+            for hovered_entity in pointers_hovered_entities.iter().map(|(entity, _)| entity) {
+                merge_interaction_states(pointer_press, hovered_entity, &mut new_interaction_state);
             }
         }
     }
@@ -253,5 +240,31 @@ pub fn update_interactions(
         } else if let Some(mut entity_commands) = commands.get_entity(hovered_entity) {
             entity_commands.insert(new_interaction);
         }
+    }
+}
+
+/// Merge the interaction state of this entity into the aggregated map.
+fn merge_interaction_states(
+    pointer_press: &PointerPress,
+    hovered_entity: &Entity,
+    new_interaction_state: &mut HashMap<Entity, PickingInteraction>,
+) {
+    let new_interaction = match pointer_press.is_any_pressed() {
+        true => PickingInteraction::Pressed,
+        false => PickingInteraction::Hovered,
+    };
+
+    if let Some(old_interaction) = new_interaction_state.get_mut(hovered_entity) {
+        // Only update if the new value has a higher precedence than the old value.
+        if matches!(
+            (*old_interaction, new_interaction),
+            (PickingInteraction::Hovered, PickingInteraction::Pressed)
+                | (PickingInteraction::None, PickingInteraction::Pressed)
+                | (PickingInteraction::None, PickingInteraction::Hovered)
+        ) {
+            *old_interaction = new_interaction;
+        }
+    } else {
+        new_interaction_state.insert(*hovered_entity, new_interaction);
     }
 }

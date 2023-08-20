@@ -5,7 +5,10 @@
 #![deny(missing_docs)]
 
 use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
-use bevy_mod_raycast::{Ray3d, RaycastSource};
+use bevy_mod_raycast::{
+    system_param::{Raycast, RaycastVisibility},
+    Ray3d,
+};
 use bevy_picking_core::backend::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_raycast`](crate) crate.
@@ -20,7 +23,7 @@ impl Plugin for RaycastBackend {
     fn build(&self, app: &mut App) {
         app.add_systems(
             First,
-            (build_rays_from_pointers, spawn_raycast_sources)
+            (build_rays_from_pointers)
                 .chain()
                 .in_set(PickSet::PostInput),
         )
@@ -32,8 +35,7 @@ impl Plugin for RaycastBackend {
             )
                 .chain()
                 .in_set(PickSet::Backend),
-        )
-        .add_systems(PostUpdate, sync_pickable);
+        );
     }
 }
 
@@ -62,42 +64,6 @@ impl RaycastPickCamera {
     }
 }
 
-#[derive(Component)]
-struct DisabledTarget;
-
-/// A disgusting hack to support ignoring entities that have their `Pickable` component removed.
-fn sync_pickable(
-    mut commands: Commands,
-    mut removed: RemovedComponents<Pickable>,
-    targets: Query<With<RaycastPickTarget>>,
-    added: Query<Entity, (With<Pickable>, With<DisabledTarget>)>,
-) {
-    for removed in &mut removed {
-        if targets.get(removed).is_ok() {
-            commands
-                .entity(removed)
-                .insert(DisabledTarget)
-                .remove::<RaycastPickTarget>();
-        }
-    }
-    for added in &added {
-        commands
-            .entity(added)
-            .insert(RaycastPickTarget::default())
-            .remove::<DisabledTarget>();
-    }
-}
-
-// --
-//
-// TODO:
-//
-// The following design, where we need to add children to the cameras, only exists because
-// `bevy_mod_raycast` only supports raycasting via components. Ideally, we would be able to run
-// raycasts on demand without needing to supply them as components on entities.
-//
-// --
-
 /// Builds rays and updates raycasting [`RaycastPickCamera`]s from [`PointerLocation`]s.
 pub fn build_rays_from_pointers(
     pointers: Query<(&PointerId, &PointerLocation)>,
@@ -125,71 +91,47 @@ pub fn build_rays_from_pointers(
     }
 }
 
-/// A newtype, used solely to mark the [`RaycastSource`] children on the [`RaycastPickCamera`] so we
-/// know what pointer they are associated with.
-#[derive(Component)]
-struct PointerMarker(PointerId);
-
-/// Using the rays in each [`RaycastPickCamera`], updates their child [`RaycastSource`]s.
-pub fn spawn_raycast_sources(
-    mut commands: Commands,
-    picking_cameras: Query<(Entity, &RaycastPickCamera)>,
-    child_sources: Query<Entity, With<RaycastSource<RaycastPickingSet>>>,
-) {
-    child_sources
-        .iter()
-        .for_each(|pick_source| commands.entity(pick_source).despawn_recursive());
-
-    picking_cameras.iter().for_each(|(entity, pick_cam)| {
-        pick_cam.ray_map.iter().for_each(|(pointer, ray)| {
-            let mut new_source = RaycastSource::<RaycastPickingSet>::default();
-            new_source.ray = Some(*ray);
-            let pointer_marker = PointerMarker(*pointer);
-            let new_child = commands.spawn((new_source, pointer_marker)).id();
-            commands.entity(entity).add_child(new_child);
-        })
-    })
-}
-
 /// Produces [`PointerHits`]s from [`RaycastSource`] intersections.
 fn update_hits(
-    pick_cameras: Query<(Entity, &Camera), With<RaycastPickCamera>>,
-    mut pick_sources: Query<(&PointerMarker, &RaycastSource<RaycastPickingSet>, &Parent)>,
+    pick_cameras: Query<(Entity, &Camera, &RaycastPickCamera)>,
+    mut raycast: Raycast<RaycastPickingSet>,
     mut output_events: EventWriter<PointerHits>,
+    pickables: Query<&Pickable>,
 ) {
-    pick_sources
-        .iter_mut()
-        .filter_map(|(pointer, pick_source, parent)| {
-            pick_cameras
-                .get(parent.get())
-                .map(|(entity, camera)| (pointer, pick_source, entity, camera))
-                .ok()
-        })
-        .for_each(|(pointer_marker, pick_source, cam_entity, camera)| {
-            let under_cursor: Vec<(Entity, HitData)> = pick_source
-                .intersections()
+    pick_cameras.iter().for_each(|(cam_entity, camera, map)| {
+        for (&pointer, &ray) in map.ray_map().iter() {
+            let settings = bevy_mod_raycast::system_param::RaycastSettings {
+                visibility: RaycastVisibility::MustBeVisibleAndInView,
+                filter: &|_| true, // Consider all entities in the raycasting set
+                early_exit_test: &|entity_hit| {
+                    pickables
+                        .get(entity_hit)
+                        .is_ok_and(|pickable| pickable.should_block_lower)
+                },
+            };
+            let picks = raycast
+                .cast_ray(ray, &settings)
                 .iter()
-                .map(|(entity, intersection)| {
+                .map(|(entity, hit)| {
                     (
                         *entity,
                         HitData {
                             camera: cam_entity,
-                            depth: intersection.distance(),
-                            position: Some(intersection.position()),
-                            normal: Some(intersection.normal()),
+                            depth: hit.distance(),
+                            position: Some(hit.position()),
+                            normal: Some(hit.normal()),
                         },
                     )
                 })
-                .collect();
-
+                .collect::<Vec<_>>();
             let order = camera.order as f32;
-
-            if !under_cursor.is_empty() {
+            if !picks.is_empty() {
                 output_events.send(PointerHits {
-                    pointer: pointer_marker.0,
-                    picks: under_cursor,
+                    pointer,
+                    picks,
                     order,
                 });
             }
-        });
+        }
+    });
 }

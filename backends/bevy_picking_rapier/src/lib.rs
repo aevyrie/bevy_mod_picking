@@ -14,7 +14,7 @@
 //! Because raycasting is expensive, only the closest intersection will be reported. This means that
 //! unlike some UI, you cannot hover multiple rapier objects with a single pointer by configuring
 //! the [`Pickable`] component to not block lower elements but still emit events. As mentioned
-//! above, all that is supported is completely ignoring an entity with [`Pickable::ignore`].
+//! above, all that is supported is completely ignoring an entity with [`Pickable::IGNORE`].
 //!
 //! This is probably not a meaningful limitation, as the feature is usually only used in UI where
 //! you might want a pointer to be able to pick multiple elements that are on top of each other. If
@@ -138,7 +138,7 @@ fn update_hits(
             };
             let order = cam_order as f32;
             output.send(PointerHits {
-                pointer: pointer,
+                pointer,
                 picks: vec![(target, hit)],
                 order,
             });

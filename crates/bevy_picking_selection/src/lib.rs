@@ -59,8 +59,8 @@ impl Plugin for SelectionPlugin {
     }
 }
 
-/// Input state that defines whether or not the multiselect button is active. This is often the
-/// `Ctrl` or `Shift` keys.
+/// A component for pointers that defines whether or not the multiselect button is active. This is
+/// often the `Ctrl` or `Shift` keys.
 #[derive(Debug, Default, Clone, Component, PartialEq, Eq, Reflect)]
 pub struct PointerMultiselect {
     /// `true` if the multiselect button(s) is active.
@@ -126,7 +126,9 @@ pub fn send_selection_events(
         pointer_location,
         target,
         event: _,
-    } in pointer_down.iter()
+    } in pointer_down
+        .iter()
+        .filter(|pointer| pointer.event.button == PointerButton::Primary)
     {
         pointer_down_list.insert(pointer_id);
         let multiselect = pointers

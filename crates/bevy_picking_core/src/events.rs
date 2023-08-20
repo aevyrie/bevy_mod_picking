@@ -221,7 +221,7 @@ pub fn pointer_events(
         for (hovered_entity, hit) in hover_map
             .get(&pointer_id)
             .iter()
-            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, *data)))
+            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, data.to_owned())))
         {
             pointer_move.send(Pointer::new(
                 pointer_id,
@@ -240,7 +240,7 @@ pub fn pointer_events(
         for (hovered_entity, hit) in previous_hover_map
             .get(&press_event.pointer_id)
             .iter()
-            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, *data)))
+            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, data.clone())))
         {
             if let PressDirection::Up = press_event.direction {
                 let Some(location) = pointer_location(press_event.pointer_id) else {
@@ -258,7 +258,7 @@ pub fn pointer_events(
         for (hovered_entity, hit) in hover_map
             .get(&press_event.pointer_id)
             .iter()
-            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, *data)))
+            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, data.clone())))
         {
             if let PressDirection::Down = press_event.direction {
                 let Some(location) = pointer_location(press_event.pointer_id) else {
@@ -278,7 +278,7 @@ pub fn pointer_events(
     // If the entity is hovered...
     for (pointer_id, hovered_entity, hit) in hover_map
         .iter()
-        .flat_map(|(id, hashmap)| hashmap.iter().map(|data| (*id, *data.0, *data.1)))
+        .flat_map(|(id, hashmap)| hashmap.iter().map(|data| (*id, *data.0, data.1.clone())))
     {
         // ...but was not hovered last frame...
         if !previous_hover_map
@@ -302,7 +302,7 @@ pub fn pointer_events(
     // If the entity was hovered by a specific pointer last frame...
     for (pointer_id, hovered_entity, hit) in previous_hover_map
         .iter()
-        .flat_map(|(id, hashmap)| hashmap.iter().map(|data| (*id, *data.0, *data.1)))
+        .flat_map(|(id, hashmap)| hashmap.iter().map(|data| (*id, *data.0, data.1.clone())))
     {
         // ...but is now not being hovered by that same pointer...
         if !hover_map
@@ -392,7 +392,7 @@ pub fn send_click_and_drag_events(
                     down.target,
                     DragStart {
                         button,
-                        hit: down.hit,
+                        hit: down.hit.clone(),
                     },
                 ))
             }
@@ -509,11 +509,11 @@ pub fn send_drag_over_events(
                 )
             {
                 let drag_entry = drag_over_map.entry((pointer_id, button)).or_default();
-                drag_entry.insert(target, hit);
+                drag_entry.insert(target, hit.clone());
                 let event = DragEnter {
                     button,
                     dragged: *drag_target,
-                    hit,
+                    hit: hit.clone(),
                 };
                 pointer_drag_enter.send(Pointer::new(
                     pointer_id,
@@ -549,7 +549,7 @@ pub fn send_drag_over_events(
                     DragOver {
                         button,
                         dragged: *drag_target,
-                        hit,
+                        hit: hit.clone(),
                     },
                 ))
             }
@@ -579,7 +579,7 @@ pub fn send_drag_over_events(
                 DragLeave {
                     button,
                     dragged: target,
-                    hit,
+                    hit: hit.clone(),
                 },
             ));
             pointer_drop.send(Pointer::new(
@@ -589,7 +589,7 @@ pub fn send_drag_over_events(
                 Drop {
                     button,
                     dropped: target,
-                    hit,
+                    hit: hit.clone(),
                 },
             ));
         }
@@ -621,7 +621,7 @@ pub fn send_drag_over_events(
                     DragLeave {
                         button,
                         dragged: *drag_target,
-                        hit,
+                        hit: hit.clone(),
                     },
                 ))
             }
