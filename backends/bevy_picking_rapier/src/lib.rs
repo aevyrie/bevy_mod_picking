@@ -129,18 +129,9 @@ fn update_hits(
                     (cam_entity, cam_order, pointer, target, intersection)
                 })
         })
-        .for_each(|(cam_entity, cam_order, pointer, target, intersection)| {
-            let hit = HitData {
-                camera: cam_entity,
-                depth: intersection.toi,
-                position: Some(intersection.point),
-                normal: Some(intersection.normal),
-            };
+        .for_each(|(cam_entity, cam_order, pointer, target, hit)| {
+            let hit = HitData::new(cam_entity, hit.toi, Some(hit.point), Some(hit.normal));
             let order = cam_order as f32;
-            output.send(PointerHits {
-                pointer,
-                picks: vec![(target, hit)],
-                order,
-            });
+            output.send(PointerHits::new(pointer, vec![(target, hit)], order));
         });
 }
