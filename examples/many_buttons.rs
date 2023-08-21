@@ -1,16 +1,4 @@
-//! This example shows what happens when there is a lot of buttons on screen.
-//!
-//! To start the demo without text run
-//! `cargo run --example many_buttons --release no-text`
-//!
-//! //! To start the demo without borders run
-//! `cargo run --example many_buttons --release no-borders`
-//!
-//| To do a full layout update each frame run
-//! `cargo run --example many_buttons --release recompute-layout`
-//!
-//! To recompute all text each frame run
-//! `cargo run --example many_buttons --release recompute-text`
+//! A stress test for picking and events with many interactive elements.
 
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
@@ -19,7 +7,6 @@ use bevy::{
 };
 use bevy_mod_picking::prelude::*;
 
-// For a total of 110 * 110 = 12100 buttons with text
 const ROW_COLUMN_COUNT: usize = 110;
 const FONT_SIZE: f32 = 7.0;
 

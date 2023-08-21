@@ -35,7 +35,7 @@ fn setup(
         // When any of this entity's children are interacted with using a pointer, those events will
         // propagate up the entity hierarchy until they reach this parent. By referring to the
         // `target` entity instead of the `listener` entity, we can do things to specific target
-        // entities, even though they lack `OnPointer` components.
+        // entities, even though they lack `On<Pointer<Event>>` components.
         .spawn((
             PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -74,7 +74,7 @@ fn setup(
                     event.target
                 );
             }),
-            // When you just want to add a `Command` to the target entity,`add_target_commands` will
+            // When you just want to add a `Command` to the target entity,`target_commands_mut` will
             // reduce boilerplate and allow you to do this directly.
             On::<Pointer<Click>>::target_commands_mut(|click, target_commands| {
                 if click.target != click.listener() && click.button == PointerButton::Secondary {

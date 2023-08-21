@@ -1,4 +1,4 @@
-//! A minimal 3d example.
+//! A test of very large hierarchies for stress testing event listening.
 
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -15,8 +15,8 @@ fn main() {
         .run();
 }
 
-const WIDTH: isize = 18;
-const HEIGHT: isize = 10;
+const WIDTH: isize = 36;
+const HEIGHT: isize = 20;
 const TREE_DEPTH: usize = 100;
 
 /// set up a simple 3D scene

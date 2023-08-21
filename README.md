@@ -38,17 +38,17 @@ systems, though a number of helpers are provided to reduce boilerplate:
 commands.spawn((
     PbrBundle { /* ... */ },
     // These callbacks are run when this entity or its children are interacted with.
-    OnPointer::<Move>::run_callback(change_hue_with_vertical_move),
+    On::<Pointer<Move>>::run(change_hue_with_vertical_move),
     // Rotate an entity when dragged:
-    OnPointer::<Drag>::target_component_mut::<Transform>(|drag, transform| {
+    On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
         transform.rotate_local_y(drag.delta.x / 50.0)
     }),
     // Despawn an entity when clicked:
-    OnPointer::<Click>::target_commands_mut(|_click, target_commands| {
+    On::<Pointer<Click>>::target_commands_mut(|_click, target_commands| {
         target_commands.despawn();
     }),
     // Send an event when the pointer is pressed over this entity:
-    OnPointer::<Down>::send_event::<DoSomethingComplex>(),
+    On::<Pointer<Down>>::send_event::<DoSomethingComplex>(),
 ));
 
 ```
@@ -113,7 +113,8 @@ I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
 
 | bevy | bevy_mod_picking |
 | ---- | ---------------- |
-| 0.10 | 0.12, 0.13       |
+| 0.11 | 0.15             |
+| 0.10 | 0.12, 0.13, 0.14 |
 | 0.9  | 0.10, 0.11       |
 | 0.8  | 0.8, 0.9         |
 | 0.7  | 0.6, 0.7         |

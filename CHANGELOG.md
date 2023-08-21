@@ -30,6 +30,6 @@
 - Added: `get_nearest_hit` method added to `PointerInteraction`
 - Changed: Moved `PointerInteraction` from the `focus` module to `pointer`.
 - Added: `split_screen` viewport example.
-- Added: many_events and many_buttons as stress tests.
+- Added: `many_events` and `many_buttons` stress test examples.
 - Added: constructors for `HitData` and `PointerHits`.
 - Changed: selection only considers clicks with the primary pointer button.
