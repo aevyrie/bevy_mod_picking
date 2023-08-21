@@ -32,3 +32,4 @@
 - Added: `split_screen` viewport example.
 - Added: many_events and many_buttons as stress tests.
 - Added: constructors for `HitData` and `PointerHits`.
+- Changed: selection only considers clicks with the primary pointer button.
