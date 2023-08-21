@@ -79,6 +79,7 @@ where
                 get_initial_highlight_asset::<T>,
                 Highlight::<T>::update_dynamic,
                 update_highlight_assets::<T>,
+                #[cfg(feature = "selection")]
                 update_selection::<T>,
             )
                 .chain()
