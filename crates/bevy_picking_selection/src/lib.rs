@@ -185,7 +185,9 @@ pub fn send_selection_events(
         pointer_location,
         target,
         event: _,
-    } in pointer_click.iter()
+    } in pointer_click
+        .iter()
+        .filter(|pointer| pointer.event.button == PointerButton::Primary)
     {
         let multiselect = pointers
             .iter()
