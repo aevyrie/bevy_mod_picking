@@ -76,12 +76,11 @@ pub fn sprite_picking(
                         return None;
                     }
                     let position = sprite_transform.translation();
-                    let half_extents = sprite
+                    let extents = sprite
                         .custom_size
-                        .or_else(|| images.get(image).map(|f| f.size()))
-                        .map(|size| size / 2.0)?;
-                    let center = position.truncate() + (sprite.anchor.as_vec() * half_extents);
-                    let rect = Rect::from_center_half_size(center, half_extents);
+                        .or_else(|| images.get(image).map(|f| f.size()))?;
+                    let center = position.truncate() - (sprite.anchor.as_vec() * extents);
+                    let rect = Rect::from_center_half_size(center, extents / 2.0);
 
                     let is_cursor_in_sprite = rect.contains(cursor_pos_world);
                     blocked = is_cursor_in_sprite
