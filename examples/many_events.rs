@@ -5,18 +5,24 @@ use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-        .add_plugins(
+        .add_plugins((
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    present_mode: bevy::window::PresentMode::AutoNoVsync,
+                    ..default()
+                }),
+                ..default()
+            }),
             DefaultPickingPlugins
                 .build()
                 .disable::<DebugPickingPlugin>(),
-        )
+        ))
         .add_systems(Startup, setup)
         .run();
 }
 
-const WIDTH: isize = 36;
-const HEIGHT: isize = 20;
+const WIDTH: isize = 32;
+const HEIGHT: isize = 18;
 const TREE_DEPTH: usize = 100;
 
 /// set up a simple 3D scene
@@ -56,10 +62,7 @@ fn setup(
         },
         ..default()
     });
-    commands.spawn((
-        Camera3dBundle::default(),
-        RaycastPickCamera::default(), // <- Enable picking for this camera
-    ));
+    commands.spawn((Camera3dBundle::default(),));
 }
 
 fn spawn_cube(
@@ -76,8 +79,7 @@ fn spawn_cube(
                 transform,
                 ..Default::default()
             },
-            PickableBundle::default(),    // <- Makes the mesh pickable.
-            RaycastPickTarget::default(), // <- Needed for the raycast backend.
+            PickableBundle::default(), // <- Makes the mesh pickable.
         ))
         .id()
 }

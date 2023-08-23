@@ -72,8 +72,7 @@ fn setup_3d(
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+        PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     commands.spawn((
         PbrBundle {
@@ -82,8 +81,7 @@ fn setup_3d(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+        PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -94,17 +92,14 @@ fn setup_3d(
         transform: Transform::from_xyz(4.0, 8.0, -4.0),
         ..Default::default()
     });
-    commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-            camera: Camera {
-                order: 1,
-                ..default()
-            },
+    commands.spawn((Camera3dBundle {
+        transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
+        camera: Camera {
+            order: 1,
             ..default()
         },
-        RaycastPickCamera::default(), // <- Enable picking for this camera
-    ));
+        ..default()
+    },));
 }
 
 trait NewButton {

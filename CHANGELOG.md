@@ -1,3 +1,12 @@
+# UNRELEASED
+
+- Changed: the bevy_mod_raycast backend no longer requires markers on the camera
+  (`RaycastPickCamera`) and targets (`RaycastPickTarget`).
+- Added: `RaycastBackendSettings` resource added to allow toggling the requirement for markers with
+  the bevy_mod_raycast backend at runtime. Enable the `require_markers` field to match behavior of
+  the plugin to v0.15 and earlier.
+- Added: `bevy_mod_raycast` backend now checks render layers when filtering entities.
+
 # 0.15.0
 
 - Update to Bevy 0.11.

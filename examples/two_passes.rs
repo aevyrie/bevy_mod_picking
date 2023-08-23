@@ -26,8 +26,7 @@ fn setup(
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+        PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     // cube
     commands.spawn((
@@ -37,8 +36,7 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+        PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     // light
     commands.spawn(PointLightBundle {
@@ -51,13 +49,10 @@ fn setup(
         ..default()
     });
     // camera
-    commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        },
-        RaycastPickCamera::default(), // <- Enable picking for this camera
-    ));
+    commands.spawn((Camera3dBundle {
+        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..default()
+    },));
 
     // plane 2
     commands.spawn((
@@ -67,8 +62,7 @@ fn setup(
             transform: Transform::from_xyz(20., 20., 20.),
             ..default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+        PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     // cube 2
     commands.spawn((
@@ -78,8 +72,7 @@ fn setup(
             transform: Transform::from_xyz(20., 20.5, 20.),
             ..default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+        PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     // light
     commands.spawn(PointLightBundle {
@@ -92,21 +85,18 @@ fn setup(
         ..default()
     });
     // camera 2
-    commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_xyz(30., 30., 30.0)
-                .looking_at(Vec3::new(20., 20.5, 20.), Vec3::Y),
-            camera_3d: Camera3d {
-                clear_color: ClearColorConfig::None,
-                ..default()
-            },
-            camera: Camera {
-                // renders after / on top of the main camera
-                order: 1,
-                ..default()
-            },
+    commands.spawn((Camera3dBundle {
+        transform: Transform::from_xyz(30., 30., 30.0)
+            .looking_at(Vec3::new(20., 20.5, 20.), Vec3::Y),
+        camera_3d: Camera3d {
+            clear_color: ClearColorConfig::None,
             ..default()
         },
-        RaycastPickCamera::default(), // <- Enable picking for this camera
-    ));
+        camera: Camera {
+            // renders after / on top of the main camera
+            order: 1,
+            ..default()
+        },
+        ..default()
+    },));
 }

@@ -17,6 +17,7 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    commands.spawn(Camera2dBundle::default());
     commands.spawn((
         MaterialMesh2dBundle {
             mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
@@ -24,9 +25,6 @@ fn setup(
             material: materials.add(ColorMaterial::from(Color::PURPLE)),
             ..default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+        PickableBundle::default(), // <- Makes the mesh pickable.
     ));
-
-    commands.spawn((Camera2dBundle::default(), RaycastPickCamera::default())); // <- Sets the camera to use for picking.
 }

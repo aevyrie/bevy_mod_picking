@@ -24,7 +24,7 @@ fn setup(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     // Spawn camera
-    commands.spawn((Camera2dBundle::default(), RaycastPickCamera::default()));
+    commands.spawn(Camera2dBundle::default());
     // Spawn squares
     for x in -2..=2 {
         let z = 0.5 + x as f32 * 0.1;
@@ -36,13 +36,11 @@ fn setup(
                 material: materials.add(ColorMaterial::from(Color::hsl(0.0, 1.0, z))),
                 ..Default::default()
             },
-            PickableBundle::default(),    // <- Makes the mesh pickable.
-            RaycastPickTarget::default(), // <- Needed for the raycast backend.
+            PickableBundle::default(), // <- Makes the mesh pickable.
             On::<Pointer<DragStart>>::target_insert(Pickable::IGNORE), // Disable picking
             On::<Pointer<DragEnd>>::target_insert(Pickable::default()), // Re-enable picking
             On::<Pointer<Drag>>::target_component_mut::<Transform>(|drag, transform| {
-                // Make the square follow the mouse
-                transform.translation.x += drag.delta.x;
+                transform.translation.x += drag.delta.x; // Make the square follow the mouse
                 transform.translation.y -= drag.delta.y;
             }),
             On::<Pointer<Drop>>::commands_mut(|event, commands| {

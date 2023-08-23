@@ -25,8 +25,7 @@ fn setup(
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+        PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     commands.spawn((
         PbrBundle {
@@ -35,8 +34,7 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+        PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -49,13 +47,10 @@ fn setup(
     });
     // main camera, cameras default to the primary window
     // so we don't need to specify that.
-    commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        },
-        RaycastPickCamera::default(), // <- Enable picking for this camera
-    ));
+    commands.spawn((Camera3dBundle {
+        transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..default()
+    },));
 
     // Spawn a second window
     let second_window = commands
@@ -66,15 +61,12 @@ fn setup(
         .id();
 
     // second window camera
-    commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_xyz(6.0, 1.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
-            camera: Camera {
-                target: RenderTarget::Window(WindowRef::Entity(second_window)),
-                ..default()
-            },
+    commands.spawn((Camera3dBundle {
+        transform: Transform::from_xyz(6.0, 1.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
+        camera: Camera {
+            target: RenderTarget::Window(WindowRef::Entity(second_window)),
             ..default()
         },
-        RaycastPickCamera::default(), // <- Enable picking for this camera
-    ));
+        ..default()
+    },));
 }

@@ -27,7 +27,6 @@ fn setup(
                 ..Default::default()
             },
             PickableBundle::default(),
-            RaycastPickTarget::default(), // <- Needed for the raycast backend.
             NoDeselect, // <- When this entity is clicked, other entities won't be deselected.
         ))
         .remove::<PickSelection>(); // <- Removing this removes the entity's ability to be selected.
@@ -40,7 +39,6 @@ fn setup(
             ..Default::default()
         },
         PickableBundle::default(),
-        RaycastPickTarget::default(),
     ));
     commands.spawn(PointLightBundle {
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
@@ -51,11 +49,8 @@ fn setup(
         },
         ..Default::default()
     });
-    commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ..Default::default()
-        },
-        RaycastPickCamera::default(),
-    ));
+    commands.spawn((Camera3dBundle {
+        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..Default::default()
+    },));
 }
