@@ -43,7 +43,6 @@ fn setup(
                 ..Default::default()
             },
             PickableBundle::default(),
-            RaycastPickTarget::default(),
             // Callbacks are just exclusive bevy systems that have access to an event data via
             // `](bevy_eventlistener::prelude::Listener) and [`ListenerMut`]. This gives
             // you full freedom to write normal bevy
@@ -109,7 +108,6 @@ fn setup(
                         ..Default::default()
                     },
                     PickableBundle::default(),
-                    RaycastPickTarget::default(),
                 ));
             }
         });
@@ -123,13 +121,10 @@ fn setup(
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..Default::default()
     });
-    commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_xyz(-2.0, 4.5, 5.0).looking_at(Vec3::Y * 2.0, Vec3::Y),
-            ..Default::default()
-        },
-        RaycastPickCamera::default(),
-    ));
+    commands.spawn((Camera3dBundle {
+        transform: Transform::from_xyz(-2.0, 4.5, 5.0).looking_at(Vec3::Y * 2.0, Vec3::Y),
+        ..Default::default()
+    },));
 }
 
 /// Change the hue of mesh's `StandardMaterial` when the mouse moves vertically over it.

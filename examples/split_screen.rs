@@ -27,8 +27,7 @@ fn setup(
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+        PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     commands.spawn((
         PbrBundle {
@@ -37,8 +36,7 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         },
-        PickableBundle::default(),    // <- Makes the mesh pickable.
-        RaycastPickTarget::default(), // <- Needed for the raycast backend.
+        PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -57,7 +55,6 @@ fn setup(
             ..default()
         },
         LeftCamera,
-        RaycastPickCamera::default(), // <- Enable picking for this camera
     ));
 
     // Right Camera
@@ -77,7 +74,6 @@ fn setup(
             ..default()
         },
         RightCamera,
-        RaycastPickCamera::default(), // <- Enable picking for this camera
     ));
 }
 
