@@ -90,13 +90,9 @@
 //! commands.spawn((
 //!     PbrBundle::default(),           // The `bevy_picking_raycast` backend works with meshes
 //!     PickableBundle::default(),      // Makes the entity pickable
-//!     RaycastPickTarget::default()    // Marker for the `bevy_picking_raycast` backend
 //! ));
 //!
-//! commands.spawn((
-//!     Camera3dBundle::default(),
-//!     RaycastPickCamera::default(),   // Enable picking using this camera
-//! ));
+//! commands.spawn(Camera3dBundle::default());
 //! # }
 //! ```
 //!

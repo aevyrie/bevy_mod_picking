@@ -1,5 +1,6 @@
 # UNRELEASED
 
+- Fixed: anchor handling in sprite backend.
 - Changed: the bevy_mod_raycast backend no longer requires markers on the camera
   (`RaycastPickCamera`) and targets (`RaycastPickTarget`).
 - Added: `RaycastBackendSettings` resource added to allow toggling the requirement for markers with
