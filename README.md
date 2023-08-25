@@ -18,7 +18,7 @@ entity, and works with mouse, touch, or even gamepads.
 # Highlights
 
 - ***Lightweight***: only compile what you need.
-- ***Expressive***: event listener components `OnPointer::<Click>::run_callback(my_system)`.
+- ***Expressive***: event listener components `On::<Pointer<Click>>::run(my_system)`.
 - ***Input Agnostic***: control pointers with mouse, pen, touch, or custom bevy systems.
 - ***Modular Backends***: mix and match backends like `rapier`, `egui`, `bevy_ui`, or write your own. 
 ## Lightweight
