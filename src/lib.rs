@@ -165,7 +165,7 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::prelude::Bundle;
+use bevy_ecs::prelude::*;
 use bevy_picking_core::PointerCoreBundle;
 use prelude::*;
 
@@ -276,9 +276,9 @@ impl PointerBundle {
 /// multiselect. Backends are automatically added if their corresponding feature is enabled.
 pub struct DefaultPickingPlugins;
 
-impl bevy::prelude::PluginGroup for DefaultPickingPlugins {
-    fn build(self) -> bevy::app::PluginGroupBuilder {
-        let mut builder = bevy::app::PluginGroupBuilder::start::<Self>();
+impl bevy_app::PluginGroup for DefaultPickingPlugins {
+    fn build(self) -> bevy_app::PluginGroupBuilder {
+        let mut builder = bevy_app::PluginGroupBuilder::start::<Self>();
 
         builder = builder
             .add(picking_core::CorePlugin)
@@ -332,10 +332,10 @@ impl bevy::prelude::PluginGroup for DefaultPickingPlugins {
 /// Used for examples to reduce picking latency. Not relevant code for the examples.
 #[doc(hidden)]
 #[allow(dead_code)]
-pub fn low_latency_window_plugin() -> bevy::window::WindowPlugin {
-    bevy::window::WindowPlugin {
-        primary_window: Some(bevy::window::Window {
-            present_mode: bevy::window::PresentMode::AutoNoVsync,
+pub fn low_latency_window_plugin() -> bevy_window::WindowPlugin {
+    bevy_window::WindowPlugin {
+        primary_window: Some(bevy_window::Window {
+            present_mode: bevy_window::PresentMode::AutoNoVsync,
             ..Default::default()
         }),
         ..Default::default()

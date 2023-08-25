@@ -2,11 +2,17 @@
 
 use std::fmt::Debug;
 
+use bevy_core::Name;
 use bevy_picking_core::focus::HoverMap;
 use picking_core::{backend::HitData, events::DragMap, pointer::Location};
 
 use crate::*;
-use bevy::prelude::*;
+
+use bevy_app::prelude::*;
+use bevy_math::prelude::*;
+use bevy_reflect::prelude::*;
+use bevy_render::prelude::*;
+use bevy_utils::tracing::info;
 
 /// This state determines the runtime behavior of the debug plugin.
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
@@ -98,7 +104,7 @@ impl Plugin for DebugPickingPlugin {
                 .in_set(picking_core::PickSet::Last),
         );
 
-        #[cfg(not(feature = "backend_egui"))]
+        #[cfg(all(feature = "backend_bevy_ui", not(feature = "backend_egui")))]
         app.add_systems(
             PreUpdate,
             (add_pointer_debug, update_debug_data, debug_draw)
@@ -256,8 +262,8 @@ pub fn debug_draw_egui(
     mut egui: bevy_egui::EguiContexts,
     pointers: Query<(&pointer::PointerId, &PointerDebug)>,
 ) {
-    use bevy::render::camera::NormalizedRenderTarget;
     use bevy_egui::egui::{self, Color32};
+    use bevy_render::camera::NormalizedRenderTarget;
 
     let transparent_white = Color32::from_rgba_unmultiplied(255, 255, 255, 64);
     let stroke = egui::Stroke::new(3.0, transparent_white);
@@ -322,11 +328,14 @@ impl Debug for DebugName {
     }
 }
 
+#[cfg(feature = "backend_bevy_ui")]
 /// Draw text on each cursor with debug info
 pub fn debug_draw(
     mut commands: Commands,
     pointers: Query<(Entity, &pointer::PointerId, &PointerDebug)>,
 ) {
+    use bevy_text::prelude::*;
+    use bevy_ui::prelude::*;
     for (entity, id, debug) in pointers.iter() {
         let Some(location) = &debug.location else {
             continue
@@ -341,16 +350,16 @@ pub fn debug_draw(
                     TextStyle {
                         font_size: 12.0,
                         color: Color::WHITE,
-                        ..default()
+                        ..Default::default()
                     },
                 ),
                 style: Style {
                     position_type: PositionType::Absolute,
                     left: Val::Px(location.position.x + 5.0),
                     top: Val::Px(location.position.y + 5.0),
-                    ..default()
+                    ..Default::default()
                 },
-                ..default()
+                ..Default::default()
             })
             .insert(Pickable::IGNORE);
     }

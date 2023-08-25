@@ -6,7 +6,11 @@
 #![deny(missing_docs)]
 
 #[allow(unused_imports)]
-use bevy::{asset::Asset, prelude::*, render::color::Color};
+use bevy_app::prelude::*;
+use bevy_asset::{prelude::*, Asset};
+use bevy_ecs::prelude::*;
+use bevy_reflect::Reflect;
+
 use bevy_picking_core::{focus::PickingInteraction, PickSet};
 #[cfg(feature = "selection")]
 use bevy_picking_selection::PickSelection;
@@ -31,22 +35,22 @@ impl Plugin for DefaultHighlightingPlugin {
     #[allow(unused_variables)]
     fn build(&self, app: &mut App) {
         #[cfg(feature = "pbr")]
-        app.add_plugins(HighlightPlugin::<StandardMaterial> {
+        app.add_plugins(HighlightPlugin::<bevy_pbr::StandardMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
-                hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
-                pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
+                hovered: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.35).into()),
+                pressed: assets.add(bevy_render::color::Color::rgb(0.35, 0.75, 0.35).into()),
                 #[cfg(feature = "selection")]
-                selected: assets.add(Color::rgb(0.35, 0.35, 0.75).into()),
+                selected: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.75).into()),
             },
         });
 
         #[cfg(feature = "sprite")]
-        app.add_plugins(HighlightPlugin::<bevy::sprite::ColorMaterial> {
+        app.add_plugins(HighlightPlugin::<bevy_sprite::ColorMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
-                hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
-                pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
+                hovered: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.35).into()),
+                pressed: assets.add(bevy_render::color::Color::rgb(0.35, 0.75, 0.35).into()),
                 #[cfg(feature = "selection")]
-                selected: assets.add(Color::rgb(0.35, 0.35, 0.75).into()),
+                selected: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.75).into()),
             },
         });
     }

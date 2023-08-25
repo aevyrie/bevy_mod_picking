@@ -9,10 +9,10 @@ use crate::{
     Pickable,
 };
 
-use bevy::{
-    prelude::*,
-    utils::{FloatOrd, HashMap},
-};
+use bevy_derive::{Deref, DerefMut};
+use bevy_ecs::prelude::*;
+use bevy_reflect::prelude::*;
+use bevy_utils::{FloatOrd, HashMap};
 
 /// A map of entities sorted by depth.
 type DepthMap = BTreeMap<FloatOrd, (Entity, HitData)>;

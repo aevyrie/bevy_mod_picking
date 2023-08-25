@@ -10,8 +10,12 @@ use crate::{
         PointerMap, PressDirection,
     },
 };
-use bevy::{prelude::*, utils::HashMap};
+use bevy_derive::{Deref, DerefMut};
+use bevy_ecs::prelude::*;
 use bevy_eventlistener::prelude::*;
+use bevy_math::Vec2;
+use bevy_reflect::prelude::*;
+use bevy_utils::{tracing::error, HashMap};
 
 /// Stores the common data needed for all `PointerEvent`s.
 #[derive(Clone, PartialEq, Debug, Reflect, Event, EntityEvent)]
@@ -189,7 +193,7 @@ pub struct Drop {
     pub hit: HitData,
 }
 
-/// Generates pointer events from input data
+/// Generates pointer events from input and focus data
 pub fn pointer_events(
     // Input
     mut input_presses: EventReader<InputPress>,

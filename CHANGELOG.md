@@ -1,11 +1,13 @@
 # UNRELEASED
 
+- Fixed: removed unused `PickSet::EventListeners`  and fixed (upstream) eventlisteners running in
+  the `Update` schedule instead of the `PreUpdate` schedule.
 - Fixed: anchor handling in sprite backend.
 - Changed: the bevy_mod_raycast backend no longer requires markers on the camera
   (`RaycastPickCamera`) and targets (`RaycastPickTarget`).
 - Added: `RaycastBackendSettings` resource added to allow toggling the requirement for markers with
   the bevy_mod_raycast backend at runtime. Enable the `require_markers` field to match behavior of
-  the plugin to v0.15 and earlier.
+  the plugin prior to v0.15.
 - Added: `bevy_mod_raycast` backend now checks render layers when filtering entities.
 
 # 0.15.0

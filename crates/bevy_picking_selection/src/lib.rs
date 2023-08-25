@@ -7,8 +7,14 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{prelude::*, utils::hashbrown::HashSet};
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_input::{keyboard::KeyCode, Input};
+use bevy_reflect::prelude::*;
+use bevy_utils::hashbrown::HashSet;
+
 use bevy_eventlistener::prelude::*;
+
 use bevy_picking_core::{
     events::{Click, Down, Pointer},
     pointer::{InputPress, PointerButton, PointerId, PointerLocation},

@@ -5,7 +5,11 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{prelude::*, render::camera::NormalizedRenderTarget};
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_reflect::prelude::*;
+use bevy_render::camera::NormalizedRenderTarget;
+
 use bevy_egui::{EguiContext, EguiSet};
 use bevy_picking_core::backend::prelude::*;
 
