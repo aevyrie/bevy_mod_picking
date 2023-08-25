@@ -1,6 +1,9 @@
 # UNRELEASED
 
-- Fixed: removed unused `PickSet::EventListeners`  and fixed (upstream) eventlisteners running in
+- Changed: Removed dependencies on `bevy` and instead depend on bevy subcrates (e.g. `bevy_ecs`)
+  directly. This reduces total dependency count, but more impactful is that this allows compilation
+  of each picking crate to start earlier in the build process, before `bevy` finishes.
+- Fixed: removed unused `PickSet::EventListeners` and fixed (upstream) eventlisteners running in
   the `Update` schedule instead of the `PreUpdate` schedule.
 - Fixed: anchor handling in sprite backend.
 - Changed: the bevy_mod_raycast backend no longer requires markers on the camera

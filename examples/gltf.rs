@@ -3,9 +3,7 @@
 //! root of the scene.
 
 use bevy::{math::vec4, prelude::*};
-use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
-use highlight::HighlightKind;
 
 fn main() {
     App::new()

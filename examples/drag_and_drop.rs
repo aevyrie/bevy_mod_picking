@@ -1,7 +1,6 @@
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
-use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 fn main() {

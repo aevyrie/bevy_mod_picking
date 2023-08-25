@@ -1,7 +1,6 @@
 //! This example demonstrates how to use the plugin with bevy_ui.
 
 use bevy::{ecs::system::EntityCommands, prelude::*};
-use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
