@@ -29,7 +29,7 @@ for a backend, e.g. `egui` or `rapier`.
 
 ## Expressive
 
-The `OnPointer<E>` event listener component makes it easy to react to pointer interactions like
+The `On::<Pointer<E>>` event listener component makes it easy to react to pointer interactions like
 `Click`, `Over`, and `Drag`. Events bubble up the entity hierarchy starting from their target
 looking for event listeners, and running any listener's callbacks. These callbacks are normal bevy
 systems, though a number of helpers are provided to reduce boilerplate:
