@@ -204,6 +204,7 @@ pub mod prelude {
             Over, Pointer, Up,
         },
         focus::PickingInteraction,
+        input::prelude::*,
         picking_core::Pickable,
         pointer::{
             PointerButton, PointerId, PointerInteraction, PointerLocation, PointerMap, PointerPress,

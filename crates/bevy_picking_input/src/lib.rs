@@ -24,6 +24,11 @@ pub mod debug;
 pub mod mouse;
 pub mod touch;
 
+/// Common imports for `bevy_picking_input`.
+pub mod prelude {
+    pub use crate::{InputPlugin, InputPluginSettings};
+}
+
 /// Adds mouse and touch inputs for picking pointers to your app.
 pub struct InputPlugin;
 impl Plugin for InputPlugin {
