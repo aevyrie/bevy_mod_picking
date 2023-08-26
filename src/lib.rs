@@ -214,10 +214,7 @@ pub mod prelude {
     pub use bevy_eventlistener::prelude::*;
 
     #[cfg(feature = "highlight")]
-    pub use crate::highlight::{
-        DefaultHighlightingPlugin, GlobalHighlight, Highlight, HighlightKind, HighlightPlugin,
-        PickHighlight,
-    };
+    pub use crate::highlight::prelude::*;
 
     #[cfg(feature = "selection")]
     pub use crate::selection::{
