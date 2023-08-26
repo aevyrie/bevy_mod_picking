@@ -9,6 +9,7 @@ repository = "https://github.com/aevyrie/bevy_mod_picking/"
 keywords = ["gamedev", "picking", "bevy", "input", "eventlistener"]
 categories = ["game-engines", "rendering"]
 resolver = "2"
+rust-version = "1.70.0"
 
 [workspace]
 members = ["crates/*", "backends/*"]
