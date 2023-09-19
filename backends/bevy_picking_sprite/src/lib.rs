@@ -75,19 +75,24 @@ pub fn sprite_picking(
                     if blocked || !visibility.is_visible() {
                         return None;
                     }
-                    let (scale, _rot, position) = sprite_transform.to_scale_rotation_translation();
+
+                    // hit box in sprite coordinate system
                     let extents = sprite
                         .custom_size
-                        .or_else(|| images.get(image).map(|f| f.size()))? * scale.truncate();
-                    let center = position.truncate() - (sprite.anchor.as_vec() * extents);
+                        .or_else(|| images.get(image).map(|f| f.size()))?;
+                    let center = -sprite.anchor.as_vec() * extents;
                     let rect = Rect::from_center_half_size(center, extents / 2.0);
 
-                    let is_cursor_in_sprite = rect.contains(cursor_pos_world);
+                    // transform cursor pos to sprite system
+                    let cursor_pos_sprite = sprite_transform.affine().inverse().transform_point3(
+                        (cursor_pos_world, 0.0).into());
+
+                    let is_cursor_in_sprite = rect.contains(cursor_pos_sprite.truncate());
                     blocked = is_cursor_in_sprite
                         && sprite_focus.map(|p| p.should_block_lower) != Some(false);
 
                     is_cursor_in_sprite
-                        .then_some((entity, HitData::new(cam_entity, position.z, None, None)))
+                        .then_some((entity, HitData::new(cam_entity, sprite_transform.translation().z, None, None)))
                 },
             )
             .collect();
