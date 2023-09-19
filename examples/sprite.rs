@@ -55,6 +55,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             .iter()
             .enumerate()
             {
+                let i = (anchor_index % 3) as f32;
+                let j = (anchor_index / 3) as f32;
+
                 // spawn black square behind sprite to show anchor point
                 commands.spawn(SpriteBundle {
                     sprite: Sprite {
@@ -63,8 +66,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         ..default()
                     },
                     transform: Transform::from_xyz(
-                        (anchor_index % 3) as f32 * len - len,
-                        (anchor_index / 3) as f32 * len - len,
+                        i * len - len,
+                        j * len - len,
                         -1.0,
                     ),
                     ..default()
@@ -80,9 +83,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     texture: asset_server.load("images/boovy.png"),
                     // 3x3 grid of anchor examples by changing transform
                     transform: Transform::from_xyz(
-                        (anchor_index % 3) as f32 * len - len,
-                        (anchor_index / 3) as f32 * len - len,
+                        i * len - len,
+                        j as f32 * len - len,
                         0.0,
+                    ).with_scale(
+                        Vec3::splat(1.0 + (i - 1.0) * 0.2)
                     ),
                     ..default()
                 });
