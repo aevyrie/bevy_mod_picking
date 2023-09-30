@@ -103,8 +103,7 @@ fn setup(
 ```
 ## Next Steps
 
-To learn more, [read the docs](https://docs.rs/bevy_mod_picking/latest/bevy_mod_picking/) and take a look at the examples in the `/examples` directory. The `event_listener`
-example is a great place to start.
+To learn more, [read the docs](https://docs.rs/bevy_mod_picking/latest/bevy_mod_picking/) and take a look at the examples in the `/examples` directory. Understanding [bevy_eventlistener](https://github.com/aevyrie/bevy_eventlistener) will really help. Once you are comfortable with that, the `event_listener` example is a great place to start.
 
 # Bevy Version Support
 
