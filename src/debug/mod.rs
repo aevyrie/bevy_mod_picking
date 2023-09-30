@@ -36,6 +36,25 @@ impl DebugPickingMode {
 }
 
 /// Logs events for debugging
+///
+/// "Normal" events are logged at the `debug` level.
+/// "Noisy" events are logged at the `trace` level.
+/// See [Bevy's LogPlugin](https://docs.rs/bevy/latest/bevy/log/struct.LogPlugin.html)
+/// and [Bevy Cheatbook: Logging, Console Messages](https://bevy-cheatbook.github.io/features/log.html)
+/// for details.
+///
+/// Usually, the default level printed is `info`, so debug and trace messages will
+/// not be displayed even when this plugin is active. You can set `RUST_LOG` to
+/// change this. For example:
+///
+/// ```bash
+/// RUST_LOG="warn,bevy_mod_picking=trace,bevy_ui=info" cargo run --example bevy_ui
+/// ```
+///
+/// You can also change the log filter at runtime in your code.
+/// The [LogPlugin docs](https://docs.rs/bevy/latest/bevy/log/struct.LogPlugin.html)
+/// give an example.
+///
 /// Use the [`DebugPickingMode`] state resource to control this plugin.
 /// Example:
 ///
@@ -80,19 +99,21 @@ impl Plugin for DebugPickingPlugin {
         app.add_systems(
             PreUpdate,
             (
-                print::<events::Over>,
-                print::<events::Out>,
-                print::<events::Down>,
-                print::<events::Up>,
-                print::<events::Click>,
-                print::<events::Move>.run_if(DebugPickingMode::is_noisy),
-                print::<events::DragStart>,
-                print::<events::Drag>.run_if(DebugPickingMode::is_noisy),
-                print::<events::DragEnd>,
-                print::<events::DragEnter>,
-                print::<events::DragOver>.run_if(DebugPickingMode::is_noisy),
-                print::<events::DragLeave>,
-                print::<events::Drop>,
+                // This leaves room to easily change the log-level associated
+                // with different events, should that be desired.
+                log_debug::<events::Over>,
+                log_debug::<events::Out>,
+                log_debug::<events::Down>,
+                log_debug::<events::Up>,
+                log_debug::<events::Click>,
+                log_trace::<events::Move>.run_if(DebugPickingMode::is_noisy),
+                log_debug::<events::DragStart>,
+                log_trace::<events::Drag>.run_if(DebugPickingMode::is_noisy),
+                log_debug::<events::DragEnd>,
+                log_debug::<events::DragEnter>,
+                log_trace::<events::DragOver>.run_if(DebugPickingMode::is_noisy),
+                log_debug::<events::DragLeave>,
+                log_debug::<events::Drop>,
             )
                 .distributive_run_if(DebugPickingMode::is_enabled)
                 .in_set(picking_core::PickSet::Last),
@@ -126,20 +147,28 @@ impl Plugin for DebugPickingPlugin {
         app.add_systems(
             Update,
             (
-                debug::print::<selection::Select>,
-                debug::print::<selection::Deselect>,
+                debug::log_debug::<selection::Select>,
+                debug::log_debug::<selection::Deselect>,
             )
                 .distributive_run_if(DebugPickingMode::is_enabled),
         );
     }
 }
 
-/// Listens for pointer events of type `E` and prints them.
-pub fn print<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
+/// Listens for pointer events of type `E` and logs them at "debug" level
+pub fn log_debug<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
     for event in pointer_events.iter() {
-        info!("{event}");
+        debug!("{event}");
     }
 }
+
+/// Listens for pointer events of type `E` and logs them at "trace" level
+pub fn log_trace<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
+    for event in pointer_events.iter() {
+        trace!("{event}");
+    }
+}
+
 
 /// Adds [`PointerDebug`] to pointers automatically.
 pub fn add_pointer_debug(
