@@ -52,12 +52,16 @@ impl Plugin for InputPlugin {
 pub struct InputPluginSettings {
     run_mouse: bool,
     run_touch: bool,
+    /// Map buttons from Bevy's mouse input (e.g. `MouseButton::Left`) to Pointer
+    /// buttons (e.g. PointerButton::Primary).
+    pub mouse_button_mapping: mouse::MouseButtonMapping,
 }
 impl Default for InputPluginSettings {
     fn default() -> Self {
         Self {
             run_mouse: true,
             run_touch: true,
+            mouse_button_mapping: mouse::MouseButtonMapping::default(),
         }
     }
 }
