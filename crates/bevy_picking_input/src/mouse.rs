@@ -19,15 +19,25 @@ use crate::InputPluginSettings;
 /// at the higher level, and will get confused with multiple mouse buttons mapped to the same
 /// pointer button.
 #[derive(Debug)]
-pub struct MouseButtonMapping(HashMap<MouseButton, Option<PointerButton>>);
+pub struct MouseButtonMapping {
+    mapping: HashMap<MouseButton, Option<PointerButton>>,
+}
 
 impl Default for MouseButtonMapping {
+    /// The default is as one might expect:
+    ///
+    /// * Left -> Primary
+    /// * Right -> Secondary
+    /// * Middle -> Middle
+    ///
     fn default() -> Self {
-        Self(HashMap::from([
-            (MouseButton::Left, Some(PointerButton::Primary)),
-            (MouseButton::Right, Some(PointerButton::Secondary)),
-            (MouseButton::Middle, Some(PointerButton::Middle)),
-        ]))
+        let mut mouse_button_mapping = Self {
+            mapping: HashMap::new(),
+        };
+        mouse_button_mapping.set_mapping(MouseButton::Left, Some(PointerButton::Primary));
+        mouse_button_mapping.set_mapping(MouseButton::Right, Some(PointerButton::Secondary));
+        mouse_button_mapping.set_mapping(MouseButton::Middle, Some(PointerButton::Middle));
+        mouse_button_mapping
     }
 }
 
@@ -36,8 +46,8 @@ impl MouseButtonMapping {
     /// `<Option>` to allow you to distinguish between unconfigured / unknown buttons and
     /// buttons which are mapped to None (which you might do if you don't want to use them
     /// for picking).
-    pub fn lookup(&self, mouse_button: MouseButton) -> Option<&Option<PointerButton>> {
-        self.0.get(&mouse_button)
+    pub fn get_mapping(&self, mouse_button: MouseButton) -> Option<&Option<PointerButton>> {
+        self.mapping.get(&mouse_button)
     }
 
     /// Set a mouse-to-pointer mapping.
@@ -46,14 +56,35 @@ impl MouseButtonMapping {
         mouse_button: MouseButton,
         pointer_button: Option<PointerButton>,
     ) {
-        self.0.insert(mouse_button.clone(), pointer_button.clone());
+        let mut clear = None;
         match pointer_button {
-            Some(p) => debug!(
-                "Mouse button {:?} set to Pointer button {:?}",
-                mouse_button, p
-            ),
-            None => debug!("Mouse button {:?} set to no Pointer button", mouse_button),
+            Some(p) => {
+                for (current_m, current_p) in self.mapping.iter() {
+                    if current_p == &pointer_button {
+                        if current_m == &mouse_button {
+                            debug!(
+                                "{:?} Mouse button already mapped to {:?} Pointer button ",
+                                mouse_button, p
+                            );
+                            return;
+                        } else {
+                            debug!("{:?} Mouse button was mapped to {:?} Pointer button, and will be set to None to avoid conflicts.", mouse_button,p);
+                            clear = Some(mouse_button);
+                        }
+                    }
+                }
+                debug!(
+                    "Setting {:?} Mouse button to {:?} Pointer button ",
+                    mouse_button, p
+                )
+            }
+            None => debug!("Setting {:?} Mouse button to None", mouse_button),
         };
+        if clear.is_some() {
+            self.mapping.insert(clear.unwrap(), None);
+        }
+        self.mapping
+            .insert(mouse_button.clone(), pointer_button.clone());
     }
 }
 
@@ -96,7 +127,7 @@ pub fn mouse_pick_events(
         // map bevy mouse buttons (left, right, middle, other) to primary, secondary, middle
         let button = match input_plugin_settings
             .mouse_button_mapping
-            .lookup(input.button)
+            .get_mapping(input.button)
         {
             Some(Some(mouse_button)) => mouse_button,
             Some(None) => {
