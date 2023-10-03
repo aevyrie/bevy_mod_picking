@@ -53,7 +53,9 @@ impl Plugin for SelectionPlugin {
                     )
                         .chain()
                         .in_set(PickSet::ProcessInput),
-                    (send_selection_events, update_state_from_events).in_set(PickSet::PostFocus),
+                    (send_selection_events, update_state_from_events)
+                        .chain()
+                        .in_set(PickSet::PostFocus),
                 ),
             );
     }
@@ -229,6 +231,7 @@ pub fn update_state_from_events(
 ) {
     for selection in selections.iter() {
         if let Ok(mut select_me) = selectables.get_mut(selection.target) {
+            dbg!("mod_picking");
             select_me.is_selected = true;
         }
     }
