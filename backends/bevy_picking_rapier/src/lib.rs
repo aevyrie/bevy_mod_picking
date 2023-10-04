@@ -6,7 +6,7 @@
 //! [`RapierPickCamera`]. If a pointer passes through this camera's render target, it will
 //! automatically shoot rays into the rapier scene and will be able to pick things.
 //!
-//! To ignore an entity, you can add [`Pickable::ignore`] to it, and it will be ignored during
+//! To ignore an entity, you can add [`Pickable::IGNORE`] to it, and it will be ignored during
 //! raycasting.
 //!
 //! ## Limitations

@@ -36,7 +36,7 @@ impl Default for HighlightPluginSettings {
     }
 }
 
-/// Adds the [`StandardMaterial`] and [`ColorMaterial`] highlighting plugins.
+/// Adds the `StandardMaterial` and `ColorMaterial` highlighting plugins.
 ///
 /// To use another asset type `T` for highlighting, add [`HighlightPlugin<T>`].
 ///

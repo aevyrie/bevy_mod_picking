@@ -1,4 +1,4 @@
-//! A raycasting backend for [`bevy_sprite`](bevy::sprite).
+//! A raycasting backend for [`bevy_sprite`].
 
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
@@ -22,7 +22,7 @@ pub mod prelude {
     pub use crate::SpriteBackend;
 }
 
-/// Adds picking support for [`bevy_sprite`](bevy::sprite)
+/// Adds picking support for [`bevy_sprite`].
 #[derive(Clone)]
 pub struct SpriteBackend;
 impl Plugin for SpriteBackend {
