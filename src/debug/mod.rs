@@ -43,26 +43,22 @@ impl DebugPickingMode {
 
 /// Logs events for debugging
 ///
-/// "Normal" events are logged at the `debug` level.
-/// "Noisy" events are logged at the `trace` level.
-/// See [Bevy's LogPlugin](https://docs.rs/bevy/latest/bevy/log/struct.LogPlugin.html)
-/// and [Bevy Cheatbook: Logging, Console Messages](https://bevy-cheatbook.github.io/features/log.html)
-/// for details.
+/// "Normal" events are logged at the `debug` level. "Noisy" events are logged at the `trace` level.
+/// See [Bevy's LogPlugin](https://docs.rs/bevy/latest/bevy/log/struct.LogPlugin.html) and [Bevy
+/// Cheatbook: Logging, Console Messages](https://bevy-cheatbook.github.io/features/log.html) for
+/// details.
 ///
-/// Usually, the default level printed is `info`, so debug and trace messages will
-/// not be displayed even when this plugin is active. You can set `RUST_LOG` to
-/// change this. For example:
+/// Usually, the default level printed is `info`, so debug and trace messages will not be displayed
+/// even when this plugin is active. You can set `RUST_LOG` to change this. For example:
 ///
 /// ```bash
 /// RUST_LOG="warn,bevy_mod_picking=trace,bevy_ui=info" cargo run --example bevy_ui
 /// ```
 ///
-/// You can also change the log filter at runtime in your code.
-/// The [LogPlugin docs](https://docs.rs/bevy/latest/bevy/log/struct.LogPlugin.html)
-/// give an example.
+/// You can also change the log filter at runtime in your code. The [LogPlugin
+/// docs](https://docs.rs/bevy/latest/bevy/log/struct.LogPlugin.html) give an example.
 ///
-/// Use the [`DebugPickingMode`] state resource to control this plugin.
-/// Example:
+/// Use the [`DebugPickingMode`] state resource to control this plugin. Example:
 ///
 /// ```ignore
 /// use DebugPickingMode::{Normal, Disabled};
@@ -76,8 +72,8 @@ impl DebugPickingMode {
 ///             .distributive_run_if(input_just_pressed(KeyCode::F3)),
 ///     )
 /// ```
-/// This sets the starting mode of the plugin to [`DebugPickingMode::Disabled`] and binds
-/// the F3 key to toggle it.
+/// This sets the starting mode of the plugin to [`DebugPickingMode::Disabled`] and binds the F3 key
+/// to toggle it.
 #[derive(Debug, Default, Clone)]
 pub struct DebugPickingPlugin {
     /// Suppresses noisy events like `Move` and `Drag` when set to `false`.

@@ -8,10 +8,11 @@
 //! Note that the visual overlay next to the pointer is enabled with
 //! debug logging on, and disabled when it is off.
 
-use bevy::app::AppExit;
+use bevy::{app::AppExit, log::LogPlugin};
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
+use bevy_utils::tracing::Level;
 
 // See bevy_eventlistener. In particular, look at the event_listeners.rs example.
 #[derive(Clone, Event)]
@@ -54,13 +55,20 @@ impl From<ListenerInput<Pointer<Click>>> for Shutdown {
     }
 }
 
-fn shutdown(mut eventwriter_exit: EventWriter<bevy::app::AppExit>) {
-    eventwriter_exit.send(AppExit);
+fn shutdown(mut exit_events: EventWriter<bevy::app::AppExit>) {
+    exit_events.send(AppExit);
 }
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
+        .add_plugins(
+            DefaultPlugins
+                .set(low_latency_window_plugin())
+                .set(LogPlugin {
+                    filter: "bevy_mod_picking=trace".into(), // Show picking logs trace level and up
+                    level: Level::ERROR, // Show all other logs only at the error level and up
+                }),
+        )
         .add_plugins(DefaultPickingPlugins)
         .add_event::<CycleLogging>()
         .add_event::<Shutdown>()
