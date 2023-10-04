@@ -26,7 +26,7 @@
   it.
 - Changed: To fully remove bevy_ui as a dependency and avoid issues similar to the `FocusPolicy`
   change, bevy_mod_picking no longer updates the bevy_ui `Interaction` state. This has been replaced
-  with a `PickInteraction` component that serves a similar purpose. This component aggregates the
+  with a `PickingInteraction` component that serves a similar purpose. This component aggregates the
   picking state of an entity (press, hover, none) across *all* pointers.
 - Changed: `PickLayer`, used to order data from backends that targets the same render target, such
   as multiple render passes on the same window, has been changed fom an `isize` to an `f32`. This
