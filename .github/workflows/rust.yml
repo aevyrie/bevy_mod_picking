@@ -15,17 +15,15 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get install -yq --no-install-recommends libudev-dev libasound2-dev libxcb-composite0-dev
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          
-      - name: Cache Dependencies
-        uses: Swatinem/rust-cache@v2.7.0
-
   format:
     runs-on: ubuntu-latest
     needs: [setup]
     steps:
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Cache Dependencies
+        uses: Swatinem/rust-cache@v2.7.0
       - name: Install fmt
         run: rustup component add rustfmt
       - name: fmt
@@ -35,6 +33,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup]
     steps:
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Cache Dependencies
+        uses: Swatinem/rust-cache@v2.7.0
       - name: check
         run: cargo check
 
@@ -42,9 +45,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup]
     steps:
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Cache Dependencies
+        uses: Swatinem/rust-cache@v2.7.0
       - name: Install clippy  
         run: rustup component add clippy
-      
       - name: run clippy
         run: cargo clippy -- -D warnings
 
@@ -52,6 +59,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup]
     steps:
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Cache Dependencies
+        uses: Swatinem/rust-cache@v2.7.0
       - name: docs
         run: cargo doc --no-deps --workspace
         env:
@@ -61,5 +73,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup]
     steps:
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Cache Dependencies
+        uses: Swatinem/rust-cache@v2.7.0
       - name: test
         run: cargo test
