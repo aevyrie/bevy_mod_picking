@@ -1,17 +1,43 @@
 # UNRELEASED
 
+## Cleanup
+
+- Fixed: removed unused `PickSet::EventListeners` and fixed (upstream) eventlisteners running in the
+  `Update` schedule instead of the `PreUpdate` schedule.
 - Changed: Removed dependencies on `bevy` and instead depend on bevy subcrates (e.g. `bevy_ecs`)
   directly. This reduces total dependency count, but more impactful is that this allows compilation
   of each picking crate to start earlier in the build process, before `bevy` finishes.
-- Fixed: removed unused `PickSet::EventListeners` and fixed (upstream) eventlisteners running in
-  the `Update` schedule instead of the `PreUpdate` schedule.
-- Fixed: anchor handling in sprite backend.
+
+## API Improvements
+
 - Changed: the bevy_mod_raycast backend no longer requires markers on the camera
   (`RaycastPickCamera`) and targets (`RaycastPickTarget`).
 - Added: `RaycastBackendSettings` resource added to allow toggling the requirement for markers with
   the bevy_mod_raycast backend at runtime. Enable the `require_markers` field to match behavior of
-  the plugin prior to v0.15.
+  the plugin prior to this release.
+- Changed: The plugin no longer respects bevy_ui's `FocusPolicy`. This was proving to cause problems
+  as mod_picking and bevy_ui have some fundamental differences that cannot be reconciled. This has
+  been replaced by added fields on the `Pickable` component. You can use this to override the
+  behavior of any entity in picking. This allows you to decide if that entity will block lower
+  entities (on by default), and if that entity should emit events and be hover-able (on by default).
+- To make objects non-pickable, instead of removing the `Pickable` entity, use the new const value
+  `Pickable::IGNORE`.
+- Changed: The `PointerInteraction` component, which is added to pointers and tracks all entities
+  being interacted with has changed internally from a hashmap of entities and their `Interaction` to
+  a sorted list of entities and `HitData`, sorted by depth. This better reflects how pointer data
+  would be expected to work, and makes it easier to find the topmost entity under each pointer.
+- Added: `get_nearest_hit` method added to `PointerInteraction`
+- Changed: Moved `PointerInteraction` from the `focus` module to `pointer`.
+
+## Backend Improvements
+
 - Added: `bevy_mod_raycast` backend now checks render layers when filtering entities.
+- Changed: `PickLayer`, used to order data from backends that targets the same render target, such
+  as multiple render passes on the same window, has been changed from an `isize` to an `f32`. This
+  change was made to support bevy_ui, which is "special" and can be rendered on any camera via a
+  flag, instead of being rendered with its own camera. The bevy_ui backend now sets the order of any
+  events emitted to be the camera order plus 0.5, which was not possible with an integer.
+- Added: the sprite backend now supports sprite scale, rotation, and custom anchors.
 
 # 0.15.0
 
