@@ -244,7 +244,10 @@ pub fn pointer_events(
         {
             if let PressDirection::Up = press_event.direction {
                 let Some(location) = pointer_location(press_event.pointer_id) else {
-                    error!("Unable to get location for pointer {:?}", press_event.pointer_id);
+                    error!(
+                        "Unable to get location for pointer {:?}",
+                        press_event.pointer_id
+                    );
                     continue;
                 };
                 pointer_up.send(Pointer::new(
@@ -262,7 +265,10 @@ pub fn pointer_events(
         {
             if let PressDirection::Down = press_event.direction {
                 let Some(location) = pointer_location(press_event.pointer_id) else {
-                    error!("Unable to get location for pointer {:?}", press_event.pointer_id);
+                    error!(
+                        "Unable to get location for pointer {:?}",
+                        press_event.pointer_id
+                    );
                     continue;
                 };
                 pointer_down.send(Pointer::new(
@@ -450,14 +456,14 @@ pub fn send_click_and_drag_events(
             continue; // We are only interested in button releases
         }
         down_map.insert((press.pointer_id, press.button), HashMap::new());
-        let Some(drag_list) = drag_map
-            .insert((press.pointer_id, press.button), HashMap::new()) else {
-                continue;
-            };
+        let Some(drag_list) = drag_map.insert((press.pointer_id, press.button), HashMap::new())
+        else {
+            continue;
+        };
         let Some(location) = pointer_location(press.pointer_id) else {
-                error!("Unable to get location for pointer {:?}", press.pointer_id);
-                continue;
-            };
+            error!("Unable to get location for pointer {:?}", press.pointer_id);
+            continue;
+        };
 
         for (drag_target, drag) in drag_list {
             let drag_end = DragEnd {
@@ -567,10 +573,9 @@ pub fn send_drag_over_events(
         },
     } in pointer_drag_end.iter().cloned()
     {
-        let Some(drag_over_set) =
-            drag_over_map.get_mut(&(pointer_id, button)) else {
-                continue;
-            };
+        let Some(drag_over_set) = drag_over_map.get_mut(&(pointer_id, button)) else {
+            continue;
+        };
         for (dragged_over, hit) in drag_over_set.drain() {
             pointer_drag_leave.send(Pointer::new(
                 pointer_id,
@@ -610,7 +615,7 @@ pub fn send_drag_over_events(
             if dragged_over.remove(&target).is_none() {
                 continue;
             }
-            let Some(drag_list) = drag_map.get(&(pointer_id, button))  else {
+            let Some(drag_list) = drag_map.get(&(pointer_id, button)) else {
                 continue;
             };
             for drag_target in drag_list.keys() {
