@@ -231,7 +231,6 @@ pub fn update_state_from_events(
 ) {
     for selection in selections.iter() {
         if let Ok(mut select_me) = selectables.get_mut(selection.target) {
-            dbg!("mod_picking");
             select_me.is_selected = true;
         }
     }
