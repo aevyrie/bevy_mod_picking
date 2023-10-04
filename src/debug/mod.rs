@@ -12,7 +12,7 @@ use bevy_app::prelude::*;
 use bevy_math::prelude::*;
 use bevy_reflect::prelude::*;
 use bevy_render::prelude::*;
-use bevy_utils::tracing::info;
+use bevy_utils::tracing::{debug, trace};
 
 /// This state determines the runtime behavior of the debug plugin.
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
