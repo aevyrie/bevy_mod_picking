@@ -65,11 +65,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         color: Color::BLACK,
                         ..default()
                     },
-                    transform: Transform::from_xyz(
-                        i * len - len,
-                        j * len - len,
-                        -1.0,
-                    ),
+                    transform: Transform::from_xyz(i * len - len, j * len - len, -1.0),
                     ..default()
                 });
 
@@ -82,15 +78,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     },
                     texture: asset_server.load("images/boovy.png"),
                     // 3x3 grid of anchor examples by changing transform
-                    transform: Transform::from_xyz(
-                        i * len - len,
-                        j as f32 * len - len,
-                        0.0,
-                    ).with_scale(
-                        Vec3::splat(1.0 + (i - 1.0) * 0.2)
-                    ).with_rotation(
-                        Quat::from_rotation_z((j - 1.0) * 0.2)
-                    ),
+                    transform: Transform::from_xyz(i * len - len, j as f32 * len - len, 0.0)
+                        .with_scale(Vec3::splat(1.0 + (i - 1.0) * 0.2))
+                        .with_rotation(Quat::from_rotation_z((j - 1.0) * 0.2)),
                     ..default()
                 });
             }

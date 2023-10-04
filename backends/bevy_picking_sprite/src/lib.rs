@@ -74,23 +74,27 @@ pub fn sprite_picking(
                         return None;
                     }
 
-                    // hit box in sprite coordinate system
+                    // Hit box in sprite coordinate system
                     let extents = sprite
                         .custom_size
                         .or_else(|| images.get(image).map(|f| f.size()))?;
                     let center = -sprite.anchor.as_vec() * extents;
                     let rect = Rect::from_center_half_size(center, extents / 2.0);
 
-                    // transform cursor pos to sprite system
-                    let cursor_pos_sprite = sprite_transform.affine().inverse().transform_point3(
-                        (cursor_pos_world, 0.0).into());
+                    // Transform cursor pos to sprite coordinate system
+                    let cursor_pos_sprite = sprite_transform
+                        .affine()
+                        .inverse()
+                        .transform_point3((cursor_pos_world, 0.0).into());
 
                     let is_cursor_in_sprite = rect.contains(cursor_pos_sprite.truncate());
                     blocked = is_cursor_in_sprite
                         && sprite_focus.map(|p| p.should_block_lower) != Some(false);
 
-                    is_cursor_in_sprite
-                        .then_some((entity, HitData::new(cam_entity, sprite_transform.translation().z, None, None)))
+                    is_cursor_in_sprite.then_some((
+                        entity,
+                        HitData::new(cam_entity, sprite_transform.translation().z, None, None),
+                    ))
                 },
             )
             .collect();
