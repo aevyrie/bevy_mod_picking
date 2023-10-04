@@ -19,12 +19,12 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get install -yq --no-install-recommends libudev-dev libasound2-dev libxcb-composite0-dev
 
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           
       - name: Cache Dependencies
-        uses: Swatinem/rust-cache@ce325b60658c1b38465c06cc965b79baf32c1e72
+        uses: Swatinem/rust-cache@v2.7.0
 
       - name: Install fmt
         run: rustup component add rustfmt
@@ -40,6 +40,11 @@ jobs:
       
       - name: run clippy
         run: cargo clippy -- -D warnings
+
+      - name: docs
+        run: cargo doc --no-deps --workspace
+        env:
+          RUSTDOCFLAGS: -D warnings
      
       - name: test
         run: cargo test
