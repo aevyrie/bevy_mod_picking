@@ -14,7 +14,8 @@
 //! [`Pointer`] events make it easy to react to interactions like [`Click`], [`Over`], or [`Drag`]
 //! (13 pointer events are provided). Reacting to these interaction events on a specific entity is
 //! made possible with the [`On<Event>`] component. When events are generated, they bubble up the
-//! entity hierarchy starting from their target, looking for these event listener components.
+//! entity hierarchy starting from their target, looking for these event listener components. (See
+//! [`bevy_eventlistener`] for details.)
 //!
 //! This allows you to run callbacks when any children of an entity are interacted with:
 //!
