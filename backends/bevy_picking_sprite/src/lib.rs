@@ -73,10 +73,11 @@ pub fn sprite_picking(
                     if blocked || !visibility.is_visible() {
                         return None;
                     }
-                    let position = sprite_transform.translation();
+                    let (scale, _rot, position) = sprite_transform.to_scale_rotation_translation();
                     let extents = sprite
                         .custom_size
-                        .or_else(|| images.get(image).map(|f| f.size()))?;
+                        .or_else(|| images.get(image).map(|f| f.size()))?
+                        * scale.truncate();
                     let center = position.truncate() - (sprite.anchor.as_vec() * extents);
                     let rect = Rect::from_center_half_size(center, extents / 2.0);
 
