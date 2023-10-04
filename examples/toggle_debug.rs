@@ -62,7 +62,6 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        // If you don't add the events, code will build but crash at runtime
         .add_event::<CycleLogging>()
         .add_event::<Shutdown>()
         .add_systems(Startup, (setup, setup_3d))
@@ -74,9 +73,9 @@ fn main() {
         .run();
 }
 
-// Everything below this line is identical to what's in bevy_ui, except 
-// the event listener is passed to .add_button along with the text to display.
-//----------------------------------------------------------------------------
+// Everything below this line is identical to what's in bevy_ui, except the event listener is passed
+// to .add_button along with the text to display.
+// ----------------------------------------------------------------------------
 
 /// Use the [`PickingInteraction`] state of each button to update its color.
 fn update_button_colors(
