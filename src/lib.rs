@@ -1,4 +1,4 @@
-//! A flexible set of plugins that add picking functionality to your [`bevy`] app, with a focus on
+//! A flexible set of plugins that add picking functionality to your `bevy` app, with a focus on
 //! modularity, expressiveness, and robustness. Want to drag a UI entity and drop it onto a 3D mesh
 //! entity? This plugin allows you to add event listeners to **any** entity, and works with mouse,
 //! touch, or even gamepads. Includes optional integrations for `rapier` and `egui`, but is agnostic
