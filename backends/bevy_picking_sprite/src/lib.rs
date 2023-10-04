@@ -50,22 +50,20 @@ pub fn sprite_picking(
         pointer_location.location().map(|loc| (pointer, loc))
     }) {
         let mut blocked = false;
-        let Some((cam_entity, camera, cam_transform)) = cameras
-            .iter()
-            .find(|(_, camera, _)| {
-                camera
-                    .target
-                    .normalize(Some(primary_window.single()))
-                    .unwrap()
-                    == location.target
-            }) else {
-                continue;
-            };
+        let Some((cam_entity, camera, cam_transform)) = cameras.iter().find(|(_, camera, _)| {
+            camera
+                .target
+                .normalize(Some(primary_window.single()))
+                .unwrap()
+                == location.target
+        }) else {
+            continue;
+        };
 
-        let Some(cursor_pos_world) =
-            camera.viewport_to_world_2d(cam_transform, location.position) else {
-                continue;
-            };
+        let Some(cursor_pos_world) = camera.viewport_to_world_2d(cam_transform, location.position)
+        else {
+            continue;
+        };
 
         let picks: Vec<(Entity, HitData)> = sorted_sprites
             .iter()
