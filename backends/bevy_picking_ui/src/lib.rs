@@ -22,13 +22,14 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{
-    ecs::query::WorldQuery,
-    prelude::*,
-    render::camera::NormalizedRenderTarget,
-    ui::{RelativeCursorPosition, UiStack},
-    window::PrimaryWindow,
-};
+use bevy_app::prelude::*;
+use bevy_ecs::{prelude::*, query::WorldQuery};
+use bevy_math::prelude::*;
+use bevy_render::{camera::NormalizedRenderTarget, prelude::*};
+use bevy_transform::prelude::*;
+use bevy_ui::{prelude::*, RelativeCursorPosition, UiStack};
+use bevy_window::PrimaryWindow;
+
 use bevy_picking_core::backend::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_ui`](crate) crate.

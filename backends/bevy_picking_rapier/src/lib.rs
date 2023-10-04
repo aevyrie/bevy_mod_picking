@@ -24,7 +24,15 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_math::Ray;
+use bevy_reflect::prelude::*;
+use bevy_render::prelude::*;
+use bevy_transform::prelude::*;
+use bevy_utils::HashMap;
+use bevy_window::PrimaryWindow;
+
 use bevy_picking_core::backend::prelude::*;
 use bevy_rapier3d::prelude::*;
 

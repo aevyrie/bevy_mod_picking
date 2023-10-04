@@ -1,11 +1,12 @@
 //! Types and systems for pointer inputs, such as position and buttons.
 
-use bevy::{
-    prelude::*,
-    render::camera::NormalizedRenderTarget,
-    utils::{HashMap, Uuid},
-    window::PrimaryWindow,
-};
+use bevy_ecs::prelude::*;
+use bevy_math::{Rect, Vec2};
+use bevy_reflect::prelude::*;
+use bevy_render::camera::{Camera, NormalizedRenderTarget};
+use bevy_utils::{HashMap, Uuid};
+use bevy_window::PrimaryWindow;
+
 use std::{fmt::Debug, ops::Deref};
 
 use crate::backend::HitData;

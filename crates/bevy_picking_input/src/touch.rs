@@ -1,12 +1,16 @@
 //! Provides sensible defaults for touch picking inputs.
 
-use bevy::{
-    input::touch::TouchPhase,
-    prelude::*,
-    render::camera::RenderTarget,
-    utils::{HashMap, HashSet},
-    window::{PrimaryWindow, WindowRef},
+use bevy_ecs::prelude::*;
+use bevy_hierarchy::DespawnRecursiveExt;
+use bevy_input::touch::{TouchInput, TouchPhase};
+use bevy_math::Vec2;
+use bevy_render::camera::RenderTarget;
+use bevy_utils::{
+    tracing::{debug, info},
+    HashMap, HashSet,
 };
+use bevy_window::{PrimaryWindow, Window, WindowRef};
+
 use bevy_picking_core::{
     events::PointerCancel,
     pointer::{InputMove, InputPress, Location, PointerButton, PointerId},
@@ -79,7 +83,7 @@ pub fn touch_pick_events(
 ///
 /// Because each new touch gets assigned a new ID, we need to remove the pointers associated with
 /// touches that are no longer active.
-pub fn deactivate_pointers(
+pub fn deactivate_touch_pointers(
     mut commands: Commands,
     mut despawn_list: Local<HashSet<(Entity, PointerId)>>,
     pointers: Query<(Entity, &PointerId)>,

@@ -6,10 +6,35 @@
 #![deny(missing_docs)]
 
 #[allow(unused_imports)]
-use bevy::{asset::Asset, prelude::*, render::color::Color};
+use bevy_app::prelude::*;
+use bevy_asset::{prelude::*, Asset};
+use bevy_ecs::prelude::*;
+use bevy_reflect::Reflect;
+
 use bevy_picking_core::{focus::PickingInteraction, PickSet};
 #[cfg(feature = "selection")]
 use bevy_picking_selection::PickSelection;
+
+/// Common imports for `bevy_picking_highlight`.
+pub mod prelude {
+    pub use crate::{
+        DefaultHighlightingPlugin, GlobalHighlight, Highlight, HighlightKind, HighlightPlugin,
+        HighlightPluginSettings, PickHighlight,
+    };
+}
+
+/// A resource used to enable or disable picking highlighting.
+#[derive(Resource, Debug, Reflect)]
+pub struct HighlightPluginSettings {
+    /// Should highlighting systems run?
+    enabled: bool,
+}
+
+impl Default for HighlightPluginSettings {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
 
 /// Adds the [`StandardMaterial`] and [`ColorMaterial`] highlighting plugins.
 ///
@@ -30,23 +55,25 @@ pub struct DefaultHighlightingPlugin;
 impl Plugin for DefaultHighlightingPlugin {
     #[allow(unused_variables)]
     fn build(&self, app: &mut App) {
+        app.init_resource::<HighlightPluginSettings>();
+
         #[cfg(feature = "pbr")]
-        app.add_plugins(HighlightPlugin::<StandardMaterial> {
+        app.add_plugins(HighlightPlugin::<bevy_pbr::StandardMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
-                hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
-                pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
+                hovered: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.35).into()),
+                pressed: assets.add(bevy_render::color::Color::rgb(0.35, 0.75, 0.35).into()),
                 #[cfg(feature = "selection")]
-                selected: assets.add(Color::rgb(0.35, 0.35, 0.75).into()),
+                selected: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.75).into()),
             },
         });
 
         #[cfg(feature = "sprite")]
-        app.add_plugins(HighlightPlugin::<bevy::sprite::ColorMaterial> {
+        app.add_plugins(HighlightPlugin::<bevy_sprite::ColorMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
-                hovered: assets.add(Color::rgb(0.35, 0.35, 0.35).into()),
-                pressed: assets.add(Color::rgb(0.35, 0.75, 0.35).into()),
+                hovered: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.35).into()),
+                pressed: assets.add(bevy_render::color::Color::rgb(0.35, 0.75, 0.35).into()),
                 #[cfg(feature = "selection")]
-                selected: assets.add(Color::rgb(0.35, 0.35, 0.75).into()),
+                selected: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.75).into()),
             },
         });
     }
@@ -83,7 +110,8 @@ where
                 update_selection::<T>,
             )
                 .chain()
-                .in_set(PickSet::Last),
+                .in_set(PickSet::Last)
+                .distributive_run_if(|settings: Res<HighlightPluginSettings>| settings.enabled),
         );
     }
 }

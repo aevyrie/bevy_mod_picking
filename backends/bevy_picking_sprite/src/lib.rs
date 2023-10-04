@@ -6,7 +6,15 @@
 
 use std::cmp::Ordering;
 
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy_app::prelude::*;
+use bevy_asset::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_math::prelude::*;
+use bevy_render::prelude::*;
+use bevy_sprite::Sprite;
+use bevy_transform::prelude::*;
+use bevy_window::PrimaryWindow;
+
 use bevy_picking_core::backend::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_sprite`](crate) crate.

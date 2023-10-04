@@ -21,7 +21,9 @@
 //!   use it for optimization purposes. For example, a backend that traverses a spatial hierarchy
 //!   may want to early exit if it intersects entity that blocks lower entities from being picked.
 
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_math::Vec3;
+use bevy_reflect::Reflect;
 
 /// Common imports for implementing a picking backend.
 pub mod prelude {

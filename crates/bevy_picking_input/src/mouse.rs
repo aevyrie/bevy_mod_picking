@@ -1,11 +1,11 @@
 //! Provides sensible defaults for mouse picking inputs.
 
-use bevy::{
-    input::{mouse::MouseButtonInput, ButtonState},
-    prelude::*,
-    render::camera::RenderTarget,
-    window::{PrimaryWindow, WindowRef},
-};
+use bevy_ecs::prelude::*;
+use bevy_input::{mouse::MouseButtonInput, prelude::*, ButtonState};
+use bevy_math::Vec2;
+use bevy_render::camera::RenderTarget;
+use bevy_window::{CursorMoved, PrimaryWindow, Window, WindowRef};
+
 use bevy_picking_core::{
     pointer::{InputMove, InputPress, Location, PointerButton, PointerId},
     PointerCoreBundle,

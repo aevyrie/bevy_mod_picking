@@ -3,7 +3,13 @@
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 #![deny(missing_docs)]
 
-use bevy::{prelude::*, render::view::RenderLayers, window::PrimaryWindow};
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_reflect::prelude::*;
+use bevy_render::{prelude::*, view::RenderLayers};
+use bevy_transform::prelude::*;
+use bevy_window::{PrimaryWindow, Window};
+
 use bevy_mod_raycast::prelude::*;
 use bevy_picking_core::backend::prelude::*;
 
@@ -48,7 +54,8 @@ impl Plugin for RaycastBackend {
 /// Builds rays and updates raycasting [`RaycastPickCamera`]s from [`PointerLocation`]s.
 pub fn update_hits(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    primary_window: Query<Entity, With<PrimaryWindow>>,
+    primary_window_entity: Query<Entity, With<PrimaryWindow>>,
+    primary_window: Query<&Window, With<PrimaryWindow>>,
     picking_cameras: Query<(
         Entity,
         &Camera,
@@ -70,11 +77,18 @@ pub fn update_hits(
         };
         for (cam_entity, camera, ray, cam_layers) in picking_cameras
             .iter()
-            .filter(|(_, camera, ..)| pointer_location.is_in_viewport(camera, &primary_window))
+            .filter(|(_, camera, ..)| {
+                pointer_location.is_in_viewport(camera, &primary_window_entity)
+            })
             .filter(|(.., marker, _)| marker.is_some() || !backend_settings.require_markers)
             .filter_map(|(entity, camera, transform, _, layers)| {
-                Ray3d::from_screenspace(pointer_location.position, camera, transform)
-                    .map(|ray| (entity, camera, ray, layers))
+                Ray3d::from_screenspace(
+                    pointer_location.position,
+                    camera,
+                    transform,
+                    primary_window.single(),
+                )
+                .map(|ray| (entity, camera, ray, layers))
             })
         {
             let settings = bevy_mod_raycast::system_param::RaycastSettings {

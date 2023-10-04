@@ -13,8 +13,12 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bevy_app = { version = "0.11", default-features = false }
+bevy_ecs = { version = "0.11", default-features = false }
+bevy_input = { version = "0.11", default-features = false }
+bevy_reflect = { version = "0.11", default-features = false }
+bevy_utils = { version = "0.11", default-features = false }
+
+bevy_eventlistener = "0.5"
+
 bevy_picking_core = { path = "../bevy_picking_core", version = "0.15" }
-bevy = { version = "0.11", default-features = false, features = [
-    "bevy_render",
-] }
-bevy_eventlistener = "0.3"
