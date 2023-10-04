@@ -169,7 +169,6 @@ pub fn log_trace<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Poi
     }
 }
 
-
 /// Adds [`PointerDebug`] to pointers automatically.
 pub fn add_pointer_debug(
     mut commands: Commands,
