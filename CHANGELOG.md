@@ -1,5 +1,10 @@
 # UNRELEASED
 
+## Documentation
+
+- Added: feature gated modules should now be visible on docs.rs, along with a note about the
+  features required to use them.
+
 ## Cleanup
 
 - Fixed: removed unused `PickSet::EventListeners` and fixed (upstream) eventlisteners running in the
