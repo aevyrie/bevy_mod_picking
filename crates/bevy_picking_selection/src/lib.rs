@@ -160,16 +160,16 @@ pub fn send_selection_events(
             .filter(|p| p.is_just_down(PointerButton::Primary))
         {
             let id = press.pointer_id;
-            let Some((multiselect, location)) = pointers
-                .iter()
-                .find_map(|(this_id, multi, location)| {
+            let Some((multiselect, location)) =
+                pointers.iter().find_map(|(this_id, multi, location)| {
                     (*this_id == id)
                         .then_some(location.location.clone())
                         .flatten()
                         .map(|location| (multi.is_pressed, location))
-                }) else {
-                    continue
-                };
+                })
+            else {
+                continue;
+            };
             if !pointer_down_list.contains(&id) && !multiselect {
                 for (entity, selection) in selectables.iter() {
                     if selection.is_selected {
