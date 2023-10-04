@@ -75,35 +75,26 @@ multiple layered render passes.
 
 # Getting Started
 
-Making objects pickable is pretty straightforward. In the most minimal cases, it's as simple as:
+Making objects pickable is pretty straightforward. In the most minimal cases, it's as simple as adding the plugin to your app:
 
 ```rs
-use bevy::prelude::*;
-use bevy_mod_picking::prelude::*;
-
-fn setup(
-    mut commands: Commands,
-    app: &mut App,
-) {
-    App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPickingPlugins);
-
-    commands.spawn((
-        PbrBundle::default(),           // The `bevy_picking_raycast` backend works with meshes
-        PickableBundle::default(),      // Makes the entity pickable
-        RaycastPickTarget::default()    // Marker for the `bevy_picking_raycast` backend
-    ));
-
-    commands.spawn((
-        Camera3dBundle::default(),
-        RaycastPickCamera::default(),   // Enable picking with this camera
-    ));
-}
+.add_plugins(DefaultPickingPlugins)
 ```
+
+and adding the `PickableBundle` to entities that can be picked with the backends you are using:
+
+```rs
+commands.spawn((
+    PbrBundle::default(),           // The `bevy_picking_raycast` backend works with meshes
+    PickableBundle::default(),      // Makes the entity pickable
+));
+```
+
+You can find a list of built-in backends [here](https://docs.rs/bevy_mod_picking/latest/bevy_mod_picking/backends/index.html)
+
 ## Next Steps
 
-To learn more, [read the docs](https://docs.rs/bevy_mod_picking/latest/bevy_mod_picking/) and take a look at the examples in the `/examples` directory. Understanding [bevy_eventlistener](https://github.com/aevyrie/bevy_eventlistener) will really help. Once you are comfortable with that, the `event_listener` example is a great place to start.
+To learn more, [read the docs](https://docs.rs/bevy_mod_picking/latest/bevy_mod_picking/) and take a look at the examples in the `/examples` directory. Understanding [bevy_eventlistener](https://github.com/aevyrie/bevy_eventlistener) will also help. Once you are comfortable with that, this crate's `event_listener` example is a great place to start.
 
 # Bevy Version Support
 
