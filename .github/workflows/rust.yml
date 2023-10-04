@@ -9,9 +9,11 @@ jobs:
     steps:
       - name: Update Packages
         run: sudo apt-get update -yq
-
       - name: Install dependencies
         run: sudo apt-get install -yq --no-install-recommends libudev-dev libasound2-dev libxcb-composite0-dev
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
 
   format:
     runs-on: ubuntu-latest
@@ -19,14 +21,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-      - name: Cache Dependencies
-        uses: Swatinem/rust-cache@v2.7.0
-      - name: Install fmt
-        run: rustup component add rustfmt
-      - name: fmt
-        run: cargo fmt --all -- --check
+      - uses: Swatinem/rust-cache@v2.7.0
+      - run: rustup component add rustfmt
+      - run: cargo fmt --all -- --check
 
   check:
     runs-on: ubuntu-latest
@@ -34,12 +31,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-      - name: Cache Dependencies
-        uses: Swatinem/rust-cache@v2.7.0
-      - name: check
-        run: cargo check
+      - uses: Swatinem/rust-cache@v2.7.0
+      - run: cargo check
 
   clippy:
     runs-on: ubuntu-latest
@@ -47,14 +40,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-      - name: Cache Dependencies
-        uses: Swatinem/rust-cache@v2.7.0
-      - name: Install clippy  
-        run: rustup component add clippy
-      - name: run clippy
-        run: cargo clippy -- -D warnings
+      - uses: Swatinem/rust-cache@v2.7.0
+      - run: rustup component add clippy
+      - run: cargo clippy -- -D warnings
 
   doc:
     runs-on: ubuntu-latest
@@ -62,12 +50,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-      - name: Cache Dependencies
-        uses: Swatinem/rust-cache@v2.7.0
-      - name: docs
-        run: cargo doc --no-deps --workspace
+      - uses: Swatinem/rust-cache@v2.7.0
+      - run: cargo doc --no-deps --workspace
         env:
           RUSTDOCFLAGS: -D warnings
     
@@ -77,9 +61,5 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-      - name: Cache Dependencies
-        uses: Swatinem/rust-cache@v2.7.0
-      - name: test
-        run: cargo test
+      - uses: Swatinem/rust-cache@v2.7.0
+      - run: cargo test
