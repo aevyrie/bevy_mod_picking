@@ -59,7 +59,9 @@ impl Plugin for SelectionPlugin {
                     )
                         .chain()
                         .in_set(PickSet::ProcessInput),
-                    (send_selection_events, update_state_from_events).in_set(PickSet::PostFocus),
+                    (send_selection_events, update_state_from_events)
+                        .chain()
+                        .in_set(PickSet::PostFocus),
                 ),
             );
     }

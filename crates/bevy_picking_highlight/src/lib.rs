@@ -259,10 +259,7 @@ impl<T: Asset> Highlight<T> {
             let iter = iter.chain(s.iter_mut());
 
             for (function, cache) in iter {
-                if let Some(asset) = asset_server
-                    .get(&highlight_initial.initial)
-                    .map(|i| function(i))
-                {
+                if let Some(asset) = asset_server.get(&highlight_initial.initial).map(function) {
                     **cache = Some(asset_server.add(asset));
                 }
             }

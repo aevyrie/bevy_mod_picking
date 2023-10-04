@@ -4,12 +4,12 @@
 
 [![crates.io](https://img.shields.io/crates/v/bevy_mod_picking)](https://crates.io/crates/bevy_mod_picking)
 [![docs.rs](https://docs.rs/bevy_mod_picking/badge.svg)](https://docs.rs/bevy_mod_picking)
-[![CI](https://github.com/aevyrie/bevy_mod_picking/workflows/CI/badge.svg?branch=master)](https://github.com/aevyrie/bevy_mod_picking/actions?query=workflow%3A%22CI%22+branch%3Amaster)
+[![CI](https://github.com/aevyrie/bevy_mod_picking/workflows/CI/badge.svg?branch=main)](https://github.com/aevyrie/bevy_mod_picking/actions?query=workflow%3A%22CI%22+branch%3Amain)
 [![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 
 ![demo](https://user-images.githubusercontent.com/2632925/235874600-de0c7720-6775-42e1-8650-41ee8ac68d1b.gif)
 
-A flexible set of plugins that add picking functionality to your [`bevy`] app. Want to drag a UI
+A flexible set of plugins that add picking functionality to your [`bevy`](https://github.com/bevyengine/bevy) app. Want to drag a UI
 entity and drop it onto a 3D mesh entity? This plugin allows you to add event listeners to **any**
 entity, and works with mouse, touch, or even gamepads.
 
@@ -18,7 +18,7 @@ entity, and works with mouse, touch, or even gamepads.
 # Highlights
 
 - ***Lightweight***: only compile what you need.
-- ***Expressive***: event listener components `OnPointer::<Click>::run_callback(my_system)`.
+- ***Expressive***: event listener components `On::<Pointer<Click>>::run(my_system)`.
 - ***Input Agnostic***: control pointers with mouse, pen, touch, or custom bevy systems.
 - ***Modular Backends***: mix and match backends like `rapier`, `egui`, `bevy_ui`, or write your own. 
 ## Lightweight
@@ -29,7 +29,7 @@ for a backend, e.g. `egui` or `rapier`.
 
 ## Expressive
 
-The `OnPointer<E>` event listener component makes it easy to react to pointer interactions like
+The `On::<Pointer<E>>` event listener component makes it easy to react to pointer interactions like
 `Click`, `Over`, and `Drag`. Events bubble up the entity hierarchy starting from their target
 looking for event listeners, and running any listener's callbacks. These callbacks are normal bevy
 systems, though a number of helpers are provided to reduce boilerplate:
@@ -103,8 +103,7 @@ fn setup(
 ```
 ## Next Steps
 
-To learn more, [read the docs](https://docs.rs/bevy_mod_picking/latest/bevy_mod_picking/) and take a look at the examples in the `/examples` directory. The `event_listener`
-example is a great place to start.
+To learn more, [read the docs](https://docs.rs/bevy_mod_picking/latest/bevy_mod_picking/) and take a look at the examples in the `/examples` directory. Understanding [bevy_eventlistener](https://github.com/aevyrie/bevy_eventlistener) will really help. Once you are comfortable with that, the `event_listener` example is a great place to start.
 
 # Bevy Version Support
 
