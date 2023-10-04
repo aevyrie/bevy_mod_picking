@@ -264,7 +264,7 @@ pub fn debug_draw_egui(
 
     for (id, debug) in pointers.iter() {
         let Some(location) = &debug.location else {
-            continue
+            continue;
         };
         let NormalizedRenderTarget::Window(window_ref) = location.target else {
             continue;
@@ -329,7 +329,7 @@ pub fn debug_draw(
 ) {
     for (entity, id, debug) in pointers.iter() {
         let Some(location) = &debug.location else {
-            continue
+            continue;
         };
         let text = format!("{id:?}\n{debug}");
 
