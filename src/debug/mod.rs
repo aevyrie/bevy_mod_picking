@@ -2,11 +2,17 @@
 
 use std::fmt::Debug;
 
+use bevy_core::Name;
 use bevy_picking_core::focus::HoverMap;
 use picking_core::{backend::HitData, events::DragMap, pointer::Location};
 
 use crate::*;
-use bevy::prelude::*;
+
+use bevy_app::prelude::*;
+use bevy_math::prelude::*;
+use bevy_reflect::prelude::*;
+use bevy_render::prelude::*;
+use bevy_utils::tracing::{debug, trace};
 
 /// This state determines the runtime behavior of the debug plugin.
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
@@ -36,8 +42,23 @@ impl DebugPickingMode {
 }
 
 /// Logs events for debugging
-/// Use the [`DebugPickingMode`] state resource to control this plugin.
-/// Example:
+///
+/// "Normal" events are logged at the `debug` level. "Noisy" events are logged at the `trace` level.
+/// See [Bevy's LogPlugin](https://docs.rs/bevy/latest/bevy/log/struct.LogPlugin.html) and [Bevy
+/// Cheatbook: Logging, Console Messages](https://bevy-cheatbook.github.io/features/log.html) for
+/// details.
+///
+/// Usually, the default level printed is `info`, so debug and trace messages will not be displayed
+/// even when this plugin is active. You can set `RUST_LOG` to change this. For example:
+///
+/// ```bash
+/// RUST_LOG="warn,bevy_mod_picking=trace,bevy_ui=info" cargo run --example bevy_ui
+/// ```
+///
+/// You can also change the log filter at runtime in your code. The [LogPlugin
+/// docs](https://docs.rs/bevy/latest/bevy/log/struct.LogPlugin.html) give an example.
+///
+/// Use the [`DebugPickingMode`] state resource to control this plugin. Example:
 ///
 /// ```ignore
 /// use DebugPickingMode::{Normal, Disabled};
@@ -51,8 +72,8 @@ impl DebugPickingMode {
 ///             .distributive_run_if(input_just_pressed(KeyCode::F3)),
 ///     )
 /// ```
-/// This sets the starting mode of the plugin to [`DebugPickingMode::Disabled`] and binds
-/// the F3 key to toggle it.
+/// This sets the starting mode of the plugin to [`DebugPickingMode::Disabled`] and binds the F3 key
+/// to toggle it.
 #[derive(Debug, Default, Clone)]
 pub struct DebugPickingPlugin {
     /// Suppresses noisy events like `Move` and `Drag` when set to `false`.
@@ -80,25 +101,27 @@ impl Plugin for DebugPickingPlugin {
         app.add_systems(
             PreUpdate,
             (
-                print::<events::Over>,
-                print::<events::Out>,
-                print::<events::Down>,
-                print::<events::Up>,
-                print::<events::Click>,
-                print::<events::Move>.run_if(DebugPickingMode::is_noisy),
-                print::<events::DragStart>,
-                print::<events::Drag>.run_if(DebugPickingMode::is_noisy),
-                print::<events::DragEnd>,
-                print::<events::DragEnter>,
-                print::<events::DragOver>.run_if(DebugPickingMode::is_noisy),
-                print::<events::DragLeave>,
-                print::<events::Drop>,
+                // This leaves room to easily change the log-level associated
+                // with different events, should that be desired.
+                log_debug::<events::Over>,
+                log_debug::<events::Out>,
+                log_debug::<events::Down>,
+                log_debug::<events::Up>,
+                log_debug::<events::Click>,
+                log_trace::<events::Move>.run_if(DebugPickingMode::is_noisy),
+                log_debug::<events::DragStart>,
+                log_trace::<events::Drag>.run_if(DebugPickingMode::is_noisy),
+                log_debug::<events::DragEnd>,
+                log_debug::<events::DragEnter>,
+                log_trace::<events::DragOver>.run_if(DebugPickingMode::is_noisy),
+                log_debug::<events::DragLeave>,
+                log_debug::<events::Drop>,
             )
                 .distributive_run_if(DebugPickingMode::is_enabled)
                 .in_set(picking_core::PickSet::Last),
         );
 
-        #[cfg(not(feature = "backend_egui"))]
+        #[cfg(all(feature = "backend_bevy_ui", not(feature = "backend_egui")))]
         app.add_systems(
             PreUpdate,
             (add_pointer_debug, update_debug_data, debug_draw)
@@ -126,18 +149,25 @@ impl Plugin for DebugPickingPlugin {
         app.add_systems(
             Update,
             (
-                debug::print::<selection::Select>,
-                debug::print::<selection::Deselect>,
+                debug::log_debug::<selection::Select>,
+                debug::log_debug::<selection::Deselect>,
             )
                 .distributive_run_if(DebugPickingMode::is_enabled),
         );
     }
 }
 
-/// Listens for pointer events of type `E` and prints them.
-pub fn print<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
+/// Listens for pointer events of type `E` and logs them at "debug" level
+pub fn log_debug<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
     for event in pointer_events.iter() {
-        info!("{event}");
+        debug!("{event}");
+    }
+}
+
+/// Listens for pointer events of type `E` and logs them at "trace" level
+pub fn log_trace<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
+    for event in pointer_events.iter() {
+        trace!("{event}");
     }
 }
 
@@ -256,8 +286,8 @@ pub fn debug_draw_egui(
     mut egui: bevy_egui::EguiContexts,
     pointers: Query<(&pointer::PointerId, &PointerDebug)>,
 ) {
-    use bevy::render::camera::NormalizedRenderTarget;
     use bevy_egui::egui::{self, Color32};
+    use bevy_render::camera::NormalizedRenderTarget;
 
     let transparent_white = Color32::from_rgba_unmultiplied(255, 255, 255, 64);
     let stroke = egui::Stroke::new(3.0, transparent_white);
@@ -322,11 +352,14 @@ impl Debug for DebugName {
     }
 }
 
+#[cfg(feature = "backend_bevy_ui")]
 /// Draw text on each cursor with debug info
 pub fn debug_draw(
     mut commands: Commands,
     pointers: Query<(Entity, &pointer::PointerId, &PointerDebug)>,
 ) {
+    use bevy_text::prelude::*;
+    use bevy_ui::prelude::*;
     for (entity, id, debug) in pointers.iter() {
         let Some(location) = &debug.location else {
             continue;
@@ -341,16 +374,16 @@ pub fn debug_draw(
                     TextStyle {
                         font_size: 12.0,
                         color: Color::WHITE,
-                        ..default()
+                        ..Default::default()
                     },
                 ),
                 style: Style {
                     position_type: PositionType::Absolute,
                     left: Val::Px(location.position.x + 5.0),
                     top: Val::Px(location.position.y + 5.0),
-                    ..default()
+                    ..Default::default()
                 },
-                ..default()
+                ..Default::default()
             })
             .insert(Pickable::IGNORE);
     }

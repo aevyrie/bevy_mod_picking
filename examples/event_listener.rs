@@ -5,7 +5,6 @@
 //! other words, it allows you to easily implement "If entity X is hovered/clicked/dragged, do Y".
 
 use bevy::prelude::*;
-use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 fn main() {

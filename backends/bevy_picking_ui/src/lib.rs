@@ -1,4 +1,4 @@
-//! A picking backend for [`bevy_ui`](bevy::ui).
+//! A picking backend for [`bevy_ui`].
 //!
 //! # Usage
 //!
@@ -7,7 +7,7 @@
 //!
 //! ## Important Note
 //!
-//! This backend completely ignores [`FocusPolicy`](bevy::ui::FocusPolicy). The design of bevy ui's
+//! This backend completely ignores [`FocusPolicy`](bevy_ui::FocusPolicy). The design of bevy ui's
 //! focus systems and the picking plugin are not compatible. Instead, use the [`Pickable`] component
 //! to customize how an entity responds to picking focus.
 //!
@@ -22,13 +22,14 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{
-    ecs::query::WorldQuery,
-    prelude::*,
-    render::camera::NormalizedRenderTarget,
-    ui::{RelativeCursorPosition, UiStack},
-    window::PrimaryWindow,
-};
+use bevy_app::prelude::*;
+use bevy_ecs::{prelude::*, query::WorldQuery};
+use bevy_math::prelude::*;
+use bevy_render::{camera::NormalizedRenderTarget, prelude::*};
+use bevy_transform::prelude::*;
+use bevy_ui::{prelude::*, RelativeCursorPosition, UiStack};
+use bevy_window::PrimaryWindow;
+
 use bevy_picking_core::backend::prelude::*;
 
 /// Commonly used imports for the [`bevy_picking_ui`](crate) crate.
@@ -36,7 +37,7 @@ pub mod prelude {
     pub use crate::BevyUiBackend;
 }
 
-/// Adds picking support for [`bevy_ui`](bevy::ui)
+/// Adds picking support for [`bevy_ui`].
 #[derive(Clone)]
 pub struct BevyUiBackend;
 impl Plugin for BevyUiBackend {

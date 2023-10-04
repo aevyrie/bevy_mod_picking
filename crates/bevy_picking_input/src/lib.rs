@@ -14,12 +14,20 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::prelude::*;
-use bevy_picking_core::{PickSet, PickingPluginsSettings};
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_reflect::prelude::*;
+
+use bevy_picking_core::PickSet;
 
 pub mod debug;
 pub mod mouse;
 pub mod touch;
+
+/// Common imports for `bevy_picking_input`.
+pub mod prelude {
+    pub use crate::{InputPlugin, InputPluginSettings};
+}
 
 /// Adds mouse and touch inputs for picking pointers to your app.
 pub struct InputPlugin;
@@ -30,8 +38,8 @@ impl Plugin for InputPlugin {
             .add_systems(
                 First,
                 (
-                    touch::touch_pick_events.run_if(touch_enabled),
-                    mouse::mouse_pick_events.run_if(mouse_enabled),
+                    touch::touch_pick_events.run_if(InputPluginSettings::is_touch_enabled),
+                    mouse::mouse_pick_events.run_if(InputPluginSettings::is_mouse_enabled),
                     // IMPORTANT: the commands must be flushed after `touch_pick_events` is run
                     // because we need pointer spawning to happen immediately to prevent issues with
                     // missed events during drag and drop.
@@ -42,33 +50,59 @@ impl Plugin for InputPlugin {
             )
             .add_systems(
                 Last,
-                touch::deactivate_pointers.run_if(PickingPluginsSettings::input_enabled),
+                touch::deactivate_touch_pointers.run_if(InputPluginSettings::is_touch_enabled),
             );
     }
 }
 
-/// Settings for the input plugin to allow enabling or disabling mouse or touch inputs at runtime.
-#[derive(Resource)]
-pub struct InputPluginSettings {
-    run_mouse: bool,
-    run_touch: bool,
-    /// Map buttons from Bevy's mouse input (e.g. `MouseButton::Left`) to Pointer
-    /// buttons (e.g. PointerButton::Primary).
-    pub mouse_button_mapping: mouse::MouseButtonMapping,
+/// A resource used to enable and disable features of the [`InputPlugin`].
+#[derive(Resource, Debug, Reflect)]
+pub enum InputPluginSettings {
+    /// The plugin is enabled and systems will run, even if all the inner fields corresponding to
+    /// specific features are disabled.
+    Enabled {
+        /// Should touch inputs be updated?
+        is_touch_enabled: bool,
+        /// Should mouse inputs be updated?
+        is_mouse_enabled: bool,
+    },
+    /// Completely disable the plugin.
+    Disabled,
 }
+
 impl Default for InputPluginSettings {
     fn default() -> Self {
-        Self {
-            run_mouse: true,
-            run_touch: true,
-            mouse_button_mapping: mouse::MouseButtonMapping::default(),
+        Self::Enabled {
+            is_touch_enabled: true,
+            is_mouse_enabled: true,
         }
     }
 }
 
-fn touch_enabled(settings: Res<InputPluginSettings>, state: Res<PickingPluginsSettings>) -> bool {
-    state.enable && state.enable_input && settings.run_touch
-}
-fn mouse_enabled(settings: Res<InputPluginSettings>, state: Res<PickingPluginsSettings>) -> bool {
-    state.enable && state.enable_input && settings.run_mouse
+impl InputPluginSettings {
+    fn is_touch_enabled(state: Res<Self>) -> bool {
+        matches!(
+            *state,
+            Self::Enabled {
+                is_touch_enabled: true,
+                ..
+            }
+        )
+    }
+    fn is_mouse_enabled(state: Res<Self>) -> bool {
+        matches!(
+            *state,
+            Self::Enabled {
+                is_mouse_enabled: true,
+                ..
+            }
+        )
+    }
+
+    /// Returns `true` if the input plugin state is [`Enabled`].
+    ///
+    /// [`Enabled`]: InputPluginSettings::Enabled
+    pub fn is_enabled(state: Res<Self>) -> bool {
+        matches!(*state, Self::Enabled { .. })
+    }
 }

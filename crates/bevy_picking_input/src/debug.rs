@@ -1,6 +1,8 @@
 //! Debug tools for picking inputs
 
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_utils::tracing::info;
+
 use bevy_picking_core::pointer::{InputMove, InputPress};
 
 /// Listens for input events and prints them.

@@ -1,29 +1,28 @@
 //! Provides sensible defaults for mouse picking inputs.
 
-use bevy::{
-    input::{mouse::MouseButtonInput, ButtonState},
-    prelude::*,
-    render::camera::RenderTarget,
-    utils::HashMap,
-    window::{PrimaryWindow, WindowRef},
-};
+use bevy_ecs::prelude::*;
+use bevy_input::{mouse::MouseButtonInput, prelude::*, ButtonState};
+use bevy_math::Vec2;
+use bevy_reflect::Reflect;
+use bevy_render::camera::RenderTarget;
+use bevy_utils::{tracing::debug, HashMap};
+use bevy_window::{CursorMoved, PrimaryWindow, Window, WindowRef};
+
 use bevy_picking_core::{
     pointer::{InputMove, InputPress, Location, PointerButton, PointerId},
     PointerCoreBundle,
 };
 
-use crate::InputPluginSettings;
-
 /// Map buttons from Bevy's mouse system to pointer buttons. Access through [`InputPluginSettings`].
 /// Note that the values (PointerButton) _must_ be unique, as pressed/released status is tracked
 /// at the higher level, and will get confused with multiple mouse buttons mapped to the same
 /// pointer button.
-#[derive(Debug)]
-pub struct MouseButtonMapping {
+#[derive(Resource, Debug, Reflect)]
+pub struct MouseButtonSettings {
     mapping: HashMap<MouseButton, Option<PointerButton>>,
 }
 
-impl Default for MouseButtonMapping {
+impl Default for MouseButtonSettings {
     /// The default is as one might expect:
     ///
     /// * Left -> Primary
@@ -41,7 +40,7 @@ impl Default for MouseButtonMapping {
     }
 }
 
-impl MouseButtonMapping {
+impl MouseButtonSettings {
     /// Get the PointerButton mapped to a given MouseButton, if any. There are two levels of
     /// `<Option>` to allow you to distinguish between unconfigured / unknown buttons and
     /// buttons which are mapped to None (which you might do if you don't want to use them
@@ -90,6 +89,7 @@ impl MouseButtonMapping {
 
 /// Spawns the default mouse pointer.
 pub fn spawn_mouse_pointer(mut commands: Commands) {
+    commands.init_resource::<MouseButtonSettings>();
     commands.spawn((
         PointerCoreBundle::new(PointerId::Mouse),
         #[cfg(feature = "selection")]
@@ -107,7 +107,7 @@ pub fn mouse_pick_events(
     // Output
     mut pointer_move: EventWriter<InputMove>,
     mut pointer_presses: EventWriter<InputPress>,
-    input_plugin_settings: Res<InputPluginSettings>,
+    mouse_button_settings: Res<MouseButtonSettings>,
 ) {
     for event in cursor_moves.iter() {
         pointer_move.send(InputMove::new(
@@ -125,10 +125,7 @@ pub fn mouse_pick_events(
 
     for input in mouse_inputs.iter() {
         // map bevy mouse buttons (left, right, middle, other) to primary, secondary, middle
-        let button = match input_plugin_settings
-            .mouse_button_mapping
-            .get_mapping(input.button)
-        {
+        let button = match mouse_button_settings.get_mapping(input.button) {
             Some(Some(mouse_button)) => mouse_button,
             Some(None) => {
                 debug!(

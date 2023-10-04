@@ -9,9 +9,11 @@ pub mod events;
 pub mod focus;
 pub mod pointer;
 
-use bevy::prelude::*;
-use bevy_eventlistener::prelude::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_reflect::prelude::*;
 
+use bevy_eventlistener::{prelude::*, EventListenerSet};
 /// Used to globally toggle picking features at runtime.
 #[derive(Clone, Debug, Resource)]
 pub struct PickingPluginsSettings {
@@ -145,8 +147,6 @@ pub enum PickSet {
     Focus,
     /// Runs after all the focus systems are done, before event listeners are triggered.
     PostFocus,
-    /// Updates event listeners and bubbles [`events::Pointer`] events
-    EventListeners,
     /// Runs after all other sets
     Last,
 }
@@ -168,6 +168,19 @@ impl Plugin for CorePlugin {
                     pointer::InputPress::receive,
                 )
                     .in_set(PickSet::ProcessInput),
+            )
+            .configure_sets(First, (PickSet::Input, PickSet::PostInput).chain())
+            .configure_sets(
+                PreUpdate,
+                (
+                    PickSet::ProcessInput,
+                    PickSet::Backend,
+                    PickSet::Focus.run_if(PickingPluginsSettings::interaction_should_run),
+                    PickSet::PostFocus,
+                    EventListenerSet,
+                    PickSet::Last,
+                )
+                    .chain(),
             );
     }
 }
@@ -183,19 +196,6 @@ impl Plugin for InteractionPlugin {
             .init_resource::<focus::PreviousHoverMap>()
             .init_resource::<DragMap>()
             .add_event::<PointerCancel>()
-            .add_event::<Pointer<Over>>()
-            .add_event::<Pointer<Out>>()
-            .add_event::<Pointer<Down>>()
-            .add_event::<Pointer<Up>>()
-            .add_event::<Pointer<Click>>()
-            .add_event::<Pointer<Move>>()
-            .add_event::<Pointer<DragStart>>()
-            .add_event::<Pointer<Drag>>()
-            .add_event::<Pointer<DragEnd>>()
-            .add_event::<Pointer<DragEnter>>()
-            .add_event::<Pointer<DragOver>>()
-            .add_event::<Pointer<DragLeave>>()
-            .add_event::<Pointer<Drop>>()
             .add_systems(
                 PreUpdate,
                 (
@@ -208,43 +208,20 @@ impl Plugin for InteractionPlugin {
                     .chain()
                     .in_set(PickSet::Focus),
             )
-            .configure_set(
-                Update,
-                PickSet::Focus.run_if(PickingPluginsSettings::interaction_should_run),
-            );
-
-        app.add_plugins((
-            EventListenerPlugin::<Pointer<Over>>::default(),
-            EventListenerPlugin::<Pointer<Out>>::default(),
-            EventListenerPlugin::<Pointer<Down>>::default(),
-            EventListenerPlugin::<Pointer<Up>>::default(),
-            EventListenerPlugin::<Pointer<Click>>::default(),
-            EventListenerPlugin::<Pointer<Move>>::default(),
-            EventListenerPlugin::<Pointer<DragStart>>::default(),
-            EventListenerPlugin::<Pointer<Drag>>::default(),
-            EventListenerPlugin::<Pointer<DragEnd>>::default(),
-            EventListenerPlugin::<Pointer<DragEnter>>::default(),
-            EventListenerPlugin::<Pointer<DragOver>>::default(),
-            EventListenerPlugin::<Pointer<DragLeave>>::default(),
-            EventListenerPlugin::<Pointer<Drop>>::default(),
-        ))
-        .configure_set(
-            Update,
-            PickSet::EventListeners.run_if(PickingPluginsSettings::interaction_should_run),
-        );
-
-        app.configure_sets(First, (PickSet::Input, PickSet::PostInput).chain())
-            .configure_sets(
-                PreUpdate,
-                (
-                    PickSet::ProcessInput,
-                    PickSet::Backend,
-                    PickSet::Focus,
-                    PickSet::PostFocus,
-                    PickSet::EventListeners,
-                    PickSet::Last,
-                )
-                    .chain(),
-            );
+            .add_plugins((
+                EventListenerPlugin::<Pointer<Over>>::default(),
+                EventListenerPlugin::<Pointer<Out>>::default(),
+                EventListenerPlugin::<Pointer<Down>>::default(),
+                EventListenerPlugin::<Pointer<Up>>::default(),
+                EventListenerPlugin::<Pointer<Click>>::default(),
+                EventListenerPlugin::<Pointer<Move>>::default(),
+                EventListenerPlugin::<Pointer<DragStart>>::default(),
+                EventListenerPlugin::<Pointer<Drag>>::default(),
+                EventListenerPlugin::<Pointer<DragEnd>>::default(),
+                EventListenerPlugin::<Pointer<DragEnter>>::default(),
+                EventListenerPlugin::<Pointer<DragOver>>::default(),
+                EventListenerPlugin::<Pointer<DragLeave>>::default(),
+                EventListenerPlugin::<Pointer<Drop>>::default(),
+            ));
     }
 }

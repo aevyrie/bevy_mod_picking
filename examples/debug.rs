@@ -1,16 +1,89 @@
-//! This example demonstrates how to use the plugin with bevy_ui.
+//! Shows how to toggle debug logging and the pointer debug overlay at runtime
+//!
+//! This is all essentially identical to bevy_ui, except the buttons
+//! are configured to send custom events, and new small systems which
+//! react to the button clicks. `cycle_logging()` shows how to change
+//! the State which controls debug log verbosity.
+//!
+//! Note that the visual overlay next to the pointer is enabled with
+//! debug logging on, and disabled when it is off.
 
+use bevy::{app::AppExit, log::LogPlugin};
 use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy_eventlistener::prelude::*;
 use bevy_mod_picking::prelude::*;
+use bevy_utils::tracing::Level;
+
+// See bevy_eventlistener. In particular, look at the event_listeners.rs example.
+#[derive(Clone, Event)]
+struct CycleLogging(Entity);
+
+impl From<ListenerInput<Pointer<Click>>> for CycleLogging {
+    fn from(event: ListenerInput<Pointer<Click>>) -> Self {
+        CycleLogging(event.target) // you could use this to choose between different buttons
+    }
+}
+
+// change log verbosity by cycling through the DebugPickingMode state
+fn cycle_logging(
+    logging_state: Res<State<debug::DebugPickingMode>>,
+    mut logging_next_state: ResMut<NextState<debug::DebugPickingMode>>,
+) {
+    match logging_state.get() {
+        debug::DebugPickingMode::Normal => {
+            info!("Changing state from Normal to Noisy.");
+            logging_next_state.set(debug::DebugPickingMode::Noisy);
+        }
+        debug::DebugPickingMode::Noisy => {
+            info!("Changing state from Noisy to Disabled.");
+            logging_next_state.set(debug::DebugPickingMode::Disabled);
+        }
+        debug::DebugPickingMode::Disabled => {
+            info!("Changing state from Disabled to Normal.");
+            logging_next_state.set(debug::DebugPickingMode::Normal);
+        }
+    }
+}
+
+// basically same as above, but does something different.
+#[derive(Clone, Event)]
+struct Shutdown;
+
+impl From<ListenerInput<Pointer<Click>>> for Shutdown {
+    fn from(_event: ListenerInput<Pointer<Click>>) -> Self {
+        Shutdown
+    }
+}
+
+fn shutdown(mut exit_events: EventWriter<bevy::app::AppExit>) {
+    exit_events.send(AppExit);
+}
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
+        .add_plugins(
+            DefaultPlugins
+                .set(low_latency_window_plugin())
+                .set(LogPlugin {
+                    filter: "bevy_mod_picking=trace".into(), // Show picking logs trace level and up
+                    level: Level::ERROR, // Show all other logs only at the error level and up
+                }),
+        )
         .add_plugins(DefaultPickingPlugins)
+        .add_event::<CycleLogging>()
+        .add_event::<Shutdown>()
         .add_systems(Startup, (setup, setup_3d))
         .add_systems(Update, update_button_colors)
+        // add our button-event response systems, set to only run when the
+        // respective events are triggered.
+        .add_systems(Update, cycle_logging.run_if(on_event::<CycleLogging>()))
+        .add_systems(Update, shutdown.run_if(on_event::<Shutdown>()))
         .run();
 }
+
+// Everything below this line is identical to what's in bevy_ui, except the event listener is passed
+// to .add_button along with the text to display.
+// ----------------------------------------------------------------------------
 
 /// Use the [`PickingInteraction`] state of each button to update its color.
 fn update_button_colors(
@@ -54,9 +127,11 @@ fn setup(mut commands: Commands) {
 
     commands
         .entity(root)
-        .add_button("Start")
-        .add_button("Settings")
-        .add_button("Quit");
+        .add_button(
+            "Cycle Logging State",
+            On::<Pointer<Click>>::send_event::<CycleLogging>(),
+        )
+        .add_button("Quit", On::<Pointer<Click>>::send_event::<Shutdown>());
 }
 
 /// set up a simple 3D scene
@@ -102,12 +177,11 @@ fn setup_3d(
 }
 
 trait NewButton {
-    fn add_button(self, text: &str) -> Self;
+    fn add_button(self, text: &str, on_click_action: On<Pointer<Click>>) -> Self;
 }
 
 impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
-    fn add_button(mut self, text: &str) -> Self {
-        let text_string = text.to_string();
+    fn add_button(mut self, text: &str, on_click_action: On<Pointer<Click>>) -> Self {
         let child = self
             .commands()
             .spawn((
@@ -123,7 +197,7 @@ impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
                     ..default()
                 },
                 // Add an onclick
-                On::<Pointer<Click>>::run(move || info!("Button {text_string} pressed!")),
+                on_click_action,
                 // Buttons should not deselect other things:
                 NoDeselect,
             ))

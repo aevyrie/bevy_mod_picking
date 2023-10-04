@@ -21,7 +21,9 @@
 //!   use it for optimization purposes. For example, a backend that traverses a spatial hierarchy
 //!   may want to early exit if it intersects entity that blocks lower entities from being picked.
 
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_math::Vec3;
+use bevy_reflect::Reflect;
 
 /// Common imports for implementing a picking backend.
 pub mod prelude {
@@ -44,7 +46,8 @@ pub struct PointerHits {
     pub pointer: prelude::PointerId,
     /// An unordered collection of entities and their distance (depth) from the cursor.
     pub picks: Vec<(Entity, HitData)>,
-    /// Set the order of this group of picks. Normally, this is the [`Camera::order`].
+    /// Set the order of this group of picks. Normally, this is the
+    /// [`bevy_render::camera::Camera::order`].
     ///
     /// Used to allow multiple `PointerHits` submitted for the same pointer to be ordered.
     /// `PointerHits` with a higher `order` will be checked before those with a lower `order`,
@@ -78,7 +81,7 @@ impl PointerHits {
 /// Holds data from a successful pointer hit test.
 ///
 /// `depth` only needs to be self-consistent with other [`PointerHits`]s using the same
-/// [`RenderTarget`](bevy::render::camera::RenderTarget).
+/// [`RenderTarget`](bevy_render::camera::RenderTarget).
 #[derive(Clone, Debug, PartialEq, Reflect)]
 pub struct HitData {
     /// The camera entity used to detect this hit. Useful when you need to find the ray that was

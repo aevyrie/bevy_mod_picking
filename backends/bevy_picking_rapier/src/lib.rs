@@ -6,7 +6,7 @@
 //! [`RapierPickCamera`]. If a pointer passes through this camera's render target, it will
 //! automatically shoot rays into the rapier scene and will be able to pick things.
 //!
-//! To ignore an entity, you can add [`Pickable::ignore`] to it, and it will be ignored during
+//! To ignore an entity, you can add [`Pickable::IGNORE`] to it, and it will be ignored during
 //! raycasting.
 //!
 //! ## Limitations
@@ -24,7 +24,15 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
-use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_math::Ray;
+use bevy_reflect::prelude::*;
+use bevy_render::prelude::*;
+use bevy_transform::prelude::*;
+use bevy_utils::HashMap;
+use bevy_window::PrimaryWindow;
+
 use bevy_picking_core::backend::prelude::*;
 use bevy_rapier3d::prelude::*;
 

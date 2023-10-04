@@ -3,15 +3,14 @@
 
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
-use input::InputPluginSettings;
+use input::mouse::MouseButtonSettings;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
-        // All you need to do is add the picking plugin, with your backend of choice enabled in the
-        // cargo features. By default, the bevy_mod_raycast backend is enabled via the
-        // `backend_raycast` feature.
         .add_plugins(DefaultPickingPlugins)
+        // this resource is holds mouse button mapping configuration
+        .init_resource::<input::mouse::MouseButtonSettings>()
         .add_systems(Startup, setup)
         .run();
 }
@@ -21,17 +20,11 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut input_plugin_settings: ResMut<InputPluginSettings>,
+    mut mouse_button_settings: ResMut<MouseButtonSettings>,
 ) {
-    input_plugin_settings
-        .mouse_button_mapping
-        .set_mapping(MouseButton::Left, Some(PointerButton::Secondary));
-    input_plugin_settings
-        .mouse_button_mapping
-        .set_mapping(MouseButton::Right, Some(PointerButton::Primary));
-    input_plugin_settings
-        .mouse_button_mapping
-        .set_mapping(MouseButton::Middle, None);
+    mouse_button_settings.set_mapping(MouseButton::Left, Some(PointerButton::Secondary));
+    mouse_button_settings.set_mapping(MouseButton::Right, Some(PointerButton::Primary));
+    mouse_button_settings.set_mapping(MouseButton::Middle, None);
 
     // The rest of this is identical to minimal.rs
     commands.spawn((
