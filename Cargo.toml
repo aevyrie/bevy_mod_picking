@@ -14,6 +14,10 @@ rust-version = "1.70.0"
 [workspace]
 members = ["crates/*", "backends/*"]
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [dependencies]
 bevy_app = { version = "0.11", default-features = false }
 bevy_core = { version = "0.11", default-features = false }

@@ -165,6 +165,7 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 use bevy_ecs::prelude::*;
 use bevy_picking_core::PointerCoreBundle;
@@ -173,24 +174,37 @@ use prelude::*;
 pub use bevy_picking_core::{self as picking_core, backend, events, focus, pointer};
 pub use bevy_picking_input::{self as input};
 
-#[cfg(feature = "highlight")]
+#[cfg(any(feature = "highlight", docsrs))]
+#[cfg_attr(docsrs, doc(cfg(feature = "highlight")))]
 pub use bevy_picking_highlight as highlight;
-#[cfg(feature = "selection")]
+
+#[cfg(any(feature = "selection", docsrs))]
+#[cfg_attr(docsrs, doc(cfg(feature = "selection")))]
 pub use bevy_picking_selection as selection;
-#[cfg(feature = "debug")]
+#[cfg(any(feature = "debug", docsrs))]
+#[cfg_attr(docsrs, doc(cfg(feature = "debug")))]
 pub mod debug;
 
 /// Picking backend exports, feature-gated.
 pub mod backends {
-    #[cfg(feature = "backend_egui")]
+    #[cfg(any(feature = "backend_egui", docsrs))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "backend_egui")))]
     pub use bevy_picking_egui as egui;
-    #[cfg(feature = "backend_rapier")]
+
+    #[cfg(any(feature = "backend_rapier", docsrs))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "backend_rapier")))]
     pub use bevy_picking_rapier as rapier;
-    #[cfg(feature = "backend_raycast")]
+
+    #[cfg(any(feature = "backend_raycast", docsrs))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "backend_raycast")))]
     pub use bevy_picking_raycast as raycast;
-    #[cfg(feature = "backend_sprite")]
+
+    #[cfg(any(feature = "backend_sprite", docsrs))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "backend_sprite")))]
     pub use bevy_picking_sprite as sprite;
-    #[cfg(feature = "backend_bevy_ui")]
+
+    #[cfg(any(feature = "backend_bevy_ui", docsrs))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "backend_bevy_ui")))]
     pub use bevy_picking_ui as bevy_ui;
 }
 
@@ -245,10 +259,12 @@ pub struct PickableBundle {
     /// Tracks entity interaction state.
     pub interaction: focus::PickingInteraction,
     /// Tracks entity [`PickSelection`](selection::PickSelection) state.
-    #[cfg(feature = "selection")]
+    #[cfg(any(feature = "selection", docsrs))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "selection")))]
     pub selection: selection::PickSelection,
     /// Tracks entity [`PickHighlight`](highlight::PickHighlight) state.
-    #[cfg(feature = "highlight")]
+    #[cfg(any(feature = "highlight", docsrs))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "highlight")))]
     pub highlight: highlight::PickHighlight,
 }
 
