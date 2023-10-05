@@ -84,11 +84,10 @@ impl MouseButtonSettings {
             }
             None => debug!("Setting {:?} Mouse button to None", mouse_button),
         };
-        if clear.is_some() {
-            self.mapping.insert(clear.unwrap(), None);
+        if let Some(m) = clear {
+            self.mapping.insert(m, None);
         }
-        self.mapping
-            .insert(mouse_button.clone(), pointer_button.clone());
+        self.mapping.insert(mouse_button, pointer_button);
     }
 }
 
