@@ -13,10 +13,15 @@ use bevy_picking_core::{
     PointerCoreBundle,
 };
 
-/// Map buttons from Bevy's mouse system to pointer buttons. Access through [`InputPluginSettings`].
+/// Map buttons from Bevy's mouse system to pointer buttons.
+///
 /// Note that the values (PointerButton) _must_ be unique, as pressed/released status is tracked
 /// at the higher level, and will get confused with multiple mouse buttons mapped to the same
-/// pointer button.
+/// pointer button. Therefore, when you assign a pointer button to a mouse button with [`set_mapping`],
+/// any existing mappings to that pointer button will be cleared. For example, if you start
+/// from the default and map [`MouseButton::Left`] to [`PointerButton::Secondary`],
+/// [`MouseButton::Right`] will be set to `None`. (You can then call `set_mapping` a second time
+/// to set `MouseButton::Right` to [`PointerButton::Primary`].)
 #[derive(Resource, Debug, Reflect)]
 pub struct MouseButtonSettings {
     mapping: HashMap<MouseButton, Option<PointerButton>>,
