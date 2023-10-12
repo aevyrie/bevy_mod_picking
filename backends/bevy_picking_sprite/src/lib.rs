@@ -11,7 +11,7 @@ use bevy_asset::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_math::prelude::*;
 use bevy_render::prelude::*;
-use bevy_sprite::{Sprite, TextureAtlasSprite};
+use bevy_sprite::{Sprite, TextureAtlas, TextureAtlasSprite};
 use bevy_transform::prelude::*;
 use bevy_window::PrimaryWindow;
 
@@ -38,10 +38,11 @@ pub fn sprite_picking(
     cameras: Query<(Entity, &Camera, &GlobalTransform)>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
+    texture_atlas: Res<Assets<TextureAtlas>>,
     sprite_query: Query<(
         Entity,
         (Option<&Sprite>, Option<&TextureAtlasSprite>),
-        &Handle<Image>,
+        (Option<&Handle<Image>>, Option<&Handle<TextureAtlas>>),
         &GlobalTransform,
         &ComputedVisibility,
         Option<&Pickable>,
@@ -85,8 +86,14 @@ pub fn sprite_picking(
                     let custom_size = if sprite.0.is_some() { sprite.0.unwrap().custom_size } else { sprite.1.unwrap().custom_size };
                     let anchor = if sprite.0.is_some() { &sprite.0.unwrap().anchor } else { &sprite.1.unwrap().anchor };
                     // Hit box in sprite coordinate system
+
                     let extents = custom_size
-                        .or_else(|| images.get(image).map(|f| f.size()))?;
+                        .or_else(||
+                            if image.0.is_some() {
+                                images.get(image.0.unwrap()).map(|f| f.size())
+                            } else {
+                                texture_atlas.get(image.1.unwrap()).map(|f| f.textures[sprite.1.unwrap().index].size())
+                            })?;
                     let center = -anchor.as_vec() * extents;
                     let rect = Rect::from_center_half_size(center, extents / 2.0);
 
