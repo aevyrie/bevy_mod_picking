@@ -11,7 +11,7 @@ use bevy_asset::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_math::prelude::*;
 use bevy_render::prelude::*;
-use bevy_sprite::Sprite;
+use bevy_sprite::{Sprite, TextureAtlasSprite};
 use bevy_transform::prelude::*;
 use bevy_window::PrimaryWindow;
 
@@ -25,6 +25,7 @@ pub mod prelude {
 /// Adds picking support for [`bevy_sprite`].
 #[derive(Clone)]
 pub struct SpriteBackend;
+
 impl Plugin for SpriteBackend {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, sprite_picking.in_set(PickSet::Backend));
@@ -39,12 +40,12 @@ pub fn sprite_picking(
     images: Res<Assets<Image>>,
     sprite_query: Query<(
         Entity,
-        &Sprite,
+        (Option<&Sprite>, Option<&TextureAtlasSprite>),
         &Handle<Image>,
         &GlobalTransform,
         &ComputedVisibility,
         Option<&Pickable>,
-    )>,
+    ), Or<(With<Sprite>, With<TextureAtlasSprite>)>>,
     mut output: EventWriter<PointerHits>,
 ) {
     let mut sorted_sprites: Vec<_> = sprite_query.iter().collect();
@@ -69,9 +70,9 @@ pub fn sprite_picking(
         };
 
         let Some(cursor_pos_world) = camera.viewport_to_world_2d(cam_transform, location.position)
-        else {
-            continue;
-        };
+            else {
+                continue;
+            };
 
         let picks: Vec<(Entity, HitData)> = sorted_sprites
             .iter()
@@ -81,12 +82,12 @@ pub fn sprite_picking(
                     if blocked || !visibility.is_visible() {
                         return None;
                     }
-
+                    let custom_size = if sprite.0.is_some() { sprite.0.unwrap().custom_size } else { sprite.1.unwrap().custom_size };
+                    let anchor = if sprite.0.is_some() { &sprite.0.unwrap().anchor } else { &sprite.1.unwrap().anchor };
                     // Hit box in sprite coordinate system
-                    let extents = sprite
-                        .custom_size
+                    let extents = custom_size
                         .or_else(|| images.get(image).map(|f| f.size()))?;
-                    let center = -sprite.anchor.as_vec() * extents;
+                    let center = -anchor.as_vec() * extents;
                     let rect = Rect::from_center_half_size(center, extents / 2.0);
 
                     // Transform cursor pos to sprite coordinate system
