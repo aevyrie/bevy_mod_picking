@@ -56,7 +56,7 @@ pub struct NodeQuery {
     relative_cursor_position: Option<&'static mut RelativeCursorPosition>,
     pickable: Option<&'static Pickable>,
     calculated_clip: Option<&'static CalculatedClip>,
-    computed_visibility: Option<&'static ComputedVisibility>,
+    view_visibility: Option<&'static ViewVisibility>,
 }
 
 /// Computes the UI node entities under each pointer.
@@ -113,8 +113,8 @@ pub fn ui_picking(
             .filter_map(|entity| {
                 if let Ok(node) = node_query.get_mut(*entity) {
                     // Nodes that are not rendered should not be interactable
-                    if let Some(computed_visibility) = node.computed_visibility {
-                        if !computed_visibility.is_visible() {
+                    if let Some(view_visibility) = node.view_visibility {
+                        if !view_visibility.get() {
                             return None;
                         }
                     }
