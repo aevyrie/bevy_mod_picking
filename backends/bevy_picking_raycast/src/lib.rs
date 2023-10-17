@@ -27,8 +27,7 @@ pub struct RaycastBackendSettings {
 }
 
 /// This unit struct is used to tag the generic ray casting types
-/// [`RaycastMesh`](bevy_mod_raycast::RaycastMesh) and
-/// [`RaycastSource`](bevy_mod_raycast::RaycastSource).
+/// [`RaycastMesh`] and [`RaycastSource`].
 #[derive(Reflect, Clone)]
 pub struct RaycastPickingSet;
 
