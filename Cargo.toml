@@ -29,7 +29,7 @@ bevy_utils = { version = "0.11", default-features = false }
 bevy_window = { version = "0.11", default-features = false }
 
 bevy_eventlistener = "0.5"
-bevy_egui = { optional = true, version = "0.21" }
+bevy_egui = { optional = true, version = "0.22" }
 bevy_rapier3d = { optional = true, version = "0.22" }
 
 # Local
