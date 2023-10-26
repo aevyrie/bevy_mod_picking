@@ -31,7 +31,7 @@ fn setup(
         },
         Collider::cuboid(2.5, 0.01, 2.5),
         PickableBundle::default(), // <- Makes the collider pickable.
-                                   // RapierPickTarget::default(), // <- Needed for the rapier picking backend
+                                   // RapierPickTarget::default(),
     ));
 
     // cube
@@ -44,7 +44,7 @@ fn setup(
         },
         Collider::cuboid(0.5, 0.5, 0.5),
         PickableBundle::default(), // <- Makes the collider pickable.
-                                   // RapierPickTarget::default(), // <- Needed for the rapier picking backend
+                                   // RapierPickTarget::default(),
     ));
 
     // light
