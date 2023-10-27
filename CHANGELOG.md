@@ -49,7 +49,16 @@
 ### `bevy_mod_raycast` Backend
 - Fixed: the backend now checks render layers when filtering entities.
 - Changed: `RaycastPickCamera` and `RaycastPickTarget` markers components are not longer required.
+  These components have been replaced with a single `RaycastPickable` marker.
 - Added: `RaycastBackendSettings` resource added to allow toggling the above requirement for markers
+  at runtime. Enable the `require_markers` field to match behavior of the plugin prior to this
+  release.
+
+### `bevy_rapier` Backend
+- Fixed: the backend now checks render layers when filtering entities.
+- Changed: `RapierPickCamera` and `RapierPickTarget` markers components are not longer required.
+  These components have been replaced with a single `RapierPickable` marker.
+- Added: `RapierBackendSettings` resource added to allow toggling the above requirement for markers
   at runtime. Enable the `require_markers` field to match behavior of the plugin prior to this
   release.
 

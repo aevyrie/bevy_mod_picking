@@ -1,4 +1,15 @@
 //! A raycasting backend for `bevy_mod_picking` that uses `bevy_mod_raycast` for raycasting.
+//!
+//! # Usage
+//!
+//! If a pointer passes through this camera's render target, it will automatically shoot rays into
+//! the scene and will be able to pick things.
+//!
+//! To ignore an entity, you can add [`Pickable::IGNORE`] to it, and it will be ignored during
+//! raycasting.
+//!
+//! For fine-grained control, see the [`RaycastBackendSettings::require_markers`] setting.
+//!
 
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 #![deny(missing_docs)]
@@ -19,26 +30,20 @@ pub mod prelude {
 }
 
 /// Runtime settings for the [`RaycastBackend`].
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Reflect)]
+#[reflect(Resource, Default)]
 pub struct RaycastBackendSettings {
-    /// When set to `true` raycasting will only happen between cameras marked with
-    /// [`RaycastPickCamera`] and entities marked with [`RaycastPickTarget`]. Off by default.
+    /// When set to `true` raycasting will only happen between cameras and entities marked with
+    /// [`RaycastPickable`]. Off by default. This setting is provided to give you fine-grained
+    /// control over which cameras and entities should be used by the rapier backend at runtime.
     pub require_markers: bool,
 }
 
-/// This unit struct is used to tag the generic ray casting types [`RaycastMesh`] and
-/// [`RaycastSource`].
-#[derive(Reflect, Clone)]
-pub struct RaycastPickingSet;
-
-/// Marks an entity that should be pickable with [`bevy_mod_raycast`] ray casts. Only needed if
-/// [`RaycastBackendSettings::require_markers`] is set to true.
-pub type RaycastPickTarget = RaycastMesh<RaycastPickingSet>;
-
-/// Marks a camera that should be used for picking with [`bevy_mod_raycast`]. Only needed if
-/// [`RaycastBackendSettings::require_markers`] is set to true.
-#[derive(Debug, Default, Clone, Component, Reflect)]
-pub struct RaycastPickCamera;
+/// Optional. Marks cameras and target entities that should be used in the raycast picking backend.
+/// Only needed if [`RaycastBackendSettings::require_markers`] is set to true.
+#[derive(Debug, Clone, Default, Component, Reflect)]
+#[reflect(Component, Default)]
+pub struct RaycastPickable;
 
 /// Adds the raycasting picking backend to your app.
 #[derive(Clone)]
@@ -50,7 +55,8 @@ impl Plugin for RaycastBackend {
     }
 }
 
-/// Builds rays and updates raycasting [`RaycastPickCamera`]s from [`PointerLocation`]s.
+/// Raycasts into the scene using [`RaycastBackendSettings`] and [`PointerLocation`]s, then outputs
+/// [`PointerHits`].
 pub fn update_hits(
     pointers: Query<(&PointerId, &PointerLocation)>,
     primary_window_entity: Query<Entity, With<PrimaryWindow>>,
@@ -59,11 +65,11 @@ pub fn update_hits(
         Entity,
         &Camera,
         &GlobalTransform,
-        Option<&RaycastPickCamera>,
+        Option<&RaycastPickable>,
         Option<&RenderLayers>,
     )>,
     pickables: Query<&Pickable>,
-    marked_targets: Query<&RaycastPickTarget>,
+    marked_targets: Query<&RaycastPickable>,
     layers: Query<&RenderLayers>,
     backend_settings: Res<RaycastBackendSettings>,
     mut raycast: Raycast,
