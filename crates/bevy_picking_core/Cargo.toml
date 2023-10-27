@@ -13,13 +13,13 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy_app = { version = "0.11", default-features = false }
-bevy_derive = { version = "0.11", default-features = false }
-bevy_ecs = { version = "0.11", default-features = false }
-bevy_math = { version = "0.11", default-features = false }
-bevy_reflect = { version = "0.11", default-features = false }
-bevy_render = { version = "0.11", default-features = false }
-bevy_utils = { version = "0.11", default-features = false }
-bevy_window = { version = "0.11", default-features = false }
+bevy_app = { branch = "main", git = "https://github.com/bevyengine/bevy", default-features = false }
+bevy_derive = { branch = "main", git = "https://github.com/bevyengine/bevy", default-features = false }
+bevy_ecs = { branch = "main", git = "https://github.com/bevyengine/bevy", default-features = false }
+bevy_math = { branch = "main", git = "https://github.com/bevyengine/bevy", default-features = false }
+bevy_reflect = { branch = "main", git = "https://github.com/bevyengine/bevy", default-features = false }
+bevy_render = { branch = "main", git = "https://github.com/bevyengine/bevy", default-features = false }
+bevy_utils = { branch = "main", git = "https://github.com/bevyengine/bevy", default-features = false }
+bevy_window = { branch = "main", git = "https://github.com/bevyengine/bevy", default-features = false }
 
 bevy_eventlistener = "0.5"
