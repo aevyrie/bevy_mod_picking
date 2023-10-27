@@ -39,14 +39,17 @@ pub fn sprite_picking(
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
     texture_atlas: Res<Assets<TextureAtlas>>,
-    sprite_query: Query<(
-        Entity,
-        (Option<&Sprite>, Option<&TextureAtlasSprite>),
-        (Option<&Handle<Image>>, Option<&Handle<TextureAtlas>>),
-        &GlobalTransform,
-        &ComputedVisibility,
-        Option<&Pickable>,
-    ), Or<(With<Sprite>, With<TextureAtlasSprite>)>>,
+    sprite_query: Query<
+        (
+            Entity,
+            (Option<&Sprite>, Option<&TextureAtlasSprite>),
+            (Option<&Handle<Image>>, Option<&Handle<TextureAtlas>>),
+            &GlobalTransform,
+            &ComputedVisibility,
+            Option<&Pickable>,
+        ),
+        Or<(With<Sprite>, With<TextureAtlasSprite>)>,
+    >,
     mut output: EventWriter<PointerHits>,
 ) {
     let mut sorted_sprites: Vec<_> = sprite_query.iter().collect();
@@ -71,9 +74,9 @@ pub fn sprite_picking(
         };
 
         let Some(cursor_pos_world) = camera.viewport_to_world_2d(cam_transform, location.position)
-            else {
-                continue;
-            };
+        else {
+            continue;
+        };
 
         let picks: Vec<(Entity, HitData)> = sorted_sprites
             .iter()
@@ -83,17 +86,27 @@ pub fn sprite_picking(
                     if blocked || !visibility.is_visible() {
                         return None;
                     }
-                    let custom_size = if sprite.0.is_some() { sprite.0.unwrap().custom_size } else { sprite.1.unwrap().custom_size };
-                    let anchor = if sprite.0.is_some() { &sprite.0.unwrap().anchor } else { &sprite.1.unwrap().anchor };
+                    let custom_size = if sprite.0.is_some() {
+                        sprite.0.unwrap().custom_size
+                    } else {
+                        sprite.1.unwrap().custom_size
+                    };
+                    let anchor = if sprite.0.is_some() {
+                        &sprite.0.unwrap().anchor
+                    } else {
+                        &sprite.1.unwrap().anchor
+                    };
                     // Hit box in sprite coordinate system
 
-                    let extents = custom_size
-                        .or_else(||
-                            if image.0.is_some() {
-                                images.get(image.0.unwrap()).map(|f| f.size())
-                            } else {
-                                texture_atlas.get(image.1.unwrap()).map(|f| f.textures[sprite.1.unwrap().index].size())
-                            })?;
+                    let extents = custom_size.or_else(|| {
+                        if image.0.is_some() {
+                            images.get(image.0.unwrap()).map(|f| f.size())
+                        } else {
+                            texture_atlas
+                                .get(image.1.unwrap())
+                                .map(|f| f.textures[sprite.1.unwrap().index].size())
+                        }
+                    })?;
                     let center = -anchor.as_vec() * extents;
                     let rect = Rect::from_center_half_size(center, extents / 2.0);
 
