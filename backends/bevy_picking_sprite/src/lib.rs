@@ -11,7 +11,7 @@ use bevy_asset::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_math::prelude::*;
 use bevy_render::prelude::*;
-use bevy_sprite::Sprite;
+use bevy_sprite::{Sprite, TextureAtlas, TextureAtlasSprite};
 use bevy_transform::prelude::*;
 use bevy_window::PrimaryWindow;
 
@@ -25,6 +25,7 @@ pub mod prelude {
 /// Adds picking support for [`bevy_sprite`].
 #[derive(Clone)]
 pub struct SpriteBackend;
+
 impl Plugin for SpriteBackend {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, sprite_picking.in_set(PickSet::Backend));
@@ -37,14 +38,18 @@ pub fn sprite_picking(
     cameras: Query<(Entity, &Camera, &GlobalTransform)>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
-    sprite_query: Query<(
-        Entity,
-        &Sprite,
-        &Handle<Image>,
-        &GlobalTransform,
-        &ComputedVisibility,
-        Option<&Pickable>,
-    )>,
+    texture_atlas: Res<Assets<TextureAtlas>>,
+    sprite_query: Query<
+        (
+            Entity,
+            (Option<&Sprite>, Option<&TextureAtlasSprite>),
+            (Option<&Handle<Image>>, Option<&Handle<TextureAtlas>>),
+            &GlobalTransform,
+            Option<&Pickable>,
+            &ComputedVisibility,
+        ),
+        Or<(With<Sprite>, With<TextureAtlasSprite>)>,
+    >,
     mut output: EventWriter<PointerHits>,
 ) {
     let mut sorted_sprites: Vec<_> = sprite_query.iter().collect();
@@ -80,35 +85,49 @@ pub fn sprite_picking(
         let picks: Vec<(Entity, HitData)> = sorted_sprites
             .iter()
             .copied()
-            .filter_map(
-                |(entity, sprite, image, sprite_transform, visibility, sprite_focus)| {
-                    if blocked || !visibility.is_visible() {
-                        return None;
-                    }
+            .filter(|(.., visibility)| visibility.is_visible())
+            .filter_map(|(entity, sprite, image, sprite_transform, pickable, ..)| {
+                if blocked {
+                    return None;
+                }
 
-                    // Hit box in sprite coordinate system
+                // Hit box in sprite coordinate system
+                let (extents, anchor) = if let Some((sprite, image)) = sprite.0.zip(image.0) {
                     let extents = sprite
                         .custom_size
                         .or_else(|| images.get(image).map(|f| f.size()))?;
-                    let center = -sprite.anchor.as_vec() * extents;
-                    let rect = Rect::from_center_half_size(center, extents / 2.0);
+                    let anchor = sprite.anchor.as_vec();
+                    (extents, anchor)
+                } else if let Some((sprite, atlas)) = sprite.1.zip(image.1) {
+                    let extents = sprite.custom_size.or_else(|| {
+                        texture_atlas
+                            .get(atlas)
+                            .map(|f| f.textures[sprite.index].size())
+                    })?;
+                    let anchor = sprite.anchor.as_vec();
+                    (extents, anchor)
+                } else {
+                    return None;
+                };
 
-                    // Transform cursor pos to sprite coordinate system
-                    let cursor_pos_sprite = sprite_transform
-                        .affine()
-                        .inverse()
-                        .transform_point3((cursor_pos_world, 0.0).into());
+                let center = -anchor * extents;
+                let rect = Rect::from_center_half_size(center, extents / 2.0);
 
-                    let is_cursor_in_sprite = rect.contains(cursor_pos_sprite.truncate());
-                    blocked = is_cursor_in_sprite
-                        && sprite_focus.map(|p| p.should_block_lower) != Some(false);
+                // Transform cursor pos to sprite coordinate system
+                let cursor_pos_sprite = sprite_transform
+                    .affine()
+                    .inverse()
+                    .transform_point3((cursor_pos_world, 0.0).into());
 
-                    is_cursor_in_sprite.then_some((
-                        entity,
-                        HitData::new(cam_entity, sprite_transform.translation().z, None, None),
-                    ))
-                },
-            )
+                let is_cursor_in_sprite = rect.contains(cursor_pos_sprite.truncate());
+                blocked =
+                    is_cursor_in_sprite && pickable.map(|p| p.should_block_lower) != Some(false);
+
+                is_cursor_in_sprite.then_some((
+                    entity,
+                    HitData::new(cam_entity, sprite_transform.translation().z, None, None),
+                ))
+            })
             .collect();
 
         let order = camera.order as f32;
