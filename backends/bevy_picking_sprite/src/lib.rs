@@ -63,13 +63,17 @@ pub fn sprite_picking(
         pointer_location.location().map(|loc| (pointer, loc))
     }) {
         let mut blocked = false;
-        let Some((cam_entity, camera, cam_transform)) = cameras.iter().find(|(_, camera, _)| {
-            camera
-                .target
-                .normalize(Some(primary_window.single()))
-                .unwrap()
-                == location.target
-        }) else {
+        let Some((cam_entity, camera, cam_transform)) = cameras
+            .iter()
+            .filter(|(_, camera, _)| camera.is_active)
+            .find(|(_, camera, _)| {
+                camera
+                    .target
+                    .normalize(Some(primary_window.single()))
+                    .unwrap()
+                    == location.target
+            })
+        else {
             continue;
         };
 

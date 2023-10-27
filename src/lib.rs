@@ -124,8 +124,8 @@
 //!
 //! #### Backend ([`bevy_picking_core::backend`])
 //!
-//! A picking backend only has one job: reading [`PointerLocation`](crate::pointer::PointerLocation)
-//! components, and producing [`PointerHits`](crate::backend::PointerHits).
+//! A picking backend only has one job: reading [`PointerLocation`] components, and producing
+//! [`PointerHits`](crate::backend::PointerHits).
 //!
 //! You will eventually need to choose which picking backend(s) you want to use. This plugin uses
 //! `bevy_mod_raycast` by default; it works with bevy `Mesh`es out of the box and requires no extra
@@ -148,9 +148,8 @@
 //! just because a pointer is over an entity, it is not necessarily hovering that entity. Although
 //! multiple backends may be reporting that a pointer is over an entity, the focus system needs to
 //! determine which one(s) are actually being hovered based on the pick depth, order of the backend,
-//! and the [`Pickable`](bevy_picking_core::Pickable) state of the entity. In other words, if one
-//! entity is in front of another, only the topmost one will be hovered, even if the pointer is
-//! within the bounds of both entities.
+//! and the [`Pickable`] state of the entity. In other words, if one entity is in front of another,
+//! only the topmost one will be hovered, even if the pointer is within the bounds of both entities.
 //!
 //! #### Events ([`bevy_picking_core::events`])
 //!
@@ -244,10 +243,10 @@ pub struct PickableBundle {
     pub pickable: Pickable,
     /// Tracks entity interaction state.
     pub interaction: focus::PickingInteraction,
-    /// Tracks entity [`PickSelection`](selection::PickSelection) state.
+    /// Tracks entity [`PickSelection`] state.
     #[cfg(feature = "selection")]
     pub selection: selection::PickSelection,
-    /// Tracks entity [`PickHighlight`](highlight::PickHighlight) state.
+    /// Tracks entity [`PickHighlight`] state.
     #[cfg(feature = "highlight")]
     pub highlight: highlight::PickHighlight,
 }
