@@ -24,9 +24,13 @@ fn main() {
 }
 
 fn ui_example(mut egui_contexts: EguiContexts) {
+    egui::SidePanel::left("Left").show(egui_contexts.ctx_mut(), |ui| {
+        ui.heading("Note that you can select a 3d object then click on this side panel without that object being deselected!");
+        ui.allocate_rect(ui.available_rect_before_wrap(), egui::Sense::hover());
+    });
     egui::Window::new("Demo").show(egui_contexts.ctx_mut(), |ui| {
         ScrollArea::both().auto_shrink([false; 2]).show(ui, |ui| {
-            ui.heading("Note that you can select a 3d object then click on the egui window without that object being deselected!");
+            ui.heading("Note that you can select a 3d object then click on this egui window without that object being deselected!");
         });
     });
 }
@@ -65,6 +69,10 @@ fn setup(
     });
     commands.spawn((Camera3dBundle {
         transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
+        camera: Camera {
+            is_active: false,
+            ..default()
+        },
         ..Default::default()
     },));
 }

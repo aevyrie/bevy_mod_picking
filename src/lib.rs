@@ -149,8 +149,7 @@
 //! multiple backends may be reporting that a pointer is over an entity, the focus system needs to
 //! determine which one(s) are actually being hovered based on the pick depth, order of the backend,
 //! and the [`Pickable`] state of the entity. In other words, if one entity is in front of another,
-//! only the topmost one will be hovered, even if the pointer is within the bounds of both
-//! entities.
+//! only the topmost one will be hovered, even if the pointer is within the bounds of both entities.
 //!
 //! #### Events ([`bevy_picking_core::events`])
 //!

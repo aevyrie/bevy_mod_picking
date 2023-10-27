@@ -26,14 +26,14 @@ pub struct RaycastBackendSettings {
     pub require_markers: bool,
 }
 
-/// This unit struct is used to tag the generic ray casting types
-/// [`RaycastMesh`] and [`RaycastSource`].
+/// This unit struct is used to tag the generic ray casting types [`RaycastMesh`] and
+/// [`RaycastSource`].
 #[derive(Reflect, Clone)]
 pub struct RaycastPickingSet;
 
 /// Marks an entity that should be pickable with [`bevy_mod_raycast`] ray casts. Only needed if
 /// [`RaycastBackendSettings::require_markers`] is set to true.
-pub type RaycastPickTarget = bevy_mod_raycast::RaycastMesh<RaycastPickingSet>;
+pub type RaycastPickTarget = RaycastMesh<RaycastPickingSet>;
 
 /// Marks a camera that should be used for picking with [`bevy_mod_raycast`]. Only needed if
 /// [`RaycastBackendSettings::require_markers`] is set to true.
@@ -77,7 +77,7 @@ pub fn update_hits(
         for (cam_entity, camera, ray, cam_layers) in picking_cameras
             .iter()
             .filter(|(_, camera, ..)| {
-                pointer_location.is_in_viewport(camera, &primary_window_entity)
+                camera.is_active && pointer_location.is_in_viewport(camera, &primary_window_entity)
             })
             .filter(|(.., marker, _)| marker.is_some() || !backend_settings.require_markers)
             .filter_map(|(entity, camera, transform, _, layers)| {
