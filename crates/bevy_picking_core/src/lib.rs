@@ -39,7 +39,7 @@ impl PickingPluginsSettings {
     /// Whether or not systems updating entities' [`PickingInteraction`](focus::PickingInteraction)
     /// component should be running.
     pub fn interaction_should_run(state: Res<Self>) -> bool {
-        state.enable_highlighting && state.enable
+        state.enable_interacting && state.enable
     }
 }
 
