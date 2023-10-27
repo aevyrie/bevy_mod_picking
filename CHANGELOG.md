@@ -1,26 +1,29 @@
 # UNRELEASED
 
-## Cleanup
+## Highlights
 
-- Fixed: removed unused `PickSet::EventListeners` and fixed (upstream) eventlisteners running in the
-  `Update` schedule instead of the `PreUpdate` schedule.
+- Faster compile times.
+- Sprites now support scale, rotation, and anchors.
+- All `egui` widgets, including side panels, are now supported.
+- `bevy_mod_raycast` backend is now even simpler, no longer requiring any components to work.
+- More flexible picking behavior and `bevy_ui` compatibility with the updated `Pickable` component.
+- Better support for cameras settings such as `is_active`, `RenderLayers`, and `show_ui`.
+
+## Dependencies
+
 - Changed: Removed dependencies on `bevy` and instead depend on bevy subcrates (e.g. `bevy_ecs`)
-  directly. This reduces total dependency count, but more impactful is that this allows compilation
-  of each picking crate to start earlier in the build process, before `bevy` finishes.
+  directly. This reduces total dependency count, but more importantly allows compilation of each
+  picking crate to start before `bevy` finishes.
+- Changed: `bevy_ui` has been removed as a core dependency, and is now completely optional.
 
 ## API Improvements
 
-- Changed: the bevy_mod_raycast backend no longer requires markers on the camera
-  (`RaycastPickCamera`) and targets (`RaycastPickTarget`).
-- Added: `RaycastBackendSettings` resource added to allow toggling the requirement for markers with
-  the bevy_mod_raycast backend at runtime. Enable the `require_markers` field to match behavior of
-  the plugin prior to this release.
-- Changed: The plugin no longer respects bevy_ui's `FocusPolicy`. This was proving to cause problems
-  as mod_picking and bevy_ui have some fundamental differences that cannot be reconciled. This has
-  been replaced by added fields on the `Pickable` component. You can use this to override the
-  behavior of any entity in picking. This allows you to decide if that entity will block lower
+- Changed: The plugin no longer respects bevy_ui's `FocusPolicy` because it was not flexible enough.
+  This has been replaced with new fields on the `Pickable` component. You can use this to override
+  the behavior of any entity in picking. 
+  - This allows you to decide if that entity will block lower
   entities (on by default), and if that entity should emit events and be hover-able (on by default).
-- To make objects non-pickable, instead of removing the `Pickable` entity, use the new const value
+  - To make objects non-pickable, instead of removing the `Pickable` entity, use the new const value
   `Pickable::IGNORE`.
 - Changed: The `PointerInteraction` component, which is added to pointers and tracks all entities
   being interacted with has changed internally from a hashmap of entities and their `Interaction` to
@@ -31,14 +34,37 @@
 
 ## Backend Improvements
 
-- Added: `bevy_mod_raycast` backend now checks render layers when filtering entities.
-- Changed: `PickLayer`, used to order data from backends that targets the same render target, such
-  as multiple render passes on the same window, has been changed from an `isize` to an `f32`. This
-  change was made to support bevy_ui, which is "special" and can be rendered on any camera via a
-  flag, instead of being rendered with its own camera. The bevy_ui backend now sets the order of any
-  events emitted to be the camera order plus 0.5, which was not possible with an integer.
+- Fixed: all backends now correctly check if a camera `is_active` before attempting hit tests.
+- Changed: `PickLayer`, which is used to order hits from backends that targets the same render
+  target, such as multiple render passes on the same window, has been changed from an `isize` to an
+  `f32`. This change was made to support `bevy_ui`, which is "special" and can be rendered on any
+  camera via a flag, instead of being rendered with its own camera. The `bevy_ui` backend now adds
+  `0.5` to the camera order of any events emitted, which was not possible with an integer.
+
+### Sprite Backend
+
 - Added: the sprite backend now supports sprite scale, rotation, and custom anchors.
-- Fixed: all applicable backends now correctly check if a camera `is_active` before attempting hit tests.
+
+### `bevy_mod_raycast` Backend
+- Fixed: the backend now checks render layers when filtering entities.
+- Changed: `RaycastPickCamera` and `RaycastPickTarget` markers components are not longer required.
+- Added: `RaycastBackendSettings` resource added to allow toggling the above requirement for markers
+  at runtime. Enable the `require_markers` field to match behavior of the plugin prior to this
+  release.
+
+### `bevy_egui` Backend
+- Fixed: backend not detecting hits over `SidePanel`s and other widgets. The backend now runs in
+  `PostUpdate`, which means egui hit tests will be one frame out of date. This is required because
+  users tend to build their `egui` UI in `Update`, and egui rebuilds the entire UI from scratch
+  every frame, so the picking backend must be run after users have built their UI.
+
+## Miscellaneous
+
+- Fixed: a system order ambiguity meant that sometimes clicks would be applied to `PickSelection`
+  one frame late, and sometimes not. This led to unreliable and sometimes broken behavior, so we fix
+  their ordering to ensure `PickSelection` is always updated on the frame the pointer is released.
+- Fixed: removed unused `PickSet::EventListeners` and fixed (upstream) eventlisteners running in the
+  `Update` schedule instead of the `PreUpdate` schedule.
 
 # 0.15.0
 
