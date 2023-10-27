@@ -47,7 +47,7 @@ fn setup(
             material: materials.add(Color::WHITE.into()),
             ..Default::default()
         },
-        PickableBundle::default(), // <- Makes the mesh pickable.
+        PickableBundle::default(),
     ));
     commands.spawn((
         PbrBundle {
@@ -56,7 +56,7 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..Default::default()
         },
-        PickableBundle::default(), // <- Makes the mesh pickable.
+        PickableBundle::default(),
     ));
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -69,10 +69,6 @@ fn setup(
     });
     commands.spawn((Camera3dBundle {
         transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-        camera: Camera {
-            is_active: false,
-            ..default()
-        },
         ..Default::default()
     },));
 }
