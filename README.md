@@ -20,7 +20,8 @@ entity, and works with mouse, touch, or even gamepads.
 - ***Lightweight***: only compile what you need.
 - ***Expressive***: event listener components `On::<Pointer<Click>>::run(my_system)`.
 - ***Input Agnostic***: control pointers with mouse, pen, touch, or custom bevy systems.
-- ***Modular Backends***: mix and match backends like `rapier`, `egui`, `bevy_ui`, or write your own. 
+- ***Modular Backends***: mix and match backends like `rapier`, `egui`, `bevy_ui`, or write your own.
+
 ## Lightweight
 
 Only compile what you use. All non-critical plugins can be disabled, including highlighting,
@@ -50,12 +51,14 @@ commands.spawn((
     // Send an event when the pointer is pressed over this entity:
     On::<Pointer<Down>>::send_event::<DoSomethingComplex>(),
 ));
-
 ```
+
+If you don't need event bubbling or callbacks, you can respond to pointer events like you would any
+other bevy event, using `EventReader<Pointer<Click>>`, `EventReader<Pointer<Move>>`, etc.
 
 ## Input Agnostic
 
-Pointers can be controlled with anything, whether its the included mouse or touch inputs, or a
+Pointers can be controlled with anything, whether it's the included mouse or touch inputs, or a
 custom gamepad input system you write yourself.
 
 ## Modular Backends
@@ -70,8 +73,8 @@ this plugin will handle sorting hits and generating events.
 
 ## Robust
 
-In addition to these features, this plugin also correctly handles multitouch, multiple windows, and
-multiple layered render passes.
+In addition to these features, this plugin also correctly handles multitouch, multiple windows,
+render layers, viewports, and camera order.
 
 # Getting Started
 
@@ -100,10 +103,9 @@ To learn more, [read the docs](https://docs.rs/bevy_mod_picking/latest/bevy_mod_
 
 I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
 
-
 | bevy | bevy_mod_picking |
 | ---- | ---------------- |
-| 0.11 | 0.15             |
+| 0.11 | 0.15, 0.16       |
 | 0.10 | 0.12, 0.13, 0.14 |
 | 0.9  | 0.10, 0.11       |
 | 0.8  | 0.8, 0.9         |

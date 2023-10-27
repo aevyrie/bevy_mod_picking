@@ -23,10 +23,16 @@ fn main() {
         .run();
 }
 
-fn ui_example(mut egui_contexts: EguiContexts) {
+fn ui_example(mut egui_contexts: EguiContexts, mut number: Local<f32>) {
     egui::SidePanel::left("Left").show(egui_contexts.ctx_mut(), |ui| {
-        ui.heading("Note that you can select a 3d object then click on this side panel without that object being deselected!");
-        ui.allocate_rect(ui.available_rect_before_wrap(), egui::Sense::hover());
+        ScrollArea::vertical()
+            .auto_shrink([false; 2])
+            .show(ui, |ui| {
+                ui.heading("Note that while a slider is being dragged, the panel is being resized, or the scrollbar is being moved, items in the 3d scene cannot be picked even if the mouse is over them.");
+                for _ in 0..100 {
+                    ui.add(egui::Slider::new(&mut *number, 0.0..=100.0));
+                }
+            })
     });
     egui::Window::new("Demo").show(egui_contexts.ctx_mut(), |ui| {
         ScrollArea::both().auto_shrink([false; 2]).show(ui, |ui| {

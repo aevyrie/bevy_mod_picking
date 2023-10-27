@@ -80,7 +80,7 @@ pub fn egui_picking(
     {
         if let NormalizedRenderTarget::Window(id) = location.target {
             if let Ok((entity, mut ctx)) = egui_context.get_mut(id.entity()) {
-                if ctx.get_mut().is_pointer_over_area() {
+                if ctx.get_mut().wants_pointer_input() {
                     let entry = (entity, HitData::new(entity, 0.0, None, None));
                     let order = 1_000_000f32; // Assume egui should be on top of everything else.
                     output.send(PointerHits::new(*pointer, Vec::from([entry]), order))

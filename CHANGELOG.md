@@ -68,6 +68,8 @@
   `PostUpdate`, which means egui hit tests will be one frame out of date. This is required because
   users tend to build their `egui` UI in `Update`, and egui rebuilds the entire UI from scratch
   every frame, so the picking backend must be run after users have built their UI.
+- Fixed: backend not returning hits when egui is using the pointer to resize windows or drag widgets
+  like sliders or windows.
 
 ## Miscellaneous
 
