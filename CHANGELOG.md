@@ -21,8 +21,8 @@
 - Changed: The plugin no longer respects bevy_ui's `FocusPolicy` because it was not flexible enough.
   This has been replaced with new fields on the `Pickable` component. You can use this to override
   the behavior of any entity in picking. 
-  - This allows you to decide if that entity will block lower
-  entities (on by default), and if that entity should emit events and be hover-able (on by default).
+  - This allows you to decide if that entity will block lower entities (on by default), and if that
+  entity should emit events and be hover-able (on by default).
   - To make objects non-pickable, instead of removing the `Pickable` entity, use the new const value
   `Pickable::IGNORE`.
 - Changed: The `PointerInteraction` component, which is added to pointers and tracks all entities
