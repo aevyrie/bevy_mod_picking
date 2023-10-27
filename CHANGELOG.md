@@ -65,6 +65,7 @@
   their ordering to ensure `PickSelection` is always updated on the frame the pointer is released.
 - Fixed: removed unused `PickSet::EventListeners` and fixed (upstream) eventlisteners running in the
   `Update` schedule instead of the `PreUpdate` schedule.
+- Fixed: `interaction_should_run` updating the wrong `PickingPluginsSettings` field. 
 
 # 0.15.0
 
