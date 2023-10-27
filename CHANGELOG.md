@@ -38,6 +38,7 @@
   flag, instead of being rendered with its own camera. The bevy_ui backend now sets the order of any
   events emitted to be the camera order plus 0.5, which was not possible with an integer.
 - Added: the sprite backend now supports sprite scale, rotation, and custom anchors.
+- Fixed: all applicable backends now correctly check if a camera `is_active` before attempting hit tests.
 
 # 0.15.0
 

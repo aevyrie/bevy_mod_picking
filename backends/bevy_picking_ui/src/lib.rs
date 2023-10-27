@@ -94,7 +94,8 @@ pub fn ui_picking(
         let mut ui_cameras: Vec<_> = cameras
             .iter()
             .filter(|(_entity, camera, _)| {
-                camera.target.normalize(Some(window_entity)).unwrap() == location.target
+                camera.is_active
+                    && camera.target.normalize(Some(window_entity)).unwrap() == location.target
             })
             .filter(|(_, _, ui_config)| ui_config.map(|config| config.show_ui).unwrap_or(true))
             .collect();

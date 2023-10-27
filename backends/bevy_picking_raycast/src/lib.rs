@@ -78,7 +78,7 @@ pub fn update_hits(
         for (cam_entity, camera, ray, cam_layers) in picking_cameras
             .iter()
             .filter(|(_, camera, ..)| {
-                pointer_location.is_in_viewport(camera, &primary_window_entity)
+                camera.is_active && pointer_location.is_in_viewport(camera, &primary_window_entity)
             })
             .filter(|(.., marker, _)| marker.is_some() || !backend_settings.require_markers)
             .filter_map(|(entity, camera, transform, _, layers)| {
