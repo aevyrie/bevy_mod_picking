@@ -5,7 +5,8 @@
 - Faster compile times.
 - Sprites now support atlases, scale, rotation, and anchors.
 - All `egui` widgets, including side panels, are now supported.
-- `bevy_mod_raycast` backend is now even simpler, no longer requiring any components to work.
+- `bevy_mod_raycast` and `bevy_rapier` backends are now even simpler, no longer requiring any
+  marker components to function.
 - More flexible picking behavior and `bevy_ui` compatibility with the updated `Pickable` component.
 - Better support for cameras settings such as `is_active`, `RenderLayers`, and `show_ui`.
 
