@@ -3,7 +3,7 @@
 ## Highlights
 
 - Faster compile times.
-- Sprites now support scale, rotation, and anchors.
+- Sprites now support atlases, scale, rotation, and anchors.
 - All `egui` widgets, including side panels, are now supported.
 - `bevy_mod_raycast` backend is now even simpler, no longer requiring any components to work.
 - More flexible picking behavior and `bevy_ui` compatibility with the updated `Pickable` component.
@@ -43,7 +43,8 @@
 
 ### Sprite Backend
 
-- Added: the sprite backend now supports sprite scale, rotation, and custom anchors.
+- Added: support for sprite scale, rotation, and custom anchors.
+- Added: support for sprite atlases.
 
 ### `bevy_mod_raycast` Backend
 - Fixed: the backend now checks render layers when filtering entities.
