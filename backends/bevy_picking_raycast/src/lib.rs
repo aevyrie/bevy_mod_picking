@@ -26,15 +26,14 @@ pub struct RaycastBackendSettings {
     pub require_markers: bool,
 }
 
-/// This unit struct is used to tag the generic ray casting types
-/// [`RaycastMesh`](bevy_mod_raycast::RaycastMesh) and
-/// [`RaycastSource`](bevy_mod_raycast::RaycastSource).
+/// This unit struct is used to tag the generic ray casting types [`RaycastMesh`] and
+/// [`RaycastSource`].
 #[derive(Reflect, Clone)]
 pub struct RaycastPickingSet;
 
 /// Marks an entity that should be pickable with [`bevy_mod_raycast`] ray casts. Only needed if
 /// [`RaycastBackendSettings::require_markers`] is set to true.
-pub type RaycastPickTarget = bevy_mod_raycast::RaycastMesh<RaycastPickingSet>;
+pub type RaycastPickTarget = RaycastMesh<RaycastPickingSet>;
 
 /// Marks a camera that should be used for picking with [`bevy_mod_raycast`]. Only needed if
 /// [`RaycastBackendSettings::require_markers`] is set to true.

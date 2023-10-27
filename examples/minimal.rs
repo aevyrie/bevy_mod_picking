@@ -14,7 +14,6 @@ fn main() {
         .run();
 }
 
-// Spawn a simple scene, like bevy's 3d_scene example.
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -26,7 +25,7 @@ fn setup(
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..default()
         },
-        PickableBundle::default(), // Adds selection, highlighting, and the `Pickable` override.
+        PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
     ));
     commands.spawn((
         PbrBundle {
@@ -35,7 +34,7 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
-        PickableBundle::default(), // Adds selection, highlighting, and the `Pickable` override.
+        PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
     ));
     commands.spawn(PointLightBundle {
         point_light: PointLight {
