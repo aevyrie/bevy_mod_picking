@@ -51,7 +51,7 @@ fn setup(
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
             material: materials.add(Color::WHITE.into()),
-            ..Default::default()
+            ..default()
         },
         PickableBundle::default(),
     ));
@@ -60,7 +60,7 @@ fn setup(
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::WHITE.into()),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
-            ..Default::default()
+            ..default()
         },
         PickableBundle::default(),
     ));
@@ -68,13 +68,13 @@ fn setup(
         point_light: PointLight {
             intensity: 1500.0,
             shadows_enabled: true,
-            ..Default::default()
+            ..default()
         },
         transform: Transform::from_xyz(4.0, 8.0, -4.0),
-        ..Default::default()
+        ..default()
     });
     commands.spawn((Camera3dBundle {
         transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..Default::default()
+        ..default()
     },));
 }

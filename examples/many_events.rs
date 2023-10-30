@@ -77,7 +77,7 @@ fn spawn_cube(
                 mesh: mesh.clone(),
                 material: material.clone(),
                 transform,
-                ..Default::default()
+                ..default()
             },
             PickableBundle::default(), // <- Makes the mesh pickable.
         ))

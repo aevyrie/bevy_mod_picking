@@ -39,7 +39,7 @@ fn setup(
             PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
                 material: materials.add(Color::WHITE.into()),
-                ..Default::default()
+                ..default()
             },
             PickableBundle::default(),
             // Callbacks are just exclusive bevy systems that have access to an event data via
@@ -104,7 +104,7 @@ fn setup(
                         mesh: meshes.add(Mesh::from(shape::Cube { size: 0.4 })),
                         material: materials.add(Color::RED.into()),
                         transform: Transform::from_xyz(0.0, 1.0 + 0.5 * i as f32, 0.0),
-                        ..Default::default()
+                        ..default()
                     },
                     PickableBundle::default(),
                 ));
@@ -115,14 +115,14 @@ fn setup(
         point_light: PointLight {
             intensity: 1500.0,
             shadows_enabled: true,
-            ..Default::default()
+            ..default()
         },
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..Default::default()
+        ..default()
     });
     commands.spawn((Camera3dBundle {
         transform: Transform::from_xyz(-2.0, 4.5, 5.0).looking_at(Vec3::Y * 2.0, Vec3::Y),
-        ..Default::default()
+        ..default()
     },));
 }
 

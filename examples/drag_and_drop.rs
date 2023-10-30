@@ -33,7 +33,7 @@ fn setup(
                 transform: Transform::from_xyz(x as f32 * 200.0, 0.0, z)
                     .with_scale(Vec3::splat(100.)),
                 material: materials.add(ColorMaterial::from(Color::hsl(0.0, 1.0, z))),
-                ..Default::default()
+                ..default()
             },
             PickableBundle::default(), // <- Makes the mesh pickable.
             On::<Pointer<DragStart>>::target_insert(Pickable::IGNORE), // Disable picking

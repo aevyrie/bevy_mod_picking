@@ -96,7 +96,7 @@ pub fn update_hits(
                 .map(|ray| (entity, camera, ray, layers))
             })
         {
-            let settings = bevy_mod_raycast::system_param::RaycastSettings {
+            let settings = RaycastSettings {
                 visibility: RaycastVisibility::MustBeVisibleAndInView,
                 filter: &|entity| {
                     let marker_requirement =

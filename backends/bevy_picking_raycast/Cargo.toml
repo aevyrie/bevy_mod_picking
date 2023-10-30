@@ -20,6 +20,6 @@ bevy_render = { version = "0.11", default-features = false }
 bevy_transform = { version = "0.11", default-features = false }
 bevy_window = { version = "0.11", default-features = false }
 
-bevy_mod_raycast = "0.14"
+bevy_mod_raycast = "0.15"
 # Local
 bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.15" }
