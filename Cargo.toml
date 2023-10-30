@@ -11,6 +11,10 @@ categories = ["game-engines", "rendering"]
 resolver = "2"
 rust-version = "1.70.0"
 
+[package.metadata.docs.rs]
+all-features = true
+
+
 [workspace]
 members = ["crates/*", "backends/*"]
 
