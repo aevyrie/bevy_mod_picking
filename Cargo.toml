@@ -59,7 +59,7 @@ bevy = { version = "0.11", default-features = false, features = [
     "zstd",
     "tonemapping_luts",
 ] }
-bevy_mod_picking = { version = "0.16", path = "" }
+bevy_mod_picking = { path = "" }
 
 [features]
 all = [
