@@ -19,7 +19,8 @@
 //!
 //! - Backends do not need to consider the [`Pickable`](crate::Pickable) component, though they may
 //!   use it for optimization purposes. For example, a backend that traverses a spatial hierarchy
-//!   may want to early exit if it intersects entity that blocks lower entities from being picked.
+//!   may want to early exit if it intersects an entity that blocks lower entities from being
+//!   picked.
 
 use bevy_ecs::prelude::*;
 use bevy_math::Vec3;

@@ -35,7 +35,7 @@ pub mod prelude {
 pub struct RaycastBackendSettings {
     /// When set to `true` raycasting will only happen between cameras and entities marked with
     /// [`RaycastPickable`]. Off by default. This setting is provided to give you fine-grained
-    /// control over which cameras and entities should be used by the rapier backend at runtime.
+    /// control over which cameras and entities should be used by the raycast backend at runtime.
     pub require_markers: bool,
 }
 
