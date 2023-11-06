@@ -46,7 +46,7 @@ pub fn sprite_picking(
             (Option<&Handle<Image>>, Option<&Handle<TextureAtlas>>),
             &GlobalTransform,
             Option<&Pickable>,
-            &ComputedVisibility,
+            &ViewVisibility,
         ),
         Or<(With<Sprite>, With<TextureAtlasSprite>)>,
     >,
@@ -85,7 +85,7 @@ pub fn sprite_picking(
         let picks: Vec<(Entity, HitData)> = sorted_sprites
             .iter()
             .copied()
-            .filter(|(.., visibility)| visibility.is_visible())
+            .filter(|(.., visibility)| visibility.get())
             .filter_map(|(entity, sprite, image, sprite_transform, pickable, ..)| {
                 if blocked {
                     return None;
@@ -95,7 +95,7 @@ pub fn sprite_picking(
                 let (extents, anchor) = if let Some((sprite, image)) = sprite.0.zip(image.0) {
                     let extents = sprite
                         .custom_size
-                        .or_else(|| images.get(image).map(|f| f.size()))?;
+                        .or_else(|| images.get(image).map(|f| f.size().as_vec2()))?;
                     let anchor = sprite.anchor.as_vec();
                     (extents, anchor)
                 } else if let Some((sprite, atlas)) = sprite.1.zip(image.1) {
