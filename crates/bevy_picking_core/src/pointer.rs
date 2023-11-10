@@ -16,7 +16,7 @@ use crate::backend::HitData;
 /// This component is needed because pointers can be spawned and despawned, but they need to have a
 /// stable ID that persists regardless of the Entity they are associated with.
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Hash, Component, Reflect)]
-#[reflect_value]
+#[reflect(Component, Default)]
 pub enum PointerId {
     /// The mouse pointer.
     #[default]
@@ -53,7 +53,8 @@ impl PointerId {
 
 /// Holds a list of entities this pointer is currently interacting with, sorted from nearest to
 /// farthest.
-#[derive(Debug, Default, Clone, Component)]
+#[derive(Debug, Default, Clone, Component, Reflect)]
+#[reflect(Component, Default)]
 pub struct PointerInteraction {
     pub(crate) sorted_entities: Vec<(Entity, HitData)>,
 }
@@ -96,6 +97,7 @@ pub fn update_pointer_map(pointers: Query<(Entity, &PointerId)>, mut map: ResMut
 
 /// Tracks the state of the pointer's buttons in response to [`InputPress`]s.
 #[derive(Debug, Default, Clone, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component, Default)]
 pub struct PointerPress {
     primary: bool,
     secondary: bool,
@@ -217,6 +219,7 @@ impl PointerButton {
 
 /// Component that tracks a pointer's current [`Location`].
 #[derive(Debug, Default, Clone, Component, Reflect, PartialEq)]
+#[reflect(Component, Default)]
 pub struct PointerLocation {
     /// The [`Location`] of the pointer. Note that a location is both the target, and the position
     /// on the target.

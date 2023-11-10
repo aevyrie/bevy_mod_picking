@@ -22,7 +22,8 @@ use bevy_picking_core::{
 };
 
 /// Runtime settings for the `bevy_picking_selection` plugin.
-#[derive(Debug, Resource)]
+#[derive(Debug, Resource, Reflect)]
+#[reflect(Resource, Default)]
 pub struct SelectionSettings {
     /// A pointer clicks and nothing is beneath it, should everything be deselected?
     pub click_nothing_deselect_all: bool,
@@ -63,13 +64,18 @@ impl Plugin for SelectionPlugin {
                         .chain()
                         .in_set(PickSet::PostFocus),
                 ),
-            );
+            )
+            .register_type::<SelectionSettings>()
+            .register_type::<PointerMultiselect>()
+            .register_type::<PickSelection>()
+            .register_type::<NoDeselect>();
     }
 }
 
 /// A component for pointers that defines whether or not the multiselect button is active. This is
 /// often the `Ctrl` or `Shift` keys.
 #[derive(Debug, Default, Clone, Component, PartialEq, Eq, Reflect)]
+#[reflect(Component, Default)]
 pub struct PointerMultiselect {
     /// `true` if the multiselect button(s) is active.
     pub is_pressed: bool,
@@ -77,10 +83,17 @@ pub struct PointerMultiselect {
 
 /// Tracks the current selection state of the entity.
 #[derive(Component, Debug, Default, Clone, Reflect)]
+#[reflect(Component, Default)]
 pub struct PickSelection {
     /// `true` if this entity is selected.
     pub is_selected: bool,
 }
+
+/// Marker struct used to mark pickable entities for which you don't want to trigger a deselection
+/// event when picked. This is useful for gizmos or other pickable UI entities.
+#[derive(Component, Debug, Default, Copy, Clone, Reflect)]
+#[reflect(Component, Default)]
+pub struct NoDeselect;
 
 /// Fires when an entity has been selected
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
@@ -89,11 +102,6 @@ pub struct Select;
 /// Fires when an entity has been deselected
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Reflect)]
 pub struct Deselect;
-
-/// Marker struct used to mark pickable entities for which you don't want to trigger a deselection
-/// event when picked. This is useful for gizmos or other pickable UI entities.
-#[derive(Component, Debug, Copy, Clone, Reflect)]
-pub struct NoDeselect;
 
 /// Unsurprising default multiselect inputs: both control and shift keys.
 pub fn multiselect_events(

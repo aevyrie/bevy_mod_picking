@@ -31,7 +31,8 @@ impl Plugin for EguiBackend {
             PostUpdate, // This is important. If the system is put into the picking set in PreUpdate, the egui frame will not have been constructed, and the backend will not report egui hits, because the user doesn't build egui until the Update schedule. The downside to this is that the backend will always be one frame out of date. The only way to solve this is to do all of your egui work in PreUpdate before the picking backend set, then change this system to run in the picking set.
             egui_picking,
         )
-        .insert_resource(EguiBackendSettings::default());
+        .insert_resource(EguiBackendSettings::default())
+        .register_type::<EguiBackendSettings>();
 
         #[cfg(feature = "selection")]
         app.add_systems(First, update_settings);
@@ -40,6 +41,7 @@ impl Plugin for EguiBackend {
 
 /// Settings for the [`EguiBackend`].
 #[derive(Debug, Default, Resource, Reflect)]
+#[reflect(Resource, Default)]
 pub struct EguiBackendSettings {
     /// When set to true, clicking on egui will deselect other entities
     #[cfg(feature = "selection")]

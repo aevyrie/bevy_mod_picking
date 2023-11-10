@@ -54,7 +54,9 @@ pub struct RaycastBackend;
 impl Plugin for RaycastBackend {
     fn build(&self, app: &mut App) {
         app.init_resource::<RaycastBackendSettings>()
-            .add_systems(PreUpdate, update_hits.in_set(PickSet::Backend));
+            .add_systems(PreUpdate, update_hits.in_set(PickSet::Backend))
+            .register_type::<RaycastPickable>()
+            .register_type::<RaycastBackendSettings>();
     }
 }
 

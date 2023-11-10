@@ -49,7 +49,9 @@ pub struct RapierBackend;
 impl Plugin for RapierBackend {
     fn build(&self, app: &mut App) {
         app.init_resource::<RapierBackendSettings>()
-            .add_systems(PreUpdate, update_hits.in_set(PickSet::Backend));
+            .add_systems(PreUpdate, update_hits.in_set(PickSet::Backend))
+            .register_type::<RapierBackendSettings>()
+            .register_type::<RapierPickable>();
     }
 }
 

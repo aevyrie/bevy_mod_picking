@@ -15,7 +15,8 @@ use bevy_reflect::prelude::*;
 
 use bevy_eventlistener::{prelude::*, EventListenerSet};
 /// Used to globally toggle picking features at runtime.
-#[derive(Clone, Debug, Resource)]
+#[derive(Clone, Debug, Resource, Reflect)]
+#[reflect(Resource, Default)]
 pub struct PickingPluginsSettings {
     /// Enables and disables all picking features.
     pub enable: bool,
@@ -56,6 +57,7 @@ impl Default for PickingPluginsSettings {
 
 /// An optional component that overrides default picking behavior for an entity.
 #[derive(Component, Debug, Clone, Reflect, PartialEq, Eq)]
+#[reflect(Component, Default)]
 pub struct Pickable {
     /// Should this entity block entities below it from being picked?
     ///
@@ -181,7 +183,13 @@ impl Plugin for CorePlugin {
                     PickSet::Last,
                 )
                     .chain(),
-            );
+            )
+            .register_type::<pointer::PointerId>()
+            .register_type::<pointer::PointerLocation>()
+            .register_type::<pointer::PointerPress>()
+            .register_type::<pointer::PointerInteraction>()
+            .register_type::<Pickable>()
+            .register_type::<PickingPluginsSettings>();
     }
 }
 

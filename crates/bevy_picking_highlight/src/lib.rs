@@ -9,7 +9,7 @@
 use bevy_app::prelude::*;
 use bevy_asset::{prelude::*, Asset};
 use bevy_ecs::prelude::*;
-use bevy_reflect::Reflect;
+use bevy_reflect::prelude::*;
 
 use bevy_picking_core::{focus::PickingInteraction, PickSet};
 #[cfg(feature = "selection")]
@@ -25,6 +25,7 @@ pub mod prelude {
 
 /// A resource used to enable or disable picking highlighting.
 #[derive(Resource, Debug, Reflect)]
+#[reflect(Resource, Default)]
 pub struct HighlightPluginSettings {
     /// Should highlighting systems run?
     enabled: bool,
@@ -35,6 +36,11 @@ impl Default for HighlightPluginSettings {
         Self { enabled: true }
     }
 }
+
+/// Makes an entity highlightable with any [`Asset`]. See [`DefaultHighlightingPlugin`] for details.
+#[derive(Component, Clone, Debug, Default, Reflect)]
+#[reflect(Component, Default)]
+pub struct PickHighlight;
 
 /// Adds the `StandardMaterial` and `ColorMaterial` highlighting plugins.
 ///
@@ -55,7 +61,9 @@ pub struct DefaultHighlightingPlugin;
 impl Plugin for DefaultHighlightingPlugin {
     #[allow(unused_variables)]
     fn build(&self, app: &mut App) {
-        app.init_resource::<HighlightPluginSettings>();
+        app.init_resource::<HighlightPluginSettings>()
+            .register_type::<PickHighlight>()
+            .register_type::<HighlightPluginSettings>();
 
         #[cfg(feature = "pbr")]
         app.add_plugins(HighlightPlugin::<bevy_pbr::StandardMaterial> {
@@ -112,7 +120,10 @@ where
                 .chain()
                 .in_set(PickSet::Last)
                 .distributive_run_if(|settings: Res<HighlightPluginSettings>| settings.enabled),
-        );
+        )
+        .register_type::<InitialHighlight<T>>()
+        .register_type::<GlobalHighlight<T>>()
+        .register_type::<Highlight<T>>();
     }
 }
 
@@ -126,7 +137,7 @@ pub struct InitialHighlight<T: Asset> {
 
 /// Resource that defines the global default highlighting assets to use. This can be overridden
 /// per-entity with the [`Highlight`] component.
-#[derive(Resource)]
+#[derive(Resource, Reflect)]
 pub struct GlobalHighlight<T: Asset> {
     /// Default asset handle to use for hovered entities without the [`Highlight`] component.
     pub hovered: Handle<T>,
@@ -162,10 +173,6 @@ impl<T: Asset> GlobalHighlight<T> {
             .unwrap_or_else(|| self.selected.clone())
     }
 }
-
-/// Makes an entity highlightable with any [`Asset`]. See [`DefaultHighlightingPlugin`] for details.
-#[derive(Component, Clone, Debug, Default, Reflect)]
-pub struct PickHighlight;
 
 /// Used to override each highlighting state in [`Highlight`].
 #[derive(Clone)]
@@ -220,13 +227,17 @@ impl<T: Asset> std::fmt::Debug for HighlightKind<T> {
 }
 
 /// Overrides the global highlighting material for an entity. See [`PickHighlight`].
-#[derive(Component, Clone, Debug, Default)]
+#[derive(Component, Clone, Debug, Default, Reflect)]
+#[reflect(from_reflect = false)]
 pub struct Highlight<T: Asset> {
     /// Overrides this asset's global default appearance when hovered
+    #[reflect(ignore)]
     pub hovered: Option<HighlightKind<T>>,
     /// Overrides this asset's global default appearance when pressed
+    #[reflect(ignore)]
     pub pressed: Option<HighlightKind<T>>,
     /// Overrides this asset's global default appearance when selected
+    #[reflect(ignore)]
     #[cfg(feature = "selection")]
     pub selected: Option<HighlightKind<T>>,
 }

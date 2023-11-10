@@ -51,12 +51,14 @@ impl Plugin for InputPlugin {
             .add_systems(
                 Last,
                 touch::deactivate_touch_pointers.run_if(InputPluginSettings::is_touch_enabled),
-            );
+            )
+            .register_type::<InputPluginSettings>();
     }
 }
 
 /// A resource used to enable and disable features of the [`InputPlugin`].
 #[derive(Resource, Debug, Reflect)]
+#[reflect(Resource, Default)]
 pub enum InputPluginSettings {
     /// The plugin is enabled and systems will run, even if all the inner fields corresponding to
     /// specific features are disabled.
