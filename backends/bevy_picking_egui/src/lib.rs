@@ -13,6 +13,9 @@ use bevy_render::camera::NormalizedRenderTarget;
 use bevy_egui::EguiContext;
 use bevy_picking_core::backend::prelude::*;
 
+// Re-export for uses who want this
+pub use bevy_egui;
+
 /// Commonly used imports for the [`bevy_picking_egui`](crate) crate.
 pub mod prelude {
     pub use crate::EguiBackend;

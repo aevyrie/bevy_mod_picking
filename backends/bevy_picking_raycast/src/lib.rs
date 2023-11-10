@@ -24,6 +24,9 @@ use bevy_window::{PrimaryWindow, Window};
 use bevy_mod_raycast::prelude::*;
 use bevy_picking_core::backend::prelude::*;
 
+// Re-export for uses who want this
+pub use bevy_mod_raycast;
+
 /// Commonly used imports for the [`bevy_picking_raycast`](crate) crate.
 pub mod prelude {
     pub use crate::RaycastBackend;

@@ -35,6 +35,9 @@ use bevy_window::PrimaryWindow;
 use bevy_picking_core::backend::prelude::*;
 use bevy_rapier3d::prelude::*;
 
+// Re-export for uses who want this
+pub use bevy_rapier3d;
+
 /// Commonly used imports.
 pub mod prelude {
     pub use crate::{RapierBackend, RapierBackendSettings, RapierPickable};

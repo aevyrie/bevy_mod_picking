@@ -3,6 +3,9 @@
 - Update for bevy 0.12
 - Fixed: rapier and raycast backends were not considering all cases when cameras or entities lacked
   the `RenderLayers` component.
+- Fixed: crate would not compile when the bevy ui backend feature was disabled.
+- Added: backends now re-export their dependency where applicable. `bevy_picking_raycast` re-exports
+  `bevy_mod_raycast`, for example.
 
 # 0.16.0
 
