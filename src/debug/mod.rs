@@ -121,21 +121,19 @@ impl Plugin for DebugPickingPlugin {
                 .in_set(picking_core::PickSet::Last),
         );
 
-        #[cfg(all(feature = "backend_bevy_ui", not(feature = "backend_egui")))]
-        app.add_systems(
-            PreUpdate,
-            (add_pointer_debug, update_debug_data, debug_draw)
-                .chain()
-                .distributive_run_if(DebugPickingMode::is_enabled)
-                .in_set(picking_core::PickSet::Last),
-        );
-        #[cfg(feature = "backend_egui")]
         app.add_systems(
             PreUpdate,
             (
                 add_pointer_debug,
                 update_debug_data,
+                // if bevy ui is available, and egui is not, we just use the bevy ui debug draw
+                #[cfg(all(feature = "backend_bevy_ui", not(feature = "backend_egui")))]
+                debug_draw,
+                // if both are available, we only run the bevy ui one while egui is not set up
+                #[cfg(all(feature = "backend_bevy_ui", feature = "backend_egui"))]
                 debug_draw.run_if(|r: Option<Res<bevy_egui::EguiUserTextures>>| r.is_none()),
+                // if egui is available, always draw the egui debug if possible
+                #[cfg(feature = "backend_egui")]
                 debug_draw_egui.run_if(|r: Option<Res<bevy_egui::EguiUserTextures>>| r.is_some()),
             )
                 .chain()
