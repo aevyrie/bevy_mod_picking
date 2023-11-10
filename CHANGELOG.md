@@ -6,7 +6,7 @@
 - Fixed: crate would not compile when the bevy ui backend feature was disabled.
 - Added: backends now re-export their dependency where applicable. `bevy_picking_raycast` re-exports
   `bevy_mod_raycast`, for example.
-- Added: implemented `Reflect` for all components and resources.
+- Added: `Reflect` implementations for all components and resources.
 
 # 0.16.0
 
