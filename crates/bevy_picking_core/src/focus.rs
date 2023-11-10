@@ -96,10 +96,10 @@ fn build_over_map(
     pointer_over_map: &mut Local<OverMap>,
     pointer_cancel: &mut EventReader<PointerCancel>,
 ) {
-    let cancelled_pointers: Vec<PointerId> = pointer_cancel.iter().map(|p| p.pointer_id).collect();
+    let cancelled_pointers: Vec<PointerId> = pointer_cancel.read().map(|p| p.pointer_id).collect();
 
     for entities_under_pointer in backend_events
-        .iter()
+        .read()
         .filter(|e| !cancelled_pointers.contains(&e.pointer))
     {
         let pointer = entities_under_pointer.pointer;

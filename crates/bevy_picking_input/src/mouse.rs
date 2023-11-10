@@ -31,7 +31,7 @@ pub fn mouse_pick_events(
     mut pointer_move: EventWriter<InputMove>,
     mut pointer_presses: EventWriter<InputPress>,
 ) {
-    for event in cursor_moves.iter() {
+    for event in cursor_moves.read() {
         pointer_move.send(InputMove::new(
             PointerId::Mouse,
             Location {
@@ -45,7 +45,7 @@ pub fn mouse_pick_events(
         *cursor_last = event.position;
     }
 
-    for input in mouse_inputs.iter() {
+    for input in mouse_inputs.read() {
         let button = match input.button {
             MouseButton::Left => PointerButton::Primary,
             MouseButton::Right => PointerButton::Secondary,

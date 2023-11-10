@@ -135,7 +135,7 @@ pub fn send_selection_events(
         target,
         event: _,
     } in pointer_down
-        .iter()
+        .read()
         .filter(|pointer| pointer.event.button == PointerButton::Primary)
     {
         pointer_down_list.insert(pointer_id);
@@ -164,7 +164,7 @@ pub fn send_selection_events(
     // so, and the setting is enabled, deselect everything.
     if settings.click_nothing_deselect_all {
         for press in presses
-            .iter()
+            .read()
             .filter(|p| p.is_just_down(PointerButton::Primary))
         {
             let id = press.pointer_id;
@@ -194,7 +194,7 @@ pub fn send_selection_events(
         target,
         event: _,
     } in pointer_click
-        .iter()
+        .read()
         .filter(|pointer| pointer.event.button == PointerButton::Primary)
     {
         let multiselect = pointers
@@ -235,12 +235,12 @@ pub fn update_state_from_events(
     mut selections: EventReader<Pointer<Select>>,
     mut deselections: EventReader<Pointer<Deselect>>,
 ) {
-    for selection in selections.iter() {
+    for selection in selections.read() {
         if let Ok(mut select_me) = selectables.get_mut(selection.target) {
             select_me.is_selected = true;
         }
     }
-    for deselection in deselections.iter() {
+    for deselection in deselections.read() {
         if let Ok(mut deselect_me) = selectables.get_mut(deselection.target) {
             deselect_me.is_selected = false;
         }

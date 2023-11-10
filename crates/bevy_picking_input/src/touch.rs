@@ -33,7 +33,7 @@ pub fn touch_pick_events(
     mut input_presses: EventWriter<InputPress>,
     mut cancel_events: EventWriter<PointerCancel>,
 ) {
-    for touch in touches.iter() {
+    for touch in touches.read() {
         let pointer = PointerId::Touch(touch.id);
         let location = Location {
             target: RenderTarget::Window(WindowRef::Primary)
@@ -89,7 +89,7 @@ pub fn deactivate_touch_pointers(
     pointers: Query<(Entity, &PointerId)>,
     mut touches: EventReader<TouchInput>,
 ) {
-    for touch in touches.iter() {
+    for touch in touches.read() {
         match touch.phase {
             TouchPhase::Ended | TouchPhase::Canceled => {
                 for (entity, pointer) in &pointers {
