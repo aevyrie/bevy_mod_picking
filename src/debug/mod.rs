@@ -159,14 +159,14 @@ impl Plugin for DebugPickingPlugin {
 
 /// Listens for pointer events of type `E` and logs them at "debug" level
 pub fn log_debug<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
-    for event in pointer_events.iter() {
+    for event in pointer_events.read() {
         debug!("{event}");
     }
 }
 
 /// Listens for pointer events of type `E` and logs them at "trace" level
 pub fn log_trace<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
-    for event in pointer_events.iter() {
+    for event in pointer_events.read() {
         trace!("{event}");
     }
 }

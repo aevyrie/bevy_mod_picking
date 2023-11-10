@@ -151,7 +151,7 @@ impl From<ListenerInput<Pointer<Down>>> for DoSomethingComplex {
 
 /// Unlike callback systems, this is a normal system that can be run in parallel with other systems.
 fn receive_greetings(mut greetings: EventReader<DoSomethingComplex>) {
-    for event in greetings.iter() {
+    for event in greetings.read() {
         info!(
             "Hello {:?}, you are {:?} depth units away from the pointer",
             event.0, event.1

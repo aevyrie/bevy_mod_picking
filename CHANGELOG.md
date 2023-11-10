@@ -1,3 +1,7 @@
+# 0.17.0
+
+- Update for bevy 0.12
+
 # 0.16.0
 
 ## Highlights
