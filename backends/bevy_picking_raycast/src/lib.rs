@@ -101,12 +101,13 @@ pub fn update_hits(
                 filter: &|entity| {
                     let marker_requirement =
                         !backend_settings.require_markers || marked_targets.get(entity).is_ok();
-                    let render_layers_match = match (cam_layers, layers.get(entity)) {
-                        (Some(cam_layers), Ok(entity_layers)) => {
-                            cam_layers.intersects(entity_layers)
-                        }
-                        _ => true, // If either `RenderLayers` components is not present, ignore.
-                    };
+
+                    // Cameras missing render layers intersect all layers
+                    let cam_layers = cam_layers.copied().unwrap_or(RenderLayers::all());
+                    // Other entities missing render layers are on the default layer 0
+                    let entity_layers = layers.get(entity).copied().unwrap_or_default();
+                    let render_layers_match = cam_layers.intersects(&entity_layers);
+
                     marker_requirement && render_layers_match
                 },
                 early_exit_test: &|entity_hit| {

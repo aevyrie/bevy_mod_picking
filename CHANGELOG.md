@@ -1,6 +1,8 @@
 # 0.17.0
 
 - Update for bevy 0.12
+- Fixed: rapier and raycast backends were not considering all cases when cameras or entities lacked
+  the `RenderLayers` component.
 
 # 0.16.0
 

@@ -21,7 +21,7 @@ type DepthMap = BTreeMap<FloatOrd, (Entity, HitData)>;
 /// with multiple layers of rendered output to the same render target.
 type PickLayer = FloatOrd;
 
-/// Maps [`RenderLayers`] to the map of entities within that pick layer, sorted by depth.
+/// Maps [`PickLayer`]s to the map of entities within that pick layer, sorted by depth.
 type LayerMap = BTreeMap<PickLayer, DepthMap>;
 
 /// Maps Pointers to a [`LayerMap`]. Note this is much more complex than the [`HoverMap`] because
