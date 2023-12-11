@@ -24,7 +24,6 @@
 
 use bevy_app::prelude::*;
 use bevy_ecs::{prelude::*, query::WorldQuery};
-use bevy_math::prelude::*;
 use bevy_render::{camera::NormalizedRenderTarget, prelude::*};
 use bevy_transform::prelude::*;
 use bevy_ui::{prelude::*, RelativeCursorPosition, UiStack};
