@@ -78,8 +78,7 @@ pub fn update_hits(
             continue;
         }
 
-        // Cameras missing render layers intersect all layers
-        let cam_layers = cam_layers.copied().unwrap_or_else(RenderLayers::all);
+        let cam_layers = cam_layers.copied().unwrap_or_default();
 
         let settings = RaycastSettings {
             visibility: RaycastVisibility::MustBeVisibleAndInView,

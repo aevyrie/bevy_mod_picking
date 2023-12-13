@@ -4,6 +4,8 @@
   pointer) pair
 - Changed: rapier and bevy_mod_raycast backends use the `RayMap` instead of
   constructing their own rays
+- Fixed: rapier and bevy_mod_raycast backends use `RenderLayers::default` when a
+  camera is missing them
 
 # 0.17.0
 
