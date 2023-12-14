@@ -1,3 +1,10 @@
+# 0.17.1
+
+- Added: `RayMap` resource that contains a `Ray` for every intersecting (camera,
+  pointer) pair
+- Changed: rapier and bevy_mod_raycast backends use the `RayMap` instead of
+  constructing their own rays
+
 # 0.17.0
 
 - Update for bevy 0.12
