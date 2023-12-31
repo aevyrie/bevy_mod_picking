@@ -96,7 +96,10 @@ pub fn update_hits(
                     pointer_location.position,
                     camera,
                     transform,
-                    primary_window.single(),
+                    match primary_window.get_single() {
+                        Ok(w) => w,
+                        Err(_) => return None,
+                    },
                 )
                 .map(|ray| (entity, camera, ray, layers))
             })
