@@ -8,6 +8,7 @@ use std::cmp::Ordering;
 
 use bevy_app::prelude::*;
 use bevy_asset::prelude::*;
+use bevy_core_pipeline::prelude::Camera2d;
 use bevy_ecs::prelude::*;
 use bevy_math::prelude::*;
 use bevy_render::prelude::*;
@@ -35,7 +36,7 @@ impl Plugin for SpriteBackend {
 /// Checks if any sprite entities are under each pointer
 pub fn sprite_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    cameras: Query<(Entity, &Camera, &GlobalTransform)>,
+    cameras: Query<(Entity, &Camera, &GlobalTransform), With<Camera2d>>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
     texture_atlas: Res<Assets<TextureAtlas>>,

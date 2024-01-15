@@ -13,6 +13,7 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bevy_core_pipeline = {version = "0.12", default-features = false }
 bevy_app = { version = "0.12", default-features = false }
 bevy_asset = { version = "0.12", default-features = false }
 bevy_ecs = { version = "0.12", default-features = false }

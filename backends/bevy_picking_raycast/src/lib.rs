@@ -15,6 +15,7 @@
 #![deny(missing_docs)]
 
 use bevy_app::prelude::*;
+use bevy_core_pipeline::prelude::Camera3d;
 use bevy_ecs::prelude::*;
 use bevy_reflect::prelude::*;
 use bevy_render::{prelude::*, view::RenderLayers};
@@ -66,13 +67,16 @@ pub fn update_hits(
     pointers: Query<(&PointerId, &PointerLocation)>,
     primary_window_entity: Query<Entity, With<PrimaryWindow>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
-    picking_cameras: Query<(
-        Entity,
-        &Camera,
-        &GlobalTransform,
-        Option<&RaycastPickable>,
-        Option<&RenderLayers>,
-    )>,
+    picking_cameras: Query<
+        (
+            Entity,
+            &Camera,
+            &GlobalTransform,
+            Option<&RaycastPickable>,
+            Option<&RenderLayers>,
+        ),
+        With<Camera3d>,
+    >,
     pickables: Query<&Pickable>,
     marked_targets: Query<&RaycastPickable>,
     layers: Query<&RenderLayers>,
