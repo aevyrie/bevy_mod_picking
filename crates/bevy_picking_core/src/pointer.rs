@@ -176,7 +176,7 @@ impl InputPress {
         mut pointers: Query<(&PointerId, &mut PointerPress)>,
     ) {
         for input_press_event in events.read() {
-            pointers.for_each_mut(|(pointer_id, mut pointer)| {
+            pointers.iter_mut().for_each(|(pointer_id, mut pointer)| {
                 if *pointer_id == input_press_event.pointer_id {
                     let is_down = input_press_event.direction == PressDirection::Down;
                     match input_press_event.button {
@@ -260,7 +260,7 @@ impl InputMove {
         mut pointers: Query<(&PointerId, &mut PointerLocation)>,
     ) {
         for event_pointer in events.read() {
-            pointers.for_each_mut(|(id, mut pointer)| {
+            pointers.iter_mut().for_each(|(id, mut pointer)| {
                 if *id == event_pointer.pointer_id {
                     pointer.location = Some(event_pointer.location.to_owned());
                 }
