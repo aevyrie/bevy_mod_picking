@@ -32,7 +32,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
-            material: materials.add(Color::WHITE.into()),
+            material: materials.add(Color::WHITE),
             ..default()
         },
         Collider::cuboid(2.5, 0.01, 2.5),
@@ -42,7 +42,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::WHITE.into()),
+            material: materials.add(Color::WHITE),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },

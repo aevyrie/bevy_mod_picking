@@ -22,8 +22,8 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            mesh: meshes.add(shape::Plane::from_size(5.0)),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
             ..default()
         },
         PickableBundle::default(), // <- Makes the mesh pickable.
@@ -32,7 +32,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
@@ -57,8 +57,8 @@ fn setup(
     // plane 2
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-            material: materials.add(Color::CYAN.into()),
+            mesh: meshes.add(shape::Plane::from_size(5.0)),
+            material: materials.add(Color::CYAN),
             transform: Transform::from_xyz(20., 20., 20.),
             ..default()
         },
@@ -68,7 +68,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::YELLOW.into()),
+            material: materials.add(Color::YELLOW),
             transform: Transform::from_xyz(20., 20.5, 20.),
             ..default()
         },

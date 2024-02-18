@@ -62,7 +62,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
-            material: materials.add(Color::WHITE.into()),
+            material: materials.add(Color::WHITE),
             ..default()
         },
         PickableBundle::default(), // <- Makes the mesh pickable.
@@ -72,7 +72,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::WHITE.into()),
+            material: materials.add(Color::WHITE),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },

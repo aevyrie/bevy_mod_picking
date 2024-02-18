@@ -38,7 +38,7 @@ fn setup(
         .spawn((
             PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                material: materials.add(Color::WHITE.into()),
+                material: materials.add(Color::WHITE),
                 ..default()
             },
             PickableBundle::default(),
@@ -102,7 +102,7 @@ fn setup(
                     // listener. Events on children will bubble up to the parent!
                     PbrBundle {
                         mesh: meshes.add(Mesh::from(shape::Cube { size: 0.4 })),
-                        material: materials.add(Color::RED.into()),
+                        material: materials.add(Color::RED),
                         transform: Transform::from_xyz(0.0, 1.0 + 0.5 * i as f32, 0.0),
                         ..default()
                     },
