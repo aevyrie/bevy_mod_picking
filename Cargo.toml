@@ -19,18 +19,18 @@ all-features = true
 members = ["crates/*", "backends/*"]
 
 [dependencies]
-bevy_app = { version = "0.12", default-features = false }
-bevy_core = { version = "0.12", default-features = false }
-bevy_ecs = { version = "0.12", default-features = false }
-bevy_math = { version = "0.12", default-features = false }
-bevy_reflect = { version = "0.12", default-features = false }
-bevy_render = { version = "0.12", default-features = false }
-bevy_text = { version = "0.12", optional = true, default-features = false, features = [
+bevy_app = { version = "0.13", default-features = false }
+bevy_core = { version = "0.13", default-features = false }
+bevy_ecs = { version = "0.13", default-features = false }
+bevy_math = { version = "0.13", default-features = false }
+bevy_reflect = { version = "0.13", default-features = false }
+bevy_render = { version = "0.13", default-features = false }
+bevy_text = { version = "0.13", optional = true, default-features = false, features = [
     "default_font",
 ] }
-bevy_ui = { version = "0.12", optional = true, default-features = false }
-bevy_utils = { version = "0.12", default-features = false }
-bevy_window = { version = "0.12", default-features = false }
+bevy_ui = { version = "0.13", optional = true, default-features = false }
+bevy_utils = { version = "0.13", default-features = false }
+bevy_window = { version = "0.13", default-features = false }
 
 bevy_eventlistener = "0.6"
 bevy_egui = { optional = true, version = "0.23" }
@@ -48,7 +48,7 @@ bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite", 
 bevy_picking_egui = { optional = true, path = "backends/bevy_picking_egui", version = "0.17" }
 
 [dev-dependencies]
-bevy = { version = "0.12", default-features = false, features = [
+bevy = { version = "0.13", default-features = false, features = [
     "bevy_winit",
     "x11",
     "bevy_gltf",
