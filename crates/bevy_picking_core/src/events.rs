@@ -227,12 +227,12 @@ pub fn pointer_events(
             .iter()
             .flat_map(|h| h.iter().map(|(entity, data)| (*entity, data.to_owned())))
         {
-            pointer_move.send(Pointer::new(
+            let _ = pointer_move.send(Pointer::new(
                 pointer_id,
                 location.clone(),
                 hovered_entity,
                 Move { hit, delta },
-            ))
+            ));
         }
     }
 
@@ -254,12 +254,12 @@ pub fn pointer_events(
                     );
                     continue;
                 };
-                pointer_up.send(Pointer::new(
+                let _ = pointer_up.send(Pointer::new(
                     press_event.pointer_id,
                     location,
                     hovered_entity,
                     Up { button, hit },
-                ))
+                ));
             }
         }
         for (hovered_entity, hit) in hover_map
@@ -275,12 +275,12 @@ pub fn pointer_events(
                     );
                     continue;
                 };
-                pointer_down.send(Pointer::new(
+                let _ = pointer_down.send(Pointer::new(
                     press_event.pointer_id,
                     location,
                     hovered_entity,
                     Down { button, hit },
-                ))
+                ));
             }
         }
     }
@@ -300,7 +300,7 @@ pub fn pointer_events(
                 error!("Unable to get location for pointer {:?}", pointer_id);
                 continue;
             };
-            pointer_over.send(Pointer::new(
+            let _ = pointer_over.send(Pointer::new(
                 pointer_id,
                 location,
                 hovered_entity,
@@ -324,7 +324,7 @@ pub fn pointer_events(
                 error!("Unable to get location for pointer {:?}", pointer_id);
                 continue;
             };
-            pointer_out.send(Pointer::new(
+            let _ = pointer_out.send(Pointer::new(
                 pointer_id,
                 location,
                 hovered_entity,
@@ -396,7 +396,7 @@ pub fn send_click_and_drag_events(
                         latest_pos: down.pointer_location.position,
                     },
                 );
-                pointer_drag_start.send(Pointer::new(
+                let _ = pointer_drag_start.send(Pointer::new(
                     pointer_id,
                     down.pointer_location.clone(),
                     down.target,
@@ -404,7 +404,7 @@ pub fn send_click_and_drag_events(
                         button,
                         hit: down.hit.clone(),
                     },
-                ))
+                ));
             }
 
             for (dragged_entity, drag) in drag_list.iter_mut() {
@@ -414,12 +414,12 @@ pub fn send_click_and_drag_events(
                     delta: location.position - drag.latest_pos,
                 };
                 drag.latest_pos = location.position;
-                pointer_drag.send(Pointer::new(
+                let _ = pointer_drag.send(Pointer::new(
                     pointer_id,
                     location.clone(),
                     *dragged_entity,
                     drag_event,
-                ))
+                ));
             }
         }
     }
@@ -525,12 +525,12 @@ pub fn send_drag_over_events(
                     dragged: *drag_target,
                     hit: hit.clone(),
                 };
-                pointer_drag_enter.send(Pointer::new(
+                let _ = pointer_drag_enter.send(Pointer::new(
                     pointer_id,
                     pointer_location.clone(),
                     target,
                     event,
-                ))
+                ));
             }
         }
     }
@@ -552,7 +552,7 @@ pub fn send_drag_over_events(
                     |&&drag_target| target != drag_target, /* can't drag over itself */
                 )
             {
-                pointer_drag_over.send(Pointer::new(
+                let _ = pointer_drag_over.send(Pointer::new(
                     pointer_id,
                     pointer_location.clone(),
                     target,
@@ -561,7 +561,7 @@ pub fn send_drag_over_events(
                         dragged: *drag_target,
                         hit: hit.clone(),
                     },
-                ))
+                ));
             }
         }
     }
@@ -623,7 +623,7 @@ pub fn send_drag_over_events(
                 continue;
             };
             for drag_target in drag_list.keys() {
-                pointer_drag_leave.send(Pointer::new(
+                let _ = pointer_drag_leave.send(Pointer::new(
                     pointer_id,
                     pointer_location.clone(),
                     target,
@@ -632,7 +632,7 @@ pub fn send_drag_over_events(
                         dragged: *drag_target,
                         hit: hit.clone(),
                     },
-                ))
+                ));
             }
         }
     }

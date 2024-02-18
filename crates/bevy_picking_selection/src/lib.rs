@@ -157,12 +157,12 @@ pub fn send_selection_events(
             for (entity, selection) in selectables.iter() {
                 let not_click_target = *target != entity;
                 if selection.is_selected && not_click_target {
-                    deselections.send(Pointer::new(
+                    let _ = deselections.send(Pointer::new(
                         *pointer_id,
                         pointer_location.to_owned(),
                         entity,
                         Deselect,
-                    ))
+                    ));
                 }
             }
         }
@@ -189,7 +189,7 @@ pub fn send_selection_events(
             if !pointer_down_list.contains(&id) && !multiselect {
                 for (entity, selection) in selectables.iter() {
                     if selection.is_selected {
-                        deselections.send(Pointer::new(id, location.clone(), entity, Deselect))
+                        let _ = deselections.send(Pointer::new(id, location.clone(), entity, Deselect));
                     }
                 }
             }
@@ -212,26 +212,30 @@ pub fn send_selection_events(
         if let Ok((entity, selection)) = selectables.get(*target) {
             if multiselect {
                 match selection.is_selected {
-                    true => deselections.send(Pointer::new(
-                        *pointer_id,
-                        pointer_location.to_owned(),
-                        entity,
-                        Deselect,
-                    )),
-                    false => selections.send(Pointer::new(
-                        *pointer_id,
-                        pointer_location.to_owned(),
-                        entity,
-                        Select,
-                    )),
-                }
+                    true => {
+                        let _ = deselections.send(Pointer::new(
+                            *pointer_id,
+                            pointer_location.to_owned(),
+                            entity,
+                            Deselect,
+                        ));
+                    },
+                    false => {
+                        let _ = selections.send(Pointer::new(
+                            *pointer_id,
+                            pointer_location.to_owned(),
+                            entity,
+                            Select,
+                        ));
+                    },
+                };
             } else if !selection.is_selected {
-                selections.send(Pointer::new(
+                let _ = selections.send(Pointer::new(
                     *pointer_id,
                     pointer_location.to_owned(),
                     entity,
                     Select,
-                ))
+                ));
             }
         }
     }

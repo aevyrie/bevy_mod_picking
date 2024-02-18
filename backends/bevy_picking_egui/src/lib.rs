@@ -88,7 +88,7 @@ pub fn egui_picking(
                 if ctx.get_mut().wants_pointer_input() {
                     let entry = (entity, HitData::new(entity, 0.0, None, None));
                     let order = 1_000_000f32; // Assume egui should be on top of everything else.
-                    output.send(PointerHits::new(*pointer, Vec::from([entry]), order))
+                    let _ = output.send(PointerHits::new(*pointer, Vec::from([entry]), order));
                 }
             }
         }

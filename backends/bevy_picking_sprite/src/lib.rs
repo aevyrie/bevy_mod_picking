@@ -131,6 +131,6 @@ pub fn sprite_picking(
             .collect();
 
         let order = camera.order as f32;
-        output.send(PointerHits::new(*pointer, picks, order))
+        let _ = output.send(PointerHits::new(*pointer, picks, order));
     }
 }
