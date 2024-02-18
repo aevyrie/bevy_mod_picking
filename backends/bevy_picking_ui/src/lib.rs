@@ -65,7 +65,7 @@ pub struct NodeQuery {
 /// we need for determining picking.
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    cameras: Query<(Entity, &Camera, Option<&UiCameraConfig>)>,
+    cameras: Query<(Entity, &Camera, Option<(&Node, &Visibility)>)>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     ui_stack: Res<UiStack>,
     ui_scale: Option<Res<UiScale>>,
@@ -108,7 +108,7 @@ pub fn ui_picking(
                 camera.is_active
                     && camera.target.normalize(Some(window_entity)).unwrap() == location.target
             })
-            .filter(|(_, _, ui_config)| ui_config.map(|config| config.show_ui).unwrap_or(true))
+            .filter(|(_, _, optional_root_node)| optional_root_node.map(|(_node, visibility)| visibility == Visibility::Visible).unwrap_or(true))
             .collect();
         ui_cameras.sort_by_key(|(_, camera, _)| camera.order);
 
