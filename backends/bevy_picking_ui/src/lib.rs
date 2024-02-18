@@ -24,6 +24,7 @@
 
 use bevy_app::prelude::*;
 use bevy_ecs::{prelude::*, query::QueryData};
+use bevy_hierarchy::Parent;
 use bevy_render::{camera::NormalizedRenderTarget, prelude::*};
 use bevy_transform::prelude::*;
 use bevy_ui::{prelude::*, RelativeCursorPosition, UiStack};
@@ -65,7 +66,8 @@ pub struct NodeQuery {
 /// we need for determining picking.
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    cameras: Query<(Entity, &Camera, Option<(&Node, &Visibility)>)>,
+    root_nodes: Query<(Entity, &Visibility, Option<&TargetCamera>), Without<Parent>>,
+    cameras: Query<(Entity, &Camera)>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     ui_stack: Res<UiStack>,
     ui_scale: Option<Res<UiScale>>,
@@ -104,16 +106,26 @@ pub fn ui_picking(
         // consider the topmost one rendering UI in this window.
         let mut ui_cameras: Vec<_> = cameras
             .iter()
-            .filter(|(_entity, camera, _)| {
+            .filter(|(_, camera)|
                 camera.is_active
                     && camera.target.normalize(Some(window_entity)).unwrap() == location.target
+            )
+            .filter(|(entity, _camera)| {
+                let matching_root_node = root_nodes
+                    .iter()
+                    .find(|(_, _visibility, root_node_target_camera_marker_option)| {
+                        root_node_target_camera_marker_option
+                            .map_or(false, |marker| marker.entity() == *entity)
+                    });
+                matching_root_node.map_or(true, |(_, visibility, _)| {
+                    matches!(visibility, Visibility::Visible | Visibility::Inherited)
+                })
             })
-            .filter(|(_, _, optional_root_node)| optional_root_node.map(|(_node, visibility)| visibility == Visibility::Visible).unwrap_or(true))
             .collect();
-        ui_cameras.sort_by_key(|(_, camera, _)| camera.order);
+        ui_cameras.sort_by_key(|(_, camera)| camera.order);
 
         // The last camera in the list will be the one with the highest order, and be the topmost.
-        let Some((camera_entity, camera, _)) = ui_cameras.last() else {
+        let Some((camera_entity, camera)) = ui_cameras.last() else {
             continue;
         };
 
