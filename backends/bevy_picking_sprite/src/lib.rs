@@ -11,7 +11,7 @@ use bevy_asset::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_math::prelude::*;
 use bevy_render::prelude::*;
-use bevy_sprite::{Sprite, TextureAtlas, TextureAtlasSprite};
+use bevy_sprite::{Sprite, TextureAtlas, TextureAtlasLayout};
 use bevy_transform::prelude::*;
 use bevy_window::PrimaryWindow;
 
@@ -38,17 +38,17 @@ pub fn sprite_picking(
     cameras: Query<(Entity, &Camera, &GlobalTransform)>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
-    texture_atlas: Res<Assets<TextureAtlas>>,
+    texture_atlas_layout: Res<Assets<TextureAtlasLayout>>,
     sprite_query: Query<
         (
             Entity,
-            (Option<&Sprite>, Option<&TextureAtlasSprite>),
-            (Option<&Handle<Image>>, Option<&Handle<TextureAtlas>>),
+            (Option<&Sprite>, Option<&TextureAtlas>),
+            (Option<&Handle<Image>>, Option<&TextureAtlas>),
             &GlobalTransform,
             Option<&Pickable>,
             &ViewVisibility,
         ),
-        Or<(With<Sprite>, With<TextureAtlasSprite>)>,
+        Or<(With<Sprite>, With<TextureAtlas>)>,
     >,
     mut output: EventWriter<PointerHits>,
 ) {
@@ -98,11 +98,13 @@ pub fn sprite_picking(
                         .or_else(|| images.get(image).map(|f| f.size().as_vec2()))?;
                     let anchor = sprite.anchor.as_vec();
                     (extents, anchor)
-                } else if let Some((sprite, atlas)) = sprite.1.zip(image.1) {
+                } else if let Some((sprite, atlas)) = sprite.0.zip(image.1) {
                     let extents = sprite.custom_size.or_else(|| {
-                        texture_atlas
-                            .get(atlas)
-                            .map(|f| f.textures[sprite.index].size())
+                        texture_atlas_layout
+                            .get(&atlas.layout)
+                            .map(|f| {
+                                f.textures[atlas.index].size()
+                            })
                     })?;
                     let anchor = sprite.anchor.as_vec();
                     (extents, anchor)
