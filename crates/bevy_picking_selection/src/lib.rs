@@ -9,7 +9,7 @@
 
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_input::{keyboard::KeyCode, Input};
+use bevy_input::{keyboard::KeyCode, ButtonInput};
 use bevy_reflect::prelude::*;
 use bevy_utils::hashbrown::HashSet;
 
@@ -105,7 +105,7 @@ pub struct Deselect;
 
 /// Unsurprising default multiselect inputs: both control and shift keys.
 pub fn multiselect_events(
-    keyboard: Res<Input<KeyCode>>,
+    keyboard: Res<ButtonInput<KeyCode>>,
     mut pointer_query: Query<&mut PointerMultiselect>,
 ) {
     let is_multiselect_pressed = keyboard.any_pressed([
