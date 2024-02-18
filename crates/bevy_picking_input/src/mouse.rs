@@ -51,6 +51,8 @@ pub fn mouse_pick_events(
             MouseButton::Right => PointerButton::Secondary,
             MouseButton::Middle => PointerButton::Middle,
             MouseButton::Other(_) => continue,
+            MouseButton::Back => continue,
+            MouseButton::Forward => continue,
         };
 
         match input.state {
