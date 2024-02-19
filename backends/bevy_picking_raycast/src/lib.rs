@@ -104,7 +104,7 @@ pub fn update_hits(
             })
             .filter(|(.., marker, _)| marker.is_some() || !backend_settings.require_markers)
             .filter_map(|(entity, camera, transform, _, layers)| {
-                Ray3d::from_screenspace(
+                ray_from_screenspace(
                     pointer_location.position,
                     camera,
                     transform,
