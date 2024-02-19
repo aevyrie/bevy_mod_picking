@@ -67,6 +67,7 @@ fn main() {
                 .set(LogPlugin {
                     filter: "bevy_mod_picking=trace".into(), // Show picking logs trace level and up
                     level: Level::ERROR, // Show all other logs only at the error level and up
+                    ..default()
                 }),
         )
         .add_plugins(DefaultPickingPlugins)
