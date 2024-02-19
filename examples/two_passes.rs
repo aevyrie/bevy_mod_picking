@@ -1,6 +1,6 @@
 //! Demonstrates that picking respects camera render order.
 
-use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*};
+use bevy::{render::camera::ClearColorConfig, prelude::*};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -88,11 +88,8 @@ fn setup(
     commands.spawn((Camera3dBundle {
         transform: Transform::from_xyz(30., 30., 30.0)
             .looking_at(Vec3::new(20., 20.5, 20.), Vec3::Y),
-        camera_3d: Camera3d {
-            clear_color: ClearColorConfig::None,
-            ..default()
-        },
         camera: Camera {
+            clear_color: ClearColorConfig::None,
             // renders after / on top of the main camera
             order: 1,
             ..default()

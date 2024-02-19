@@ -62,13 +62,10 @@ fn setup(
         Camera3dBundle {
             transform: Transform::from_xyz(10.0, 10., 15.0).looking_at(Vec3::ZERO, Vec3::Y),
             camera: Camera {
+                // don't clear on the second camera because the first camera already cleared the window
+                clear_color: ClearColorConfig::None,
                 // Renders the right camera after the left camera, which has a default priority of 0
                 order: 1,
-                ..default()
-            },
-            camera_3d: Camera3d {
-                // don't clear on the second camera because the first camera already cleared the window
-                clear_color: bevy::core_pipeline::clear_color::ClearColorConfig::None,
                 ..default()
             },
             ..default()

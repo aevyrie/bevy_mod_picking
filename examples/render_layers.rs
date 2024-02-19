@@ -1,6 +1,6 @@
 //! Demonstrates that picking respects render layers and order.
 
-use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*};
+use bevy::{render::camera::ClearColorConfig, prelude::*};
 use bevy_mod_picking::prelude::*;
 use bevy_render::view::RenderLayers;
 
@@ -67,11 +67,8 @@ fn setup(
     commands.spawn((
         Camera3dBundle {
             transform: camera_transform,
-            camera_3d: Camera3d {
-                clear_color: ClearColorConfig::None,
-                ..default()
-            },
             camera: Camera {
+                clear_color: ClearColorConfig::None,
                 // renders after / on top of the main camera
                 order: 1,
                 ..default()
