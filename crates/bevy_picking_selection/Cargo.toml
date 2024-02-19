@@ -19,6 +19,6 @@ bevy_input = { version = "0.13", default-features = false }
 bevy_reflect = { version = "0.13", default-features = false }
 bevy_utils = { version = "0.13", default-features = false }
 
-bevy_eventlistener = "0.6"
+bevy_eventlistener = "0.7"
 
 bevy_picking_core = { path = "../bevy_picking_core", version = "0.17" }

@@ -22,4 +22,4 @@ bevy_render = { version = "0.13", default-features = false }
 bevy_utils = { version = "0.13", default-features = false }
 bevy_window = { version = "0.13", default-features = false }
 
-bevy_eventlistener = "0.6"
+bevy_eventlistener = "0.7"
