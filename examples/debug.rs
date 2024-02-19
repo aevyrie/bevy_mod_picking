@@ -181,7 +181,7 @@ trait NewButton {
     fn add_button(self, text: &str, on_click_action: On<Pointer<Click>>) -> Self;
 }
 
-impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
+impl<'a> NewButton for EntityCommands<'a> {
     fn add_button(mut self, text: &str, on_click_action: On<Pointer<Click>>) -> Self {
         let child = self
             .commands()

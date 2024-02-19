@@ -106,7 +106,7 @@ trait NewButton {
     fn add_button(self, text: &str) -> Self;
 }
 
-impl<'w, 's, 'a> NewButton for EntityCommands<'w, 's, 'a> {
+impl<'a> NewButton for EntityCommands<'a> {
     fn add_button(mut self, text: &str) -> Self {
         let text_string = text.to_string();
         let child = self
