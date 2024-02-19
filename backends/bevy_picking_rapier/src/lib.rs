@@ -118,7 +118,7 @@ pub fn update_hits(
             if let Some((entity, hit_data)) = rapier_context
                 .cast_ray_and_get_normal(
                     ray.origin,
-                    ray.direction,
+                    *ray.direction,
                     f32::MAX,
                     true,
                     QueryFilter::new().predicate(&|entity| {
