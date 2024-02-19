@@ -56,15 +56,15 @@ fn make_pickable(
 /// `tinted_highlight` for more details.
 const HIGHLIGHT_TINT: Highlight<StandardMaterial> = Highlight {
     hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.5, -0.3, 0.9, 0.8), // hovered is blue
+        base_color: matl.base_color + Color::rgba(-0.5, -0.3, 0.9, 0.8), // hovered is blue
         ..matl.to_owned()
     })),
     pressed: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.4, -0.4, 0.8, 0.8), // pressed is a different blue
+        base_color: matl.base_color + Color::rgba(-0.4, -0.4, 0.8, 0.8), // pressed is a different blue
         ..matl.to_owned()
     })),
     selected: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.4, 0.8, -0.4, 0.0), // selected is green
+        base_color: matl.base_color + Color::rgba(-0.4, 0.8, -0.4, 0.0), // selected is green
         ..matl.to_owned()
     })),
 };
