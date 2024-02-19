@@ -90,7 +90,7 @@ impl Plugin for DebugPickingPlugin {
             DebugPickingMode::Normal
         };
 
-        app.add_state::<DebugPickingMode>()
+        app.init_state::<DebugPickingMode>()
             .insert_resource(State::new(start_mode))
             .add_systems(
                 PreUpdate,
