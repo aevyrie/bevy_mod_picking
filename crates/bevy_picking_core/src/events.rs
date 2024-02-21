@@ -19,6 +19,7 @@ use bevy_utils::{tracing::error, HashMap};
 
 /// Stores the common data needed for all `PointerEvent`s.
 #[derive(Clone, PartialEq, Debug, Reflect, Event, EntityEvent)]
+#[can_bubble]
 pub struct Pointer<E: Debug + Clone + Reflect> {
     /// The target of this event
     #[target]
