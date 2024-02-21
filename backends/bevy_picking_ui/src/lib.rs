@@ -67,7 +67,7 @@ pub struct NodeQuery {
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
     root_nodes: Query<(Entity, &InheritedVisibility, Option<&TargetCamera>), Without<Parent>>,
-    cameras: Query<(Entity, &Camera)>,
+    cameras: Query<(Entity, &Camera, Has<IsDefaultUiCamera>)>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     ui_stack: Res<UiStack>,
     ui_scale: Option<Res<UiScale>>,
@@ -106,24 +106,32 @@ pub fn ui_picking(
         // consider the topmost one rendering UI in this window.
         let mut ui_cameras: Vec<_> = cameras
             .iter()
-            .filter(|(_, camera)| {
+            .filter(|(_, camera, _)| {
                 camera.is_active
                     && camera.target.normalize(Some(window_entity)).unwrap() == location.target
             })
-            .filter(|(entity, _camera)| {
+            .filter(|(camera_entity, _, _)| {
                 let matching_root_node = root_nodes.iter().find(
                     |(_, _visibility, root_node_target_camera_marker_option)| {
                         root_node_target_camera_marker_option
-                            .map_or(false, |marker| marker.entity() == *entity)
+                            .map_or(false, |marker| marker.entity() == *camera_entity)
                     },
                 );
                 matching_root_node.map_or(true, |(_, visibility, _)| visibility.get())
             })
             .collect();
-        ui_cameras.sort_by_key(|(_, camera)| camera.order);
+
+        // sort by default camera marker, then by priority value
+        ui_cameras.sort_by(
+            |(_, cam_a, has_default_marker_a), (_, cam_b, has_default_marker_b)| {
+                has_default_marker_a
+                    .cmp(has_default_marker_b)
+                    .then_with(|| cam_a.order.cmp(&cam_b.order))
+            },
+        );
 
         // The last camera in the list will be the one with the highest order, and be the topmost.
-        let Some((camera_entity, camera)) = ui_cameras.last() else {
+        let Some((camera_entity, camera, _)) = ui_cameras.last() else {
             continue;
         };
 
