@@ -189,6 +189,6 @@ pub fn ui_picking(
             depth += 0.00001; // keep depth near 0 for precision
         }
         let order = camera.order as f32 + 0.5; // bevy ui can run on any camera, it's a special case
-        let _ = output.send(PointerHits::new(*pointer, picks, order));
+        output.send(PointerHits::new(*pointer, picks, order));
     }
 }

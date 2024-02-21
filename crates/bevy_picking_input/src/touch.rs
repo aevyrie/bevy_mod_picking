@@ -71,7 +71,7 @@ pub fn touch_pick_events(
             TouchPhase::Ended | TouchPhase::Canceled => {
                 input_presses.send(InputPress::new_up(pointer, PointerButton::Primary));
                 location_cache.remove(&touch.id);
-                let _ = cancel_events.send(PointerCancel {
+                cancel_events.send(PointerCancel {
                     pointer_id: pointer,
                 });
             }

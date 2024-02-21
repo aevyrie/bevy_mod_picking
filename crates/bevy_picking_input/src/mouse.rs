@@ -57,10 +57,10 @@ pub fn mouse_pick_events(
 
         match input.state {
             ButtonState::Pressed => {
-                let _ = pointer_presses.send(InputPress::new_down(PointerId::Mouse, button));
+                pointer_presses.send(InputPress::new_down(PointerId::Mouse, button));
             }
             ButtonState::Released => {
-                let _ = pointer_presses.send(InputPress::new_up(PointerId::Mouse, button));
+                pointer_presses.send(InputPress::new_up(PointerId::Mouse, button));
             }
         }
     }

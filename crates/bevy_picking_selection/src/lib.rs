@@ -157,7 +157,7 @@ pub fn send_selection_events(
             for (entity, selection) in selectables.iter() {
                 let not_click_target = *target != entity;
                 if selection.is_selected && not_click_target {
-                    let _ = deselections.send(Pointer::new(
+                    deselections.send(Pointer::new(
                         *pointer_id,
                         pointer_location.to_owned(),
                         entity,
@@ -189,7 +189,7 @@ pub fn send_selection_events(
             if !pointer_down_list.contains(&id) && !multiselect {
                 for (entity, selection) in selectables.iter() {
                     if selection.is_selected {
-                        let _ = deselections.send(Pointer::new(id, location.clone(), entity, Deselect));
+                        deselections.send(Pointer::new(id, location.clone(), entity, Deselect));
                     }
                 }
             }
@@ -213,7 +213,7 @@ pub fn send_selection_events(
             if multiselect {
                 match selection.is_selected {
                     true => {
-                        let _ = deselections.send(Pointer::new(
+                        deselections.send(Pointer::new(
                             *pointer_id,
                             pointer_location.to_owned(),
                             entity,
@@ -221,7 +221,7 @@ pub fn send_selection_events(
                         ));
                     },
                     false => {
-                        let _ = selections.send(Pointer::new(
+                        selections.send(Pointer::new(
                             *pointer_id,
                             pointer_location.to_owned(),
                             entity,
@@ -230,7 +230,7 @@ pub fn send_selection_events(
                     },
                 };
             } else if !selection.is_selected {
-                let _ = selections.send(Pointer::new(
+                selections.send(Pointer::new(
                     *pointer_id,
                     pointer_location.to_owned(),
                     entity,
