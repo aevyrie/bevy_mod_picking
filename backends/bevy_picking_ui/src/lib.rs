@@ -66,7 +66,7 @@ pub struct NodeQuery {
 /// we need for determining picking.
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    root_nodes: Query<(Entity, &Visibility, Option<&TargetCamera>), Without<Parent>>,
+    root_nodes: Query<(Entity, &InheritedVisibility, Option<&TargetCamera>), Without<Parent>>,
     cameras: Query<(Entity, &Camera)>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     ui_stack: Res<UiStack>,
@@ -106,20 +106,18 @@ pub fn ui_picking(
         // consider the topmost one rendering UI in this window.
         let mut ui_cameras: Vec<_> = cameras
             .iter()
-            .filter(|(_, camera)|
+            .filter(|(_, camera)| {
                 camera.is_active
                     && camera.target.normalize(Some(window_entity)).unwrap() == location.target
-            )
+            })
             .filter(|(entity, _camera)| {
-                let matching_root_node = root_nodes
-                    .iter()
-                    .find(|(_, _visibility, root_node_target_camera_marker_option)| {
+                let matching_root_node = root_nodes.iter().find(
+                    |(_, _visibility, root_node_target_camera_marker_option)| {
                         root_node_target_camera_marker_option
                             .map_or(false, |marker| marker.entity() == *entity)
-                    });
-                matching_root_node.map_or(true, |(_, visibility, _)| {
-                    matches!(visibility, Visibility::Visible | Visibility::Inherited)
-                })
+                    },
+                );
+                matching_root_node.map_or(true, |(_, visibility, _)| visibility.get())
             })
             .collect();
         ui_cameras.sort_by_key(|(_, camera)| camera.order);
