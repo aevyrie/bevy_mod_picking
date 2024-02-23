@@ -9,6 +9,7 @@ fn main() {
         .add_plugins(DefaultPickingPlugins)
         .add_systems(Startup, (setup, setup_3d))
         .add_systems(Update, update_button_colors)
+        .insert_resource(UiScale(1.5))
         .run();
 }
 
