@@ -1,5 +1,8 @@
 # UNRELEASED
 
+- Fixed: entities with identical depth could be dropped due to the use of a BTreeMap to sort
+  entities by depth. This has been changed to use a sorted Vec, to allow entities with the same
+  depth to coexist.
 - Fixed: Ray construction now respects DPI / window scale
 - Added: `RayMap` resource that contains a `Ray` for every (camera, pointer) pair
 - Changed: rapier and bevy_mod_raycast backends use the `RayMap` instead of constructing their own
