@@ -1,11 +1,10 @@
-# 0.17.1
+# UNRELEASED
 
-- Added: `RayMap` resource that contains a `Ray` for every intersecting (camera,
-  pointer) pair
-- Changed: rapier and bevy_mod_raycast backends use the `RayMap` instead of
-  constructing their own rays
-- Fixed: rapier and bevy_mod_raycast backends use `RenderLayers::default` when a
-  camera is missing them
+- Added: `RayMap` resource that contains a `Ray` for every (camera, pointer) pair
+- Changed: rapier and bevy_mod_raycast backends use the `RayMap` instead of constructing their own
+  rays
+- Fixed: rapier and bevy_mod_raycast backends use `RenderLayers::default` when a camera is missing
+  them
 
 # 0.17.0
 
@@ -24,8 +23,8 @@
 - Faster compile times.
 - Sprites now support atlases, scale, rotation, and anchors.
 - All `egui` widgets, including side panels, are now supported.
-- `bevy_mod_raycast` and `bevy_rapier` backends are now even simpler, no longer requiring any
-  marker components to function.
+- `bevy_mod_raycast` and `bevy_rapier` backends are now even simpler, no longer requiring any marker
+  components to function.
 - More flexible picking behavior and `bevy_ui` compatibility with the updated `Pickable` component.
 - Better support for cameras settings such as `is_active`, `RenderLayers`, and `show_ui`.
 
