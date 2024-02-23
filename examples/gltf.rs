@@ -2,7 +2,7 @@
 //! was clicked on, even though we only need to add an `On<Pointer<Event>>` event listener to the
 //! root of the scene.
 
-use bevy::{math::vec4, prelude::*};
+use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
