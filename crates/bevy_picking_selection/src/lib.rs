@@ -219,7 +219,7 @@ pub fn send_selection_events(
                             entity,
                             Deselect,
                         ));
-                    },
+                    }
                     false => {
                         selections.send(Pointer::new(
                             *pointer_id,
@@ -227,7 +227,7 @@ pub fn send_selection_events(
                             entity,
                             Select,
                         ));
-                    },
+                    }
                 };
             } else if !selection.is_selected {
                 selections.send(Pointer::new(

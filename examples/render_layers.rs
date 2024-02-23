@@ -1,6 +1,6 @@
 //! Demonstrates that picking respects render layers and order.
 
-use bevy::{render::camera::ClearColorConfig, prelude::*};
+use bevy::{prelude::*, render::camera::ClearColorConfig};
 use bevy_mod_picking::prelude::*;
 use bevy_render::view::RenderLayers;
 
