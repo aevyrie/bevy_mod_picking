@@ -15,11 +15,9 @@ resolver = "2"
 [dependencies]
 bevy_app = { version = "0.12", default-features = false }
 bevy_ecs = { version = "0.12", default-features = false }
-bevy_math = { version = "0.12", default-features = false }
 bevy_reflect = { version = "0.12", default-features = false }
 bevy_render = { version = "0.12", default-features = false }
 bevy_transform = { version = "0.12", default-features = false }
-bevy_utils = { version = "0.12", default-features = false }
 bevy_window = { version = "0.12", default-features = false }
 
 bevy_rapier3d = "0.23"

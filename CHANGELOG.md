@@ -5,6 +5,9 @@
   rays
 - Fixed: rapier and bevy_mod_raycast backends use `RenderLayers::default` when a camera is missing
   them
+- Added: support for `bevy_ui` `UiScale`.
+- Fixed: the bevy ui backend now ignores clipped areas of UI nodes. 
+- Added: `RaycastBackendSettings::raycast_visibility` to support picking hidden meshes.
 
 # 0.17.0
 

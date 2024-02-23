@@ -8,9 +8,9 @@ fn main() {
     app.add_plugins((
         DefaultPlugins.set(low_latency_window_plugin()),
         DefaultPickingPlugins,
+        SpinPlugin,
     ))
-    .add_systems(Startup, setup)
-    .add_systems(Update, spin);
+    .add_systems(Startup, setup);
     #[cfg(feature = "backend_egui")]
     app.add_plugins(bevy_egui::EguiPlugin);
     app.run();
@@ -50,6 +50,15 @@ fn setup(
     }
 }
 
+pub struct SpinPlugin;
+
+impl Plugin for SpinPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, spin)
+            .add_systems(Update, spin_cleanup);
+    }
+}
+
 #[derive(Component)]
 struct Spin(f32);
 
@@ -58,5 +67,14 @@ fn spin(mut square: Query<(&mut Spin, &mut Transform)>) {
         transform.rotation = Quat::from_rotation_z(spin.0);
         let delta = -spin.0.clamp(-1.0, 1.0) * 0.05;
         spin.0 += delta;
+    }
+}
+
+fn spin_cleanup(mut square: Query<(Entity, &Spin, &mut Transform)>, mut commands: Commands) {
+    for (entity, spin, mut transform) in square.iter_mut() {
+        if spin.0.abs().le(&0.001) {
+            transform.rotation = Quat::default(); // <- reset the rotation to zero when it's visually neglible
+            commands.entity(entity).remove::<Spin>(); // <- remove the component so it's stopped updating
+        }
     }
 }
