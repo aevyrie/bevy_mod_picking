@@ -31,6 +31,7 @@ use bevy_ui::{prelude::*, RelativeCursorPosition, UiStack};
 use bevy_window::PrimaryWindow;
 
 use bevy_picking_core::backend::prelude::*;
+use bevy_picking_core::pointer::Location;
 
 /// Commonly used imports for the [`bevy_picking_ui`](crate) crate.
 pub mod prelude {
@@ -68,9 +69,11 @@ pub fn ui_picking(
     cameras: Query<(Entity, &Camera, Option<&UiCameraConfig>)>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     ui_stack: Res<UiStack>,
+    ui_scale: Option<Res<UiScale>>,
     mut node_query: Query<NodeQuery>,
     mut output: EventWriter<PointerHits>,
 ) {
+    let ui_scale = ui_scale.map(|f| f.0).unwrap_or(1.0) as f32;
     for (pointer, location) in pointers.iter().filter_map(|(pointer, pointer_location)| {
         pointer_location
             .location()
@@ -83,7 +86,16 @@ pub fn ui_picking(
                 }
                 false
             })
-            .map(|loc| (pointer, loc))
+            .cloned()
+            .map(|loc| {
+                (
+                    pointer,
+                    Location {
+                        position: loc.position / ui_scale,
+                        ..loc
+                    },
+                )
+            })
     }) {
         let window_entity = primary_window.single();
 
