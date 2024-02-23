@@ -74,7 +74,7 @@ pub fn ui_picking(
     mut node_query: Query<NodeQuery>,
     mut output: EventWriter<PointerHits>,
 ) {
-    let ui_scale = ui_scale.map(|f| f.0).unwrap_or(1.0) as f32;
+    let ui_scale = ui_scale.map(|f| f.0).unwrap_or(1.0);
     for (pointer, location) in pointers.iter().filter_map(|(pointer, pointer_location)| {
         pointer_location
             .location()
