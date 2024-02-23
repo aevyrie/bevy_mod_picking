@@ -1,3 +1,7 @@
+# UNRELEASED
+
+- Added: support for `bevy_ui` `UiScale`.
+
 # 0.17.0
 
 - Update for bevy 0.12
