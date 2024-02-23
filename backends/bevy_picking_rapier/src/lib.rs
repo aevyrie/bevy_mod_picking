@@ -30,7 +30,7 @@ use bevy_ecs::prelude::*;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
 use bevy_render::{prelude::*, view::RenderLayers};
 
-use bevy_picking_core::{backend::prelude::*, ray::RayMap};
+use bevy_picking_core::backend::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 // Re-export for uses who want this

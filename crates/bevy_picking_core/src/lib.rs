@@ -8,7 +8,6 @@ pub mod backend;
 pub mod events;
 pub mod focus;
 pub mod pointer;
-pub mod ray;
 
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
@@ -160,7 +159,7 @@ impl Plugin for CorePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PickingPluginsSettings>()
             .init_resource::<pointer::PointerMap>()
-            .init_resource::<ray::RayMap>()
+            .init_resource::<backend::ray::RayMap>()
             .add_event::<pointer::InputPress>()
             .add_event::<pointer::InputMove>()
             .add_event::<backend::PointerHits>()
@@ -170,7 +169,7 @@ impl Plugin for CorePlugin {
                     pointer::update_pointer_map,
                     pointer::InputMove::receive,
                     pointer::InputPress::receive,
-                    ray::RayMap::repopulate,
+                    backend::ray::RayMap::repopulate,
                 )
                     .in_set(PickSet::ProcessInput),
             )
@@ -193,7 +192,7 @@ impl Plugin for CorePlugin {
             .register_type::<pointer::PointerInteraction>()
             .register_type::<Pickable>()
             .register_type::<PickingPluginsSettings>()
-            .register_type::<ray::RayId>();
+            .register_type::<backend::ray::RayId>();
     }
 }
 

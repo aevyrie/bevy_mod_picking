@@ -20,7 +20,7 @@ use bevy_reflect::prelude::*;
 use bevy_render::{prelude::*, view::RenderLayers};
 
 use bevy_mod_raycast::prelude::*;
-use bevy_picking_core::{backend::prelude::*, ray::RayMap};
+use bevy_picking_core::backend::prelude::*;
 
 // Re-export for uses who want this
 pub use bevy_mod_raycast;
