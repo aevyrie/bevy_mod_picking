@@ -1,5 +1,6 @@
 # UNRELEASED
 
+- Fixed: Ray construction now respects DPI / window scale
 - Added: `RayMap` resource that contains a `Ray` for every (camera, pointer) pair
 - Changed: rapier and bevy_mod_raycast backends use the `RayMap` instead of constructing their own
   rays
