@@ -33,13 +33,25 @@ pub mod prelude {
 }
 
 /// Runtime settings for the [`RaycastBackend`].
-#[derive(Resource, Default, Reflect)]
+#[derive(Resource, Reflect)]
 #[reflect(Resource, Default)]
 pub struct RaycastBackendSettings {
     /// When set to `true` raycasting will only happen between cameras and entities marked with
     /// [`RaycastPickable`]. Off by default. This setting is provided to give you fine-grained
     /// control over which cameras and entities should be used by the raycast backend at runtime.
     pub require_markers: bool,
+    /// When set to Ignore, hidden items can be raycasted against.
+    /// See [`RaycastSettings::visibility`] for more information.
+    pub raycast_visibility: RaycastVisibility,
+}
+
+impl Default for RaycastBackendSettings {
+    fn default() -> Self {
+        Self {
+            require_markers: false,
+            raycast_visibility: RaycastVisibility::MustBeVisibleAndInView,
+        }
+    }
 }
 
 /// Optional. Marks cameras and target entities that should be used in the raycast picking backend.
@@ -102,7 +114,7 @@ pub fn update_hits(
             })
         {
             let settings = RaycastSettings {
-                visibility: RaycastVisibility::MustBeVisibleAndInView,
+                visibility: backend_settings.raycast_visibility,
                 filter: &|entity| {
                     let marker_requirement =
                         !backend_settings.require_markers || marked_targets.get(entity).is_ok();
