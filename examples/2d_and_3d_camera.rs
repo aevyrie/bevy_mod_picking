@@ -55,9 +55,9 @@ fn setup(
     },));
 
     commands.spawn((
-        priteBundle {
+        SpriteBundle {
             sprite: Sprite {
-                custom_size: Vec2::new(100.0, 100.0),
+                custom_size: Some(Vec2::new(100.0, 100.0)),
                 color: Color::rgb(0.0, 0.0, 1.0),
                 ..default()
             },
@@ -69,7 +69,7 @@ fn setup(
 
     // camera 2
     commands.spawn((Camera2dBundle {
-        camera_2d: Camera3d {
+        camera_2d: Camera2d {
             clear_color: ClearColorConfig::None,
             ..default()
         },
