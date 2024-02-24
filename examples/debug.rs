@@ -144,7 +144,7 @@ fn setup_3d(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
-                half_size: Vec2::splat(5.0),
+                half_size: Vec2::splat(2.5),
                 ..default()
             }),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
