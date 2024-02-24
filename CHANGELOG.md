@@ -1,5 +1,7 @@
 # UNRELEASED
 
+- Fixed: replace all `.single` calls with matched `.get_single` calls to avoid crashing in
+  environments where there is no window available
 - Fixed: sprite picking depth is now consistent with other picking backends.
 - Fixed: entities with identical depth could be dropped due to the use of a BTreeMap to sort
   entities by depth. This has been changed to use a sorted Vec, to allow entities with the same
