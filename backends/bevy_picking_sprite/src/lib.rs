@@ -97,18 +97,18 @@ pub fn sprite_picking(
                     }
 
                     // Hit box in sprite coordinate system
-                    let (extents, anchor) = if let Some((sprite, image)) = sprite.zip(image) {
-                        let extents = sprite
-                            .custom_size
-                            .or_else(|| images.get(image).map(|f| f.size().as_vec2()))?;
-                        let anchor = sprite.anchor.as_vec();
-                        (extents, anchor)
-                    } else if let Some((sprite, atlas)) = sprite.zip(atlas) {
+                    let (extents, anchor) = if let Some((sprite, atlas)) = sprite.zip(atlas) {
                         let extents = sprite.custom_size.or_else(|| {
                             texture_atlas_layout
                                 .get(&atlas.layout)
                                 .map(|f| f.textures[atlas.index].size())
                         })?;
+                        let anchor = sprite.anchor.as_vec();
+                        (extents, anchor)
+                    } else if let Some((sprite, image)) = sprite.zip(image) {
+                        let extents = sprite
+                            .custom_size
+                            .or_else(|| images.get(image).map(|f| f.size().as_vec2()))?;
                         let anchor = sprite.anchor.as_vec();
                         (extents, anchor)
                     } else {
