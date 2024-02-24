@@ -124,12 +124,9 @@ pub fn sprite_picking(
                     is_cursor_in_sprite && pickable.map(|p| p.should_block_lower) != Some(false);
 
                 // HitData requires a depth as calculated from the camera's near clipping plane
-                let depth =  -cam_ortho.near -sprite_transform.translation().z;
+                let depth = -cam_ortho.near - sprite_transform.translation().z;
 
-                is_cursor_in_sprite.then_some((
-                    entity,
-                    HitData::new(cam_entity, depth, None, None),
-                ))
+                is_cursor_in_sprite.then_some((entity, HitData::new(cam_entity, depth, None, None)))
             })
             .collect();
 
