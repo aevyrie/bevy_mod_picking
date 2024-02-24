@@ -143,7 +143,7 @@ pub mod ray {
         }
     }
 
-    /// A map from [`RayId`] to [`Ray`].
+    /// A map from [`RayId`] to [`Ray3d`].
     ///
     /// This map is cleared and re-populated every frame before any backends run. Ray-based picking
     /// backends should use this when possible, as it automatically handles viewports, DPI, and
@@ -151,7 +151,7 @@ pub mod ray {
     ///
     /// ## Usage
     ///
-    /// Iterate over each [`Ray`] and its [`RayId`] with [`RayMap::iter`].
+    /// Iterate over each [`Ray3d`] and its [`RayId`] with [`RayMap::iter`].
     ///
     /// ```
     /// # use bevy_ecs::prelude::*;
