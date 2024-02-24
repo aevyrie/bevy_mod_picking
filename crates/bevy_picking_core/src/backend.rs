@@ -154,10 +154,13 @@ pub mod ray {
     /// Iterate over each [`Ray`] and its [`RayId`] with [`RayMap::iter`].
     ///
     /// ```
+    /// # use bevy_ecs::prelude::*;
+    /// # use bevy_picking_core::backend::ray::RayMap;
+    /// # use bevy_picking_core::backend::PointerHits;
     /// // My raycasting backend
     /// pub fn update_hits(ray_map: Res<RayMap>, mut output_events: EventWriter<PointerHits>,) {
     ///     for (&ray_id, &ray) in ray_map.iter() {
-    ///         /// Run a raycast with each ray, returning any `PointerHits` found.
+    ///         // Run a raycast with each ray, returning any `PointerHits` found.
     ///     }
     /// }
     /// ```
