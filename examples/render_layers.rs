@@ -23,7 +23,10 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Plane3d::default()),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
+                half_size: Vec2::splat(5.0),
+                ..default()
+            }),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
             ..default()
         },
@@ -43,7 +46,6 @@ fn setup(
     // light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },
