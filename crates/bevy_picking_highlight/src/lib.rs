@@ -288,7 +288,7 @@ pub fn get_initial_highlight_asset<T: Asset>(
         match highlighting_query.get_mut(entity) {
             Ok(Some(mut highlighting)) => highlighting.initial = material.to_owned(),
             _ => {
-                commands.entity(entity).insert(InitialHighlight {
+                commands.entity(entity).try_insert(InitialHighlight {
                     initial: material.to_owned(),
                 });
             }

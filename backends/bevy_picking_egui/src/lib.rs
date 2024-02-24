@@ -67,7 +67,7 @@ pub fn update_settings(
                     .remove::<bevy_picking_selection::NoDeselect>(),
                 false => commands
                     .entity(entity)
-                    .insert(bevy_picking_selection::NoDeselect),
+                    .try_insert(bevy_picking_selection::NoDeselect),
             };
         }
     }

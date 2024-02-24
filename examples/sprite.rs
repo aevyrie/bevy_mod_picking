@@ -1,8 +1,12 @@
 //! Demonstrates how to use the bevy_sprite picking backend. This backend simply tests the bounds of
 //! a sprite.
+//!
+//! This also renders a 3d view in the background, to demonstrate and test that camera order is
+//! respected across different backends, in this case the sprite and 3d raycasting backends.
 
 use bevy::{prelude::*, sprite::Anchor};
 use bevy_mod_picking::prelude::*;
+use bevy_render::mesh::shape::Cube;
 
 fn main() {
     App::new()
@@ -10,7 +14,7 @@ fn main() {
             DefaultPlugins.set(low_latency_window_plugin()),
             DefaultPickingPlugins,
         ))
-        .add_systems(Startup, (setup, setup_atlas))
+        .add_systems(Startup, (setup, setup_3d, setup_atlas))
         .add_systems(Update, (move_sprite, animate_sprite))
         .run();
 }
@@ -32,7 +36,14 @@ fn move_sprite(
 
 /// Set up a scene that tests all sprite anchor types.
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle {
+        camera: Camera {
+            order: 1,
+            clear_color: ClearColorConfig::None,
+            ..default()
+        },
+        ..default()
+    });
 
     let len = 128.0;
     let sprite_size = Some(Vec2::splat(len / 2.0));
@@ -135,4 +146,41 @@ fn setup_atlas(
         animation_indices,
         AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
     ));
+}
+
+fn setup_3d(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Plane3d::default()),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
+            ..default()
+        },
+        PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
+    ));
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Cuboid::default()),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
+            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+            ..default()
+        },
+        PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
+    ));
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            intensity: 1500.0,
+            shadows_enabled: true,
+            ..default()
+        },
+        transform: Transform::from_xyz(4.0, 8.0, -4.0),
+        ..default()
+    });
+    commands.spawn((Camera3dBundle {
+        transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..default()
+    },));
 }

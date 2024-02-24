@@ -37,7 +37,13 @@ pub fn touch_pick_events(
         let pointer = PointerId::Touch(touch.id);
         let location = Location {
             target: RenderTarget::Window(WindowRef::Primary)
-                .normalize(Some(windows.single().0))
+                .normalize(Some(
+                    match windows.get_single() {
+                        Ok(w) => w,
+                        Err(_) => continue,
+                    }
+                    .0,
+                ))
                 .unwrap(),
             position: touch.position,
         };

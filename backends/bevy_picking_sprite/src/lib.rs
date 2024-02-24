@@ -35,7 +35,7 @@ impl Plugin for SpriteBackend {
 /// Checks if any sprite entities are under each pointer
 pub fn sprite_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    cameras: Query<(Entity, &Camera, &GlobalTransform)>,
+    cameras: Query<(Entity, &Camera, &GlobalTransform, &OrthographicProjection)>,
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
     texture_atlas_layout: Res<Assets<TextureAtlasLayout>>,
@@ -64,13 +64,16 @@ pub fn sprite_picking(
         pointer_location.location().map(|loc| (pointer, loc))
     }) {
         let mut blocked = false;
-        let Some((cam_entity, camera, cam_transform)) = cameras
+        let Some((cam_entity, camera, cam_transform, cam_ortho)) = cameras
             .iter()
-            .filter(|(_, camera, _)| camera.is_active)
-            .find(|(_, camera, _)| {
+            .filter(|(_, camera, _, _)| camera.is_active)
+            .find(|(_, camera, _, _)| {
                 camera
                     .target
-                    .normalize(Some(primary_window.single()))
+                    .normalize(Some(match primary_window.get_single() {
+                        Ok(w) => w,
+                        Err(_) => return false,
+                    }))
                     .unwrap()
                     == location.target
             })
@@ -125,10 +128,11 @@ pub fn sprite_picking(
                     blocked = is_cursor_in_sprite
                         && pickable.map(|p| p.should_block_lower) != Some(false);
 
-                    is_cursor_in_sprite.then_some((
-                        entity,
-                        HitData::new(cam_entity, sprite_transform.translation().z, None, None),
-                    ))
+                    // HitData requires a depth as calculated from the camera's near clipping plane
+                    let depth = -cam_ortho.near - sprite_transform.translation().z;
+
+                    is_cursor_in_sprite
+                        .then_some((entity, HitData::new(cam_entity, depth, None, None)))
                 },
             )
             .collect();
