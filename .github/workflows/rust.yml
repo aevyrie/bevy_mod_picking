@@ -70,3 +70,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2.7.0
       - run: cargo test --workspace --all-features --all-targets
+
+  # Note: cargo test --all-targets disables doc tests, so we have to add this to test docs
+  doctest:
+    runs-on: ubuntu-latest
+    needs: [setup]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2.7.0
+      - run: cargo test --workspace --all-features --doc
+    
