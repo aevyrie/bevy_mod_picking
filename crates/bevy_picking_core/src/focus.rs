@@ -216,7 +216,7 @@ pub fn update_interactions(
         if let Ok(mut interaction) = interact.get_mut(hovered_entity) {
             *interaction = new_interaction;
         } else if let Some(mut entity_commands) = commands.get_entity(hovered_entity) {
-            entity_commands.insert(new_interaction);
+            entity_commands.try_insert(new_interaction);
         }
     }
 }

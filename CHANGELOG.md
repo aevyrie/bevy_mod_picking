@@ -1,5 +1,6 @@
 # UNRELEASED
 
+- Fixed: replaced uses of `.insert` with `.try_insert`, where they could potentially panic.
 - Fixed: replace all `.single` calls with matched `.get_single` calls to avoid crashing in
   environments where there is no window available
 - Fixed: sprite picking depth is now consistent with other picking backends.
