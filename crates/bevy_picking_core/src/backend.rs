@@ -85,16 +85,16 @@ impl PointerHits {
     }
 }
 
-/// Holds data from a successful pointer hit test.
-///
-/// `depth` only needs to be self-consistent with other [`PointerHits`]s using the same
-/// [`RenderTarget`](bevy_render::camera::RenderTarget).
+/// Holds data from a successful pointer hit test. See [`HitData::depth`] for important details.
 #[derive(Clone, Debug, PartialEq, Reflect)]
 pub struct HitData {
     /// The camera entity used to detect this hit. Useful when you need to find the ray that was
     /// casted for this hit when using a raycasting backend.
     pub camera: Entity,
-    /// The distance from the pointer to the entity into the screen, or depth.
+    /// `depth` only needs to be self-consistent with other [`PointerHits`]s using the same
+    /// [`RenderTarget`](bevy_render::camera::RenderTarget). However, it is recommended to use the
+    /// distance from the pointer to the hit, measured from the near plane of the camera, to the
+    /// point, in world space.
     pub depth: f32,
     /// The position of the intersection in the world, if the data is available from the backend.
     pub position: Option<Vec3>,
