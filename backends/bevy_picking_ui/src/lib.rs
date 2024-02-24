@@ -96,7 +96,10 @@ pub fn ui_picking(
                 )
             })
     }) {
-        let window_entity = primary_window.single();
+        let window_entity = match primary_window.get_single() {
+            Ok(w) => w,
+            Err(_) => continue,
+        };
 
         // Find the topmost bevy_ui camera with the same target as this pointer.
         //

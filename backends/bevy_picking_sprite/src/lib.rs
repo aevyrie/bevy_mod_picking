@@ -69,7 +69,10 @@ pub fn sprite_picking(
             .find(|(_, camera, _, _)| {
                 camera
                     .target
-                    .normalize(Some(primary_window.single()))
+                    .normalize(Some(match primary_window.get_single() {
+                        Ok(w) => w,
+                        Err(_) => return false,
+                    }))
                     .unwrap()
                     == location.target
             })

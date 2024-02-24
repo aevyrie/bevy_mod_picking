@@ -36,7 +36,13 @@ pub fn mouse_pick_events(
             PointerId::Mouse,
             Location {
                 target: RenderTarget::Window(WindowRef::Entity(event.window))
-                    .normalize(Some(windows.single().0))
+                    .normalize(Some(
+                        match windows.get_single() {
+                            Ok(w) => w,
+                            Err(_) => continue,
+                        }
+                        .0,
+                    ))
                     .unwrap(),
                 position: event.position,
             },
