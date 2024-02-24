@@ -46,7 +46,7 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
+            mesh: meshes.add(Plane3d::default()),
             material: materials.add(StandardMaterial {
                 base_color_texture: Some(asset_server.load("images/boovy.png")),
                 ..default()
@@ -60,7 +60,7 @@ fn setup(
     // cube
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+            mesh: meshes.add(Cuboid::default()),
             material: materials.add(StandardMaterial {
                 base_color_texture: Some(asset_server.load("images/boovy.png")),
                 ..default()

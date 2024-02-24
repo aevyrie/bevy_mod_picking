@@ -6,7 +6,6 @@
 
 use bevy::{prelude::*, sprite::Anchor};
 use bevy_mod_picking::prelude::*;
-use bevy_render::mesh::shape::Cube;
 
 fn main() {
     App::new()

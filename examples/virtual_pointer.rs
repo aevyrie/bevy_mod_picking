@@ -61,7 +61,7 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
+            mesh: meshes.add(Plane3d::default()),
             material: materials.add(Color::WHITE),
             ..default()
         },
@@ -71,7 +71,7 @@ fn setup(
     // cube
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+            mesh: meshes.add(Cuboid::default()),
             material: materials.add(Color::WHITE),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()

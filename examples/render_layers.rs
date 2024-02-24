@@ -23,7 +23,7 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(shape::Plane::from_size(5.0)),
+            mesh: meshes.add(Plane3d::default()),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
             ..default()
         },
@@ -32,13 +32,7 @@ fn setup(
     // sphere
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(
-                Mesh::try_from(shape::Icosphere {
-                    subdivisions: 3,
-                    radius: 0.5,
-                })
-                .unwrap(),
-            ),
+            mesh: meshes.add(Sphere::default()),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..default()

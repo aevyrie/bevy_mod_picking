@@ -31,7 +31,7 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let mesh = &meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
+    let mesh = &meshes.add(Cuboid::default());
     let material = &materials.add(Color::rgb(0.8, 0.7, 0.6));
 
     for x in -WIDTH..=WIDTH {

@@ -37,7 +37,7 @@ fn setup(
         // entities, even though they lack `On<Pointer<Event>>` components.
         .spawn((
             PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                mesh: meshes.add(Cuboid::default()),
                 material: materials.add(Color::WHITE),
                 ..default()
             },
