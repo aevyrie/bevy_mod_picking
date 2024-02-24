@@ -14,15 +14,14 @@ use bevy_ecs::prelude::*;
 use bevy_reflect::prelude::*;
 use bevy_utils::{FloatOrd, HashMap};
 
-/// A map of entities sorted by depth.
-type DepthMap = BTreeMap<FloatOrd, (Entity, HitData)>;
+type DepthSortedHits = Vec<(Entity, HitData)>;
 
 /// Events returned from backends can be grouped with an order field. This allows picking to work
 /// with multiple layers of rendered output to the same render target.
 type PickLayer = FloatOrd;
 
 /// Maps [`PickLayer`]s to the map of entities within that pick layer, sorted by depth.
-type LayerMap = BTreeMap<PickLayer, DepthMap>;
+type LayerMap = BTreeMap<PickLayer, DepthSortedHits>;
 
 /// Maps Pointers to a [`LayerMap`]. Note this is much more complex than the [`HoverMap`] because
 /// this data structure is used to sort entities by layer then depth for every pointer.
@@ -108,10 +107,14 @@ fn build_over_map(
             .or_insert_with(BTreeMap::new);
         for (entity, pick_data) in entities_under_pointer.picks.iter() {
             let layer = entities_under_pointer.order;
-            let depth_map = layer_map
-                .entry(FloatOrd(layer))
-                .or_insert_with(BTreeMap::new);
-            depth_map.insert(FloatOrd(pick_data.depth), (*entity, pick_data.clone()));
+            let hits = layer_map.entry(FloatOrd(layer)).or_insert_with(Vec::new);
+            hits.push((*entity, pick_data.clone()));
+        }
+    }
+
+    for layers in pointer_over_map.values_mut() {
+        for hits in layers.values_mut() {
+            hits.sort_by_key(|(_, hit)| FloatOrd(hit.depth));
         }
     }
 }
@@ -130,11 +133,7 @@ fn build_hover_map(
         let pointer_entity_set = hover_map.entry(*pointer_id).or_insert_with(HashMap::new);
         if let Some(layer_map) = over_map.get(pointer_id) {
             // Note we reverse here to start from the highest layer first.
-            for (entity, pick_data) in layer_map
-                .values()
-                .rev()
-                .flat_map(|depth_map| depth_map.values())
-            {
+            for (entity, pick_data) in layer_map.values().rev().flatten() {
                 if let Ok(pickable) = pickable.get(*entity) {
                     if pickable.should_emit_events {
                         pointer_entity_set.insert(*entity, pick_data.clone());
