@@ -7,8 +7,8 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
-        .add_systems(Startup, (setup, setup_3d))
-        .add_systems(Update, update_button_colors)
+        .add_systems(Startup, (setup_3d, setup_ui).chain())
+        .add_systems(Update, (update_button_colors, set_camera_viewports))
         .insert_resource(UiScale(1.5))
         .run();
 }
@@ -27,7 +27,7 @@ fn update_button_colors(
     }
 }
 
-fn setup(mut commands: Commands) {
+fn setup_ui(mut commands: Commands, camera: Query<Entity, With<RightCamera>>) {
     let root = commands
         .spawn((
             NodeBundle {
@@ -50,6 +50,7 @@ fn setup(mut commands: Commands) {
             // width of the buttons, but will be invisible. Try commenting out this line or changing
             // it to see what happens.
             Pickable::IGNORE,
+            TargetCamera(camera.single()),
         ))
         .id();
 
@@ -94,14 +95,69 @@ fn setup_3d(
         transform: Transform::from_xyz(4.0, 8.0, -4.0),
         ..default()
     });
-    commands.spawn((Camera3dBundle {
-        transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-        camera: Camera {
-            order: 1,
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(0.0, 20.0, -10.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        ..default()
-    },));
+        LeftCamera,
+    ));
+
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(10.0, 10., 15.0).looking_at(Vec3::ZERO, Vec3::Y),
+            camera: Camera {
+                // don't clear on the second camera because the first camera already cleared the
+                // window
+                clear_color: ClearColorConfig::None,
+                // Renders the right camera after the left camera, which has a default priority
+                // of 0
+                order: 1,
+                ..default()
+            },
+            ..default()
+        },
+        RightCamera,
+    ));
+}
+
+#[derive(Component)]
+struct LeftCamera;
+
+#[derive(Component)]
+struct RightCamera;
+
+fn set_camera_viewports(
+    windows: Query<&Window>,
+    mut resize_events: EventReader<bevy::window::WindowResized>,
+    mut left_camera: Query<&mut Camera, (With<LeftCamera>, Without<RightCamera>)>,
+    mut right_camera: Query<&mut Camera, With<RightCamera>>,
+) {
+    // We need to dynamically resize the camera's viewports whenever the window size changes so then
+    // each camera always takes up half the screen. A resize_event is sent when the window is first
+    // created, allowing us to reuse this system for initial setup.
+    for resize_event in resize_events.read() {
+        let window = windows.get(resize_event.window).unwrap();
+        let mut left_camera = left_camera.single_mut();
+        left_camera.viewport = Some(bevy::render::camera::Viewport {
+            physical_position: UVec2::new(0, 0),
+            physical_size: UVec2::new(
+                window.resolution.physical_width() / 2,
+                window.resolution.physical_height(),
+            ),
+            ..default()
+        });
+
+        let mut right_camera = right_camera.single_mut();
+        right_camera.viewport = Some(bevy::render::camera::Viewport {
+            physical_position: UVec2::new(window.resolution.physical_width() / 2, 0),
+            physical_size: UVec2::new(
+                window.resolution.physical_width() / 2,
+                window.resolution.physical_height(),
+            ),
+            ..default()
+        });
+    }
 }
 
 trait NewButton {

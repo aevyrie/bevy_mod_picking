@@ -354,36 +354,61 @@ impl Debug for DebugName {
 /// Draw text on each cursor with debug info
 pub fn debug_draw(
     mut commands: Commands,
+    camera_query: Query<(Entity, &Camera)>,
+    primary_window: Query<Entity, With<bevy_window::PrimaryWindow>>,
     pointers: Query<(Entity, &pointer::PointerId, &PointerDebug)>,
     scale: Res<bevy_ui::UiScale>,
 ) {
     use bevy_text::prelude::*;
     use bevy_ui::prelude::*;
     for (entity, id, debug) in pointers.iter() {
-        let Some(location) = &debug.location else {
+        let Some(pointer_location) = &debug.location else {
             continue;
         };
         let text = format!("{id:?}\n{debug}");
 
-        commands
-            .entity(entity)
-            .insert(TextBundle {
-                text: Text::from_section(
-                    text,
-                    TextStyle {
-                        font_size: 12.0,
-                        color: Color::WHITE,
+        for camera in camera_query
+            .iter()
+            .map(|(entity, camera)| {
+                (
+                    entity,
+                    camera.target.normalize(primary_window.get_single().ok()),
+                )
+            })
+            .filter_map(|(entity, target)| Some(entity).zip(target))
+            .filter(|(_entity, target)| target == &pointer_location.target)
+            .map(|(cam_entity, _target)| cam_entity)
+        {
+            let mut pointer_pos = pointer_location.position;
+            if let Some(viewport) = camera_query
+                .get(camera)
+                .ok()
+                .and_then(|(_, camera)| camera.logical_viewport_rect())
+            {
+                pointer_pos -= viewport.min;
+            }
+
+            commands
+                .entity(entity)
+                .insert(TextBundle {
+                    text: Text::from_section(
+                        text.clone(),
+                        TextStyle {
+                            font_size: 12.0,
+                            color: Color::WHITE,
+                            ..Default::default()
+                        },
+                    ),
+                    style: Style {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(pointer_pos.x + 5.0) / scale.0,
+                        top: Val::Px(pointer_pos.y + 5.0) / scale.0,
                         ..Default::default()
                     },
-                ),
-                style: Style {
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(location.position.x + 5.0) / scale.0,
-                    top: Val::Px(location.position.y + 5.0) / scale.0,
                     ..Default::default()
-                },
-                ..Default::default()
-            })
-            .insert(Pickable::IGNORE);
+                })
+                .insert(Pickable::IGNORE)
+                .insert(TargetCamera(camera));
+        }
     }
 }
