@@ -191,6 +191,8 @@ pub mod backends {
     pub use bevy_picking_sprite as sprite;
     #[cfg(feature = "backend_bevy_ui")]
     pub use bevy_picking_ui as bevy_ui;
+    #[cfg(feature = "backend_xpbd")]
+    pub use bevy_picking_xpbd as xpbd;
 }
 
 /// Common imports
@@ -235,6 +237,8 @@ pub mod prelude {
     pub use backends::shader::prelude::*;
     #[cfg(feature = "backend_sprite")]
     pub use backends::sprite::prelude::*;
+    #[cfg(feature = "backend_xpbd")]
+    pub use backends::xpbd::prelude::*;
 }
 
 /// Makes an entity pickable.
@@ -310,6 +314,10 @@ impl bevy_app::PluginGroup for DefaultPickingPlugins {
         #[cfg(feature = "backend_rapier")]
         {
             builder = builder.add(bevy_picking_rapier::RapierBackend);
+        }
+        #[cfg(feature = "backend_xpbd")]
+        {
+            builder = builder.add(bevy_picking_xpbd::XpbdBackend);
         }
         #[cfg(feature = "backend_shader")]
         {
