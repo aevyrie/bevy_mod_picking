@@ -75,6 +75,7 @@ all = [
     "backend_rapier",
     "backend_sprite",
     "backend_egui",
+    "backend_xpbd",
 ]
 default = [
     "backend_raycast",
