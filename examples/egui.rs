@@ -18,6 +18,7 @@ fn main() {
             DefaultPickingPlugins,
             EguiPlugin,
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .add_systems(Update, ui_example)
         .run();

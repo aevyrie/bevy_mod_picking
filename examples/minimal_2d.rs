@@ -7,6 +7,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .run();
 }

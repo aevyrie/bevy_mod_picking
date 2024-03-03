@@ -10,6 +10,7 @@ fn main() {
         DefaultPickingPlugins,
         SpinPlugin,
     ))
+    .insert_resource(DebugPickingMode::Normal)
     .add_systems(Startup, setup);
     #[cfg(feature = "backend_egui")]
     app.add_plugins(bevy_egui::EguiPlugin);

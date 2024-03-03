@@ -17,11 +17,11 @@ use bevy_utils::tracing::{debug, trace};
 /// This resource determines the runtime behavior of the debug plugin.
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Resource)]
 pub enum DebugPickingMode {
-    /// Only log non-noisy events
+    /// Only log non-noisy events, show the debug overlay.
     Normal,
-    /// Log all events, including noisy events like `Move` and `Drag`
+    /// Log all events, including noisy events like `Move` and `Drag`, show the debug overlay.
     Noisy,
-    /// Do not show the debug interface or log any messages
+    /// Do not show the debug overlay or log any messages.
     #[default]
     Disabled,
 }

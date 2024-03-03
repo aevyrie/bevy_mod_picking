@@ -9,6 +9,7 @@ fn main() {
             DefaultPlugins.set(low_latency_window_plugin()),
             DefaultPickingPlugins,
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .run();
 }

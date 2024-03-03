@@ -17,6 +17,7 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .insert_resource(RapierBackendSettings {
             require_markers: true, // Optional: only needed when you want fine-grained control over which cameras and entities should be used with the rapier picking backend. This is disabled by default, and no marker components are required on cameras or colliders. This resource is inserted by default, you only need to add it if you want to override the default settings.
         })

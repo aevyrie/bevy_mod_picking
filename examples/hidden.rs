@@ -8,6 +8,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
+        .insert_resource(DebugPickingMode::Normal)
         .insert_resource(RaycastBackendSettings {
             raycast_visibility: RaycastVisibility::Ignore,
             ..Default::default()

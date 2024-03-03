@@ -16,6 +16,7 @@ fn main() {
             DefaultPickingPlugins,
             bevy_egui::EguiPlugin, // Nicer pointer debug overlay, useful for this example.
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .add_systems(Update, move_virtual_pointer)
         .run();

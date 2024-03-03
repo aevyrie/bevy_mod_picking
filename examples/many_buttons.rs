@@ -30,6 +30,7 @@ fn main() {
             .build()
             .disable::<DebugPickingPlugin>(),
     )
+    .insert_resource(DebugPickingMode::Normal)
     .add_systems(Startup, setup)
     .add_systems(Update, update_button_colors);
 

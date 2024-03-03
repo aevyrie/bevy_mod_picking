@@ -10,6 +10,7 @@ fn main() {
             DefaultPickingPlugins,
             bevy_egui::EguiPlugin,
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .add_systems(Update, set_camera_viewports)
         .run();

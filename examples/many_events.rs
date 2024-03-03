@@ -17,6 +17,7 @@ fn main() {
                 .build()
                 .disable::<DebugPickingPlugin>(),
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .run();
 }

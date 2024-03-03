@@ -15,6 +15,7 @@ fn main() {
             ..default()
         }))
         .add_plugins(DefaultPickingPlugins)
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .run();
 }

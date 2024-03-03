@@ -13,6 +13,7 @@ fn main() {
             DefaultPlugins.set(low_latency_window_plugin()),
             DefaultPickingPlugins,
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, (setup, setup_3d, setup_atlas))
         .add_systems(Update, (move_sprite, animate_sprite))
         .run();

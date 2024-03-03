@@ -16,6 +16,7 @@ fn main() {
                 .disable::<DefaultHighlightingPlugin>(),
             bevy_egui::EguiPlugin,
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .add_event::<DoSomethingComplex>()
         .add_systems(

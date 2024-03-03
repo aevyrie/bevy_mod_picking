@@ -10,6 +10,7 @@ fn main() {
         // cargo features. By default, the bevy_mod_raycast backend is enabled via the
         // `backend_raycast` feature.
         .add_plugins(DefaultPickingPlugins)
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .run();
 }
