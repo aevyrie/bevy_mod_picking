@@ -17,6 +17,7 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .insert_resource(RapierBackendSettings {
             require_markers: true, // Optional: only needed when you want fine-grained control over which cameras and entities should be used with the rapier picking backend. This is disabled by default, and no marker components are required on cameras or colliders. This resource is inserted by default, you only need to add it if you want to override the default settings.
         })
@@ -31,8 +32,11 @@ fn setup(
 ) {
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
-            material: materials.add(Color::WHITE.into()),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
+                half_size: Vec2::splat(2.5),
+                ..default()
+            }),
+            material: materials.add(Color::WHITE),
             ..default()
         },
         Collider::cuboid(2.5, 0.01, 2.5),
@@ -41,8 +45,8 @@ fn setup(
     ));
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::WHITE.into()),
+            mesh: meshes.add(Cuboid::default()),
+            material: materials.add(Color::WHITE),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
@@ -52,7 +56,6 @@ fn setup(
     ));
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },

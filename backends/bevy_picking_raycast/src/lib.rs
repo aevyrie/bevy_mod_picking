@@ -111,7 +111,7 @@ pub fn update_hits(
             },
         };
         let picks = raycast
-            .cast_ray(ray.into(), &settings)
+            .cast_ray(ray, &settings)
             .iter()
             .map(|(entity, hit)| {
                 let hit_data = HitData::new(

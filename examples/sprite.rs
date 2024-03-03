@@ -13,6 +13,7 @@ fn main() {
             DefaultPlugins.set(low_latency_window_plugin()),
             DefaultPickingPlugins,
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, (setup, setup_3d, setup_atlas))
         .add_systems(Update, (move_sprite, animate_sprite))
         .run();
@@ -36,11 +37,9 @@ fn move_sprite(
 /// Set up a scene that tests all sprite anchor types.
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle {
-        camera_2d: Camera2d {
-            clear_color: bevy::core_pipeline::clear_color::ClearColorConfig::None,
-        },
         camera: Camera {
             order: 1,
+            clear_color: ClearColorConfig::None,
             ..default()
         },
         ..default()
@@ -110,11 +109,7 @@ struct AnimationTimer(Timer);
 
 fn animate_sprite(
     time: Res<Time>,
-    mut query: Query<(
-        &AnimationIndices,
-        &mut AnimationTimer,
-        &mut TextureAtlasSprite,
-    )>,
+    mut query: Query<(&AnimationIndices, &mut AnimationTimer, &mut TextureAtlas)>,
 ) {
     for (indices, mut timer, mut sprite) in &mut query {
         timer.tick(time.delta());
@@ -131,18 +126,20 @@ fn animate_sprite(
 fn setup_atlas(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     let texture_handle = asset_server.load("images/gabe-idle-run.png");
-    let texture_atlas =
-        TextureAtlas::from_grid(texture_handle, Vec2::new(24.0, 24.0), 7, 1, None, None);
-    let texture_atlas_handle = texture_atlases.add(texture_atlas);
+    let layout = TextureAtlasLayout::from_grid(Vec2::new(24.0, 24.0), 7, 1, None, None);
+    let texture_atlas_layout_handle = texture_atlas_layouts.add(layout);
     // Use only the subset of sprites in the sheet that make up the run animation
     let animation_indices = AnimationIndices { first: 1, last: 6 };
     commands.spawn((
         SpriteSheetBundle {
-            texture_atlas: texture_atlas_handle,
-            sprite: TextureAtlasSprite::new(animation_indices.first),
+            texture: texture_handle,
+            atlas: TextureAtlas {
+                layout: texture_atlas_layout_handle,
+                index: animation_indices.first,
+            },
             transform: Transform::from_xyz(300.0, 0.0, 0.0).with_scale(Vec3::splat(6.0)),
             ..default()
         },
@@ -158,16 +155,19 @@ fn setup_3d(
 ) {
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
+                half_size: Vec2::splat(2.5),
+                ..default()
+            }),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
             ..default()
         },
         PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
     ));
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            mesh: meshes.add(Cuboid::default()),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
@@ -175,7 +175,6 @@ fn setup_3d(
     ));
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },

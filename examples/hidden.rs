@@ -8,6 +8,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
         .add_plugins(DefaultPickingPlugins)
+        .insert_resource(DebugPickingMode::Normal)
         .insert_resource(RaycastBackendSettings {
             raycast_visibility: RaycastVisibility::Ignore,
             ..Default::default()
@@ -24,8 +25,11 @@ fn setup(
 ) {
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
+                half_size: Vec2::splat(2.5),
+                ..default()
+            }),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
             ..default()
         },
         PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
@@ -33,8 +37,8 @@ fn setup(
     commands.spawn((
         PbrBundle {
             visibility: Visibility::Hidden,
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            mesh: meshes.add(Cuboid::default()),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
@@ -49,7 +53,6 @@ fn setup(
 
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },

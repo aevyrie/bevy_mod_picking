@@ -16,6 +16,7 @@ fn main() {
             DefaultPickingPlugins,
             bevy_egui::EguiPlugin, // Nicer pointer debug overlay, useful for this example.
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .add_systems(Update, move_virtual_pointer)
         .run();
@@ -61,8 +62,11 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
-            material: materials.add(Color::WHITE.into()),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
+                half_size: Vec2::splat(2.5),
+                ..default()
+            }),
+            material: materials.add(Color::WHITE),
             ..default()
         },
         PickableBundle::default(), // <- Makes the mesh pickable.
@@ -71,8 +75,8 @@ fn setup(
     // cube
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::WHITE.into()),
+            mesh: meshes.add(Cuboid::default()),
+            material: materials.add(Color::WHITE),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
@@ -82,7 +86,6 @@ fn setup(
     // light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },

@@ -57,14 +57,16 @@ pub fn mouse_pick_events(
             MouseButton::Right => PointerButton::Secondary,
             MouseButton::Middle => PointerButton::Middle,
             MouseButton::Other(_) => continue,
+            MouseButton::Back => continue,
+            MouseButton::Forward => continue,
         };
 
         match input.state {
             ButtonState::Pressed => {
-                pointer_presses.send(InputPress::new_down(PointerId::Mouse, button))
+                pointer_presses.send(InputPress::new_down(PointerId::Mouse, button));
             }
             ButtonState::Released => {
-                pointer_presses.send(InputPress::new_up(PointerId::Mouse, button))
+                pointer_presses.send(InputPress::new_up(PointerId::Mouse, button));
             }
         }
     }

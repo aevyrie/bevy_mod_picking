@@ -1,5 +1,7 @@
 # UNRELEASED
 
+- Changed: simplified debug settings and examples. Debug settings can be changed with the
+  `DebugPickingMode` resource.
 - Fixed: replaced uses of `.insert` with `.try_insert`, where they could potentially panic.
 - Fixed: replace all `.single` calls with matched `.get_single` calls to avoid crashing in
   environments where there is no window available

@@ -119,7 +119,7 @@ pub mod ray {
 
     use crate::backend::prelude::{PointerId, PointerLocation};
     use bevy_ecs::prelude::*;
-    use bevy_math::Ray;
+    use bevy_math::Ray3d;
     use bevy_reflect::Reflect;
     use bevy_render::camera::Camera;
     use bevy_transform::prelude::GlobalTransform;
@@ -143,7 +143,7 @@ pub mod ray {
         }
     }
 
-    /// A map from [`RayId`] to [`Ray`].
+    /// A map from [`RayId`] to [`Ray3d`].
     ///
     /// This map is cleared and re-populated every frame before any backends run. Ray-based picking
     /// backends should use this when possible, as it automatically handles viewports, DPI, and
@@ -151,7 +151,7 @@ pub mod ray {
     ///
     /// ## Usage
     ///
-    /// Iterate over each [`Ray`] and its [`RayId`] with [`RayMap::iter`].
+    /// Iterate over each [`Ray3d`] and its [`RayId`] with [`RayMap::iter`].
     ///
     /// ```
     /// # use bevy_ecs::prelude::*;
@@ -166,17 +166,17 @@ pub mod ray {
     /// ```
     #[derive(Clone, Debug, Default, Resource)]
     pub struct RayMap {
-        map: HashMap<RayId, Ray>,
+        map: HashMap<RayId, Ray3d>,
     }
 
     impl RayMap {
         /// Iterates over all world space rays for every picking pointer.
-        pub fn iter(&self) -> Iter<'_, RayId, Ray> {
+        pub fn iter(&self) -> Iter<'_, RayId, Ray3d> {
             self.map.iter()
         }
 
         /// The hash map of all rays cast in the current frame.
-        pub fn map(&self) -> &HashMap<RayId, Ray> {
+        pub fn map(&self) -> &HashMap<RayId, Ray3d> {
             &self.map
         }
 
@@ -214,7 +214,7 @@ pub mod ray {
         camera: &Camera,
         camera_tfm: &GlobalTransform,
         pointer_loc: &PointerLocation,
-    ) -> Option<Ray> {
+    ) -> Option<Ray3d> {
         let pointer_loc = pointer_loc.location()?;
         if !pointer_loc.is_in_viewport(camera, primary_window_entity) {
             return None;

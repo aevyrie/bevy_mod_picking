@@ -23,14 +23,15 @@
 #![deny(missing_docs)]
 
 use bevy_app::prelude::*;
-use bevy_ecs::{prelude::*, query::WorldQuery};
-use bevy_render::{camera::NormalizedRenderTarget, prelude::*};
+use bevy_ecs::{prelude::*, query::QueryData};
+use bevy_math::Vec2;
+use bevy_render::prelude::*;
 use bevy_transform::prelude::*;
 use bevy_ui::{prelude::*, RelativeCursorPosition, UiStack};
+use bevy_utils::hashbrown::HashMap;
 use bevy_window::PrimaryWindow;
 
 use bevy_picking_core::backend::prelude::*;
-use bevy_picking_core::pointer::Location;
 
 /// Commonly used imports for the [`bevy_picking_ui`](crate) crate.
 pub mod prelude {
@@ -47,8 +48,8 @@ impl Plugin for BevyUiBackend {
 }
 
 /// Main query from bevy's `ui_focus_system`
-#[derive(WorldQuery)]
-#[world_query(mutable)]
+#[derive(QueryData)]
+#[query_data(mutable)]
 pub struct NodeQuery {
     entity: Entity,
     node: &'static Node,
@@ -57,6 +58,7 @@ pub struct NodeQuery {
     pickable: Option<&'static Pickable>,
     calculated_clip: Option<&'static CalculatedClip>,
     view_visibility: Option<&'static ViewVisibility>,
+    target_camera: Option<&'static TargetCamera>,
 }
 
 /// Computes the UI node entities under each pointer.
@@ -65,102 +67,129 @@ pub struct NodeQuery {
 /// we need for determining picking.
 pub fn ui_picking(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    cameras: Query<(Entity, &Camera, Option<&UiCameraConfig>)>,
+    camera_query: Query<(Entity, &Camera, Has<IsDefaultUiCamera>)>,
+    default_ui_camera: DefaultUiCamera,
     primary_window: Query<Entity, With<PrimaryWindow>>,
+    ui_scale: Res<UiScale>,
     ui_stack: Res<UiStack>,
-    ui_scale: Option<Res<UiScale>>,
     mut node_query: Query<NodeQuery>,
     mut output: EventWriter<PointerHits>,
 ) {
-    let ui_scale = ui_scale.map(|f| f.0).unwrap_or(1.0) as f32;
-    for (pointer, location) in pointers.iter().filter_map(|(pointer, pointer_location)| {
-        pointer_location
-            .location()
-            // TODO: update when proper multi-window UI is implemented
-            .filter(|loc| {
-                if let NormalizedRenderTarget::Window(window) = loc.target {
-                    if primary_window.contains(window.entity()) {
-                        return true;
-                    }
-                }
-                false
-            })
-            .cloned()
-            .map(|loc| {
+    // For each camera, the pointer and its position
+    let mut pointer_pos_by_camera = HashMap::<Entity, HashMap<PointerId, Vec2>>::new();
+
+    for (pointer_id, pointer_location) in
+        pointers.iter().filter_map(|(pointer, pointer_location)| {
+            Some(*pointer).zip(pointer_location.location().cloned())
+        })
+    {
+        // This pointer is associated with a render target, which could be used by multiple
+        // cameras. We want to ensure we return all cameras with a matching target.
+        for camera in camera_query
+            .iter()
+            .map(|(entity, camera, _)| {
                 (
-                    pointer,
-                    Location {
-                        position: loc.position / ui_scale,
-                        ..loc
-                    },
+                    entity,
+                    camera.target.normalize(primary_window.get_single().ok()),
                 )
             })
-    }) {
-        let window_entity = match primary_window.get_single() {
-            Ok(w) => w,
-            Err(_) => continue,
-        };
+            .filter_map(|(entity, target)| Some(entity).zip(target))
+            .filter(|(_entity, target)| target == &pointer_location.target)
+            .map(|(cam_entity, _target)| cam_entity)
+        {
+            let Ok((_, camera_data, _)) = camera_query.get(camera) else {
+                continue;
+            };
+            let mut pointer_pos = pointer_location.position;
+            if let Some(viewport) = camera_data.logical_viewport_rect() {
+                pointer_pos -= viewport.min;
+            }
+            let scaled_pointer_pos = pointer_pos / **ui_scale;
+            pointer_pos_by_camera
+                .entry(camera)
+                .or_default()
+                .insert(pointer_id, scaled_pointer_pos);
+        }
+    }
 
-        // Find the topmost bevy_ui camera with the same target as this pointer.
-        //
-        // Bevy ui can render on many cameras, but it will be the same UI, and we only want to
-        // consider the topmost one rendering UI in this window.
-        let mut ui_cameras: Vec<_> = cameras
-            .iter()
-            .filter(|(_entity, camera, _)| {
-                camera.is_active
-                    && camera.target.normalize(Some(window_entity)).unwrap() == location.target
-            })
-            .filter(|(_, _, ui_config)| ui_config.map(|config| config.show_ui).unwrap_or(true))
-            .collect();
-        ui_cameras.sort_by_key(|(_, camera, _)| camera.order);
+    // The list of node entities hovered for each (camera, pointer) combo
+    let mut hit_nodes = HashMap::<(Entity, PointerId), Vec<Entity>>::new();
 
-        // The last camera in the list will be the one with the highest order, and be the topmost.
-        let Some((camera_entity, camera, _)) = ui_cameras.last() else {
+    // prepare an iterator that contains all the nodes that have the cursor in their rect,
+    // from the top node to the bottom one. this will also reset the interaction to `None`
+    // for all nodes encountered that are no longer hovered.
+    for node_entity in ui_stack
+        .uinodes
+        .iter()
+        // reverse the iterator to traverse the tree from closest nodes to furthest
+        .rev()
+    {
+        let Ok(node) = node_query.get_mut(*node_entity) else {
             continue;
         };
 
-        let mut hovered_nodes = ui_stack
-            .uinodes
-            .iter()
-            // reverse the iterator to traverse the tree from closest nodes to furthest
-            .rev()
-            .filter_map(|entity| {
-                if let Ok(node) = node_query.get_mut(*entity) {
-                    // Nodes that are not rendered should not be interactable
-                    if let Some(view_visibility) = node.view_visibility {
-                        if !view_visibility.get() {
-                            return None;
-                        }
-                    }
+        // Nodes that are not rendered should not be interactable
+        if node
+            .view_visibility
+            .map(|view_visibility| view_visibility.get())
+            != Some(true)
+        {
+            continue;
+        }
+        let Some(camera_entity) = node
+            .target_camera
+            .map(TargetCamera::entity)
+            .or(default_ui_camera.get())
+        else {
+            continue;
+        };
 
-                    let node_rect = node.node.logical_rect(node.global_transform);
-                    let visible_rect = node
-                        .calculated_clip
-                        .map(|clip| node_rect.intersect(clip.clip))
-                        .unwrap_or(node_rect);
-                    if visible_rect.contains(location.position) {
-                        Some(*entity)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<Entity>>()
-            .into_iter();
+        let node_rect = node.node.logical_rect(node.global_transform);
 
+        // Intersect with the calculated clip rect to find the bounds of the visible region of the node
+        let visible_rect = node
+            .calculated_clip
+            .map(|clip| node_rect.intersect(clip.clip))
+            .unwrap_or(node_rect);
+
+        let pointers_on_this_cam = pointer_pos_by_camera.get(&camera_entity);
+
+        // The mouse position relative to the node
+        // (0., 0.) is the top-left corner, (1., 1.) is the bottom-right corner
+        // Coordinates are relative to the entire node, not just the visible region.
+        for (pointer_id, cursor_position) in pointers_on_this_cam.iter().flat_map(|h| h.iter()) {
+            let relative_cursor_position = (*cursor_position - node_rect.min) / node_rect.size();
+
+            if visible_rect
+                .normalize(node_rect)
+                .contains(relative_cursor_position)
+            {
+                hit_nodes
+                    .entry((camera_entity, *pointer_id))
+                    .or_default()
+                    .push(*node_entity);
+            }
+        }
+    }
+
+    for ((camera, pointer), hovered_nodes) in hit_nodes.iter() {
         // As soon as a node with a `Block` focus policy is detected, the iteration will stop on it
         // because it "captures" the interaction.
-        let mut iter = node_query.iter_many_mut(hovered_nodes.by_ref());
+        let mut iter = node_query.iter_many_mut(hovered_nodes.iter());
         let mut picks = Vec::new();
         let mut depth = 0.0;
 
         while let Some(node) = iter.fetch_next() {
-            let mut push_hit =
-                || picks.push((node.entity, HitData::new(*camera_entity, depth, None, None)));
-            push_hit();
+            let Some(camera_entity) = node
+                .target_camera
+                .map(TargetCamera::entity)
+                .or(default_ui_camera.get())
+            else {
+                continue;
+            };
+
+            picks.push((node.entity, HitData::new(camera_entity, depth, None, None)));
+
             if let Some(pickable) = node.pickable {
                 // If an entity has a `Pickable` component, we will use that as the source of truth.
                 if pickable.should_block_lower {
@@ -173,7 +202,13 @@ pub fn ui_picking(
 
             depth += 0.00001; // keep depth near 0 for precision
         }
-        let order = camera.order as f32 + 0.5; // bevy ui can run on any camera, it's a special case
-        output.send(PointerHits::new(*pointer, picks, order))
+
+        let order = camera_query
+            .get(*camera)
+            .map(|(_, cam, _)| cam.order)
+            .unwrap_or_default() as f32
+            + 0.5; // bevy ui can run on any camera, it's a special case
+
+        output.send(PointerHits::new(*pointer, picks, order));
     }
 }

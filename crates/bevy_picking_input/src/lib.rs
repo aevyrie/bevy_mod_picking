@@ -20,7 +20,6 @@ use bevy_reflect::prelude::*;
 
 use bevy_picking_core::PickSet;
 
-pub mod debug;
 pub mod mouse;
 pub mod touch;
 
