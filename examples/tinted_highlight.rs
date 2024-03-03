@@ -1,7 +1,7 @@
 //! If you are using the provided highlighting plugin, this example demonstrates how you can define
 //! dynamic tints that run a closure to determine the color of a highlight.
 
-use bevy::{math::vec4, prelude::*};
+use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -10,6 +10,7 @@ fn main() {
             DefaultPlugins.set(low_latency_window_plugin()),
             DefaultPickingPlugins,
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .run();
 }
@@ -23,15 +24,15 @@ fn main() {
 // Note that this works for *any* type of asset, not just bevy's built in materials.
 const HIGHLIGHT_TINT: Highlight<StandardMaterial> = Highlight {
     hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.2, -0.2, 0.4, 0.0),
+        base_color: matl.base_color + Color::rgba(-0.2, -0.2, 0.4, 0.0),
         ..matl.to_owned()
     })),
     pressed: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.3, -0.3, 0.5, 0.0),
+        base_color: matl.base_color + Color::rgba(-0.3, -0.3, 0.5, 0.0),
         ..matl.to_owned()
     })),
     selected: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.3, 0.2, -0.3, 0.0),
+        base_color: matl.base_color + Color::rgba(-0.3, 0.2, -0.3, 0.0),
         ..matl.to_owned()
     })),
 };
@@ -46,7 +47,10 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
+                half_size: Vec2::splat(2.5),
+                ..default()
+            }),
             material: materials.add(StandardMaterial {
                 base_color_texture: Some(asset_server.load("images/boovy.png")),
                 ..default()
@@ -60,7 +64,7 @@ fn setup(
     // cube
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+            mesh: meshes.add(Cuboid::default()),
             material: materials.add(StandardMaterial {
                 base_color_texture: Some(asset_server.load("images/boovy.png")),
                 ..default()
@@ -75,7 +79,6 @@ fn setup(
     // light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },

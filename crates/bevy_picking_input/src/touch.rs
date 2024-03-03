@@ -36,8 +36,14 @@ pub fn touch_pick_events(
     for touch in touches.read() {
         let pointer = PointerId::Touch(touch.id);
         let location = Location {
-            target: RenderTarget::Window(WindowRef::Entity(event.window))
-                .normalize(Some(windows.single().0))
+            target: RenderTarget::Window(WindowRef::Entity(touch.window))
+                .normalize(Some(
+                    match windows.get_single() {
+                        Ok(w) => w,
+                        Err(_) => continue,
+                    }
+                    .0,
+                ))
                 .unwrap(),
             position: touch.position,
         };
@@ -73,7 +79,7 @@ pub fn touch_pick_events(
                 location_cache.remove(&touch.id);
                 cancel_events.send(PointerCancel {
                     pointer_id: pointer,
-                })
+                });
             }
         }
     }

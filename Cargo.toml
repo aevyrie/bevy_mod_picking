@@ -19,22 +19,23 @@ all-features = true
 members = ["crates/*", "backends/*"]
 
 [dependencies]
-bevy_app = { version = "0.12", default-features = false }
-bevy_core = { version = "0.12", default-features = false }
-bevy_ecs = { version = "0.12", default-features = false }
-bevy_math = { version = "0.12", default-features = false }
-bevy_reflect = { version = "0.12", default-features = false }
-bevy_render = { version = "0.12", default-features = false }
-bevy_text = { version = "0.12", optional = true, default-features = false, features = [
+bevy_app = { version = "0.13", default-features = false }
+bevy_core = { version = "0.13", default-features = false }
+bevy_ecs = { version = "0.13", default-features = false }
+bevy_math = { version = "0.13", default-features = false }
+bevy_reflect = { version = "0.13", default-features = false }
+bevy_render = { version = "0.13", default-features = false }
+bevy_core_pipeline = { version = "0.13", optional = true, default-features = false }
+bevy_text = { version = "0.13", optional = true, default-features = false, features = [
     "default_font",
 ] }
-bevy_ui = { version = "0.12", optional = true, default-features = false }
-bevy_utils = { version = "0.12", default-features = false }
-bevy_window = { version = "0.12", default-features = false }
+bevy_ui = { version = "0.13", optional = true, default-features = false }
+bevy_utils = { version = "0.13", default-features = false }
+bevy_window = { version = "0.13", default-features = false }
 
-bevy_eventlistener = "0.6"
-bevy_egui = { optional = true, version = "0.23" }
-bevy_rapier3d = { optional = true, version = "0.23" }
+bevy_eventlistener = "0.7"
+bevy_egui = { optional = true, version = "0.25" }
+bevy_rapier3d = { optional = true, version = "0.25" }
 
 # Local
 bevy_picking_core = { path = "crates/bevy_picking_core", version = "0.17" }
@@ -48,12 +49,13 @@ bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite", 
 bevy_picking_egui = { optional = true, path = "backends/bevy_picking_egui", version = "0.17" }
 
 [dev-dependencies]
-bevy = { version = "0.12", default-features = false, features = [
+bevy = { version = "0.13", default-features = false, features = [
     "bevy_winit",
     "x11",
     "bevy_gltf",
     "bevy_scene",
     "bevy_ui",
+    "bevy_gizmos",
     "png",
     "ktx2",
     "zstd",
@@ -86,7 +88,7 @@ selection = [
     "bevy_picking_highlight/selection",
 ]
 highlight = ["bevy_picking_highlight/pbr"]
-debug = ["bevy_text", "bevy_ui/bevy_text"]
+debug = ["bevy_text", "bevy_ui/bevy_text", "bevy_core_pipeline"]
 backend_raycast = ["bevy_picking_raycast"]
 backend_rapier = ["bevy_picking_rapier", "bevy_rapier3d"]
 backend_sprite = ["bevy_picking_sprite", "bevy_picking_highlight/sprite"]
@@ -111,7 +113,7 @@ required-features = ["backend_egui"]
 [[example]]
 name = "multiple_windows"
 path = "examples/multiple_windows.rs"
-required-features = ["backend_egui"]
+# required-features = ["backend_egui"]
 
 [[example]]
 name = "virtual_pointer"

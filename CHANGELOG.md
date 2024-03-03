@@ -1,3 +1,24 @@
+# UNRELEASED
+
+- Changed: simplified debug settings and examples. Debug settings can be changed with the
+  `DebugPickingMode` resource.
+- Fixed: replaced uses of `.insert` with `.try_insert`, where they could potentially panic.
+- Fixed: replace all `.single` calls with matched `.get_single` calls to avoid crashing in
+  environments where there is no window available
+- Fixed: sprite picking depth is now consistent with other picking backends.
+- Fixed: entities with identical depth could be dropped due to the use of a BTreeMap to sort
+  entities by depth. This has been changed to use a sorted Vec, to allow entities with the same
+  depth to coexist.
+- Fixed: Ray construction now respects DPI / window scale
+- Added: `RayMap` resource that contains a `Ray` for every (camera, pointer) pair
+- Changed: rapier and bevy_mod_raycast backends use the `RayMap` instead of constructing their own
+  rays
+- Fixed: rapier and bevy_mod_raycast backends use `RenderLayers::default` when a camera is missing
+  them
+- Added: support for `bevy_ui` `UiScale`.
+- Fixed: the bevy ui backend now ignores clipped areas of UI nodes. 
+- Added: `RaycastBackendSettings::raycast_visibility` to support picking hidden meshes.
+
 # 0.17.0
 
 - Update for bevy 0.12
@@ -15,8 +36,8 @@
 - Faster compile times.
 - Sprites now support atlases, scale, rotation, and anchors.
 - All `egui` widgets, including side panels, are now supported.
-- `bevy_mod_raycast` and `bevy_rapier` backends are now even simpler, no longer requiring any
-  marker components to function.
+- `bevy_mod_raycast` and `bevy_rapier` backends are now even simpler, no longer requiring any marker
+  components to function.
 - More flexible picking behavior and `bevy_ui` compatibility with the updated `Pickable` component.
 - Better support for cameras settings such as `is_active`, `RenderLayers`, and `show_ui`.
 

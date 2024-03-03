@@ -29,8 +29,6 @@ use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
 use bevy_render::{prelude::*, view::RenderLayers};
-use bevy_transform::prelude::*;
-use bevy_window::PrimaryWindow;
 
 use bevy_picking_core::backend::prelude::*;
 use bevy_rapier3d::prelude::*;
@@ -74,19 +72,12 @@ pub struct RapierPickable;
 /// Raycasts into the scene using [`RapierBackendSettings`] and [`PointerLocation`]s, then outputs
 /// [`PointerHits`].
 pub fn update_hits(
-    pointers: Query<(&PointerId, &PointerLocation)>,
-    primary_window_entity: Query<Entity, With<PrimaryWindow>>,
-    picking_cameras: Query<(
-        Entity,
-        &Camera,
-        &GlobalTransform,
-        Option<&RapierPickable>,
-        Option<&RenderLayers>,
-    )>,
+    backend_settings: Res<RapierBackendSettings>,
+    ray_map: Res<RayMap>,
+    picking_cameras: Query<(&Camera, Option<&RapierPickable>, Option<&RenderLayers>)>,
     pickables: Query<&Pickable>,
     marked_targets: Query<&RapierPickable>,
     layers: Query<&RenderLayers>,
-    backend_settings: Res<RapierBackendSettings>,
     rapier_context: Option<Res<RapierContext>>,
     mut output_events: EventWriter<PointerHits>,
 ) {
@@ -94,62 +85,49 @@ pub fn update_hits(
         return;
     };
 
-    for (pointer_id, pointer_location) in &pointers {
-        let pointer_location = match pointer_location.location() {
-            Some(l) => l,
-            None => continue,
+    for (&ray_id, &ray) in ray_map.map().iter() {
+        let Ok((camera, cam_pickable, cam_layers)) = picking_cameras.get(ray_id.camera) else {
+            continue;
         };
-        for (cam_entity, camera, ray, cam_layers) in picking_cameras
-            .iter()
-            .filter(|(_, camera, ..)| {
-                camera.is_active && pointer_location.is_in_viewport(camera, &primary_window_entity)
-            })
-            .filter(|(.., marker, _)| marker.is_some() || !backend_settings.require_markers)
-            .filter_map(|(entity, camera, transform, _, layers)| {
-                let mut viewport_pos = pointer_location.position;
-                if let Some(viewport) = &camera.viewport {
-                    viewport_pos -= viewport.physical_position.as_vec2();
-                }
-                camera
-                    .viewport_to_world(transform, viewport_pos)
-                    .map(|ray| (entity, camera, ray, layers))
+        if backend_settings.require_markers && cam_pickable.is_none() {
+            continue;
+        }
+
+        let cam_layers = cam_layers.copied().unwrap_or_default();
+
+        let predicate = |entity| {
+            let marker_requirement =
+                !backend_settings.require_markers || marked_targets.get(entity).is_ok();
+
+            // Other entities missing render layers are on the default layer 0
+            let entity_layers = layers.get(entity).copied().unwrap_or_default();
+            let render_layers_match = cam_layers.intersects(&entity_layers);
+
+            let pickable = pickables
+                .get(entity)
+                .map(|p| *p != Pickable::IGNORE)
+                .unwrap_or(true);
+            marker_requirement && render_layers_match && pickable
+        };
+        if let Some((entity, hit_data)) = rapier_context
+            .cast_ray_and_get_normal(
+                ray.origin,
+                *ray.direction,
+                f32::MAX,
+                true,
+                QueryFilter::new().predicate(&predicate),
+            )
+            .map(|(entity, hit)| {
+                let hit_data =
+                    HitData::new(ray_id.camera, hit.toi, Some(hit.point), Some(hit.normal));
+                (entity, hit_data)
             })
         {
-            if let Some((entity, hit_data)) = rapier_context
-                .cast_ray_and_get_normal(
-                    ray.origin,
-                    ray.direction,
-                    f32::MAX,
-                    true,
-                    QueryFilter::new().predicate(&|entity| {
-                        let marker_requirement =
-                            !backend_settings.require_markers || marked_targets.get(entity).is_ok();
-
-                        // Cameras missing render layers intersect all layers
-                        let cam_layers = cam_layers.copied().unwrap_or(RenderLayers::all());
-                        // Other entities missing render layers are on the default layer 0
-                        let entity_layers = layers.get(entity).copied().unwrap_or_default();
-                        let render_layers_match = cam_layers.intersects(&entity_layers);
-
-                        let pickable = pickables
-                            .get(entity)
-                            .map(|p| *p != Pickable::IGNORE)
-                            .unwrap_or(true);
-                        marker_requirement && render_layers_match && pickable
-                    }),
-                )
-                .map(|(entity, hit)| {
-                    let hit_data =
-                        HitData::new(cam_entity, hit.toi, Some(hit.point), Some(hit.normal));
-                    (entity, hit_data)
-                })
-            {
-                output_events.send(PointerHits::new(
-                    *pointer_id,
-                    vec![(entity, hit_data)],
-                    camera.order as f32,
-                ));
-            }
+            output_events.send(PointerHits::new(
+                ray_id.pointer,
+                vec![(entity, hit_data)],
+                camera.order as f32,
+            ));
         }
     }
 }

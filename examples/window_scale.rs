@@ -1,14 +1,20 @@
-//! Demonstrates picking working with multiple windows.
+//! Tests window scaling.
 
-use bevy::{prelude::*, render::camera::RenderTarget, window::WindowRef};
+use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins((
-            DefaultPlugins.set(low_latency_window_plugin()),
-            DefaultPickingPlugins,
-        ))
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                present_mode: bevy_window::PresentMode::AutoNoVsync,
+                resolution:
+                    bevy_window::WindowResolution::default().with_scale_factor_override(3.0),
+                ..default()
+            }),
+            ..default()
+        }))
+        .add_plugins(DefaultPickingPlugins)
         .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .run();
@@ -28,7 +34,7 @@ fn setup(
             material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
             ..default()
         },
-        PickableBundle::default(), // <- Makes the mesh pickable.
+        PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
     ));
     commands.spawn((
         PbrBundle {
@@ -37,7 +43,7 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
-        PickableBundle::default(), // <- Makes the mesh pickable.
+        PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
     ));
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -47,28 +53,8 @@ fn setup(
         transform: Transform::from_xyz(4.0, 8.0, -4.0),
         ..default()
     });
-    // main camera, cameras default to the primary window
-    // so we don't need to specify that.
     commands.spawn((Camera3dBundle {
         transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    },));
-
-    // Spawn a second window
-    let second_window = commands
-        .spawn(Window {
-            title: "Second window".to_owned(),
-            ..default()
-        })
-        .id();
-
-    // second window camera
-    commands.spawn((Camera3dBundle {
-        transform: Transform::from_xyz(6.0, 1.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
-        camera: Camera {
-            target: RenderTarget::Window(WindowRef::Entity(second_window)),
-            ..default()
-        },
         ..default()
     },));
 }

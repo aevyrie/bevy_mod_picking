@@ -2,7 +2,7 @@
 //! was clicked on, even though we only need to add an `On<Pointer<Event>>` event listener to the
 //! root of the scene.
 
-use bevy::{math::vec4, prelude::*};
+use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -13,6 +13,7 @@ fn main() {
                 .build()
                 .disable::<DebugPickingPlugin>(),
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .add_systems(Update, make_pickable)
         .run();
@@ -23,10 +24,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         transform: Transform::from_xyz(0.7, 0.7, 1.0).looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
         ..default()
     },));
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight { ..default() },
-        ..default()
-    });
+    commands.spawn(DirectionalLightBundle::default());
     commands.spawn((
         SceneBundle {
             scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
@@ -56,15 +54,15 @@ fn make_pickable(
 /// `tinted_highlight` for more details.
 const HIGHLIGHT_TINT: Highlight<StandardMaterial> = Highlight {
     hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.5, -0.3, 0.9, 0.8), // hovered is blue
+        base_color: matl.base_color + Color::rgba(-0.5, -0.3, 0.9, 0.8), // hovered is blue
         ..matl.to_owned()
     })),
     pressed: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.4, -0.4, 0.8, 0.8), // pressed is a different blue
+        base_color: matl.base_color + Color::rgba(-0.4, -0.4, 0.8, 0.8), // pressed is a different blue
         ..matl.to_owned()
     })),
     selected: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + vec4(-0.4, 0.8, -0.4, 0.0), // selected is green
+        base_color: matl.base_color + Color::rgba(-0.4, 0.8, -0.4, 0.0), // selected is green
         ..matl.to_owned()
     })),
 };

@@ -16,6 +16,7 @@ fn main() {
                 .disable::<DefaultHighlightingPlugin>(),
             bevy_egui::EguiPlugin,
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .add_event::<DoSomethingComplex>()
         .add_systems(
@@ -37,8 +38,8 @@ fn setup(
         // entities, even though they lack `On<Pointer<Event>>` components.
         .spawn((
             PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                material: materials.add(Color::WHITE.into()),
+                mesh: meshes.add(Cuboid::default()),
+                material: materials.add(Color::WHITE),
                 ..default()
             },
             PickableBundle::default(),
@@ -101,9 +102,10 @@ fn setup(
                     // As noted above, we are adding children here but we don't need to add an event
                     // listener. Events on children will bubble up to the parent!
                     PbrBundle {
-                        mesh: meshes.add(Mesh::from(shape::Cube { size: 0.4 })),
-                        material: materials.add(Color::RED.into()),
-                        transform: Transform::from_xyz(0.0, 1.0 + 0.5 * i as f32, 0.0),
+                        mesh: meshes.add(Cuboid::default()),
+                        material: materials.add(Color::RED),
+                        transform: Transform::from_xyz(0.0, 1.0 + 0.5 * i as f32, 0.0)
+                            .with_scale(Vec3::splat(0.4)),
                         ..default()
                     },
                     PickableBundle::default(),
@@ -113,7 +115,6 @@ fn setup(
 
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },

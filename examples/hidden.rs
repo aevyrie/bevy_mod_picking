@@ -1,16 +1,20 @@
-//! Demonstrates picking working with multiple windows.
+//! An example of picking a hidden mesh in your bevy app.
 
-use bevy::{prelude::*, render::camera::RenderTarget, window::WindowRef};
+use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
+use bevy_picking_raycast::{bevy_mod_raycast::prelude::RaycastVisibility, RaycastBackendSettings};
 
 fn main() {
     App::new()
-        .add_plugins((
-            DefaultPlugins.set(low_latency_window_plugin()),
-            DefaultPickingPlugins,
-        ))
+        .add_plugins(DefaultPlugins.set(low_latency_window_plugin()))
+        .add_plugins(DefaultPickingPlugins)
         .insert_resource(DebugPickingMode::Normal)
+        .insert_resource(RaycastBackendSettings {
+            raycast_visibility: RaycastVisibility::Ignore,
+            ..Default::default()
+        })
         .add_systems(Startup, setup)
+        .add_systems(Update, show)
         .run();
 }
 
@@ -28,17 +32,25 @@ fn setup(
             material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
             ..default()
         },
-        PickableBundle::default(), // <- Makes the mesh pickable.
+        PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
     ));
     commands.spawn((
         PbrBundle {
+            visibility: Visibility::Hidden,
             mesh: meshes.add(Cuboid::default()),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
-        PickableBundle::default(), // <- Makes the mesh pickable.
+        On::<Pointer<Over>>::target_component_mut::<Visibility>(|_listener, visibility| {
+            *visibility = Visibility::Visible;
+        }),
+        On::<Pointer<Out>>::target_component_mut::<Visibility>(|_listener, visibility| {
+            *visibility = Visibility::Hidden;
+        }),
+        PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
     ));
+
     commands.spawn(PointLightBundle {
         point_light: PointLight {
             shadows_enabled: true,
@@ -47,28 +59,15 @@ fn setup(
         transform: Transform::from_xyz(4.0, 8.0, -4.0),
         ..default()
     });
-    // main camera, cameras default to the primary window
-    // so we don't need to specify that.
     commands.spawn((Camera3dBundle {
         transform: Transform::from_xyz(3.0, 3.0, 3.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     },));
+}
 
-    // Spawn a second window
-    let second_window = commands
-        .spawn(Window {
-            title: "Second window".to_owned(),
-            ..default()
-        })
-        .id();
-
-    // second window camera
-    commands.spawn((Camera3dBundle {
-        transform: Transform::from_xyz(6.0, 1.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
-        camera: Camera {
-            target: RenderTarget::Window(WindowRef::Entity(second_window)),
-            ..default()
-        },
-        ..default()
-    },));
+pub fn show(mut gizmos: Gizmos) {
+    gizmos.cuboid(
+        Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
+        Color::GREEN,
+    );
 }

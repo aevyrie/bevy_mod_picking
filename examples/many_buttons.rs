@@ -30,6 +30,7 @@ fn main() {
             .build()
             .disable::<DebugPickingPlugin>(),
     )
+    .insert_resource(DebugPickingMode::Normal)
     .add_systems(Startup, setup)
     .add_systems(Update, update_button_colors);
 
@@ -41,7 +42,9 @@ fn main() {
 
     if std::env::args().any(|arg| arg == "recompute-text") {
         app.add_systems(Update, |mut text_query: Query<&mut Text>| {
-            text_query.for_each_mut(|mut text| text.set_changed());
+            text_query
+                .iter_mut()
+                .for_each(|mut text| text.set_changed());
         });
     }
 

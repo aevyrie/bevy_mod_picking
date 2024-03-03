@@ -17,6 +17,7 @@ fn main() {
                 .build()
                 .disable::<DebugPickingPlugin>(),
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .run();
 }
@@ -31,8 +32,8 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let mesh = &meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
-    let material = &materials.add(Color::rgb(0.8, 0.7, 0.6).into());
+    let mesh = &meshes.add(Cuboid::default());
+    let material = &materials.add(Color::rgb(0.8, 0.7, 0.6));
 
     for x in -WIDTH..=WIDTH {
         for y in -HEIGHT..=HEIGHT {

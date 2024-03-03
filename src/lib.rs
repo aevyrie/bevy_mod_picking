@@ -199,6 +199,7 @@ pub mod prelude {
     pub use crate::debug::DebugPickingPlugin;
     pub use crate::{
         backends,
+        debug::DebugPickingMode,
         events::{
             Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop, Move, Out,
             Over, Pointer, Up,
@@ -285,7 +286,7 @@ impl bevy_app::PluginGroup for DefaultPickingPlugins {
 
         #[cfg(feature = "debug")]
         {
-            builder = builder.add(debug::DebugPickingPlugin::default());
+            builder = builder.add(debug::DebugPickingPlugin);
         }
 
         #[cfg(feature = "highlight")]

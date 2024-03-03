@@ -9,7 +9,7 @@
 
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_input::{keyboard::KeyCode, Input};
+use bevy_input::{keyboard::KeyCode, ButtonInput};
 use bevy_reflect::prelude::*;
 use bevy_utils::hashbrown::HashSet;
 
@@ -105,7 +105,7 @@ pub struct Deselect;
 
 /// Unsurprising default multiselect inputs: both control and shift keys.
 pub fn multiselect_events(
-    keyboard: Res<Input<KeyCode>>,
+    keyboard: Res<ButtonInput<KeyCode>>,
     mut pointer_query: Query<&mut PointerMultiselect>,
 ) {
     let is_multiselect_pressed = keyboard.any_pressed([
@@ -162,7 +162,7 @@ pub fn send_selection_events(
                         pointer_location.to_owned(),
                         entity,
                         Deselect,
-                    ))
+                    ));
                 }
             }
         }
@@ -189,7 +189,7 @@ pub fn send_selection_events(
             if !pointer_down_list.contains(&id) && !multiselect {
                 for (entity, selection) in selectables.iter() {
                     if selection.is_selected {
-                        deselections.send(Pointer::new(id, location.clone(), entity, Deselect))
+                        deselections.send(Pointer::new(id, location.clone(), entity, Deselect));
                     }
                 }
             }
@@ -212,26 +212,30 @@ pub fn send_selection_events(
         if let Ok((entity, selection)) = selectables.get(*target) {
             if multiselect {
                 match selection.is_selected {
-                    true => deselections.send(Pointer::new(
-                        *pointer_id,
-                        pointer_location.to_owned(),
-                        entity,
-                        Deselect,
-                    )),
-                    false => selections.send(Pointer::new(
-                        *pointer_id,
-                        pointer_location.to_owned(),
-                        entity,
-                        Select,
-                    )),
-                }
+                    true => {
+                        deselections.send(Pointer::new(
+                            *pointer_id,
+                            pointer_location.to_owned(),
+                            entity,
+                            Deselect,
+                        ));
+                    }
+                    false => {
+                        selections.send(Pointer::new(
+                            *pointer_id,
+                            pointer_location.to_owned(),
+                            entity,
+                            Select,
+                        ));
+                    }
+                };
             } else if !selection.is_selected {
                 selections.send(Pointer::new(
                     *pointer_id,
                     pointer_location.to_owned(),
                     entity,
                     Select,
-                ))
+                ));
             }
         }
     }

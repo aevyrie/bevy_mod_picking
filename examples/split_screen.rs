@@ -10,6 +10,7 @@ fn main() {
             DefaultPickingPlugins,
             bevy_egui::EguiPlugin,
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .add_systems(Update, set_camera_viewports)
         .run();
@@ -23,16 +24,19 @@ fn setup(
 ) {
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane::from_size(5.0))),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
+                half_size: Vec2::splat(2.5),
+                ..default()
+            }),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
             ..default()
         },
         PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            mesh: meshes.add(Cuboid::default()),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
@@ -40,7 +44,6 @@ fn setup(
     ));
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },
@@ -62,13 +65,10 @@ fn setup(
         Camera3dBundle {
             transform: Transform::from_xyz(10.0, 10., 15.0).looking_at(Vec3::ZERO, Vec3::Y),
             camera: Camera {
+                // don't clear on the second camera because the first camera already cleared the window
+                clear_color: ClearColorConfig::None,
                 // Renders the right camera after the left camera, which has a default priority of 0
                 order: 1,
-                ..default()
-            },
-            camera_3d: Camera3d {
-                // don't clear on the second camera because the first camera already cleared the window
-                clear_color: bevy::core_pipeline::clear_color::ClearColorConfig::None,
                 ..default()
             },
             ..default()

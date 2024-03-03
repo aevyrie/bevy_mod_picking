@@ -1,6 +1,6 @@
 //! Demonstrates that picking respects camera render order.
 
-use bevy::{core_pipeline::clear_color::ClearColorConfig, prelude::*};
+use bevy::{prelude::*, render::camera::ClearColorConfig};
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -9,6 +9,7 @@ fn main() {
             DefaultPlugins.set(low_latency_window_plugin()),
             DefaultPickingPlugins,
         ))
+        .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .run();
 }
@@ -22,8 +23,11 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
+                half_size: Vec2::splat(2.5),
+                ..default()
+            }),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
             ..default()
         },
         PickableBundle::default(), // <- Makes the mesh pickable.
@@ -31,8 +35,8 @@ fn setup(
     // cube
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            mesh: meshes.add(Cuboid::default()),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
@@ -41,7 +45,6 @@ fn setup(
     // light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },
@@ -57,8 +60,11 @@ fn setup(
     // plane 2
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-            material: materials.add(Color::CYAN.into()),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
+                half_size: Vec2::splat(2.5),
+                ..default()
+            }),
+            material: materials.add(Color::CYAN),
             transform: Transform::from_xyz(20., 20., 20.),
             ..default()
         },
@@ -67,8 +73,8 @@ fn setup(
     // cube 2
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::YELLOW.into()),
+            mesh: meshes.add(Cuboid::default()),
+            material: materials.add(Color::YELLOW),
             transform: Transform::from_xyz(20., 20.5, 20.),
             ..default()
         },
@@ -77,7 +83,6 @@ fn setup(
     // light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },
@@ -88,11 +93,8 @@ fn setup(
     commands.spawn((Camera3dBundle {
         transform: Transform::from_xyz(30., 30., 30.0)
             .looking_at(Vec3::new(20., 20.5, 20.), Vec3::Y),
-        camera_3d: Camera3d {
-            clear_color: ClearColorConfig::None,
-            ..default()
-        },
         camera: Camera {
+            clear_color: ClearColorConfig::None,
             // renders after / on top of the main camera
             order: 1,
             ..default()

@@ -68,20 +68,20 @@ impl Plugin for DefaultHighlightingPlugin {
         #[cfg(feature = "pbr")]
         app.add_plugins(HighlightPlugin::<bevy_pbr::StandardMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
-                hovered: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.35).into()),
-                pressed: assets.add(bevy_render::color::Color::rgb(0.35, 0.75, 0.35).into()),
+                hovered: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.35)),
+                pressed: assets.add(bevy_render::color::Color::rgb(0.35, 0.75, 0.35)),
                 #[cfg(feature = "selection")]
-                selected: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.75).into()),
+                selected: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.75)),
             },
         });
 
         #[cfg(feature = "sprite")]
         app.add_plugins(HighlightPlugin::<bevy_sprite::ColorMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
-                hovered: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.35).into()),
-                pressed: assets.add(bevy_render::color::Color::rgb(0.35, 0.75, 0.35).into()),
+                hovered: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.35)),
+                pressed: assets.add(bevy_render::color::Color::rgb(0.35, 0.75, 0.35)),
                 #[cfg(feature = "selection")]
-                selected: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.75).into()),
+                selected: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.75)),
             },
         });
     }
@@ -288,7 +288,7 @@ pub fn get_initial_highlight_asset<T: Asset>(
         match highlighting_query.get_mut(entity) {
             Ok(Some(mut highlighting)) => highlighting.initial = material.to_owned(),
             _ => {
-                commands.entity(entity).insert(InitialHighlight {
+                commands.entity(entity).try_insert(InitialHighlight {
                     initial: material.to_owned(),
                 });
             }

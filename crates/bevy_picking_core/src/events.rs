@@ -19,6 +19,7 @@ use bevy_utils::{tracing::error, HashMap};
 
 /// Stores the common data needed for all `PointerEvent`s.
 #[derive(Clone, PartialEq, Debug, Reflect, Event, EntityEvent)]
+#[can_bubble]
 pub struct Pointer<E: Debug + Clone + Reflect> {
     /// The target of this event
     #[target]
@@ -232,7 +233,7 @@ pub fn pointer_events(
                 location.clone(),
                 hovered_entity,
                 Move { hit, delta },
-            ))
+            ));
         }
     }
 
@@ -259,7 +260,7 @@ pub fn pointer_events(
                     location,
                     hovered_entity,
                     Up { button, hit },
-                ))
+                ));
             }
         }
         for (hovered_entity, hit) in hover_map
@@ -280,7 +281,7 @@ pub fn pointer_events(
                     location,
                     hovered_entity,
                     Down { button, hit },
-                ))
+                ));
             }
         }
     }
@@ -404,7 +405,7 @@ pub fn send_click_and_drag_events(
                         button,
                         hit: down.hit.clone(),
                     },
-                ))
+                ));
             }
 
             for (dragged_entity, drag) in drag_list.iter_mut() {
@@ -419,7 +420,7 @@ pub fn send_click_and_drag_events(
                     location.clone(),
                     *dragged_entity,
                     drag_event,
-                ))
+                ));
             }
         }
     }
@@ -530,7 +531,7 @@ pub fn send_drag_over_events(
                     pointer_location.clone(),
                     target,
                     event,
-                ))
+                ));
             }
         }
     }
@@ -561,7 +562,7 @@ pub fn send_drag_over_events(
                         dragged: *drag_target,
                         hit: hit.clone(),
                     },
-                ))
+                ));
             }
         }
     }
@@ -632,7 +633,7 @@ pub fn send_drag_over_events(
                         dragged: *drag_target,
                         hit: hit.clone(),
                     },
-                ))
+                ));
             }
         }
     }
