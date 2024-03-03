@@ -36,6 +36,7 @@ bevy_window = { version = "0.13", default-features = false }
 bevy_eventlistener = "0.7"
 bevy_egui = { optional = true, version = "0.25" }
 bevy_rapier3d = { optional = true, version = "0.25" }
+bevy_xpbd_3d = { optional = true, version = "0.4" }
 
 # Local
 bevy_picking_core = { path = "crates/bevy_picking_core", version = "0.17" }
@@ -47,6 +48,7 @@ bevy_picking_ui = { optional = true, path = "backends/bevy_picking_ui", version 
 bevy_picking_rapier = { optional = true, path = "backends/bevy_picking_rapier", version = "0.17" }
 bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite", version = "0.17" }
 bevy_picking_egui = { optional = true, path = "backends/bevy_picking_egui", version = "0.17" }
+bevy_picking_xpbd = { optional = true, path = "backends/bevy_picking_xpbd", version = "0.17" }
 
 [dev-dependencies]
 bevy = { version = "0.13", default-features = false, features = [
@@ -73,6 +75,7 @@ all = [
     "backend_rapier",
     "backend_sprite",
     "backend_egui",
+    "backend_xpbd",
 ]
 default = [
     "backend_raycast",
@@ -94,6 +97,7 @@ backend_rapier = ["bevy_picking_rapier", "bevy_rapier3d"]
 backend_sprite = ["bevy_picking_sprite", "bevy_picking_highlight/sprite"]
 backend_bevy_ui = ["bevy_picking_ui", "bevy_ui"]
 backend_egui = ["bevy_picking_egui", "bevy_egui"]
+backend_xpbd = ["bevy_picking_xpbd", "bevy_xpbd_3d"]
 
 [[example]]
 name = "rapier"
@@ -124,3 +128,8 @@ required-features = ["backend_egui"]
 name = "split_screen"
 path = "examples/split_screen.rs"
 required-features = ["backend_egui"]
+
+[[example]]
+name = "xpbd"
+path = "examples/xpbd.rs"
+required-features = ["backend_xpbd"]

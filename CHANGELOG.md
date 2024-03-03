@@ -1,5 +1,6 @@
 # UNRELEASED
 
+- Added: `bevy_xpbd_3d` picking backend, available behind the optional `backend_xpbd` feature.
 - Added: support for touch inputs across multiple windows.
 - Changed: simplified debug settings and examples. Debug settings can be changed with the
   `DebugPickingMode` resource.
