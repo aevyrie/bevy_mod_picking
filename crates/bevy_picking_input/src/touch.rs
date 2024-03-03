@@ -9,7 +9,7 @@ use bevy_utils::{
     tracing::{debug, info},
     HashMap, HashSet,
 };
-use bevy_window::{PrimaryWindow, Window, WindowRef};
+use bevy_window::{PrimaryWindow, WindowRef};
 
 use bevy_picking_core::{
     events::PointerCancel,
@@ -24,7 +24,7 @@ use bevy_picking_core::{
 pub fn touch_pick_events(
     // Input
     mut touches: EventReader<TouchInput>,
-    windows: Query<(Entity, &Window), With<PrimaryWindow>>,
+    primary_window: Query<Entity, With<PrimaryWindow>>,
     // Local
     mut location_cache: Local<HashMap<u64, TouchInput>>,
     // Output
@@ -36,15 +36,12 @@ pub fn touch_pick_events(
     for touch in touches.read() {
         let pointer = PointerId::Touch(touch.id);
         let location = Location {
-            target: RenderTarget::Window(WindowRef::Entity(touch.window))
-                .normalize(Some(
-                    match windows.get_single() {
-                        Ok(w) => w,
-                        Err(_) => continue,
-                    }
-                    .0,
-                ))
-                .unwrap(),
+            target: match RenderTarget::Window(WindowRef::Entity(touch.window))
+                .normalize(primary_window.get_single().ok())
+            {
+                Some(target) => target,
+                None => continue,
+            },
             position: touch.position,
         };
         match touch.phase {
