@@ -1,5 +1,6 @@
 # UNRELEASED
 
+- Added: support for touch inputs across multiple windows.
 - Changed: simplified debug settings and examples. Debug settings can be changed with the
   `DebugPickingMode` resource.
 - Fixed: replaced uses of `.insert` with `.try_insert`, where they could potentially panic.
