@@ -198,10 +198,9 @@ pub mod backends {
 /// Common imports
 pub mod prelude {
     #[cfg(feature = "debug")]
-    pub use crate::debug::DebugPickingPlugin;
+    pub use crate::debug::{DebugPickingMode, DebugPickingPlugin};
     pub use crate::{
         backends,
-        debug::DebugPickingMode,
         events::{
             Click, Down, Drag, DragEnd, DragEnter, DragLeave, DragOver, DragStart, Drop, Move, Out,
             Over, Pointer, Up,
