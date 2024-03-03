@@ -8,7 +8,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(low_latency_window_plugin()),
             DefaultPickingPlugins,
-            bevy_egui::EguiPlugin, //  For debug: bevy_ui does not support multiple windows.
+            // bevy_egui::EguiPlugin, //  For debug: bevy_ui does not support multiple windows.
         ))
         .add_systems(Startup, setup)
         .run();

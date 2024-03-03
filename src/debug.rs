@@ -14,30 +14,30 @@ use bevy_reflect::prelude::*;
 use bevy_render::prelude::*;
 use bevy_utils::tracing::{debug, trace};
 
-/// This state determines the runtime behavior of the debug plugin.
-#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
+/// This resource determines the runtime behavior of the debug plugin.
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Resource)]
 pub enum DebugPickingMode {
     /// Only log non-noisy events
-    #[default]
     Normal,
     /// Log all events, including noisy events like `Move` and `Drag`
     Noisy,
     /// Do not show the debug interface or log any messages
+    #[default]
     Disabled,
 }
 
 impl DebugPickingMode {
     /// A condition indicating the plugin is enabled
-    pub fn is_enabled(res: Res<State<DebugPickingMode>>) -> bool {
-        matches!(res.get(), Self::Normal | Self::Noisy)
+    pub fn is_enabled(this: Res<Self>) -> bool {
+        matches!(*this, Self::Normal | Self::Noisy)
     }
     /// A condition indicating the plugin is disabled
-    pub fn is_disabled(res: Res<State<DebugPickingMode>>) -> bool {
-        matches!(res.get(), Self::Disabled)
+    pub fn is_disabled(this: Res<Self>) -> bool {
+        matches!(*this, Self::Disabled)
     }
     /// A condition indicating the plugin is enabled and in noisy mode
-    pub fn is_noisy(res: Res<State<DebugPickingMode>>) -> bool {
-        matches!(res.get(), Self::Noisy)
+    pub fn is_noisy(this: Res<Self>) -> bool {
+        matches!(*this, Self::Noisy)
     }
 }
 
@@ -63,63 +63,56 @@ impl DebugPickingMode {
 /// ```ignore
 /// use DebugPickingMode::{Normal, Disabled};
 /// app.add_plugin(DefaultPickingPlugins)
-///     .insert_resource(State(Disabled))
+///     .insert_resource(DebugPickingMode::Normal)
 ///     .add_systems(
-///         (
-///             (|mut next: ResMut<NextState<_>>| next.set(Normal)).run_if(in_state(Disabled)),
-///             (|mut next: ResMut<NextState<_>>| next.set(Disabled)).run_if(in_state(Normal)),
-///         )
-///             .distributive_run_if(input_just_pressed(KeyCode::F3)),
+///         PreUpdate,
+///         (|mut mode: ResMut<DebugPickingMode>| {
+///             *mode = match *mode {
+///                 DebugPickingMode::Disabled => DebugPickingMode::Normal,
+///                 _ => DebugPickingMode::Disabled,
+///             };
+///         })
+///         .distributive_run_if(bevy::input::common_conditions::input_just_pressed(
+///             KeyCode::F3,
+///         )),
 ///     )
 /// ```
 /// This sets the starting mode of the plugin to [`DebugPickingMode::Disabled`] and binds the F3 key
 /// to toggle it.
 #[derive(Debug, Default, Clone)]
-pub struct DebugPickingPlugin {
-    /// Suppresses noisy events like `Move` and `Drag` when set to `false`.
-    #[deprecated = "Use the `DebugPickingMode` state directly instead"]
-    pub noisy: bool,
-}
+pub struct DebugPickingPlugin;
 
 impl Plugin for DebugPickingPlugin {
     fn build(&self, app: &mut App) {
-        #[allow(deprecated)]
-        let start_mode = if self.noisy {
-            DebugPickingMode::Noisy
-        } else {
-            DebugPickingMode::Normal
-        };
-
-        app.init_state::<DebugPickingMode>()
-            .insert_resource(State::new(start_mode))
+        app.init_resource::<DebugPickingMode>()
             .add_systems(
                 PreUpdate,
-                input::debug::print
-                    .before(picking_core::PickSet::Backend)
-                    .run_if(DebugPickingMode::is_noisy),
-            );
-        app.add_systems(
-            PreUpdate,
-            (
-                // This leaves room to easily change the log-level associated
-                // with different events, should that be desired.
-                log_debug::<events::Over>,
-                log_debug::<events::Out>,
-                log_debug::<events::Down>,
-                log_debug::<events::Up>,
-                log_debug::<events::Click>,
-                log_trace::<events::Move>.run_if(DebugPickingMode::is_noisy),
-                log_debug::<events::DragStart>,
-                log_trace::<events::Drag>.run_if(DebugPickingMode::is_noisy),
-                log_debug::<events::DragEnd>,
-                log_debug::<events::DragEnter>,
-                log_trace::<events::DragOver>.run_if(DebugPickingMode::is_noisy),
-                log_debug::<events::DragLeave>,
-                log_debug::<events::Drop>,
+                pointer_debug_visibility.in_set(picking_core::PickSet::PostFocus),
             )
-                .distributive_run_if(DebugPickingMode::is_enabled)
-                .in_set(picking_core::PickSet::Last),
-        );
+            .add_systems(
+                PreUpdate,
+                (
+                    // This leaves room to easily change the log-level associated
+                    // with different events, should that be desired.
+                    log_event_debug::<pointer::InputMove>.run_if(DebugPickingMode::is_noisy),
+                    log_event_debug::<pointer::InputPress>.run_if(DebugPickingMode::is_noisy),
+                    log_pointer_event_debug::<events::Over>,
+                    log_pointer_event_debug::<events::Out>,
+                    log_pointer_event_debug::<events::Down>,
+                    log_pointer_event_debug::<events::Up>,
+                    log_pointer_event_debug::<events::Click>,
+                    log_pointer_event_trace::<events::Move>.run_if(DebugPickingMode::is_noisy),
+                    log_pointer_event_debug::<events::DragStart>,
+                    log_pointer_event_trace::<events::Drag>.run_if(DebugPickingMode::is_noisy),
+                    log_pointer_event_debug::<events::DragEnd>,
+                    log_pointer_event_debug::<events::DragEnter>,
+                    log_pointer_event_trace::<events::DragOver>.run_if(DebugPickingMode::is_noisy),
+                    log_pointer_event_debug::<events::DragLeave>,
+                    log_pointer_event_debug::<events::Drop>,
+                )
+                    .distributive_run_if(DebugPickingMode::is_enabled)
+                    .in_set(picking_core::PickSet::Last),
+            );
 
         app.add_systems(
             PreUpdate,
@@ -141,29 +134,38 @@ impl Plugin for DebugPickingPlugin {
                 .in_set(picking_core::PickSet::Last),
         );
 
-        app.add_systems(OnEnter(DebugPickingMode::Disabled), hide_pointer_text);
-
         #[cfg(feature = "selection")]
         app.add_systems(
             Update,
             (
-                debug::log_debug::<selection::Select>,
-                debug::log_debug::<selection::Deselect>,
+                debug::log_pointer_event_debug::<selection::Select>,
+                debug::log_pointer_event_debug::<selection::Deselect>,
             )
                 .distributive_run_if(DebugPickingMode::is_enabled),
         );
     }
 }
 
+/// Listen for any event and logs it at the debug level
+pub fn log_event_debug<E: Event + Debug>(mut events: EventReader<pointer::InputMove>) {
+    for event in events.read() {
+        debug!("{event:?}");
+    }
+}
+
 /// Listens for pointer events of type `E` and logs them at "debug" level
-pub fn log_debug<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
+pub fn log_pointer_event_debug<E: Debug + Clone + Reflect>(
+    mut pointer_events: EventReader<Pointer<E>>,
+) {
     for event in pointer_events.read() {
         debug!("{event}");
     }
 }
 
 /// Listens for pointer events of type `E` and logs them at "trace" level
-pub fn log_trace<E: Debug + Clone + Reflect>(mut pointer_events: EventReader<Pointer<E>>) {
+pub fn log_pointer_event_trace<E: Debug + Clone + Reflect>(
+    mut pointer_events: EventReader<Pointer<E>>,
+) {
     for event in pointer_events.read() {
         trace!("{event}");
     }
@@ -180,9 +182,16 @@ pub fn add_pointer_debug(
 }
 
 /// Hide text from pointers.
-pub fn hide_pointer_text(mut pointers: Query<&mut Visibility, With<PointerId>>) {
+pub fn pointer_debug_visibility(
+    debug: Res<DebugPickingMode>,
+    mut pointers: Query<&mut Visibility, With<PointerId>>,
+) {
+    let visible = match *debug {
+        DebugPickingMode::Disabled => Visibility::Hidden,
+        _ => Visibility::Visible,
+    };
     for mut vis in &mut pointers {
-        *vis = Visibility::Hidden;
+        *vis = visible;
     }
 }
 

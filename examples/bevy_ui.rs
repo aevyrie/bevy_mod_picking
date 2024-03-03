@@ -10,6 +10,7 @@ fn main() {
         .add_systems(Startup, (setup_3d, setup_ui).chain())
         .add_systems(Update, (update_button_colors, set_camera_viewports))
         .insert_resource(UiScale(1.5))
+        .insert_resource(debug::DebugPickingMode::Normal)
         .run();
 }
 

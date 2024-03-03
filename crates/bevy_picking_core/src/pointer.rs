@@ -130,7 +130,7 @@ impl PointerPress {
 }
 
 /// Pointer input event for button presses. Fires when a pointer button changes state.
-#[derive(Event, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Event, Debug, Clone, Copy, PartialEq, Eq, Reflect)]
 pub struct InputPress {
     /// The [`PointerId`] of the pointer that pressed a button.
     pub pointer_id: PointerId,
@@ -191,7 +191,7 @@ impl InputPress {
 }
 
 /// The stage of the pointer button press event
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect)]
 pub enum PressDirection {
     /// The pointer button was just pressed
     Down,
@@ -235,7 +235,7 @@ impl PointerLocation {
 }
 
 /// Pointer input event for pointer moves. Fires when a pointer changes location.
-#[derive(Event, Debug, Clone)]
+#[derive(Event, Debug, Clone, Reflect)]
 pub struct InputMove {
     /// The [`PointerId`] of the pointer that is moving.
     pub pointer_id: PointerId,
