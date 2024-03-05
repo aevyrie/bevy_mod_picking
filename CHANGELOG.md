@@ -1,4 +1,4 @@
-# UNRELEASED
+# 0.18.0
 
 - Added: `bevy_xpbd_3d` picking backend, available behind the optional `backend_xpbd` feature.
 - Added: support for touch inputs across multiple windows.

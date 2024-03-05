@@ -101,10 +101,9 @@ To learn more, [read the docs](https://docs.rs/bevy_mod_picking/latest/bevy_mod_
 
 # Bevy Version Support
 
-I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
-
 | bevy | bevy_mod_picking |
 | ---- | ---------------- |
+| 0.13 | 0.18             |
 | 0.12 | 0.17             |
 | 0.11 | 0.15, 0.16       |
 | 0.10 | 0.12, 0.13, 0.14 |

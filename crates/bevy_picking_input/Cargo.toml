@@ -1,6 +1,6 @@
 [package]
 name = "bevy_picking_input"
-version = "0.17.0"
+version = "0.18.0"
 edition = "2021"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -23,8 +23,8 @@ bevy_render = { version = "0.13", default-features = false }
 bevy_utils = { version = "0.13", default-features = false }
 bevy_window = { version = "0.13", default-features = false }
 
-bevy_picking_core = { path = "../bevy_picking_core", version = "0.17" }
-bevy_picking_selection = { optional = true, path = "../bevy_picking_selection", version = "0.17" }
+bevy_picking_core = { path = "../bevy_picking_core", version = "0.18" }
+bevy_picking_selection = { optional = true, path = "../bevy_picking_selection", version = "0.18" }
 
 [features]
 selection = ["bevy_picking_selection"]

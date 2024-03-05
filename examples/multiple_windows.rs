@@ -8,6 +8,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(low_latency_window_plugin()),
             DefaultPickingPlugins,
+            bevy_egui::EguiPlugin,
         ))
         .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
