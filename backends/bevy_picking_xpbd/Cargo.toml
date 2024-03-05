@@ -6,7 +6,7 @@ authors = ["Aevyrie <aevyrie@gmail.com>, Affinator"]
 license = "MIT OR Apache-2.0"
 description = "A modular picking plugin for Bevy."
 repository = "https://github.com/aevyrie/bevy_mod_picking/"
-keywords = ["gamedev", "picking", "bevy", "input", "eventlistener", "xpbd"]
+keywords = ["gamedev", "picking", "bevy", "eventlistener", "xpbd"]
 categories = ["game-engines"]
 resolver = "2"
 
