@@ -1,21 +1,24 @@
 //! This module provides a simple interface for implementing a picking backend.
 //!
-//! Because bevy_picking_core is very loosely coupled with its backends, you can mix and match as
+//! Don't be dissuaded by terminology like "backend"; the idea is dead simple. `bevy_picking_core`
+//! will tell you where pointers are, all you have to do is send an event if the pointers are
+//! hitting something. That's it. The rest of this documentation explains the requirements in more
+//! detail.
+//!
+//! Because `bevy_picking_core` is very loosely coupled with its backends, you can mix and match as
 //! many backends as you want. For example, You could use the `rapier` backend to raycast against
-//! physics objects, a picking shader backend to pick non-physics meshes, and a custom backend for
-//! your UI. The [`PointerHits`]s produced by these various backends will be combined, sorted, and
-//! used as a homogeneous input for the picking systems that consume these events.
+//! physics objects, a picking shader backend to pick non-physics meshes, and the `bevy_ui` backend
+//! for your UI. The [`PointerHits`]s produced by these various backends will be combined, sorted,
+//! and used as a homogeneous input for the picking systems that consume these events.
 //!
 //! ## Implementation
 //!
-//! - A picking backend only has one job: reading
-//! [`PointerLocation`](crate::pointer::PointerLocation) components, checking
-//! [`Pickable`](crate::Pickable) entities for hits, and producing [`PointerHits`] events. In plain
-//! English, a backend is provided the location of pointers, and is asked to provide a list of
-//! entities under those pointers.
+//! - A picking backend only has one job: read [`PointerLocation`](crate::pointer::PointerLocation)
+//!   components and produce [`PointerHits`] events. In plain English, a backend is provided the
+//!   location of pointers, and is asked to provide a list of entities under those pointers.
 //!
 //! - The [`PointerHits`] events produced by a backend do **not** need to be sorted or filtered, all
-//! that is needed is an unordered list of entities and their [`HitData`].
+//!   that is needed is an unordered list of entities and their [`HitData`].
 //!
 //! - Backends do not need to consider the [`Pickable`](crate::Pickable) component, though they may
 //!   use it for optimization purposes. For example, a backend that traverses a spatial hierarchy

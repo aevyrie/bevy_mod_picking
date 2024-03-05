@@ -2,8 +2,7 @@
 //!
 //! # Usage
 //!
-//! If a pointer passes through this camera's render target, it will
-//! automatically shoot rays into the xpbd scene and will be able to pick things.
+//! Pointers will automatically shoot rays into the xpbd scene and pick entities.
 //!
 //! To ignore an entity, you can add [`Pickable::IGNORE`] to it, and it will be ignored during
 //! raycasting.
@@ -13,9 +12,9 @@
 //! ## Limitations
 //!
 //! Because raycasting is expensive, only the closest intersection will be reported. This means that
-//! unlike some UI, you cannot hover multiple xpbd objects with a single pointer by configuring
-//! the [`Pickable`] component to not block lower elements but still emit events. As mentioned
-//! above, all that is supported is completely ignoring an entity with [`Pickable::IGNORE`].
+//! unlike some UI, you cannot hover multiple xpbd objects with a single pointer by configuring the
+//! [`Pickable`] component to not block lower elements but still emit events. As mentioned above,
+//! all that is supported is completely ignoring an entity with [`Pickable::IGNORE`].
 //!
 //! This is probably not a meaningful limitation, as the feature is usually only used in UI where
 //! you might want a pointer to be able to pick multiple elements that are on top of each other. If
@@ -110,11 +109,12 @@ pub fn update_hits(
                     let entity_layers = layers.get(entity).copied().unwrap_or_default();
                     let render_layers_match = cam_layers.intersects(&entity_layers);
 
-                    let pickable = pickables
+                    let is_pickable = pickables
                         .get(entity)
                         .map(|p| *p != Pickable::IGNORE)
                         .unwrap_or(true);
-                    marker_requirement && render_layers_match && pickable
+
+                    marker_requirement && render_layers_match && is_pickable
                 },
             )
             .map(|ray_hit_data| {

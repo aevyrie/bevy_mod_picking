@@ -11,7 +11,7 @@ use bevy_asset::{prelude::*, Asset};
 use bevy_ecs::prelude::*;
 use bevy_reflect::prelude::*;
 
-use bevy_picking_core::{focus::PickingInteraction, PickSet};
+use bevy_picking_core::{focus::PickingInteraction, PickSet, PickingPluginsSettings};
 #[cfg(feature = "selection")]
 use bevy_picking_selection::PickSelection;
 
@@ -28,12 +28,19 @@ pub mod prelude {
 #[reflect(Resource, Default)]
 pub struct HighlightPluginSettings {
     /// Should highlighting systems run?
-    enabled: bool,
+    is_enabled: bool,
+}
+
+impl HighlightPluginSettings {
+    /// Whether or not highlighting systems should run.
+    pub fn should_run(settings: Res<Self>, main_settings: Res<PickingPluginsSettings>) -> bool {
+        settings.is_enabled && main_settings.is_enabled
+    }
 }
 
 impl Default for HighlightPluginSettings {
     fn default() -> Self {
-        Self { enabled: true }
+        Self { is_enabled: true }
     }
 }
 
@@ -119,7 +126,7 @@ where
             )
                 .chain()
                 .in_set(PickSet::Last)
-                .distributive_run_if(|settings: Res<HighlightPluginSettings>| settings.enabled),
+                .distributive_run_if(HighlightPluginSettings::should_run),
         )
         .register_type::<InitialHighlight<T>>()
         .register_type::<GlobalHighlight<T>>()

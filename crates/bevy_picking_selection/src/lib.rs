@@ -18,21 +18,40 @@ use bevy_eventlistener::prelude::*;
 use bevy_picking_core::{
     events::{Click, Down, Pointer},
     pointer::{InputPress, PointerButton, PointerId, PointerLocation},
-    PickSet,
+    PickSet, PickingPluginsSettings,
 };
 
 /// Runtime settings for the `bevy_picking_selection` plugin.
 #[derive(Debug, Resource, Reflect)]
 #[reflect(Resource, Default)]
-pub struct SelectionSettings {
+pub struct SelectionPluginSettings {
+    /// Should selection systems run?
+    pub is_enabled: bool,
     /// A pointer clicks and nothing is beneath it, should everything be deselected?
     pub click_nothing_deselect_all: bool,
     /// When true, `Ctrl` and `Shift` inputs will trigger multiselect.
     pub use_multiselect_default_inputs: bool,
 }
-impl Default for SelectionSettings {
+
+impl SelectionPluginSettings {
+    /// Whether or not selection systems should run
+    pub fn should_run(settings: Res<Self>, main_settings: Res<PickingPluginsSettings>) -> bool {
+        settings.is_enabled && main_settings.is_enabled
+    }
+
+    /// Whether or not multiselect input systems should run
+    pub fn multiselect_should_run(
+        settings: Res<Self>,
+        main_settings: Res<PickingPluginsSettings>,
+    ) -> bool {
+        settings.use_multiselect_default_inputs && settings.is_enabled && main_settings.is_enabled
+    }
+}
+
+impl Default for SelectionPluginSettings {
     fn default() -> Self {
         Self {
+            is_enabled: true,
             click_nothing_deselect_all: true,
             use_multiselect_default_inputs: true,
         }
@@ -43,7 +62,7 @@ impl Default for SelectionSettings {
 pub struct SelectionPlugin;
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<SelectionSettings>()
+        app.init_resource::<SelectionPluginSettings>()
             .add_event::<Pointer<Select>>()
             .add_event::<Pointer<Deselect>>()
             .add_plugins((
@@ -53,19 +72,17 @@ impl Plugin for SelectionPlugin {
             .add_systems(
                 PreUpdate,
                 (
-                    (
-                        multiselect_events.run_if(|settings: Res<SelectionSettings>| {
-                            settings.use_multiselect_default_inputs
-                        }),
-                    )
+                    (multiselect_events)
                         .chain()
-                        .in_set(PickSet::ProcessInput),
+                        .in_set(PickSet::ProcessInput)
+                        .run_if(SelectionPluginSettings::multiselect_should_run),
                     (send_selection_events, update_state_from_events)
                         .chain()
-                        .in_set(PickSet::PostFocus),
+                        .in_set(PickSet::PostFocus)
+                        .run_if(SelectionPluginSettings::should_run),
                 ),
             )
-            .register_type::<SelectionSettings>()
+            .register_type::<SelectionPluginSettings>()
             .register_type::<PointerMultiselect>()
             .register_type::<PickSelection>()
             .register_type::<NoDeselect>();
@@ -123,7 +140,7 @@ pub fn multiselect_events(
 /// Determines which entities have been selected or deselected, and sends [`Select`] and
 /// [`Deselect`] events corresponding to these state changes.
 pub fn send_selection_events(
-    settings: Res<SelectionSettings>,
+    settings: Res<SelectionPluginSettings>,
     mut pointer_down: EventReader<Pointer<Down>>,
     mut presses: EventReader<InputPress>,
     mut pointer_click: EventReader<Pointer<Click>>,

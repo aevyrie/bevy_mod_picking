@@ -1,6 +1,6 @@
 [package]
 name = "bevy_mod_picking"
-version = "0.17.0"
+version = "0.18.0"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -9,7 +9,7 @@ repository = "https://github.com/aevyrie/bevy_mod_picking/"
 keywords = ["gamedev", "picking", "bevy", "input", "eventlistener"]
 categories = ["game-engines", "rendering"]
 resolver = "2"
-rust-version = "1.70.0"
+rust-version = "1.76.0"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -39,16 +39,16 @@ bevy_rapier3d = { optional = true, version = "0.25" }
 bevy_xpbd_3d = { optional = true, version = "0.4" }
 
 # Local
-bevy_picking_core = { path = "crates/bevy_picking_core", version = "0.17" }
-bevy_picking_input = { path = "crates/bevy_picking_input", version = "0.17" }
-bevy_picking_selection = { optional = true, path = "crates/bevy_picking_selection", version = "0.17" }
-bevy_picking_highlight = { optional = true, path = "crates/bevy_picking_highlight", version = "0.17" }
-bevy_picking_raycast = { optional = true, path = "backends/bevy_picking_raycast", version = "0.17" }
-bevy_picking_ui = { optional = true, path = "backends/bevy_picking_ui", version = "0.17" }
-bevy_picking_rapier = { optional = true, path = "backends/bevy_picking_rapier", version = "0.17" }
-bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite", version = "0.17" }
-bevy_picking_egui = { optional = true, path = "backends/bevy_picking_egui", version = "0.17" }
-bevy_picking_xpbd = { optional = true, path = "backends/bevy_picking_xpbd", version = "0.17" }
+bevy_picking_core = { path = "crates/bevy_picking_core", version = "0.18" }
+bevy_picking_input = { path = "crates/bevy_picking_input", version = "0.18" }
+bevy_picking_selection = { optional = true, path = "crates/bevy_picking_selection", version = "0.18" }
+bevy_picking_highlight = { optional = true, path = "crates/bevy_picking_highlight", version = "0.18" }
+bevy_picking_raycast = { optional = true, path = "backends/bevy_picking_raycast", version = "0.18" }
+bevy_picking_ui = { optional = true, path = "backends/bevy_picking_ui", version = "0.18" }
+bevy_picking_rapier = { optional = true, path = "backends/bevy_picking_rapier", version = "0.18" }
+bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite", version = "0.18" }
+bevy_picking_egui = { optional = true, path = "backends/bevy_picking_egui", version = "0.18" }
+bevy_picking_xpbd = { optional = true, path = "backends/bevy_picking_xpbd", version = "0.18" }
 
 [dev-dependencies]
 bevy = { version = "0.13", default-features = false, features = [
@@ -117,7 +117,7 @@ required-features = ["backend_egui"]
 [[example]]
 name = "multiple_windows"
 path = "examples/multiple_windows.rs"
-# required-features = ["backend_egui"]
+required-features = ["backend_egui"]
 
 [[example]]
 name = "virtual_pointer"

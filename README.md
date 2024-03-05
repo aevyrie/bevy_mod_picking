@@ -5,7 +5,6 @@
 [![crates.io](https://img.shields.io/crates/v/bevy_mod_picking)](https://crates.io/crates/bevy_mod_picking)
 [![docs.rs](https://docs.rs/bevy_mod_picking/badge.svg)](https://docs.rs/bevy_mod_picking)
 [![CI](https://github.com/aevyrie/bevy_mod_picking/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/aevyrie/bevy_mod_picking/actions?query=workflow%3A%22CI%22+branch%3Amain)
-[![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 
 ![demo](https://user-images.githubusercontent.com/2632925/235874600-de0c7720-6775-42e1-8650-41ee8ac68d1b.gif)
 
@@ -101,10 +100,9 @@ To learn more, [read the docs](https://docs.rs/bevy_mod_picking/latest/bevy_mod_
 
 # Bevy Version Support
 
-I intend to track the `main` branch of Bevy. PRs supporting this are welcome!
-
 | bevy | bevy_mod_picking |
 | ---- | ---------------- |
+| 0.13 | 0.18             |
 | 0.12 | 0.17             |
 | 0.11 | 0.15, 0.16       |
 | 0.10 | 0.12, 0.13, 0.14 |

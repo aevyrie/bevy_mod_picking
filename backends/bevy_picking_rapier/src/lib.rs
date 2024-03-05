@@ -103,11 +103,12 @@ pub fn update_hits(
             let entity_layers = layers.get(entity).copied().unwrap_or_default();
             let render_layers_match = cam_layers.intersects(&entity_layers);
 
-            let pickable = pickables
+            let is_pickable = pickables
                 .get(entity)
                 .map(|p| *p != Pickable::IGNORE)
                 .unwrap_or(true);
-            marker_requirement && render_layers_match && pickable
+
+            marker_requirement && render_layers_match && is_pickable
         };
         if let Some((entity, hit_data)) = rapier_context
             .cast_ray_and_get_normal(

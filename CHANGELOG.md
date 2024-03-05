@@ -1,25 +1,64 @@
-# UNRELEASED
+# 0.18.0
+
+## Announcements:
+
+This plugin is now officially planned to be upstreamed into Bevy. This will require the
+`bevy_eventlistener` crate is also upstreamed, and a few critical features added or changed based on
+feedback from Bevy's BDFL. Many of the sub-crates in this repo are not appropriate for upstreaming,
+and will remain here. This includes things like the `egui` or `rapier` backends, or the highlighting
+crate.
+
+The intent is to upstream `bevy_eventlistener` and `bevy_picking_core` to be included in Bevy
+`0.14`, time permitting.
+
+## Known bugs:
+
+- The `bevy_ui` debug overlay is broken until <https://github.com/bevyengine/bevy/pull/12268> is
+  released as part of `bevy 0.13.1`.
+
+## Changes:
+
+### New `bevy_xpbd backend`
 
 - Added: `bevy_xpbd_3d` picking backend, available behind the optional `backend_xpbd` feature.
+
+### Automatic 3D Pointer Rays
+
+- Added: `RayMap` resource that contains a `Ray` for every (camera, pointer) pair. This is useful
+  for any users building a raycasting-based picking backend, handling viewports and scale for you. 
+- Changed: rapier and bevy_mod_raycast backends use the `RayMap` instead of constructing their own
+  rays.
+- Fixed: Ray construction now respects DPI / window scale.
+
+### Expanded features
+
 - Added: support for touch inputs across multiple windows.
+- Added: support for `bevy_ui` `UiScale`.
+- Added: `RaycastBackendSettings::raycast_visibility` to support picking hidden meshes.
 - Changed: simplified debug settings and examples. Debug settings can be changed with the
   `DebugPickingMode` resource.
-- Fixed: replaced uses of `.insert` with `.try_insert`, where they could potentially panic.
-- Fixed: replace all `.single` calls with matched `.get_single` calls to avoid crashing in
-  environments where there is no window available
+
+### Bug Fixes
+
 - Fixed: sprite picking depth is now consistent with other picking backends.
 - Fixed: entities with identical depth could be dropped due to the use of a BTreeMap to sort
   entities by depth. This has been changed to use a sorted Vec, to allow entities with the same
   depth to coexist.
-- Fixed: Ray construction now respects DPI / window scale
-- Added: `RayMap` resource that contains a `Ray` for every (camera, pointer) pair
-- Changed: rapier and bevy_mod_raycast backends use the `RayMap` instead of constructing their own
-  rays
 - Fixed: rapier and bevy_mod_raycast backends use `RenderLayers::default` when a camera is missing
-  them
-- Added: support for `bevy_ui` `UiScale`.
+  them.
 - Fixed: the bevy ui backend now ignores clipped areas of UI nodes. 
-- Added: `RaycastBackendSettings::raycast_visibility` to support picking hidden meshes.
+- Fixed: `PickingPluginsSettings::enable_input` is now used as a run condition for `PickSet::ProcessInput`.
+- Fixed: replaced uses of `.insert` with `.try_insert`, where they could potentially panic.
+- Fixed: replace all `.single` calls with matched `.get_single` calls to avoid crashing in
+  environments where there is no window available.
+
+### Documentation and Naming
+
+- Documentation pass over all docs.
+- Changed: renamed `Pickable::should_emit_events` to `is_hoverable` and clarified the docs.
+- Removed: `PickingPluginsSettings::enable_highlighting`, which was nonfunctional.
+- Changed: renamed `PickingPluginsSettings`, `HighlightingPluginSettings` fields to be consistent.
+  Renamed `SelectionSettings` to `SelectionPluginSettings`.
 
 # 0.17.0
 

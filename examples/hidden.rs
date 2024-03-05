@@ -10,7 +10,7 @@ fn main() {
         .add_plugins(DefaultPickingPlugins)
         .insert_resource(DebugPickingMode::Normal)
         .insert_resource(RaycastBackendSettings {
-            raycast_visibility: RaycastVisibility::Ignore,
+            raycast_visibility: RaycastVisibility::Ignore, // Allows us to pick a hidden mesh
             ..Default::default()
         })
         .add_systems(Startup, setup)
