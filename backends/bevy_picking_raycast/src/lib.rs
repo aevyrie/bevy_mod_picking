@@ -102,7 +102,12 @@ pub fn update_hits(
                 let entity_layers = layers.get(entity).copied().unwrap_or_default();
                 let render_layers_match = cam_layers.intersects(&entity_layers);
 
-                marker_requirement && render_layers_match
+                let is_pickable = pickables
+                    .get(entity)
+                    .map(|p| p.is_hoverable)
+                    .unwrap_or(true);
+
+                marker_requirement && render_layers_match && is_pickable
             },
             early_exit_test: &|entity_hit| {
                 pickables

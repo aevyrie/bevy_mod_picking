@@ -19,61 +19,79 @@ use bevy_eventlistener::{prelude::*, EventListenerSet};
 #[reflect(Resource, Default)]
 pub struct PickingPluginsSettings {
     /// Enables and disables all picking features.
-    pub enable: bool,
+    pub is_enabled: bool,
     /// Enables and disables input collection.
-    pub enable_input: bool,
-    /// Enables and disables entity highlighting.
-    pub enable_highlighting: bool,
+    pub is_input_enabled: bool,
     /// Enables and disables updating interaction states of entities.
-    pub enable_interacting: bool,
+    pub is_focus_enabled: bool,
 }
 
 impl PickingPluginsSettings {
     /// Whether or not input collection systems should be running.
-    pub fn input_enabled(state: Res<Self>) -> bool {
-        state.enable_input && state.enable
-    }
-    /// Whether or not entity highlighting systems should be running.
-    pub fn highlighting_should_run(state: Res<Self>) -> bool {
-        state.enable_highlighting && state.enable
+    pub fn input_should_run(state: Res<Self>) -> bool {
+        state.is_input_enabled && state.is_enabled
     }
     /// Whether or not systems updating entities' [`PickingInteraction`](focus::PickingInteraction)
     /// component should be running.
-    pub fn interaction_should_run(state: Res<Self>) -> bool {
-        state.enable_interacting && state.enable
+    pub fn focus_should_run(state: Res<Self>) -> bool {
+        state.is_focus_enabled && state.is_enabled
     }
 }
 
 impl Default for PickingPluginsSettings {
     fn default() -> Self {
         Self {
-            enable: true,
-            enable_input: true,
-            enable_highlighting: true,
-            enable_interacting: true,
+            is_enabled: true,
+            is_input_enabled: true,
+            is_focus_enabled: true,
         }
     }
 }
 
-/// An optional component that overrides default picking behavior for an entity.
+/// An optional component that overrides default picking behavior for an entity, allowing you to
+/// make an entity non-hoverable, or allow items below it to be hovered. See the documentation on
+/// the fields for more details.
 #[derive(Component, Debug, Clone, Reflect, PartialEq, Eq)]
 #[reflect(Component, Default)]
 pub struct Pickable {
     /// Should this entity block entities below it from being picked?
     ///
-    /// This is useful if you want an entity to exist in the hierarchy, but want picking to "pass
-    /// through" to lower layers and allow items below this one to be the target of picking events
-    /// **as well as** this one.
+    /// This is useful if you want picking to continue hitting entities below this one. Normally,
+    /// only the topmost entity under a pointer can be hovered, but this setting allows the pointer
+    /// to hover multiple entities, from nearest to farthest, stopping as soon as it hits an entity
+    /// that blocks lower entities.
+    ///
+    /// Note that the word "lower" here refers to entities that have been reported as hit by any
+    /// picking backend, but are at a lower depth than the current one. This is different from the
+    /// concept of event bubbling, as it works irrespective of the entity hierarchy.
+    ///
+    /// For example, if a pointer is over a UI element, as well as a 3d mesh, backends will report
+    /// hits for both of these entities. Additionally, the hits will be sorted by the camera order,
+    /// so if the UI is drawing on top of the 3d mesh, the UI will be "above" the mesh. When focus
+    /// is computed, the UI element will be checked first to see if it this field is set to block
+    /// lower entities. If it does (default), the focus system will stop there, and only the UI
+    /// element will be marked as hovered. However, if this field is set to `false`, both the UI
+    /// element *and* the mesh will be marked as hovered.
     ///
     /// Entities without the [`Pickable`] component will block by default.
     pub should_block_lower: bool,
-    /// Should this entity emit events when targeted?
+    /// Should this entity be added to the [`HoverMap`](focus::HoverMap) and thus emit events when
+    /// targeted?
     ///
     /// If this is set to `false` and `should_block_lower` is set to true, this entity will block
     /// lower entities from being interacted and at the same time will itself not emit any events.
     ///
-    /// Entities without the [`Pickable`] component will emit events by default.
-    pub should_emit_events: bool,
+    /// Note that the word "lower" here refers to entities that have been reported as hit by any
+    /// picking backend, but are at a lower depth than the current one. This is different from the
+    /// concept of event bubbling, as it works irrespective of the entity hierarchy.
+    ///
+    /// For example, if a pointer is over a UI element, and this field is set to `false`, it will
+    /// not be marked as hovered, and consequently will not emit events nor will any picking
+    /// components mark it as hovered. This can be combined with the other field
+    /// [Self::should_block_lower], which is orthogonal to this one.
+    ///
+    /// Entities without the [`Pickable`] component are hoverable by default.
+    pub is_hoverable: bool,
 }
 
 impl Pickable {
@@ -82,7 +100,7 @@ impl Pickable {
     /// If a backend reports this entity as being hit, the picking plugin will completely ignore it.
     pub const IGNORE: Self = Self {
         should_block_lower: false,
-        should_emit_events: false,
+        is_hoverable: false,
     };
 }
 
@@ -90,7 +108,7 @@ impl Default for Pickable {
     fn default() -> Self {
         Self {
             should_block_lower: true,
-            should_emit_events: true,
+            is_hoverable: true,
         }
     }
 }
@@ -136,20 +154,22 @@ impl PointerCoreBundle {
 /// Groups the stages of the picking process under shared labels.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum PickSet {
-    /// Produces pointer input events.
+    /// Produces pointer input events. In the [`First`] schedule.
     Input,
-    /// Runs after input events are generated but before commands are flushed.
+    /// Runs after input events are generated but before commands are flushed. In the [`First`]
+    /// schedule.
     PostInput,
-    /// Receives and processes pointer input events.
+    /// Receives and processes pointer input events. In the [`PreUpdate`] schedule.
     ProcessInput,
-    /// Reads inputs and produces [`backend::PointerHits`]s.
+    /// Reads inputs and produces [`backend::PointerHits`]s. In the [`PreUpdate`] schedule.
     Backend,
-    /// Reads [`backend::PointerHits`]s, and updates focus, selection, and highlighting
-    /// states.
+    /// Reads [`backend::PointerHits`]s, and updates focus, selection, and highlighting states. In
+    /// the [`PreUpdate`] schedule.
     Focus,
-    /// Runs after all the focus systems are done, before event listeners are triggered.
+    /// Runs after all the focus systems are done, before event listeners are triggered. In the
+    /// [`PreUpdate`] schedule.
     PostFocus,
-    /// Runs after all other sets
+    /// Runs after all other picking sets. In the [`PreUpdate`] schedule.
     Last,
 }
 
@@ -177,9 +197,9 @@ impl Plugin for CorePlugin {
             .configure_sets(
                 PreUpdate,
                 (
-                    PickSet::ProcessInput,
+                    PickSet::ProcessInput.run_if(PickingPluginsSettings::input_should_run),
                     PickSet::Backend,
-                    PickSet::Focus.run_if(PickingPluginsSettings::interaction_should_run),
+                    PickSet::Focus.run_if(PickingPluginsSettings::focus_should_run),
                     PickSet::PostFocus,
                     EventListenerSet,
                     PickSet::Last,

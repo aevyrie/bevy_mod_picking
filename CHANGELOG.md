@@ -6,20 +6,26 @@
   `DebugPickingMode` resource.
 - Fixed: replaced uses of `.insert` with `.try_insert`, where they could potentially panic.
 - Fixed: replace all `.single` calls with matched `.get_single` calls to avoid crashing in
-  environments where there is no window available
+  environments where there is no window available.
 - Fixed: sprite picking depth is now consistent with other picking backends.
 - Fixed: entities with identical depth could be dropped due to the use of a BTreeMap to sort
   entities by depth. This has been changed to use a sorted Vec, to allow entities with the same
   depth to coexist.
-- Fixed: Ray construction now respects DPI / window scale
-- Added: `RayMap` resource that contains a `Ray` for every (camera, pointer) pair
+- Fixed: Ray construction now respects DPI / window scale.
+- Added: `RayMap` resource that contains a `Ray` for every (camera, pointer) pair. This is useful
+  for any users building a raycasting-based picking backend, handling viewports and scale for you. 
 - Changed: rapier and bevy_mod_raycast backends use the `RayMap` instead of constructing their own
-  rays
+  rays.
 - Fixed: rapier and bevy_mod_raycast backends use `RenderLayers::default` when a camera is missing
-  them
+  them.
 - Added: support for `bevy_ui` `UiScale`.
 - Fixed: the bevy ui backend now ignores clipped areas of UI nodes. 
 - Added: `RaycastBackendSettings::raycast_visibility` to support picking hidden meshes.
+- Changed: renamed `Pickable::should_emit_events` to `is_hoverable` and clarified the docs.
+- Removed: `PickingPluginsSettings::enable_highlighting`, which was nonfunctional.
+- Fixed: `PickingPluginsSettings::enable_input` is now used as a run condition for `PickSet::ProcessInput`.
+- Changed: renamed `PickingPluginsSettings`, `HighlightingPluginSettings` fields to be consistent.
+  Renamed `SelectionSettings` to `SelectionPluginSettings`.
 
 # 0.17.0
 

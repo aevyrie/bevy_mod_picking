@@ -27,12 +27,27 @@ type LayerMap = BTreeMap<PickLayer, DepthSortedHits>;
 /// this data structure is used to sort entities by layer then depth for every pointer.
 type OverMap = HashMap<PointerId, LayerMap>;
 
+/// The source of truth for all hover state. This is used to determine what events to send, and what
+/// state components should be in.
+///
 /// Maps pointers to the entities they are hovering over.
 ///
-/// "Hovering" refers to the *hover* state, which is not the same as whether or not the pointer
-/// happens to be over the entity. More specifically, a pointer is "over" an entity if it is within
-/// the bounds of that entity, whereas a pointer is "hovering" an entity only if the mouse is "over"
-/// the entity *and* no entities between it and the pointer block interactions.
+/// "Hovering" refers to the *hover* state, which is not the same as whether or not a picking
+/// backend is reporting hits between a pointer and an entity. A pointer is "hovering" an entity
+/// only if the pointer is hitting the entity (as reported by a picking backend) *and* no entities
+/// between it and the pointer block interactions.
+///
+/// For example, if a pointer is hitting a UI button and a 3d mesh, but the button is in front of
+/// the mesh, and [`Pickable::should_block_lower`], the UI button will be hovered, but the mesh will
+/// not.
+///
+/// # Advanced Users
+///
+/// If you want to completely replace the provided picking events or state produced by this plugin,
+/// you can use this resource to do that. All of the event systems for picking are built *on top of*
+/// this authoritative hover state, and you can do the same. You can also use the
+/// [`PreviousHoverMap`] as a robust way of determining changes in hover state from the previous
+/// update.
 #[derive(Debug, Deref, DerefMut, Default, Resource)]
 pub struct HoverMap(pub HashMap<PointerId, HashMap<Entity, HitData>>);
 
@@ -135,7 +150,7 @@ fn build_hover_map(
             // Note we reverse here to start from the highest layer first.
             for (entity, pick_data) in layer_map.values().rev().flatten() {
                 if let Ok(pickable) = pickable.get(*entity) {
-                    if pickable.should_emit_events {
+                    if pickable.is_hoverable {
                         pointer_entity_set.insert(*entity, pick_data.clone());
                     }
                     if pickable.should_block_lower {

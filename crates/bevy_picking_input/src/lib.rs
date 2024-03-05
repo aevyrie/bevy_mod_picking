@@ -28,7 +28,8 @@ pub mod prelude {
     pub use crate::{InputPlugin, InputPluginSettings};
 }
 
-/// Adds mouse and touch inputs for picking pointers to your app.
+/// Adds mouse and touch inputs for picking pointers to your app. This is a default input plugin,
+/// that you can replace with your own plugin as needed.
 pub struct InputPlugin;
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
@@ -56,24 +57,21 @@ impl Plugin for InputPlugin {
 }
 
 /// A resource used to enable and disable features of the [`InputPlugin`].
+///
+/// [`bevy_picking_core::PickingPluginsSettings::is_input_enabled`] can be used to toggle whether
+/// the core picking plugin processes the inputs sent by this, or other input plugins, in one place.
 #[derive(Resource, Debug, Reflect)]
 #[reflect(Resource, Default)]
-pub enum InputPluginSettings {
-    /// The plugin is enabled and systems will run, even if all the inner fields corresponding to
-    /// specific features are disabled.
-    Enabled {
-        /// Should touch inputs be updated?
-        is_touch_enabled: bool,
-        /// Should mouse inputs be updated?
-        is_mouse_enabled: bool,
-    },
-    /// Completely disable the plugin.
-    Disabled,
+pub struct InputPluginSettings {
+    /// Should touch inputs be updated?
+    is_touch_enabled: bool,
+    /// Should mouse inputs be updated?
+    is_mouse_enabled: bool,
 }
 
 impl Default for InputPluginSettings {
     fn default() -> Self {
-        Self::Enabled {
+        Self {
             is_touch_enabled: true,
             is_mouse_enabled: true,
         }
@@ -82,28 +80,9 @@ impl Default for InputPluginSettings {
 
 impl InputPluginSettings {
     fn is_touch_enabled(state: Res<Self>) -> bool {
-        matches!(
-            *state,
-            Self::Enabled {
-                is_touch_enabled: true,
-                ..
-            }
-        )
+        state.is_touch_enabled
     }
     fn is_mouse_enabled(state: Res<Self>) -> bool {
-        matches!(
-            *state,
-            Self::Enabled {
-                is_mouse_enabled: true,
-                ..
-            }
-        )
-    }
-
-    /// Returns `true` if the input plugin state is [`Enabled`].
-    ///
-    /// [`Enabled`]: InputPluginSettings::Enabled
-    pub fn is_enabled(state: Res<Self>) -> bool {
-        matches!(*state, Self::Enabled { .. })
+        state.is_mouse_enabled
     }
 }

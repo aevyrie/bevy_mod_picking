@@ -1,23 +1,35 @@
-//! A flexible set of plugins that add picking functionality to your `bevy` app, with a focus on
-//! modularity, expressiveness, and robustness. Want to drag a UI entity and drop it onto a 3D mesh
-//! entity? This plugin allows you to add event listeners to **any** entity, and works with mouse,
-//! touch, or even gamepads. Includes optional integrations for `rapier` and `egui`, but is agnostic
-//! to the picking backend.
+//! A flexible set of plugins that add picking functionality to your `bevy` app.
 //!
-//! #### Lightweight
+//! ## Overview
 //!
-//! Only compile what you use. All non-critical plugins can be disabled, including highlighting,
-//! selection, and any backends not in use.
+//! In the simplest case, this plugin allows you to click on things in the scene. However, it also
+//! allows you to express more complex interactions, like detecting when a touch input drags a UI
+//! element and drops it on a 3d mesh rendered to a different camera. The crate also provides event
+//! listeners, so you can attach `On<Click>` components to an entity, to run a one-shot bevy system.
 //!
-//! #### Expressive
+//! The plugin works with any input, including mouse, touch, pens, or virtual pointers controlled by
+//! gamepads. It includes (optional) backends for `rapier`, `bevy_xpbd`, `bevy_mod_raycast`,
+//! `bevy_ui`, `bevy_sprite`, and `egui`, that can be mixed and matched out of the box, or you can
+//! write your own.
 //!
-//! [`Pointer`] events make it easy to react to interactions like [`Click`], [`Over`], or [`Drag`]
-//! (13 pointer events are provided). Reacting to these interaction events on a specific entity is
-//! made possible with the [`On<Event>`] component. When events are generated, they bubble up the
-//! entity hierarchy starting from their target, looking for these event listener components. (See
+//! At its core, this crate provides a robust abstraction for computing picking state regardless of
+//! pointing devices, or what you are hit testing against.
+//!
+//! ## Expressive Events
+//!
+//! The plugin provides normal bevy events that can be listened to with `EventReader`s. These
+//! [`Pointer`] events allow you to respond to interactions like [`Click`], [`Over`], or [`Drag`]
+//! (13 pointer events are provided). However, this often leads to a lot of boilerplate when you try
+//! to do something in response to that click, and you want the behavior to be tied to the entity
+//! being clicked on.
+//!
+//! Reacting to these interaction events on a specific entity is made possible with the
+//! [`On<Event>`](On) component. When events are generated, they bubble up the entity hierarchy
+//! starting from their target, looking for these event listener components. (See
 //! [`bevy_eventlistener`] for details.)
 //!
-//! This allows you to run callbacks when any children of an entity are interacted with:
+//! This allows you to run callbacks when any children of an entity are interacted with, and leads
+//! to succinct, expressive code:
 //!
 //! ```
 //! # use bevy::prelude::*;
@@ -56,22 +68,30 @@
 //! }
 //! ```
 //!
-//! #### Modular
+//! If you don't need event bubbling or callbacks, you can respond to pointer events like you would
+//! any other bevy event, using `EventReader<Pointer<Click>>`, `EventReader<Pointer<Move>>`, etc.
 //!
-//! Picking backends run hit tests to determine if a pointer is over any entities. This plugin
-//! provides a [simple API to write your own backend](crate::backend) in about 100 lines of code; it
-//! also includes half a dozen backends out of the box. These include `rapier`, `bevy_mod_raycast`,
-//! and `bevy_egui` among others. Multiple backends can be used at the same time!
+//! ## Modularity
+//!
+//! #### Mix and Match Hit Testing Backends
+//!
+//! The plugin attempts to handle all the hard parts for you, all you need to do is tell it when a
+//! pointer is hitting any entities. Multiple backends can be used at the same time!
+//!
+//! [Use this simple API to write your own backend](crate::backend) in about 100 lines of code. The
+//! plugin also includes half a dozen backends out of the box. These include `rapier`, `bevy_xpbd`,
+//! `bevy_mod_raycast`, `bevy_ui`, `bevy_egui`, and `bevy_sprite`.
 //!
 //! #### Input Agnostic
 //!
 //! Pointers can be controlled with anything, whether its the included mouse or touch inputs, or a
 //! custom gamepad input system you write yourself.
 //!
-//! #### Robust
+//! ## Robustness
 //!
-//! In addition to these features, this plugin also correctly handles multitouch and multiple
-//! windows.
+//! In addition to these features, this plugin also correctly handles multitouch, multiple windows,
+//! multiple cameras, viewports, and render layers. Using this as a library allows you to write a
+//! picking backend that can interoperate with any other picking backend.
 //!
 //! # Getting Started
 //!
@@ -86,11 +106,11 @@
 //! # ) {
 //! App::new()
 //!     .add_plugins(DefaultPlugins)
-//!     .add_plugins(DefaultPickingPlugins);
+//!     .add_plugins(DefaultPickingPlugins); // Includes a mesh raycasting backend by default
 //!
 //! commands.spawn((
-//!     PbrBundle::default(),           // The `bevy_picking_raycast` backend works with meshes
-//!     PickableBundle::default(),      // Makes the entity pickable
+//!     PbrBundle::default(),           // The raycasting backend works with meshes
+//!     PickableBundle::default(),      // Makes the entity pickable, and adds optional features
 //! ));
 //!
 //! commands.spawn(Camera3dBundle::default());
