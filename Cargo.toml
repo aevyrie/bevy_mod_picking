@@ -1,6 +1,6 @@
 [package]
 name = "bevy_mod_picking"
-version = "0.18.0"
+version = "0.18.1"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -63,7 +63,6 @@ bevy = { version = "0.13", default-features = false, features = [
     "zstd",
     "tonemapping_luts",
 ] }
-bevy_mod_picking = { path = "" }
 
 [features]
 all = [
