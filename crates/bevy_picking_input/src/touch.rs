@@ -5,10 +5,7 @@ use bevy_hierarchy::DespawnRecursiveExt;
 use bevy_input::touch::{TouchInput, TouchPhase};
 use bevy_math::Vec2;
 use bevy_render::camera::RenderTarget;
-use bevy_utils::{
-    tracing::{debug, info},
-    HashMap, HashSet,
-};
+use bevy_utils::{tracing::debug, HashMap, HashSet};
 use bevy_window::{PrimaryWindow, WindowRef};
 
 use bevy_picking_core::{
@@ -46,7 +43,7 @@ pub fn touch_pick_events(
         };
         match touch.phase {
             TouchPhase::Started => {
-                info!("Spawning pointer {:?}", pointer);
+                debug!("Spawning pointer {:?}", pointer);
                 commands.spawn((
                     PointerCoreBundle::new(pointer).with_location(location.clone()),
                     #[cfg(feature = "selection")]
@@ -61,7 +58,7 @@ pub fn touch_pick_events(
                 // Send a move event only if it isn't the same as the last one
                 if let Some(last_touch) = location_cache.get(&touch.id) {
                     if last_touch == touch {
-                        break;
+                        continue;
                     }
                     input_moves.send(InputMove::new(
                         pointer,
