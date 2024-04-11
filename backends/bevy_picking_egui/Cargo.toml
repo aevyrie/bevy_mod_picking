@@ -18,7 +18,7 @@ bevy_ecs = { version = "0.13", default-features = false }
 bevy_reflect = { version = "0.13", default-features = false }
 bevy_render = { version = "0.13", default-features = false }
 
-bevy_egui = "0.25"
+bevy_egui = "0.26"
 # Local
 bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.18" }
 bevy_picking_selection = { path = "../../crates/bevy_picking_selection", optional = true, version = "0.18" }
