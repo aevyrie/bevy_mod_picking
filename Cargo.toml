@@ -34,7 +34,7 @@ bevy_utils = { version = "0.13", default-features = false }
 bevy_window = { version = "0.13", default-features = false }
 
 bevy_eventlistener = "0.7"
-bevy_egui = { optional = true, version = "0.25" }
+bevy_egui = { optional = true, version = "0.26" }
 bevy_rapier3d = { optional = true, version = "0.25" }
 bevy_xpbd_3d = { optional = true, version = "0.4" }
 
