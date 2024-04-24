@@ -124,6 +124,11 @@ path = "examples/virtual_pointer.rs"
 required-features = ["backend_egui"]
 
 [[example]]
+name = "render_to_texture"
+path = "examples/render_to_texture.rs"
+required-features = ["bevy_egui"]
+
+[[example]]
 name = "split_screen"
 path = "examples/split_screen.rs"
 required-features = ["backend_egui"]
