@@ -1,15 +1,6 @@
 //! Renders the 3d scene to a texture, displays it in egui as a viewport, and adds picking support.
 
-use bevy::{
-    prelude::*,
-    render::{
-        render_resource::{
-            Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
-        },
-        view::RenderLayers,
-    },
-    transform,
-};
+use bevy::{prelude::*, render::render_resource::*};
 use bevy_egui::*;
 use bevy_mod_picking::prelude::*;
 use picking_core::pointer::{InputMove, InputPress, Location};
@@ -26,6 +17,8 @@ fn main() {
         .add_systems(Update, (ui, spin_cube))
         .run();
 }
+
+const VIEWPORT_SIZE: u32 = 256;
 
 /// Send this event to spawn a new viewport.
 #[derive(Event, Default)]
@@ -48,7 +41,7 @@ impl Plugin for ViewportInputPlugin {
 
 impl ViewportInputPlugin {
     fn send_mouse_clicks(
-        mut mouse_inputs: Res<ButtonInput<MouseButton>>,
+        mouse_inputs: Res<ButtonInput<MouseButton>>,
         mut pointer_press: EventWriter<InputPress>,
     ) {
         if mouse_inputs.just_pressed(MouseButton::Left) {
@@ -95,9 +88,11 @@ fn ui(
             .id(egui::Id::new(viewport_entity))
             .show(egui_contexts.ctx_mut(), |ui| {
                 // Draw the texture and get a response to check if a pointer is interacting
-                let viewport_response = ui.add(egui::widgets::Image::new(
-                    egui::load::SizedTexture::new(viewport_texture_id, [256.0, 256.0]),
-                ));
+                let viewport_response =
+                    ui.add(egui::widgets::Image::new(egui::load::SizedTexture::new(
+                        viewport_texture_id,
+                        [VIEWPORT_SIZE as f32, VIEWPORT_SIZE as f32],
+                    )));
 
                 if let Some(pointer_pos_window) = viewport_response.hover_pos() {
                     // Compute the position of the pointer relative to the texture.
@@ -122,7 +117,6 @@ fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut images: ResMut<Assets<Image>>,
 ) {
     commands.spawn((PointLightBundle {
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, 10.0)),
@@ -144,16 +138,10 @@ fn setup_scene(
 }
 
 /// Spawn a new camera to use as a viewport in egui on demand.
-fn spawn_viewport(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut images: ResMut<Assets<Image>>,
-    time: Res<Time>,
-) {
+fn spawn_viewport(mut commands: Commands, mut images: ResMut<Assets<Image>>, time: Res<Time>) {
     let size = Extent3d {
-        width: 256,
-        height: 256,
+        width: VIEWPORT_SIZE,
+        height: VIEWPORT_SIZE,
         ..default()
     };
 
