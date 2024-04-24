@@ -14,7 +14,7 @@ fn main() {
             EguiPlugin,
         ))
         .add_systems(Startup, setup_scene)
-        .add_systems(Update, (ui, spin_cube))
+        .add_systems(Update, (ui, animate_scene))
         .run();
 }
 
@@ -24,9 +24,8 @@ const VIEWPORT_SIZE: u32 = 256;
 #[derive(Event, Default)]
 pub struct SpawnViewport;
 
-/// Replaces bevy_mod_picking's default `InputPlugin`, and replaces it with inputs driven by egui,
-/// sending picking inputs when a pointer is over a viewport that has been rendered to a texture and
-/// laid out inside the ui.
+/// Replaces bevy_mod_picking's default `InputPlugin` with inputs driven by egui, sending picking
+/// inputs when a pointer is over a viewport that has been rendered to a texture in the ui.
 struct ViewportInputPlugin;
 
 impl Plugin for ViewportInputPlugin {
@@ -61,9 +60,13 @@ impl ViewportInputPlugin {
 }
 
 #[derive(Component)]
-struct EguiViewport(Handle<Image>);
+struct EguiViewport {
+    bevy: Handle<Image>,
+    egui: egui::TextureId,
+}
 
 fn ui(
+    mut commands: Commands,
     mut egui_contexts: EguiContexts,
     egui_viewports: Query<(Entity, &EguiViewport)>,
     mut pointer_move: EventWriter<InputMove>,
@@ -77,20 +80,19 @@ fn ui(
         });
     });
 
-    // Draw every viewport in a window. This isn't as robust as it could be for the sake of
+    // Draw each viewport in a window. This isn't as robust as it could be for the sake of
     // demonstration. This only works if the render target and egui texture are rendered at the same
     // resolution, and this completely ignores touch inputs and treats everything as a mouse input.
     for (viewport_entity, egui_viewport) in &egui_viewports {
-        let viewport_texture = &egui_viewport.0;
-        let viewport_texture_id = egui_contexts.add_image(viewport_texture.clone_weak());
-
-        egui::Window::new(format!("Viewport {:?}", viewport_entity))
+        let mut is_open = true;
+        egui::Window::new(format!("{:?}", viewport_entity))
             .id(egui::Id::new(viewport_entity))
+            .open(&mut is_open)
             .show(egui_contexts.ctx_mut(), |ui| {
                 // Draw the texture and get a response to check if a pointer is interacting
                 let viewport_response =
                     ui.add(egui::widgets::Image::new(egui::load::SizedTexture::new(
-                        viewport_texture_id,
+                        egui_viewport.egui,
                         [VIEWPORT_SIZE as f32, VIEWPORT_SIZE as f32],
                     )));
 
@@ -101,7 +103,7 @@ fn ui(
                         pointer_id: PointerId::Mouse,
                         location: Location {
                             target: bevy_render::camera::NormalizedRenderTarget::Image(
-                                viewport_texture.clone_weak(),
+                                egui_viewport.bevy.clone_weak(),
                             ),
                             position: Vec2::new(pos.x, pos.y),
                         },
@@ -109,43 +111,26 @@ fn ui(
                     });
                 }
             });
+        if !is_open {
+            commands.entity(viewport_entity).despawn_recursive();
+        }
     }
 }
 
-/// Spawn the light and cube mesh.
-fn setup_scene(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    commands.spawn((PointLightBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 10.0)),
-        ..default()
-    },));
-
-    commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Cuboid::new(4.0, 4.0, 4.0)),
-            material: materials.add(StandardMaterial {
-                base_color: Color::rgb(0.8, 0.7, 0.6),
-                ..default()
-            }),
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 1.0)),
-            ..default()
-        },
-        PickableBundle::default(),
-    ));
-}
-
 /// Spawn a new camera to use as a viewport in egui on demand.
-fn spawn_viewport(mut commands: Commands, mut images: ResMut<Assets<Image>>, time: Res<Time>) {
+fn spawn_viewport(
+    mut egui_contexts: EguiContexts,
+    mut commands: Commands,
+    mut images: ResMut<Assets<Image>>,
+    time: Res<Time>,
+) {
     let size = Extent3d {
         width: VIEWPORT_SIZE,
         height: VIEWPORT_SIZE,
         ..default()
     };
 
-    let image_handle = {
+    let viewport_handle = {
         let mut image = Image {
             texture_descriptor: TextureDescriptor {
                 label: None,
@@ -164,27 +149,59 @@ fn spawn_viewport(mut commands: Commands, mut images: ResMut<Assets<Image>>, tim
         image.resize(size);
         images.add(image)
     };
+    let viewport_texture_id = egui_contexts.add_image(viewport_handle.clone_weak());
 
+    let elapsed = time.elapsed_seconds();
     commands.spawn((
         Camera3dBundle {
             camera: Camera {
-                order: 1_000_001,
-                target: image_handle.clone().into(),
-                clear_color: Color::WHITE.into(),
+                target: viewport_handle.clone().into(),
                 ..default()
             },
-            transform: Transform::from_translation(Vec3::new(
-                time.elapsed_seconds().cos() * 10.0,
-                0.0,
-                time.elapsed_seconds().sin() * 10.0,
-            ))
+            transform: Transform::from_translation(
+                Vec3::new(elapsed.cos(), 0.0, elapsed.sin()) * 5.0,
+            )
             .looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         },
-        EguiViewport(image_handle.clone()),
+        EguiViewport {
+            bevy: viewport_handle.clone_weak(),
+            egui: viewport_texture_id,
+        },
     ));
 }
 
-fn spin_cube(mut cube: Query<&mut Transform, With<Handle<Mesh>>>, time: Res<Time>) {
-    cube.single_mut().rotate_x(time.delta_seconds() * 0.1)
+fn setup_scene(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    commands.insert_resource(AmbientLight {
+        brightness: 500.0,
+        ..default()
+    });
+    commands.spawn((PointLightBundle {
+        transform: Transform::from_translation(Vec3::new(2.0, 1.0, 5.0)),
+        ..default()
+    },));
+    commands.spawn((
+        PbrBundle {
+            mesh: meshes.add(Cuboid::default()),
+            material: materials.add(StandardMaterial::default()),
+            ..default()
+        },
+        PickableBundle::default(),
+    ));
+}
+
+fn animate_scene(
+    mut cube: Query<&mut Transform, (With<Handle<Mesh>>, Without<PointLight>)>,
+    mut light: Query<&mut Transform, With<PointLight>>,
+    time: Res<Time>,
+) {
+    let dt = time.delta_seconds();
+    cube.single_mut().rotate_x(dt * 0.2);
+    light
+        .single_mut()
+        .rotate_around(Vec3::ZERO, Quat::from_rotation_y(dt * 0.8));
 }
