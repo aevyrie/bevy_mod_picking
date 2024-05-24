@@ -123,7 +123,7 @@ fn build_over_map(
         for (entity, pick_data) in entities_under_pointer.picks.iter() {
             let layer = entities_under_pointer.order;
             let hits = layer_map.entry(FloatOrd(layer)).or_insert_with(Vec::new);
-            hits.push((*entity, pick_data.clone()));
+            hits.push((*entity, *pick_data));
         }
     }
 
@@ -151,13 +151,13 @@ fn build_hover_map(
             for (entity, pick_data) in layer_map.values().rev().flatten() {
                 if let Ok(pickable) = pickable.get(*entity) {
                     if pickable.is_hoverable {
-                        pointer_entity_set.insert(*entity, pick_data.clone());
+                        pointer_entity_set.insert(*entity, *pick_data);
                     }
                     if pickable.should_block_lower {
                         break;
                     }
                 } else {
-                    pointer_entity_set.insert(*entity, pick_data.clone()); // Emit events by default
+                    pointer_entity_set.insert(*entity, *pick_data); // Emit events by default
                     break; // Entities block by default so we break out of the loop
                 }
             }
@@ -216,7 +216,10 @@ pub fn update_interactions(
     for (pointer, pointer_press, mut pointer_interaction) in &mut pointers {
         if let Some(pointers_hovered_entities) = hover_map.get(pointer) {
             // Insert a sorted list of hit entities into the pointer's interaction component.
-            let mut sorted_entities: Vec<_> = pointers_hovered_entities.clone().drain().collect();
+            let mut sorted_entities: Vec<_> = pointers_hovered_entities
+                .into_iter()
+                .map(|(entity, hitdata)| (*entity, *hitdata))
+                .collect();
             sorted_entities.sort_by_key(|(_entity, hit)| FloatOrd(hit.depth));
             pointer_interaction.sorted_entities = sorted_entities;
 

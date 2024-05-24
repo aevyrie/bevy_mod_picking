@@ -63,7 +63,7 @@ impl<E: Debug + Clone + Reflect> Pointer<E> {
 }
 
 /// Fires when a pointer is no longer available.
-#[derive(Event, Clone, PartialEq, Debug, Reflect)]
+#[derive(Event, Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct PointerCancel {
     /// ID of the pointer that was cancelled.
     #[reflect(ignore)]
@@ -71,21 +71,21 @@ pub struct PointerCancel {
 }
 
 /// Fires when a the pointer crosses into the bounds of the `target` entity.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct Over {
     /// Information about the picking intersection.
     pub hit: HitData,
 }
 
 /// Fires when a the pointer crosses out of the bounds of the `target` entity.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct Out {
     /// Information about the latest prior picking intersection.
     pub hit: HitData,
 }
 
 /// Fires when a pointer button is pressed over the `target` entity.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct Down {
     /// Pointer button pressed to trigger this event.
     pub button: PointerButton,
@@ -94,7 +94,7 @@ pub struct Down {
 }
 
 /// Fires when a pointer button is released over the `target` entity.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct Up {
     /// Pointer button lifted to trigger this event.
     pub button: PointerButton,
@@ -104,7 +104,7 @@ pub struct Up {
 
 /// Fires when a pointer sends a pointer down event followed by a pointer up event, with the same
 /// `target` entity for both events.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct Click {
     /// Pointer button pressed and lifted to trigger this event.
     pub button: PointerButton,
@@ -113,7 +113,7 @@ pub struct Click {
 }
 
 /// Fires while a pointer is moving over the `target` entity.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct Move {
     /// Information about the picking intersection.
     pub hit: HitData,
@@ -122,7 +122,7 @@ pub struct Move {
 }
 
 /// Fires when the `target` entity receives a pointer down event followed by a pointer move event.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct DragStart {
     /// Pointer button pressed and moved to trigger this event.
     pub button: PointerButton,
@@ -131,7 +131,7 @@ pub struct DragStart {
 }
 
 /// Fires while the `target` entity is being dragged.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct Drag {
     /// Pointer button pressed and moved to trigger this event.
     pub button: PointerButton,
@@ -142,7 +142,7 @@ pub struct Drag {
 }
 
 /// Fires when a pointer is dragging the `target` entity and a pointer up event is received.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct DragEnd {
     /// Pointer button pressed, moved, and lifted to trigger this event.
     pub button: PointerButton,
@@ -151,7 +151,7 @@ pub struct DragEnd {
 }
 
 /// Fires when a pointer dragging the `dragged` entity enters the `target` entity.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct DragEnter {
     /// Pointer button pressed to enter drag.
     pub button: PointerButton,
@@ -162,7 +162,7 @@ pub struct DragEnter {
 }
 
 /// Fires while the `dragged` entity is being dragged over the `target` entity.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct DragOver {
     /// Pointer button pressed while dragging over.
     pub button: PointerButton,
@@ -173,7 +173,7 @@ pub struct DragOver {
 }
 
 /// Fires when a pointer dragging the `dragged` entity leaves the `target` entity.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct DragLeave {
     /// Pointer button pressed while leaving drag.
     pub button: PointerButton,
@@ -184,7 +184,7 @@ pub struct DragLeave {
 }
 
 /// Fires when a pointer drops the `dropped` entity onto the `target` entity.
-#[derive(Clone, PartialEq, Debug, Reflect)]
+#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub struct Drop {
     /// Pointer button lifted to drop.
     pub button: PointerButton,
@@ -226,7 +226,7 @@ pub fn pointer_events(
         for (hovered_entity, hit) in hover_map
             .get(&pointer_id)
             .iter()
-            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, data.to_owned())))
+            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, *data)))
         {
             pointer_move.send(Pointer::new(
                 pointer_id,
@@ -245,7 +245,7 @@ pub fn pointer_events(
         for (hovered_entity, hit) in previous_hover_map
             .get(&press_event.pointer_id)
             .iter()
-            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, data.clone())))
+            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, *data)))
         {
             if let PressDirection::Up = press_event.direction {
                 let Some(location) = pointer_location(press_event.pointer_id) else {
@@ -266,7 +266,7 @@ pub fn pointer_events(
         for (hovered_entity, hit) in hover_map
             .get(&press_event.pointer_id)
             .iter()
-            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, data.clone())))
+            .flat_map(|h| h.iter().map(|(entity, data)| (*entity, *data)))
         {
             if let PressDirection::Down = press_event.direction {
                 let Some(location) = pointer_location(press_event.pointer_id) else {
@@ -289,7 +289,7 @@ pub fn pointer_events(
     // If the entity is hovered...
     for (pointer_id, hovered_entity, hit) in hover_map
         .iter()
-        .flat_map(|(id, hashmap)| hashmap.iter().map(|data| (*id, *data.0, data.1.clone())))
+        .flat_map(|(id, hashmap)| hashmap.iter().map(|data| (*id, *data.0, *data.1)))
     {
         // ...but was not hovered last frame...
         if !previous_hover_map
@@ -313,7 +313,7 @@ pub fn pointer_events(
     // If the entity was hovered by a specific pointer last frame...
     for (pointer_id, hovered_entity, hit) in previous_hover_map
         .iter()
-        .flat_map(|(id, hashmap)| hashmap.iter().map(|data| (*id, *data.0, data.1.clone())))
+        .flat_map(|(id, hashmap)| hashmap.iter().map(|data| (*id, *data.0, *data.1)))
     {
         // ...but is now not being hovered by that same pointer...
         if !hover_map
@@ -403,7 +403,7 @@ pub fn send_click_and_drag_events(
                     down.target,
                     DragStart {
                         button,
-                        hit: down.hit.clone(),
+                        hit: down.hit,
                     },
                 ));
             }
@@ -520,11 +520,11 @@ pub fn send_drag_over_events(
                 )
             {
                 let drag_entry = drag_over_map.entry((pointer_id, button)).or_default();
-                drag_entry.insert(target, hit.clone());
+                drag_entry.insert(target, hit);
                 let event = DragEnter {
                     button,
                     dragged: *drag_target,
-                    hit: hit.clone(),
+                    hit,
                 };
                 pointer_drag_enter.send(Pointer::new(
                     pointer_id,
@@ -560,7 +560,7 @@ pub fn send_drag_over_events(
                     DragOver {
                         button,
                         dragged: *drag_target,
-                        hit: hit.clone(),
+                        hit,
                     },
                 ));
             }
@@ -589,7 +589,7 @@ pub fn send_drag_over_events(
                 DragLeave {
                     button,
                     dragged: target,
-                    hit: hit.clone(),
+                    hit,
                 },
             ));
             pointer_drop.send(Pointer::new(
@@ -599,7 +599,7 @@ pub fn send_drag_over_events(
                 Drop {
                     button,
                     dropped: target,
-                    hit: hit.clone(),
+                    hit,
                 },
             ));
         }
@@ -631,7 +631,7 @@ pub fn send_drag_over_events(
                     DragLeave {
                         button,
                         dragged: *drag_target,
-                        hit: hit.clone(),
+                        hit,
                     },
                 ));
             }
