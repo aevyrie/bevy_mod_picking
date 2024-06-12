@@ -1,6 +1,7 @@
 //! An example of picking a hidden mesh in your bevy app.
 
 use bevy::prelude::*;
+use bevy_color::palettes;
 use bevy_mod_picking::prelude::*;
 use bevy_picking_raycast::{bevy_mod_raycast::prelude::RaycastVisibility, RaycastBackendSettings};
 
@@ -25,11 +26,8 @@ fn setup(
 ) {
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
-                half_size: Vec2::splat(2.5),
-                ..default()
-            }),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder::from_length(5.0)),
+            material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
             ..default()
         },
         PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
@@ -38,7 +36,7 @@ fn setup(
         PbrBundle {
             visibility: Visibility::Hidden,
             mesh: meshes.add(Cuboid::default()),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
+            material: materials.add(Color::srgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
@@ -68,6 +66,6 @@ fn setup(
 pub fn show(mut gizmos: Gizmos) {
     gizmos.cuboid(
         Transform::from_translation(Vec3::new(0.0, 0.5, 0.0)),
-        Color::GREEN,
+        palettes::basic::GREEN,
     );
 }

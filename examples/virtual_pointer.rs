@@ -4,7 +4,6 @@
 use bevy::{
     prelude::*,
     render::camera::RenderTarget,
-    utils::Uuid,
     window::{PrimaryWindow, WindowRef},
 };
 use bevy_mod_picking::prelude::*;
@@ -14,7 +13,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(low_latency_window_plugin()),
             DefaultPickingPlugins,
-            bevy_egui::EguiPlugin, // Nicer pointer debug overlay, useful for this example.
+            // bevy_egui::EguiPlugin, // Nicer pointer debug overlay, useful for this example.
         ))
         .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
@@ -56,16 +55,13 @@ fn setup(
     // Create a new pointer. This is our "virtual" pointer we can control manually.
     commands.spawn((
         VirtualPointer,
-        PointerBundle::new(PointerId::Custom(Uuid::new_v4())),
+        PointerBundle::new(PointerId::Custom(pointer::Uuid::new_v4())),
     ));
 
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
-                half_size: Vec2::splat(2.5),
-                ..default()
-            }),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder::from_length(5.0)),
             material: materials.add(Color::WHITE),
             ..default()
         },
