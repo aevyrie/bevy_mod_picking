@@ -1,8 +1,17 @@
-# UNRELEASED
+# 0.19.0
 
 ## Fixes:
 
 - `HighlightPluginSettings::is_enabled` made public.
+- `bevy_ui` nodes with zero sized rects are ignored to fix a false positive.
+- Fixed touch pointer inputs being missed.
+
+## Additions:
+
+- Created a new `render_to_texture` example to showcase how to render viewport textures that support
+  picking.
+- Added support for a range of compatible versions of egui and rapier, instead of being tied to a
+  specific version of these crates.
 
 # 0.18.0
 
