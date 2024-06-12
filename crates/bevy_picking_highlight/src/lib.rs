@@ -28,7 +28,7 @@ pub mod prelude {
 #[reflect(Resource, Default)]
 pub struct HighlightPluginSettings {
     /// Should highlighting systems run?
-    is_enabled: bool,
+    pub is_enabled: bool,
 }
 
 impl HighlightPluginSettings {
