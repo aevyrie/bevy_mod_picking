@@ -64,9 +64,9 @@ impl Plugin for InputPlugin {
 #[reflect(Resource, Default)]
 pub struct InputPluginSettings {
     /// Should touch inputs be updated?
-    is_touch_enabled: bool,
+    pub is_touch_enabled: bool,
     /// Should mouse inputs be updated?
-    is_mouse_enabled: bool,
+    pub is_mouse_enabled: bool,
 }
 
 impl Default for InputPluginSettings {
