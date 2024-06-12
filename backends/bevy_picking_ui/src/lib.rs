@@ -146,6 +146,11 @@ pub fn ui_picking(
 
         let node_rect = node.node.logical_rect(node.global_transform);
 
+        // Nodes with Display::None have a (0., 0.) logical rect and can be ignored
+        if node_rect.size() == Vec2::ZERO {
+            continue;
+        }
+
         // Intersect with the calculated clip rect to find the bounds of the visible region of the node
         let visible_rect = node
             .calculated_clip
