@@ -1,3 +1,9 @@
+# UNRELEASED
+
+## Fixes:
+
+- `HighlightPluginSettings::is_enabled` made public.
+
 # 0.18.0
 
 ## Announcements:
