@@ -24,15 +24,21 @@ fn main() {
 // Note that this works for *any* type of asset, not just bevy's built in materials.
 const HIGHLIGHT_TINT: Highlight<StandardMaterial> = Highlight {
     hovered: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + Color::rgba(-0.2, -0.2, 0.4, 0.0),
+        base_color: matl
+            .base_color
+            .mix(&Color::srgba(-0.5, -0.3, 0.9, 0.8), 0.5), // hovered is blue
         ..matl.to_owned()
     })),
     pressed: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + Color::rgba(-0.3, -0.3, 0.5, 0.0),
+        base_color: matl
+            .base_color
+            .mix(&Color::srgba(-0.4, -0.4, 0.8, 0.8), 0.5), // pressed is a different blue
         ..matl.to_owned()
     })),
     selected: Some(HighlightKind::new_dynamic(|matl| StandardMaterial {
-        base_color: matl.base_color + Color::rgba(-0.3, 0.2, -0.3, 0.0),
+        base_color: matl
+            .base_color
+            .mix(&Color::srgba(-0.4, 0.8, -0.4, 0.0), 0.5), // selected is green
         ..matl.to_owned()
     })),
 };
@@ -47,10 +53,7 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
-                half_size: Vec2::splat(2.5),
-                ..default()
-            }),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder::from_length(5.0)),
             material: materials.add(StandardMaterial {
                 base_color_texture: Some(asset_server.load("images/boovy.png")),
                 ..default()

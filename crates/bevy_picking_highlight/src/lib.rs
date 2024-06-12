@@ -75,20 +75,20 @@ impl Plugin for DefaultHighlightingPlugin {
         #[cfg(feature = "pbr")]
         app.add_plugins(HighlightPlugin::<bevy_pbr::StandardMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
-                hovered: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.35)),
-                pressed: assets.add(bevy_render::color::Color::rgb(0.35, 0.75, 0.35)),
+                hovered: assets.add(bevy_color::Color::srgb(0.35, 0.35, 0.35)),
+                pressed: assets.add(bevy_color::Color::srgb(0.35, 0.75, 0.35)),
                 #[cfg(feature = "selection")]
-                selected: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.75)),
+                selected: assets.add(bevy_color::Color::srgb(0.35, 0.35, 0.75)),
             },
         });
 
         #[cfg(feature = "sprite")]
         app.add_plugins(HighlightPlugin::<bevy_sprite::ColorMaterial> {
             highlighting_default: |mut assets| GlobalHighlight {
-                hovered: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.35)),
-                pressed: assets.add(bevy_render::color::Color::rgb(0.35, 0.75, 0.35)),
+                hovered: assets.add(bevy_color::Color::srgb(0.35, 0.35, 0.35)),
+                pressed: assets.add(bevy_color::Color::srgb(0.35, 0.75, 0.35)),
                 #[cfg(feature = "selection")]
-                selected: assets.add(bevy_render::color::Color::rgb(0.35, 0.35, 0.75)),
+                selected: assets.add(bevy_color::Color::srgb(0.35, 0.35, 0.75)),
             },
         });
     }

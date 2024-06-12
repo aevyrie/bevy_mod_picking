@@ -52,24 +52,20 @@ fn main() {
 }
 
 #[derive(Component)]
-struct IdleColor(BackgroundColor);
+struct IdleColor(Color);
 
 #[allow(clippy::type_complexity)]
 /// Use the [`PickingInteraction`] state of each button to update its color.
 fn update_button_colors(
     mut buttons: Query<
-        (
-            Option<&PickingInteraction>,
-            &mut BackgroundColor,
-            &IdleColor,
-        ),
+        (Option<&PickingInteraction>, &mut UiImage, &IdleColor),
         (With<Button>, Changed<PickingInteraction>),
     >,
 ) {
     for (interaction, mut button_color, idle_color) in &mut buttons {
-        *button_color = match interaction {
-            Some(PickingInteraction::Pressed) => Color::rgb(0.35, 0.75, 0.35).into(),
-            Some(PickingInteraction::Hovered) => Color::rgb(0.25, 0.25, 0.25).into(),
+        button_color.color = match interaction {
+            Some(PickingInteraction::Pressed) => Color::srgb(0.35, 0.75, 0.35),
+            Some(PickingInteraction::Hovered) => Color::srgb(0.25, 0.25, 0.25),
             Some(PickingInteraction::None) | None => idle_color.0,
         };
     }
@@ -101,7 +97,7 @@ fn setup(mut commands: Commands) {
             };
             for i in 0..count {
                 for j in 0..count {
-                    let color = as_rainbow(j % i.max(1)).into();
+                    let color = as_rainbow(j % i.max(1));
                     let border_color = as_rainbow(i % j.max(1)).into();
                     spawn_button(
                         commands,
@@ -121,7 +117,7 @@ fn setup(mut commands: Commands) {
 #[allow(clippy::too_many_arguments)]
 fn spawn_button(
     commands: &mut ChildBuilder,
-    background_color: BackgroundColor,
+    background_color: Color,
     total: f32,
     i: usize,
     j: usize,
@@ -142,7 +138,7 @@ fn spawn_button(
                 border,
                 ..default()
             },
-            background_color,
+            image: UiImage::default().with_color(background_color),
             border_color,
             ..default()
         },
@@ -156,7 +152,7 @@ fn spawn_button(
                     format!("{i}, {j}"),
                     TextStyle {
                         font_size: FONT_SIZE,
-                        color: Color::rgb(0.2, 0.2, 0.2),
+                        color: Color::srgb(0.2, 0.2, 0.2),
                         ..default()
                     },
                 ),

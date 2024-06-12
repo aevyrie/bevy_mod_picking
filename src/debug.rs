@@ -404,7 +404,7 @@ pub fn debug_draw(
                         text.clone(),
                         TextStyle {
                             font_size: 12.0,
-                            color: Color::WHITE,
+                            color: bevy_color::Color::WHITE,
                             ..Default::default()
                         },
                     ),

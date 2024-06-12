@@ -5,6 +5,7 @@
 //! respected across different backends, in this case the sprite and 3d raycasting backends.
 
 use bevy::{prelude::*, sprite::Anchor};
+use bevy_color::palettes;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -83,7 +84,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 commands.spawn(SpriteBundle {
                     sprite: Sprite {
                         custom_size: sprite_size,
-                        color: Color::RED,
+                        color: Color::from(palettes::basic::RED),
                         anchor: anchor.to_owned(),
                         ..default()
                     },
@@ -129,17 +130,17 @@ fn setup_atlas(
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     let texture_handle = asset_server.load("images/gabe-idle-run.png");
-    let layout = TextureAtlasLayout::from_grid(Vec2::new(24.0, 24.0), 7, 1, None, None);
+    let layout = TextureAtlasLayout::from_grid(UVec2::new(24, 24), 7, 1, None, None);
     let texture_atlas_layout_handle = texture_atlas_layouts.add(layout);
     // Use only the subset of sprites in the sheet that make up the run animation
     let animation_indices = AnimationIndices { first: 1, last: 6 };
     commands.spawn((
-        SpriteSheetBundle {
+        TextureAtlas {
+            layout: texture_atlas_layout_handle,
+            index: animation_indices.first,
+        },
+        SpriteBundle {
             texture: texture_handle,
-            atlas: TextureAtlas {
-                layout: texture_atlas_layout_handle,
-                index: animation_indices.first,
-            },
             transform: Transform::from_xyz(300.0, 0.0, 0.0).with_scale(Vec3::splat(6.0)),
             ..default()
         },
@@ -155,11 +156,8 @@ fn setup_3d(
 ) {
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
-                half_size: Vec2::splat(2.5),
-                ..default()
-            }),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder::from_length(5.0)),
+            material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
             ..default()
         },
         PickableBundle::default(), // Optional: adds selection, highlighting, and helper components.
@@ -167,7 +165,7 @@ fn setup_3d(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Cuboid::default()),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
+            material: materials.add(Color::srgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
