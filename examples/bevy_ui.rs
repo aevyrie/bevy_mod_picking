@@ -20,9 +20,9 @@ fn update_button_colors(
 ) {
     for (interaction, mut button_color) in &mut buttons {
         *button_color = match interaction {
-            Some(PickingInteraction::Pressed) => Color::rgb(0.35, 0.75, 0.35),
-            Some(PickingInteraction::Hovered) => Color::rgb(0.25, 0.25, 0.25),
-            Some(PickingInteraction::None) | None => Color::rgb(0.15, 0.15, 0.15),
+            Some(PickingInteraction::Pressed) => Color::srgb(0.35, 0.75, 0.35),
+            Some(PickingInteraction::Hovered) => Color::srgb(0.25, 0.25, 0.25),
+            Some(PickingInteraction::None) | None => Color::srgb(0.15, 0.15, 0.15),
         }
         .into();
     }
@@ -70,11 +70,10 @@ fn setup_3d(
 ) {
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
-                half_size: Vec2::splat(2.5),
-                ..default()
-            }),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder::from_size(Vec2::splat(
+                5.0,
+            ))),
+            material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
             ..default()
         },
         PickableBundle::default(), // <- Makes the mesh pickable.
@@ -82,7 +81,7 @@ fn setup_3d(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Cuboid::default()),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
+            material: materials.add(Color::srgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
@@ -194,7 +193,7 @@ impl<'a> NewButton for EntityCommands<'a> {
                             text,
                             TextStyle {
                                 font_size: 40.0,
-                                color: Color::rgb(0.9, 0.9, 0.9),
+                                color: Color::srgb(0.9, 0.9, 0.9),
                                 ..default()
                             },
                         ),

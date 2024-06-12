@@ -101,7 +101,7 @@ pub fn sprite_picking(
                         let extents = sprite.custom_size.or_else(|| {
                             texture_atlas_layout
                                 .get(&atlas.layout)
-                                .map(|f| f.textures[atlas.index].size())
+                                .map(|f| f.textures[atlas.index].size().as_vec2())
                         })?;
                         let anchor = sprite.anchor.as_vec();
                         (extents, anchor)

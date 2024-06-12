@@ -1,6 +1,7 @@
 //! Demonstrates that picking respects camera render order.
 
 use bevy::{prelude::*, render::camera::ClearColorConfig};
+use bevy_color::palettes;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -23,11 +24,8 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
-                half_size: Vec2::splat(2.5),
-                ..default()
-            }),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder::from_length(5.0)),
+            material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
             ..default()
         },
         PickableBundle::default(), // <- Makes the mesh pickable.
@@ -36,7 +34,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Cuboid::default()),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
+            material: materials.add(Color::srgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         },
@@ -60,11 +58,8 @@ fn setup(
     // plane 2
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
-                half_size: Vec2::splat(2.5),
-                ..default()
-            }),
-            material: materials.add(Color::CYAN),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder::from_length(5.0)),
+            material: materials.add(Color::from(palettes::basic::BLUE)),
             transform: Transform::from_xyz(20., 20., 20.),
             ..default()
         },
@@ -74,7 +69,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Cuboid::default()),
-            material: materials.add(Color::YELLOW),
+            material: materials.add(Color::from(palettes::basic::YELLOW)),
             transform: Transform::from_xyz(20., 20.5, 20.),
             ..default()
         },
