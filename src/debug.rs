@@ -292,7 +292,7 @@ pub fn update_debug_data(
 pub fn debug_draw_egui(
     mut egui: bevy_egui::EguiContexts,
     pointers: Query<(&pointer::PointerId, &PointerDebug)>,
-    debug_mode: Res<DebugPickingMode>
+    debug_mode: Res<DebugPickingMode>,
 ) {
     use bevy_egui::egui::{self, Color32};
     use bevy_render::camera::NormalizedRenderTarget;
