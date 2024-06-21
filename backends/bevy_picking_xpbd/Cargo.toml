@@ -1,6 +1,6 @@
 [package]
 name = "bevy_picking_xpbd"
-version = "0.18.0"
+version = "0.18.1"
 edition = "2021"
 authors = ["Aevyrie <aevyrie@gmail.com>, Affinator"]
 license = "MIT OR Apache-2.0"
