@@ -15,7 +15,7 @@ use bevy_ecs::prelude::*;
 use bevy_eventlistener::prelude::*;
 use bevy_math::Vec2;
 use bevy_reflect::prelude::*;
-use bevy_utils::{tracing::error, HashMap};
+use bevy_utils::{tracing::debug, HashMap};
 
 /// Stores the common data needed for all `PointerEvent`s.
 #[derive(Clone, PartialEq, Debug, Reflect, Event, EntityEvent)]
@@ -249,7 +249,7 @@ pub fn pointer_events(
         {
             if let PressDirection::Up = press_event.direction {
                 let Some(location) = pointer_location(press_event.pointer_id) else {
-                    error!(
+                    debug!(
                         "Unable to get location for pointer {:?} during event {:?}",
                         press_event.pointer_id, press_event
                     );
@@ -270,7 +270,7 @@ pub fn pointer_events(
         {
             if let PressDirection::Down = press_event.direction {
                 let Some(location) = pointer_location(press_event.pointer_id) else {
-                    error!(
+                    debug!(
                         "Unable to get location for pointer {:?} during event {:?}",
                         press_event.pointer_id, press_event
                     );
@@ -298,7 +298,7 @@ pub fn pointer_events(
             .any(|e| e.contains_key(&hovered_entity))
         {
             let Some(location) = pointer_location(pointer_id) else {
-                error!(
+                debug!(
                     "Unable to get location for pointer {:?} during pointer over",
                     pointer_id
                 );
@@ -325,7 +325,7 @@ pub fn pointer_events(
             .any(|e| e.contains_key(&hovered_entity))
         {
             let Some(location) = pointer_location(pointer_id) else {
-                error!(
+                debug!(
                     "Unable to get location for pointer {:?} during pointer out",
                     pointer_id
                 );
@@ -472,7 +472,7 @@ pub fn send_click_and_drag_events(
             continue;
         };
         let Some(location) = pointer_location(press.pointer_id) else {
-            error!(
+            debug!(
                 "Unable to get location for pointer {:?} during event {:?}",
                 press.pointer_id, press
             );
