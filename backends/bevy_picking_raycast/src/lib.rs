@@ -90,7 +90,7 @@ pub fn update_hits(
             continue;
         }
 
-        let cam_layers = cam_layers.cloned().unwrap_or_default();
+        let cam_layers = cam_layers.to_owned().unwrap_or_default();
 
         let settings = RaycastSettings {
             visibility: backend_settings.raycast_visibility,
