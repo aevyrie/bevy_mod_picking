@@ -1,0 +1,27 @@
+[package]
+name = "bevy_picking_avian"
+version = "0.20.0"
+edition = "2021"
+authors = ["Aevyrie <aevyrie@gmail.com>, phepranto"]
+license = "MIT OR Apache-2.0"
+description = "A modular picking plugin for Bevy."
+repository = "https://github.com/aevyrie/bevy_mod_picking/"
+keywords = ["gamedev", "picking", "bevy", "eventlistener", "xpbd"]
+categories = ["game-engines"]
+resolver = "2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy_app = { version = "0.14.0", default-features = false }
+bevy_ecs = { version = "0.14.0", default-features = false }
+bevy_math = { version = "0.14.0", default-features = false }
+bevy_reflect = { version = "0.14.0", default-features = false }
+bevy_render = { version = "0.14.0", default-features = false }
+bevy_transform = { version = "0.14.0", default-features = false }
+bevy_utils = { version = "0.14.0", default-features = false }
+bevy_window = { version = "0.14.0", default-features = false }
+
+avian3d = "0.1"
+# Local
+bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.20.0" }
