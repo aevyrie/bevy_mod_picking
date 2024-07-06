@@ -201,6 +201,8 @@ pub mod debug;
 
 /// Picking backend exports, feature-gated.
 pub mod backends {
+    #[cfg(feature = "backend_avian")]
+    pub use bevy_picking_avian as avian;
     #[cfg(feature = "backend_egui")]
     pub use bevy_picking_egui as egui;
     #[cfg(feature = "backend_rapier")]
@@ -213,8 +215,6 @@ pub mod backends {
     pub use bevy_picking_ui as bevy_ui;
     #[cfg(feature = "backend_xpbd")]
     pub use bevy_picking_xpbd as xpbd;
-    #[cfg(feature = "backend_avian")]
-    pub use bevy_picking_avian as avian;
 }
 
 /// Common imports
@@ -246,6 +246,8 @@ pub mod prelude {
         Deselect, NoDeselect, PickSelection, PointerMultiselect, Select, SelectionPlugin,
     };
 
+    #[cfg(feature = "backend_avian")]
+    pub use backends::avian::prelude::*;
     #[cfg(feature = "backend_bevy_ui")]
     pub use backends::bevy_ui::prelude::*;
     #[cfg(feature = "backend_egui")]
@@ -260,8 +262,6 @@ pub mod prelude {
     pub use backends::sprite::prelude::*;
     #[cfg(feature = "backend_xpbd")]
     pub use backends::xpbd::prelude::*;
-    #[cfg(feature = "backend_avian")]
-    pub use backends::avian::prelude::*;
 }
 
 /// Makes an entity pickable.

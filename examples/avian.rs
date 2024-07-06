@@ -1,8 +1,8 @@
 //! Demonstrates how to use the Avian picking backend.
 
+use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
-use avian3d::prelude::*;
 
 fn main() {
     App::new()

@@ -29,8 +29,8 @@ use bevy_ecs::prelude::*;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
 use bevy_render::{prelude::*, view::RenderLayers};
 
-use bevy_picking_core::backend::prelude::*;
 use avian3d::prelude::*;
+use bevy_picking_core::backend::prelude::*;
 
 // Re-export for users who want this
 pub use avian3d;
@@ -83,7 +83,6 @@ pub fn update_hits(
     let Some(spatial_query) = spatial_query else {
         return;
     };
-
 
     for (&ray_id, &ray) in ray_map.map().iter() {
         let Ok((camera, cam_pickable, cam_layers)) = picking_cameras.get(ray_id.camera) else {
