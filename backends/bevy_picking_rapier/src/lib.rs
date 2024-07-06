@@ -93,15 +93,15 @@ pub fn update_hits(
             continue;
         }
 
-        let cam_layers = cam_layers.copied().unwrap_or_default();
+        let cam_layers = cam_layers.to_owned().unwrap_or_default();
 
         let predicate = |entity| {
             let marker_requirement =
                 !backend_settings.require_markers || marked_targets.get(entity).is_ok();
 
             // Other entities missing render layers are on the default layer 0
-            let entity_layers = layers.get(entity).copied().unwrap_or_default();
-            let render_layers_match = cam_layers.intersects(&entity_layers);
+            let entity_layers = layers.get(entity).to_owned().unwrap_or_default();
+            let render_layers_match = cam_layers.intersects(entity_layers);
 
             let is_pickable = pickables
                 .get(entity)
@@ -119,8 +119,12 @@ pub fn update_hits(
                 QueryFilter::new().predicate(&predicate),
             )
             .map(|(entity, hit)| {
-                let hit_data =
-                    HitData::new(ray_id.camera, hit.toi, Some(hit.point), Some(hit.normal));
+                let hit_data = HitData::new(
+                    ray_id.camera,
+                    hit.time_of_impact,
+                    Some(hit.point),
+                    Some(hit.normal),
+                );
                 (entity, hit_data)
             })
         {

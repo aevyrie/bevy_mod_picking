@@ -1,3 +1,7 @@
+# 0.20.0
+
+- Updated for Bevy `0.14.0`.
+
 # 0.19.0
 
 ## Fixes:
