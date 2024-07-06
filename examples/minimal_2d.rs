@@ -1,6 +1,7 @@
 //! A minimal 2d example.
 
 use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
+use bevy_color::palettes;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -23,7 +24,7 @@ fn setup(
         MaterialMesh2dBundle {
             mesh: meshes.add(Rectangle::default()).into(),
             transform: Transform::default().with_scale(Vec3::splat(128.)),
-            material: materials.add(ColorMaterial::from(Color::PURPLE)),
+            material: materials.add(ColorMaterial::from(Color::from(palettes::basic::PURPLE))),
             ..default()
         },
         PickableBundle::default(), // <- Makes the mesh pickable.

@@ -5,6 +5,7 @@
 //! other words, it allows you to easily implement "If entity X is hovered/clicked/dragged, do Y".
 
 use bevy::prelude::*;
+use bevy_color::palettes;
 use bevy_mod_picking::prelude::*;
 
 fn main() {
@@ -14,7 +15,6 @@ fn main() {
             DefaultPickingPlugins
                 .build()
                 .disable::<DefaultHighlightingPlugin>(),
-            bevy_egui::EguiPlugin,
         ))
         .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
@@ -103,7 +103,7 @@ fn setup(
                     // listener. Events on children will bubble up to the parent!
                     PbrBundle {
                         mesh: meshes.add(Cuboid::default()),
-                        material: materials.add(Color::RED),
+                        material: materials.add(Color::from(palettes::basic::RED)),
                         transform: Transform::from_xyz(0.0, 1.0 + 0.5 * i as f32, 0.0)
                             .with_scale(Vec3::splat(0.4)),
                         ..default()
@@ -135,10 +135,10 @@ fn change_hue_with_vertical_move(
     cube: Query<&Handle<StandardMaterial>>,
 ) {
     let material = materials.get_mut(cube.get(event.target).unwrap()).unwrap();
-    let mut color = material.base_color.as_hsla_f32();
+    let mut hue = material.base_color.hue();
     let to_u8 = 255.0 / 360.0; // we will use wrapping integer addition to make the hue wrap around
-    color[0] = ((color[0] * to_u8) as u8).wrapping_add_signed(event.delta.y as i8) as f32 / to_u8;
-    material.base_color = Color::hsla(color[0], color[1], color[2], color[3]);
+    hue = ((hue * to_u8) as u8).wrapping_add_signed(event.delta.y as i8) as f32 / to_u8;
+    material.base_color.set_hue(hue);
 }
 
 #[derive(Event)]

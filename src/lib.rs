@@ -33,7 +33,7 @@
 //!
 //! ```
 //! # use bevy::prelude::*;
-//! # use bevy::ecs::system::Command;
+//! # use bevy::ecs::world::Command;
 //! # use prelude::*;
 //! # use bevy_mod_picking::prelude::*;
 //! # use bevy_eventlistener::callbacks::ListenerInput;

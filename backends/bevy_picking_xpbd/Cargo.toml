@@ -1,6 +1,6 @@
 [package]
 name = "bevy_picking_xpbd"
-version = "0.19.1"
+version = "0.20.0"
 edition = "2021"
 authors = ["Aevyrie <aevyrie@gmail.com>, Affinator"]
 license = "MIT OR Apache-2.0"
@@ -13,15 +13,15 @@ resolver = "2"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy_app = { version = "0.13", default-features = false }
-bevy_ecs = { version = "0.13", default-features = false }
-bevy_math = { version = "0.13", default-features = false }
-bevy_reflect = { version = "0.13", default-features = false }
-bevy_render = { version = "0.13", default-features = false }
-bevy_transform = { version = "0.13", default-features = false }
-bevy_utils = { version = "0.13", default-features = false }
-bevy_window = { version = "0.13", default-features = false }
+bevy_app = { version = "0.14.0", default-features = false }
+bevy_ecs = { version = "0.14.0", default-features = false }
+bevy_math = { version = "0.14.0", default-features = false }
+bevy_reflect = { version = "0.14.0", default-features = false }
+bevy_render = { version = "0.14.0", default-features = false }
+bevy_transform = { version = "0.14.0", default-features = false }
+bevy_utils = { version = "0.14.0", default-features = false }
+bevy_window = { version = "0.14.0", default-features = false }
 
-bevy_xpbd_3d = "0.4"
+bevy_xpbd_3d = "0.5"
 # Local
-bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.19" }
+bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.20.0" }

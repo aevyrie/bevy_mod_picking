@@ -24,11 +24,8 @@ fn setup(
     // plane
     commands.spawn((
         PbrBundle {
-            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder {
-                half_size: Vec2::splat(2.5),
-                ..default()
-            }),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
+            mesh: meshes.add(bevy_render::mesh::PlaneMeshBuilder::from_length(5.0)),
+            material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
             ..default()
         },
         PickableBundle::default(), // <- Makes the mesh pickable.
@@ -37,7 +34,7 @@ fn setup(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Sphere::default()),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
+            material: materials.add(Color::srgb(0.8, 0.7, 0.6)),
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..default()
         },
@@ -45,14 +42,17 @@ fn setup(
         PickableBundle::default(), // <- Makes the mesh pickable.
     ));
     // light
-    commands.spawn(PointLightBundle {
-        point_light: PointLight {
-            shadows_enabled: true,
+    commands.spawn((
+        PointLightBundle {
+            point_light: PointLight {
+                shadows_enabled: true,
+                ..default()
+            },
+            transform: Transform::from_xyz(4.0, 8.0, 4.0),
             ..default()
         },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..default()
-    });
+        RenderLayers::from_layers(&[0, 1]),
+    ));
     // camera transform
     let camera_transform = Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y);
     // camera
