@@ -201,6 +201,8 @@ pub mod debug;
 
 /// Picking backend exports, feature-gated.
 pub mod backends {
+    #[cfg(feature = "backend_avian")]
+    pub use bevy_picking_avian as avian;
     #[cfg(feature = "backend_egui")]
     pub use bevy_picking_egui as egui;
     #[cfg(feature = "backend_rapier")]
@@ -244,6 +246,8 @@ pub mod prelude {
         Deselect, NoDeselect, PickSelection, PointerMultiselect, Select, SelectionPlugin,
     };
 
+    #[cfg(feature = "backend_avian")]
+    pub use backends::avian::prelude::*;
     #[cfg(feature = "backend_bevy_ui")]
     pub use backends::bevy_ui::prelude::*;
     #[cfg(feature = "backend_egui")]
@@ -349,6 +353,10 @@ impl bevy_app::PluginGroup for DefaultPickingPlugins {
         #[cfg(feature = "backend_egui")]
         {
             builder = builder.add(bevy_picking_egui::EguiBackend);
+        }
+        #[cfg(feature = "backend_avian")]
+        {
+            builder = builder.add(bevy_picking_avian::AvianBackend);
         }
 
         builder

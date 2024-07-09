@@ -39,6 +39,7 @@ bevy_eventlistener = "0.8.0"
 bevy_egui = { optional = true, version = "0.28.0" }          # >=0.28,  <=0.XX
 bevy_rapier3d = { optional = true, version = "0.27.0-rc.1" }
 bevy_xpbd_3d = { optional = true, version = "0.5.0" }
+avian3d = { optional = true, version = '0.1'}
 
 # Local
 bevy_picking_core = { path = "crates/bevy_picking_core", version = "0.20.0" }
@@ -51,6 +52,7 @@ bevy_picking_rapier = { optional = true, path = "backends/bevy_picking_rapier", 
 bevy_picking_sprite = { optional = true, path = "backends/bevy_picking_sprite", version = "0.20.0" }
 bevy_picking_egui = { optional = true, path = "backends/bevy_picking_egui", version = "0.20.0" }
 bevy_picking_xpbd = { optional = true, path = "backends/bevy_picking_xpbd", version = "0.20.0" }
+bevy_picking_avian = { optional = true, path = "backends/bevy_picking_avian", version = "0.20.0" }
 
 [dev-dependencies]
 bevy = { version = "0.14.0", default-features = false, features = [
@@ -99,6 +101,7 @@ backend_sprite = ["bevy_picking_sprite", "bevy_picking_highlight/sprite"]
 backend_bevy_ui = ["bevy_picking_ui", "bevy_ui", "bevy_color"]
 backend_egui = ["bevy_picking_egui", "bevy_egui"]
 backend_xpbd = ["bevy_picking_xpbd", "bevy_xpbd_3d"]
+backend_avian = ["bevy_picking_avian", "avian3d"]
 
 [[example]]
 name = "rapier"
@@ -129,3 +132,9 @@ required-features = ["backend_egui"]
 name = "xpbd"
 path = "examples/xpbd.rs"
 required-features = ["backend_xpbd"]
+
+[[example]]
+name = "avian"
+path = "examples/avian.rs"
+required-features = ["backend_avian"]
+
