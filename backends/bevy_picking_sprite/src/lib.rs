@@ -181,7 +181,7 @@ pub fn sprite_picking(
 }
 
 fn inverse_lerp(a: f32, b: f32, x: f32) -> Option<f32> {
-    if (b - a).abs() < std::f32::EPSILON {
+    if (b - a).abs() < f32::EPSILON {
         None
     } else {
         Some((x - a) / (b - a))
