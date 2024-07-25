@@ -1,6 +1,6 @@
 //! This example demonstrates how backends can be mixed and matched, specifically with egui. Here,
 //! we are using the egui backend, which is enabled automatically in `DefaultPickingPlugins` when
-//! the "egui_backend" feature is enabled. The egui backend will automatically apply a `NoDeselect`
+//! the "backend_egui" feature is enabled. The egui backend will automatically apply a `NoDeselect`
 //! component to the egui entity, which allows you to interact with the UI without deselecting
 //! anything in the 3d scene.
 
