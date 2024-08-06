@@ -81,10 +81,12 @@ pub fn sprite_picking(
             continue;
         };
 
-        let Some(cursor_pos_world) = camera.viewport_to_world_2d(cam_transform, location.position)
+        let Some(cursor_ray_world) = camera.viewport_to_world(cam_transform, location.position)
         else {
             continue;
         };
+        let cursor_ray_len = cam_ortho.far - cam_ortho.near;
+        let cursor_ray_end = cursor_ray_world.origin + cursor_ray_world.direction * cursor_ray_len;
 
         let picks: Vec<(Entity, HitData)> = sorted_sprites
             .iter()
@@ -118,26 +120,70 @@ pub fn sprite_picking(
                     let center = -anchor * extents;
                     let rect = Rect::from_center_half_size(center, extents / 2.0);
 
-                    // Transform cursor pos to sprite coordinate system
-                    let cursor_pos_sprite = sprite_transform
-                        .affine()
-                        .inverse()
-                        .transform_point3((cursor_pos_world, 0.0).into());
+                    // Transform cursor line segment to sprite coordinate system
+                    let world_to_sprite = sprite_transform.affine().inverse();
+                    let cursor_start_sprite =
+                        world_to_sprite.transform_point3(cursor_ray_world.origin);
+                    let cursor_end_sprite = world_to_sprite.transform_point3(cursor_ray_end);
 
-                    let is_cursor_in_sprite = rect.contains(cursor_pos_sprite.truncate());
+                    // Find where the cursor segment intersects the plane Z=0 (which is the sprite's
+                    // plane in sprite-local space). It may not intersect if, for example, we're
+                    // viewing the sprite side-on
+                    let lerp_factor = inverse_lerp(cursor_start_sprite.z, cursor_end_sprite.z, 0.0);
+                    let Some(lerp_factor) = lerp_factor else {
+                        // Lerp factor is `None`, meaning the cursor ray is parallel to the sprite
+                        // and misses it
+                        return None;
+                    };
+                    if !(0.0..=1.0).contains(&lerp_factor) {
+                        // Lerp factor is out of range, meaning that while an infinite line cast by
+                        // the cursor would intersect the sprite, the sprite is not between the
+                        // camera's near and far planes
+                        return None;
+                    }
+                    // Otherwise we can interpolate the xy of the start and end positions by the
+                    // lerp factor to get the cursor position in sprite space!
+                    let cursor_pos_sprite = cursor_start_sprite
+                        .lerp(cursor_end_sprite, lerp_factor)
+                        .xy();
+
+                    let is_cursor_in_sprite = rect.contains(cursor_pos_sprite);
+                    let hit_pos_world =
+                        sprite_transform.transform_point(cursor_pos_sprite.extend(0.0));
+
                     blocked = is_cursor_in_sprite
                         && pickable.map(|p| p.should_block_lower) != Some(false);
 
+                    // Transform point from world to camera space to get the Z distance
+                    let hit_pos_cam = cam_transform
+                        .affine()
+                        .inverse()
+                        .transform_point3(hit_pos_world);
                     // HitData requires a depth as calculated from the camera's near clipping plane
-                    let depth = -cam_ortho.near - sprite_transform.translation().z;
+                    let depth = -cam_ortho.near - hit_pos_cam.z;
 
-                    is_cursor_in_sprite
-                        .then_some((entity, HitData::new(cam_entity, depth, None, None)))
+                    is_cursor_in_sprite.then_some((
+                        entity,
+                        HitData::new(
+                            cam_entity,
+                            depth,
+                            Some(hit_pos_world),
+                            Some(*sprite_transform.back()),
+                        ),
+                    ))
                 },
             )
             .collect();
 
         let order = camera.order as f32;
         output.send(PointerHits::new(*pointer, picks, order));
+    }
+}
+
+fn inverse_lerp(a: f32, b: f32, x: f32) -> Option<f32> {
+    if (b - a).abs() < f32::EPSILON {
+        None
+    } else {
+        Some((x - a) / (b - a))
     }
 }
