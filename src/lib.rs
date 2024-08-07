@@ -265,7 +265,7 @@ pub mod prelude {
 }
 
 /// Makes an entity pickable.
-#[derive(Bundle, Default)]
+#[derive(Bundle, Default, Clone)]
 pub struct PickableBundle {
     /// Provides overrides for picking behavior.
     pub pickable: Pickable,
