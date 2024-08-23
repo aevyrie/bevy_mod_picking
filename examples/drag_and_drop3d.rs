@@ -1,6 +1,6 @@
-use std::f32::consts::FRAC_PI_2;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
+use std::f32::consts::FRAC_PI_2;
 
 fn main() {
     let mut app = App::new();
@@ -23,9 +23,10 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Spawn camera
-    commands.spawn(Camera3dBundle { 
-        transform: Transform::from_xyz(0.0, 1200.0, -400.0).looking_at(Vec3::ZERO, Vec3::Y),        
-        .. default()});
+    commands.spawn(Camera3dBundle {
+        transform: Transform::from_xyz(0.0, 1200.0, -400.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..default()
+    });
     // Spawn cubes
     for x in -2..=2 {
         let z = 0.5 + x as f32 * 0.1;
@@ -109,5 +110,3 @@ fn spin_cleanup(mut square: Query<(Entity, &Spin, &mut Transform)>, mut commands
         }
     }
 }
-
-
