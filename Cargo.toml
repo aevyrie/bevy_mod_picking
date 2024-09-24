@@ -139,33 +139,33 @@ path = "examples/avian.rs"
 required-features = ["backend_avian"]
 
 [patch.crates-io]
-bevy_app = { path = "../bevy/crates/bevy_app" }
-bevy_core = { path = "../bevy/crates/bevy_core" }
-bevy_core_pipeline = { path = "../bevy/crates/bevy_core_pipeline", optional = true }
-bevy_ecs = { path = "../bevy/crates/bevy_ecs" }
-bevy_math = { path = "../bevy/crates/bevy_math" }
-bevy_reflect = { path = "../bevy/crates/bevy_reflect" }
-bevy_render = { path = "../bevy/crates/bevy_render" }
-bevy_text = { path = "../bevy/crates/bevy_text", optional = true }
-bevy_utils = { path = "../bevy/crates/bevy_utils" }
-bevy_window = { path = "../bevy/crates/bevy_window" }
+bevy_app = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_core = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_core_pipeline = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159", optional = true }
+bevy_ecs = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_math = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_reflect = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_render = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_text = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159", optional = true }
+bevy_utils = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_window = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
 
 # transitive dependencies
-bevy_derive = { path = "../bevy/crates/bevy_derive" }
-bevy_transform = { path = "../bevy/crates/bevy_transform" }
-bevy_asset = { path = "../bevy/crates/bevy_asset" }
-bevy_pbr = { path = "../bevy/crates/bevy_pbr" }
+bevy_derive = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_transform = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_asset = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_pbr = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
 bevy_mod_raycast = { path = "../bevy_mod_raycast" }
 
 # Optional
-bevy_color = { path = "../bevy/crates/bevy_color", optional = true }
-bevy_ui = { path = "../bevy/crates/bevy_ui", optional = true }
-bevy_input = { path = "../bevy/crates/bevy_input", optional = true }
-bevy_sprite = { path = "../bevy/crates/bevy_sprite", optional = true }
-bevy_hierarchy = { path = "../bevy/crates/bevy_hierarchy", optional = true }
-bevy = { path = "../bevy", optional = true }
+bevy_color = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159", optional = true }
+bevy_ui = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159", optional = true }
+bevy_input = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159", optional = true }
+bevy_sprite = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159", optional = true }
+bevy_hierarchy = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159", optional = true }
+bevy = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159", optional = true }
 
-bevy_eventlistener = { path = "../bevy_eventlistener" }
+bevy_eventlistener = { git = "https://github.com/vrixyz/bevy_eventlistener.git", branch = "bevy_main" }
 # bevy_egui = { optional = true, version = "0.28.0" }          # >=0.28,  <=0.XX
 # bevy_rapier3d = { optional = true, version = "0.27.0-rc.1" }
 # bevy_xpbd_3d = { optional = true, version = "0.5.0" }

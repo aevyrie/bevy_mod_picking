@@ -25,4 +25,4 @@ bevy_transform = { version = "0.15.0-dev", default-features = false }
 
 uuid = { version = "1.1", features = ["v4"] }
 
-bevy_eventlistener = { version = "0.8", path = "../../../bevy_eventlistener" }
+bevy_eventlistener = { git = "https://github.com/vrixyz/bevy_eventlistener.git", branch = "bevy_main" }
