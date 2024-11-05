@@ -292,6 +292,7 @@ pub fn update_debug_data(
 pub fn debug_draw_egui(
     mut egui: bevy_egui::EguiContexts,
     pointers: Query<(&pointer::PointerId, &PointerDebug)>,
+    debug_mode: Res<DebugPickingMode>,
 ) {
     use bevy_egui::egui::{self, Color32};
     use bevy_render::camera::NormalizedRenderTarget;
@@ -310,25 +311,27 @@ pub fn debug_draw_egui(
         let to_egui_pos = |v: Vec2| egui::pos2(v.x, v.y);
         let dbg_painter = ctx.layer_painter(egui::LayerId::debug());
 
-        dbg_painter.circle(
-            to_egui_pos(location.position),
-            20.0,
-            Color32::from_rgba_unmultiplied(255, 255, 255, 32),
-            stroke,
-        );
-
-        debug.drag_start.iter().for_each(|(button, drag_start)| {
-            let (start, end) = (to_egui_pos(*drag_start), to_egui_pos(location.position));
-            dbg_painter.line_segment([start, end], stroke);
-            dbg_painter.circle(start, 20.0, egui::Color32::TRANSPARENT, stroke);
-            let drag_dist = location.position - *drag_start;
-            dbg_painter.debug_text(
-                ((end.to_vec2() + start.to_vec2()) * 0.5).to_pos2(),
-                egui::Align2::CENTER_CENTER,
-                Color32::WHITE,
-                format!("{button:?}: [{:.1}, {:.1}]", drag_dist.x, drag_dist.y),
+        if matches!(*debug_mode, DebugPickingMode::Noisy) {
+            dbg_painter.circle(
+                to_egui_pos(location.position),
+                20.0,
+                Color32::from_rgba_unmultiplied(255, 255, 255, 32),
+                stroke,
             );
-        });
+
+            debug.drag_start.iter().for_each(|(button, drag_start)| {
+                let (start, end) = (to_egui_pos(*drag_start), to_egui_pos(location.position));
+                dbg_painter.line_segment([start, end], stroke);
+                dbg_painter.circle(start, 20.0, egui::Color32::TRANSPARENT, stroke);
+                let drag_dist = location.position - *drag_start;
+                dbg_painter.debug_text(
+                    ((end.to_vec2() + start.to_vec2()) * 0.5).to_pos2(),
+                    egui::Align2::CENTER_CENTER,
+                    Color32::WHITE,
+                    format!("{button:?}: [{:.1}, {:.1}]", drag_dist.x, drag_dist.y),
+                );
+            });
+        }
 
         let text = format!("{id:?} {debug}");
         let alignment = egui::Align2::LEFT_TOP;
