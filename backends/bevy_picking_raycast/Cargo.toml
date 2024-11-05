@@ -1,6 +1,6 @@
 [package]
 name = "bevy_picking_raycast"
-version = "0.20.0"
+version = "0.20.2"
 edition = "2021"
 authors = ["Aevyrie <aevyrie@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -20,6 +20,6 @@ bevy_render = { version = "0.14.0", default-features = false }
 bevy_transform = { version = "0.14.0", default-features = false }
 bevy_window = { version = "0.14.0", default-features = false }
 
-bevy_mod_raycast = { version = "0.18" }
+bevy_mod_raycast = { version = "0.18", default-features = false }
 # Local
 bevy_picking_core = { path = "../../crates/bevy_picking_core", version = "0.20.0" }
