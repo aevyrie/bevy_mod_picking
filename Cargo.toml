@@ -36,7 +36,7 @@ bevy_color = { version = "0.14.0", optional = true, default-features = false }
 bevy_ui = { version = "0.14.0", optional = true, default-features = false }
 
 bevy_eventlistener = "0.8.0"
-bevy_egui = { optional = true, version = "0.28.0" }          # >=0.28,  <=0.XX
+bevy_egui = { optional = true, version = "0.30" }
 bevy_rapier3d = { optional = true, version = "0.27.0-rc.1" }
 bevy_xpbd_3d = { optional = true, version = "0.5.0" }
 avian3d = { optional = true, version = '0.1' }
