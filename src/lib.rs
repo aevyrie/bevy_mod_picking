@@ -256,8 +256,6 @@ pub mod prelude {
     pub use backends::rapier::prelude::*;
     #[cfg(feature = "backend_raycast")]
     pub use backends::raycast::prelude::*;
-    #[cfg(feature = "backend_shader")]
-    pub use backends::shader::prelude::*;
     #[cfg(feature = "backend_sprite")]
     pub use backends::sprite::prelude::*;
     #[cfg(feature = "backend_xpbd")]
@@ -341,10 +339,6 @@ impl bevy_app::PluginGroup for DefaultPickingPlugins {
         #[cfg(feature = "backend_xpbd")]
         {
             builder = builder.add(bevy_picking_xpbd::XpbdBackend);
-        }
-        #[cfg(feature = "backend_shader")]
-        {
-            builder = builder.add(bevy_picking_shader::ShaderBackend);
         }
         #[cfg(feature = "backend_sprite")]
         {

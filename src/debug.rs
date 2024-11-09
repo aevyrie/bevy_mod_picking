@@ -306,7 +306,7 @@ pub fn debug_draw_egui(
         let NormalizedRenderTarget::Window(window_ref) = location.target else {
             continue;
         };
-        let ctx = egui.ctx_for_window_mut(window_ref.entity());
+        let ctx = egui.ctx_for_entity_mut(window_ref.entity());
         let to_egui_pos = |v: Vec2| egui::pos2(v.x, v.y);
         let dbg_painter = ctx.layer_painter(egui::LayerId::debug());
 
