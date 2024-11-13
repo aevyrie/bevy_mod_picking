@@ -152,7 +152,7 @@ pub fn sprite_picking(
 
                     let cursor_in_valid_pixels_of_sprite = is_cursor_in_sprite
                         && settings.passthrough_transparency
-                        && (image.is_none() || {
+                        && (image.is_some() || {
                             let texture: &Image = image.and_then(|i| images.get(i))?;
                             // If using a texture atlas, grab the offset of the current sprite index. (0,0) otherwise
                             let texture_rect = atlas
@@ -162,16 +162,18 @@ pub fn sprite_picking(
                                         .map(|f| f.textures[atlas.index])
                                 })
                                 .or(Some(URect::new(0, 0, texture.width(), texture.height())))?;
+                            // get mouse position on texture
                             let texture_position =
                                 texture_rect.center() + cursor_pos_sprite.truncate().as_uvec2();
+                            // grab pixel
                             let pixel_index = (texture_position.y * texture.width()
                                 + texture_position.x)
                                 as usize;
+                            // check transparancy
                             if let Some(pixel_data) =
                                 texture.data.get(pixel_index * 4..(pixel_index * 4 + 4))
                             {
                                 let transparency = pixel_data[3];
-                                println!("pixel transparency: {}", transparency);
                                 transparency > settings.transparency_cutoff
                             } else {
                                 false
