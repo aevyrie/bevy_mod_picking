@@ -31,7 +31,7 @@ pub struct SpriteBackendSettings {
     /// Off by default for backwards compatibility. This setting is provided to give you fine-grained
     /// control over if transparncy on sprites is ignored.
     pub passthrough_transparency: bool,
-    /// How Opaque does part of a sprite need to be in order count as none-transparent (defaults to 245)
+    /// How Opaque does part of a sprite need to be in order count as none-transparent (defaults to 10)
     pub transparency_cutoff: u8,
 }
 
