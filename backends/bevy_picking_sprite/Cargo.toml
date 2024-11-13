@@ -16,6 +16,7 @@ resolver = "2"
 bevy_app = { version = "0.14.0", default-features = false }
 bevy_asset = { version = "0.14.0", default-features = false }
 bevy_ecs = { version = "0.14.0", default-features = false }
+bevy_reflect = { version = "0.14.0", default-features = false }
 bevy_math = { version = "0.14.0", default-features = false }
 bevy_render = { version = "0.14.0", default-features = false }
 bevy_sprite = { version = "0.14.0", default-features = false }
