@@ -151,7 +151,7 @@ pub fn sprite_picking(
                     let is_cursor_in_sprite = rect.contains(cursor_pos_sprite.truncate());
 
                     let cursor_in_valid_pixels_of_sprite = is_cursor_in_sprite
-                        && (settings.passthrough_transparency == false
+                        && (!settings.passthrough_transparency
                             || (image.is_some() && {
                                 let texture: &Image = image.and_then(|i| images.get(i))?;
                                 // If using a texture atlas, grab the offset of the current sprite index. (0,0) otherwise
