@@ -10,6 +10,7 @@ use bevy_app::prelude::*;
 use bevy_asset::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_math::prelude::*;
+use bevy_reflect::prelude::*;
 use bevy_render::prelude::*;
 use bevy_sprite::{Sprite, TextureAtlas, TextureAtlasLayout};
 use bevy_transform::prelude::*;
@@ -22,13 +23,37 @@ pub mod prelude {
     pub use crate::SpriteBackend;
 }
 
+/// Runtime settings for the [`SpriteBackend`].
+#[derive(Resource, Reflect)]
+#[reflect(Resource, Default)]
+pub struct SpriteBackendSettings {
+    /// When set to `true` picking will ignore any part of a sprite which has an alpha lower than the cutoff
+    /// Off by default for backwards compatibility. This setting is provided to give you fine-grained
+    /// control over if transparency on sprites is ignored.
+    pub alpha_passthrough: bool,
+    /// How Opaque does part of a sprite need to be in order count as none-transparent (defaults to 10)
+    ///
+    /// This is on a scale from 0 - 255 representing the alpha channel value you'd get in most art programs.
+    pub alpha_cutoff: u8,
+}
+
+impl Default for SpriteBackendSettings {
+    fn default() -> Self {
+        Self {
+            alpha_passthrough: false,
+            alpha_cutoff: 10,
+        }
+    }
+}
+
 /// Adds picking support for [`bevy_sprite`].
 #[derive(Clone)]
 pub struct SpriteBackend;
 
 impl Plugin for SpriteBackend {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreUpdate, sprite_picking.in_set(PickSet::Backend));
+        app.init_resource::<SpriteBackendSettings>()
+            .add_systems(PreUpdate, sprite_picking.in_set(PickSet::Backend));
     }
 }
 
@@ -39,6 +64,7 @@ pub fn sprite_picking(
     primary_window: Query<Entity, With<PrimaryWindow>>,
     images: Res<Assets<Image>>,
     texture_atlas_layout: Res<Assets<TextureAtlasLayout>>,
+    settings: Res<SpriteBackendSettings>,
     sprite_query: Query<
         (
             Entity,
@@ -125,13 +151,50 @@ pub fn sprite_picking(
                         .transform_point3((cursor_pos_world, 0.0).into());
 
                     let is_cursor_in_sprite = rect.contains(cursor_pos_sprite.truncate());
-                    blocked = is_cursor_in_sprite
+
+                    let cursor_in_valid_pixels_of_sprite = is_cursor_in_sprite
+                        && (!settings.alpha_passthrough
+                            || (image.is_some() && {
+                                let texture: &Image = image.and_then(|i| images.get(i))?;
+                                // If using a texture atlas, grab the offset of the current sprite index. (0,0) otherwise
+                                let texture_rect = atlas
+                                    .and_then(|atlas| {
+                                        texture_atlas_layout
+                                            .get(&atlas.layout)
+                                            .map(|f| f.textures[atlas.index])
+                                    })
+                                    .or(Some(URect::new(
+                                        0,
+                                        0,
+                                        texture.width(),
+                                        texture.height(),
+                                    )))?;
+                                // get mouse position on texture
+                                let texture_position = (texture_rect.center().as_vec2()
+                                    + cursor_pos_sprite.truncate())
+                                .as_uvec2();
+                                // grab pixel
+                                let pixel_index = (texture_position.y * texture.width()
+                                    + texture_position.x)
+                                    as usize;
+                                // check transparency
+                                match texture.data.get(pixel_index * 4..(pixel_index * 4 + 4)) {
+                                    // If possible check the alpha bit is above cutoff
+                                    Some(pixel_data) if pixel_data[3] > settings.alpha_cutoff => {
+                                        true
+                                    }
+                                    // If not possible, it's not in the sprite
+                                    _ => false,
+                                }
+                            }));
+
+                    blocked = cursor_in_valid_pixels_of_sprite
                         && pickable.map(|p| p.should_block_lower) != Some(false);
 
                     // HitData requires a depth as calculated from the camera's near clipping plane
                     let depth = -cam_ortho.near - sprite_transform.translation().z;
 
-                    is_cursor_in_sprite
+                    cursor_in_valid_pixels_of_sprite
                         .then_some((entity, HitData::new(cam_entity, depth, None, None)))
                 },
             )
