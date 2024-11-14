@@ -27,19 +27,21 @@ pub mod prelude {
 #[derive(Resource, Reflect)]
 #[reflect(Resource, Default)]
 pub struct SpriteBackendSettings {
-    /// When set to `true` picking will ignore any part of a sprite which is transparent
+    /// When set to `true` picking will ignore any part of a sprite which has an alpha lower than the cutoff
     /// Off by default for backwards compatibility. This setting is provided to give you fine-grained
-    /// control over if transparncy on sprites is ignored.
-    pub passthrough_transparency: bool,
+    /// control over if transparency on sprites is ignored.
+    pub alpha_passthrough: bool,
     /// How Opaque does part of a sprite need to be in order count as none-transparent (defaults to 10)
-    pub transparency_cutoff: u8,
+    ///
+    /// This is on a scale from 0 - 255 representing the alpha channel value you'd get in most art programs.
+    pub alpha_cutoff: u8,
 }
 
 impl Default for SpriteBackendSettings {
     fn default() -> Self {
         Self {
-            passthrough_transparency: false,
-            transparency_cutoff: 10,
+            alpha_passthrough: false,
+            alpha_cutoff: 10,
         }
     }
 }
@@ -151,7 +153,7 @@ pub fn sprite_picking(
                     let is_cursor_in_sprite = rect.contains(cursor_pos_sprite.truncate());
 
                     let cursor_in_valid_pixels_of_sprite = is_cursor_in_sprite
-                        && (!settings.passthrough_transparency
+                        && (!settings.alpha_passthrough
                             || (image.is_some() && {
                                 let texture: &Image = image.and_then(|i| images.get(i))?;
                                 // If using a texture atlas, grab the offset of the current sprite index. (0,0) otherwise
@@ -168,20 +170,21 @@ pub fn sprite_picking(
                                         texture.height(),
                                     )))?;
                                 // get mouse position on texture
-                                let texture_position =
-                                    texture_rect.center() + cursor_pos_sprite.truncate().as_uvec2();
+                                let texture_position = (texture_rect.center().as_vec2()
+                                    + cursor_pos_sprite.truncate())
+                                .as_uvec2();
                                 // grab pixel
                                 let pixel_index = (texture_position.y * texture.width()
                                     + texture_position.x)
                                     as usize;
-                                // check transparancy
-                                if let Some(pixel_data) =
-                                    texture.data.get(pixel_index * 4..(pixel_index * 4 + 4))
-                                {
-                                    let transparency = pixel_data[3];
-                                    transparency > settings.transparency_cutoff
-                                } else {
-                                    false
+                                // check transparency
+                                match texture.data.get(pixel_index * 4..(pixel_index * 4 + 4)) {
+                                    // If possible check the alpha bit is above cutoff
+                                    Some(pixel_data) if pixel_data[3] > settings.alpha_cutoff => {
+                                        true
+                                    }
+                                    // If not possible, it's not in the sprite
+                                    _ => false,
                                 }
                             }));
 
