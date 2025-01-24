@@ -342,11 +342,12 @@ pub fn pointer_events(
 }
 
 /// Maps pointers to the entities they are dragging.
-#[derive(Debug, Deref, DerefMut, Default, Resource)]
+#[derive(Debug, Deref, DerefMut, Default, Resource, Reflect)]
+#[reflect(Resource)]
 pub struct DragMap(pub HashMap<(PointerId, PointerButton), HashMap<Entity, DragEntry>>);
 
 /// An entry in the [`DragMap`].
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Reflect)]
 pub struct DragEntry {
     /// The position of the pointer at drag start.
     pub start_pos: Vec2,
