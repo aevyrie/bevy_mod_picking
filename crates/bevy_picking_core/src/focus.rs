@@ -49,11 +49,13 @@ type OverMap = HashMap<PointerId, LayerMap>;
 /// this authoritative hover state, and you can do the same. You can also use the
 /// [`PreviousHoverMap`] as a robust way of determining changes in hover state from the previous
 /// update.
-#[derive(Debug, Deref, DerefMut, Default, Resource)]
+#[derive(Debug, Deref, DerefMut, Default, Resource, Reflect)]
+#[reflect(Resource)]
 pub struct HoverMap(pub HashMap<PointerId, HashMap<Entity, HitData>>);
 
 /// The previous state of the hover map, used to track changes to hover state.
-#[derive(Debug, Deref, DerefMut, Default, Resource)]
+#[derive(Debug, Deref, DerefMut, Default, Resource, Reflect)]
+#[reflect(Resource)]
 pub struct PreviousHoverMap(pub HashMap<PointerId, HashMap<Entity, HitData>>);
 
 /// Coalesces all data from inputs and backends to generate a map of the currently hovered entities.
