@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> This crate is archived after being upstreamed in bevy 0.15.
+> https://bevyengine.org/news/bevy-0-15/#entity-picking-selection
+
 <div align="center">
 
 # Picking and Pointer Events for Bevy
