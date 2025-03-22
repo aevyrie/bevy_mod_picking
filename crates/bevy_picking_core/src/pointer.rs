@@ -77,7 +77,8 @@ impl Deref for PointerInteraction {
 }
 
 /// A resource that maps each [`PointerId`] to their [`Entity`] for easy lookups.
-#[derive(Debug, Clone, Default, Resource)]
+#[derive(Debug, Clone, Default, Resource, Reflect)]
+#[reflect(Resource)]
 pub struct PointerMap {
     inner: HashMap<PointerId, Entity>,
 }
@@ -225,7 +226,6 @@ impl PointerButton {
 pub struct PointerLocation {
     /// The [`Location`] of the pointer. Note that a location is both the target, and the position
     /// on the target.
-    #[reflect(ignore)]
     pub location: Option<Location>,
 }
 impl PointerLocation {
@@ -280,6 +280,7 @@ impl InputMove {
 ///   render target. It is up to picking backends to associate a Pointer's `Location` with a
 ///   specific `Camera`, if any.
 #[derive(Debug, Clone, Component, Reflect, PartialEq)]
+#[reflect(Component)]
 pub struct Location {
     /// The [`NormalizedRenderTarget`] associated with the pointer, usually a window.
     pub target: NormalizedRenderTarget,

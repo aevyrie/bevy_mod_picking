@@ -14,6 +14,7 @@ use bevy_ecs::prelude::*;
 use bevy_reflect::prelude::*;
 
 use bevy_eventlistener::{prelude::*, EventListenerSet};
+use focus::{HoverMap, PreviousHoverMap};
 /// Used to globally toggle picking features at runtime.
 #[derive(Clone, Debug, Resource, Reflect)]
 #[reflect(Resource, Default)]
@@ -208,11 +209,14 @@ impl Plugin for CorePlugin {
             )
             .register_type::<pointer::PointerId>()
             .register_type::<pointer::PointerLocation>()
+            .register_type::<pointer::Location>()
             .register_type::<pointer::PointerPress>()
             .register_type::<pointer::PointerInteraction>()
+            .register_type::<pointer::PointerMap>()
             .register_type::<Pickable>()
             .register_type::<PickingPluginsSettings>()
-            .register_type::<backend::ray::RayId>();
+            .register_type::<backend::ray::RayId>()
+            .register_type::<backend::ray::RayMap>();
     }
 }
 
@@ -253,6 +257,9 @@ impl Plugin for InteractionPlugin {
                 EventListenerPlugin::<Pointer<DragOver>>::default(),
                 EventListenerPlugin::<Pointer<DragLeave>>::default(),
                 EventListenerPlugin::<Pointer<Drop>>::default(),
-            ));
+            ))
+            .register_type::<HoverMap>()
+            .register_type::<PreviousHoverMap>()
+            .register_type::<DragMap>();
     }
 }

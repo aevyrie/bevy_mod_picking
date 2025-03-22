@@ -167,7 +167,8 @@ pub mod ray {
     ///     }
     /// }
     /// ```
-    #[derive(Clone, Debug, Default, Resource)]
+    #[derive(Clone, Debug, Default, Resource, Reflect)]
+    #[reflect(Resource)]
     pub struct RayMap {
         map: HashMap<RayId, Ray3d>,
     }
