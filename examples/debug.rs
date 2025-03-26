@@ -13,7 +13,7 @@ fn main() {
                     ..default()
                 }),
         )
-        .add_plugins(DefaultPickingPlugins)
+        .add_plugins(bevy_mod_picking::DefaultPickingPlugins)
         .add_systems(Startup, setup)
         // Set the value of the DebugPickingMode resource to change picking debugging settings
         .insert_resource(DebugPickingMode::Normal)

@@ -9,7 +9,7 @@ fn main() {
         // All you need to do is add the picking plugin, with your backend of choice enabled in the
         // cargo features. By default, the bevy_mod_raycast backend is enabled via the
         // `backend_raycast` feature.
-        .add_plugins(DefaultPickingPlugins)
+        .add_plugins(bevy_mod_picking::DefaultPickingPlugins)
         .insert_resource(DebugPickingMode::Normal)
         .add_systems(Startup, setup)
         .run();
